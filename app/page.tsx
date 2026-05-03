@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
 
 export default function Dashboard() {
-  const { students, occurrences, praises, rules, getStudentPoints, user } = useAppContext();
+  const { students, occurrences, accidents, praises, rules, getStudentPoints, user } = useAppContext();
   const userId = (user as any)?.email ?? 'guest';
   const [pendingBanner, setPendingBanner] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -380,25 +380,48 @@ export default function Dashboard() {
               </Link>
             </div>
             
-            <div className="grid grid-cols-3 gap-2 flex-1 items-center">
-              <div className="bg-slate-50 dark:bg-[#28211b] p-3 rounded-xl flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-orange-600 dark:text-orange-400">2</span>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Total</span>
-              </div>
-              <div className="bg-slate-50 dark:bg-[#281a1d] p-3 rounded-xl flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-red-400 dark:text-red-400">0</span>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">C/ Colégios</span>
-              </div>
-              <div className="bg-slate-50 dark:bg-[#1c212e] p-3 rounded-xl flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-blue-400 dark:text-blue-400">1</span>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Médico</span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-between items-center text-xs">
-              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Pátio Gramado</span>
-              <span className="font-bold text-slate-700 dark:text-slate-300">2</span>
-            </div>
+            {(() => {
+              const filteredAccidents = accidents.filter(a => !a.archived && a.date?.startsWith(selectedYear));
+              const totalAcc = filteredAccidents.length;
+              const withColleges = filteredAccidents.filter(a => a.parentsNotified).length;
+              const withMedic = filteredAccidents.filter(a => a.medicForwarded).length;
+              const topLocation = filteredAccidents.reduce<Record<string, number>>((acc, a) => {
+                if (a.location) acc[a.location] = (acc[a.location] || 0) + 1;
+                return acc;
+              }, {});
+              const topLocationEntry = Object.entries(topLocation).sort((a, b) => b[1] - a[1])[0];
+              return (
+                <>
+                  <div className="grid grid-cols-3 gap-2 flex-1 items-center">
+                    <div className="bg-slate-50 dark:bg-[#28211b] p-3 rounded-xl flex flex-col items-center justify-center">
+                      <span className="text-xl font-bold text-orange-600 dark:text-orange-400">{totalAcc}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Total</span>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-[#281a1d] p-3 rounded-xl flex flex-col items-center justify-center">
+                      <span className="text-xl font-bold text-red-400">{withColleges}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">C/ Colégios</span>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-[#1c212e] p-3 rounded-xl flex flex-col items-center justify-center">
+                      <span className="text-xl font-bold text-blue-400">{withMedic}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Médico</span>
+                    </div>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-between items-center text-xs">
+                    {topLocationEntry ? (
+                      <>
+                        <span className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                          {topLocationEntry[0]}
+                        </span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{topLocationEntry[1]}</span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400 text-xs">Nenhum acidente no período</span>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
         </div>
