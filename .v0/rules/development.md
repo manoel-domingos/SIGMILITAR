@@ -15,7 +15,12 @@
 
 1. **Server vs Client** — Componentes são Server Component por default. Adicionar `"use client"` apenas quando necessário (state, effects, browser APIs).
 
-2. **Supabase**
+2. **Supabase — REGRA CARDINAL**
+   - **TODO salvamento de dados DEVE ir para o Supabase, sempre. Sem exceções.**
+   - Nunca usar localStorage como destino de dados de negócio (students, occurrences, accidents, praises, summons, conduct_terms, rules).
+   - localStorage é permitido apenas para preferências de UI (debug mode, api keys, sessão ativa).
+   - Se `isSupabaseConnected === false`, lançar erro visível ao usuário — não fazer fallback silencioso para estado local.
+   - Banco ativo: projeto `imprdimqcjbndqewioyt` (EECM-JOAO-BATISTA)
    - Cliente browser: `lib/supabase.ts` (anon key)
    - Cliente server: usar `createClient` com service role apenas em API routes
    - **Nunca** expor service_role no client
