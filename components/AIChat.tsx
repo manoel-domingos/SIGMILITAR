@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Brain, X, Send, Loader2, Sparkles, ChevronDown, Activity, Clock, ArrowRight, Trash2, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Brain, X, Send, Loader2, Sparkles, ChevronDown, Activity, Clock, ArrowRight, Trash2, AlertTriangle, CheckCircle2, RefreshCw, ClipboardList } from 'lucide-react';
+import { loadChecklists, OccurrenceTask, toggleChecklistItem, removeOccurrenceTask } from '@/components/OccurrenceChecklist';
+import { useAppContext } from '@/lib/store';
 
 // ---------------------------------------------------------------------------
 // Log Store global — qualquer chamada streamAI alimenta este store
@@ -194,14 +196,27 @@ interface Message {
   streaming?: boolean;
 }
 
-type Panel = 'chat' | 'logs';
+type Panel = 'pendencias' | 'chat' | 'logs';
 
 // ---------------------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------------------
 export default function AIChat() {
+  const { user } = useAppContext();
+  const userId = (user as any)?.email ?? 'guest';
+  const [checklistTasks, setChecklistTasks] = useState<OccurrenceTask[]>([]);
+
+  useEffect(() => {
+    setChecklistTasks(loadChecklists(userId));
+  }, [userId]);
+
+  const pendingCount = checklistTasks.reduce(
+    (acc, t) => acc + t.items.filter((i) => !i.done).length,
+    0
+  );
+
   const [isOpen, setIsOpen] = useState(false);
-  const [activePanel, setActivePanel] = useState<Panel>('chat');
+  const [activePanel, setActivePanel] = useState<Panel>('pendencias');
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'Olá! Sou a ARIA. Como posso ajudar?', timestamp: new Date() },
   ]);
@@ -375,27 +390,108 @@ export default function AIChat() {
 
           {/* Abas */}
           <div className="flex mt-2 px-4">
-            {(['chat', 'logs'] as Panel[]).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActivePanel(tab)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
-                  activePanel === tab ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100'
-                }`}
-              >
-                {tab === 'chat' ? <Sparkles className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
-                {tab === 'chat' ? 'Chat' : 'Logs IA'}
-                {tab === 'logs' && logs.length > 0 && (
-                  <span className="ml-1 bg-white/20 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
-                    {logs.length}
-                    {errorCount > 0 && <span className="ml-0.5 text-rose-300">!</span>}
-                    {streamingCount > 0 && <span className="ml-0.5 text-amber-300 animate-pulse">•</span>}
-                  </span>
-                )}
-              </button>
-            ))}
+            <button
+              onClick={() => setActivePanel('pendencias')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
+                activePanel === 'pendencias' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100'
+              }`}
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              Pendencias
+              {pendingCount > 0 && (
+                <span className="ml-1 bg-red-500 rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActivePanel('chat')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
+                activePanel === 'chat' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Chat
+            </button>
+            <button
+              onClick={() => setActivePanel('logs')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
+                activePanel === 'logs' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Logs IA
+              {logs.length > 0 && (
+                <span className="ml-1 bg-white/20 rounded-full px-1.5 py-0.5 text-[9px] font-bold">
+                  {logs.length}
+                  {errorCount > 0 && <span className="ml-0.5 text-rose-300">!</span>}
+                  {streamingCount > 0 && <span className="ml-0.5 text-amber-300 animate-pulse">•</span>}
+                </span>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* ---- PAINEL PENDENCIAS ---- */}
+        {activePanel === 'pendencias' && (
+          <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900" style={{ maxHeight: '480px' }}>
+            {checklistTasks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 text-slate-400 gap-3">
+                <ClipboardList className="w-9 h-9 opacity-25" />
+                <p className="text-sm font-medium">Nenhuma pendencia</p>
+                <p className="text-xs text-center px-8 opacity-70">Pendencias de ocorrencias registradas aparecem aqui.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                {checklistTasks.map((task) => {
+                  const allDone = task.items.every((i) => i.done);
+                  const pending = task.items.filter((i) => !i.done).length;
+                  return (
+                    <div key={task.occurrenceId} className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{task.occurrenceNum} — {task.studentName}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {allDone
+                              ? <span className="text-emerald-600 font-medium">Concluido</span>
+                              : `${pending} pendente${pending > 1 ? 's' : ''}`}
+                          </p>
+                        </div>
+                        {allDone && (
+                          <button
+                            onClick={() => setChecklistTasks(removeOccurrenceTask(userId, task.occurrenceId))}
+                            className="text-slate-300 hover:text-slate-500 transition-colors"
+                            aria-label="Remover"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <ul className="space-y-1.5">
+                        {task.items.map((item) => (
+                          <li
+                            key={item.id}
+                            className="flex items-start gap-2 cursor-pointer"
+                            onClick={() => setChecklistTasks(toggleChecklistItem(userId, task.occurrenceId, item.id))}
+                          >
+                            <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
+                              item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'
+                            }`}>
+                              {item.done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                            </div>
+                            <span className={`text-xs leading-relaxed ${item.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                              {item.label}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ---- PAINEL CHAT ---- */}
         {activePanel === 'chat' && (
