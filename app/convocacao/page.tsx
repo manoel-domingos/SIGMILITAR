@@ -6,7 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { UserPlus, Printer, Search, Plus, X, Edit2, Archive } from 'lucide-react';
 import { Summons } from '@/lib/data';
 import { getLocalDateString, formatDate } from '@/lib/utils';
-import { SCHOOL_HEADER_HTML, SCHOOL_FOOTER_HTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
+import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function ConvocacaoPais() {
   const { students, summons, addSummons, updateSummons, archiveSummons, currentUserRole } = useAppContext();
@@ -86,27 +86,33 @@ export default function ConvocacaoPais() {
           <title>Convocação - ${student?.name}</title>
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; padding: 18mm 20mm 15mm 20mm; line-height: 1.6; color: #111; }
             ${SCHOOL_HEADER_CSS}
-            .doc-titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
-            .date { text-align: right; margin-bottom: 30px; font-size: 10.5pt; }
+            body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1.7; color: #111; }
+            .doc-titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; border-bottom: 1px solid #1a237e; padding-bottom: 6px; color: #1a237e; }
+            .date { text-align: right; margin-bottom: 24px; font-size: 10pt; color: #444; }
             .content { margin-bottom: 50px; text-align: justify; font-size: 11pt; line-height: 1.8; }
             .content p { margin-bottom: 14px; }
-            .sig-line { border-top: 1px solid #000; width: 300px; margin: 80px auto 0; padding-top: 6px; text-align: center; font-size: 9.5pt; font-weight: bold; text-transform: uppercase; }
+            .assinaturas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 60px; }
+            .sig-line { border-top: 1px solid #000; padding-top: 6px; font-size: 8.5pt; text-align: center; font-weight: bold; text-transform: uppercase; }
+            @media print { button { display: none !important; } }
           </style>
         </head>
         <body>
-          ${SCHOOL_HEADER_HTML}
+          ${getSchoolHeaderHTML()}
           <div class="doc-titulo">CARTA DE CONVOCAÇÃO Nº ${s.id.slice(-4).toUpperCase()}</div>
-          <div class="date">São Paulo, ${new Date().toLocaleDateString('pt-BR')}</div>
+          <div class="date">Tangará da Serra, ${new Date().toLocaleDateString('pt-BR')}</div>
           <div class="content">
             <p>Ao Sr(a). Responsável pelo aluno(a) <strong>${student?.name}</strong>, da turma <strong>${student?.class}</strong>.</p>
             <p>Solicitamos o comparecimento de V.S.ª nesta Unidade Escolar no dia <strong>${formatDate(s.date)}</strong> às <strong>${s.time}</strong> horas, para tratar de assuntos de interesse do referido aluno junto ao setor <strong>${s.department}</strong>.</p>
             <p><strong>Motivo:</strong> ${s.reason}</p>
             <p>Certos de sua compreensão e compromisso com o processo educacional, agradecemos antecipadamente.</p>
           </div>
-          <div class="sig-line">Gestão Escolar/Militar</div>
-          ${SCHOOL_FOOTER_HTML}
+          <div class="assinaturas">
+            <div class="sig-line">Assinatura do Responsável</div>
+            <div class="sig-line">Diretora / Coord. Pedagógico</div>
+            <div class="sig-line">Gestão Escolar / Militar</div>
+          </div>
+          ${getSchoolFooterHTML()}
         </body>
       </h${""}tml>
     `);

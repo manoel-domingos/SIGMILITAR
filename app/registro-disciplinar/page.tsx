@@ -6,7 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
-import { SCHOOL_HEADER_HTML, SCHOOL_FOOTER_HTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
+import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhatsApp } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
@@ -459,168 +459,215 @@ function RegistroDisciplinarContent() {
   <title>ATA de Ocorrência Disciplinar</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    ${SCHOOL_HEADER_CSS}
     body {
       font-family: 'Times New Roman', Times, serif;
-      font-size: 11pt;
+      font-size: 10.5pt;
       color: #111;
       background: #fff;
-      padding: 18mm 20mm 15mm 20mm;
-      line-height: 1.6;
+      line-height: 1.55;
     }
-    ${SCHOOL_HEADER_CSS}
-    .doc-titulo {
+    /* Layout principal: sidebar + main */
+    .layout {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    /* Coluna lateral — IDENTIFICAÇÃO */
+    .sidebar {
+      width: 190px;
+      min-width: 190px;
+      border: 1px solid #1a237e;
+      border-radius: 3px;
+      overflow: hidden;
+      font-size: 8.5pt;
+    }
+    .sidebar-titulo {
+      background: #1a237e;
+      color: #fff;
+      font-weight: bold;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 8px;
       text-align: center;
-      font-size: 12pt;
+    }
+    .sid-item {
+      padding: 5px 8px;
+      border-bottom: 1px solid #e0e4f0;
+    }
+    .sid-item:last-child { border-bottom: none; }
+    .sid-label {
+      font-size: 7pt;
       font-weight: bold;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 18px;
+      color: #1a237e;
+      letter-spacing: 0.3px;
+      display: block;
+      margin-bottom: 1px;
     }
-    .secao { margin-bottom: 18px; }
-    .secao-titulo {
-      font-size: 9pt;
+    .sid-valor {
+      font-size: 8.5pt;
+      color: #111;
+      word-break: break-word;
+    }
+    .sid-separator {
+      background: #eef0f8;
+      padding: 3px 8px;
+      font-size: 7pt;
       font-weight: bold;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #444;
-      border-bottom: 1px solid #999;
-      padding-bottom: 2px;
-      margin-bottom: 8px;
+      color: #555;
+      letter-spacing: 0.3px;
+      border-bottom: 1px solid #e0e4f0;
     }
-    .info-table { width: 100%; border-collapse: collapse; font-size: 11pt; }
-    .info-table td { padding: 4px 8px; vertical-align: top; border: 1px solid #ddd; }
-    .label-cell { font-weight: bold; width: 36%; background: #f5f5f5; white-space: nowrap; }
-    .medida-box {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 0;
-      border: 1px solid #ddd;
-      font-size: 10.5pt;
+    .sid-medida-box {
+      padding: 5px 8px;
     }
-    .medida-item {
-      padding: 6px 10px;
-      border-right: 1px solid #ddd;
+    .sid-medida-row { margin-bottom: 4px; }
+    .reincidencia-tag {
+      margin: 4px 8px;
+      padding: 3px 6px;
+      background: #fff5f5;
+      border: 1px solid #c00;
+      color: #c00;
+      font-weight: bold;
+      font-size: 7.5pt;
+      border-radius: 2px;
     }
-    .medida-item:last-child { border-right: none; }
-    .medida-label { font-size: 8.5pt; color: #666; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
-    .medida-valor { font-weight: bold; font-size: 11pt; }
-    .ata-relato {
+    /* Coluna principal — ATA */
+    .main-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .main-titulo {
+      text-align: center;
       font-size: 11pt;
-      line-height: 1.8;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 2px solid #1a237e;
+      padding-bottom: 4px;
+      color: #1a237e;
+    }
+    .ata-corpo {
+      font-size: 10.5pt;
+      line-height: 1.75;
       text-align: justify;
-      padding: 12px 14px;
-      border: 1px solid #ddd;
-      min-height: 80px;
+      white-space: pre-wrap;
+      min-height: 260px;
+      border: 1px solid #ccc;
+      padding: 10px 12px;
       background: #fafafa;
     }
-    .assinaturas { margin-top: 36px; }
-    .sig-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+    /* Assinaturas */
+    .assinaturas {
+      margin-top: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
     .sig-box { text-align: center; }
-    .sig-linha { border-top: 1px solid #000; padding-top: 6px; font-size: 9.5pt; font-weight: bold; text-transform: uppercase; }
-    .reincidencia-box {
-      margin-top: 8px; padding: 6px 12px;
-      border: 2px solid #c00; color: #c00;
-      font-weight: bold; font-size: 10pt; background: #fff5f5;
+    .sig-linha {
+      border-top: 1px solid #000;
+      padding-top: 5px;
+      font-size: 8pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #222;
     }
     @media print {
-      body { padding: 18mm 20mm 15mm 20mm; }
       button { display: none !important; }
     }
   </style>
 </head>
 <body>
 
-  ${SCHOOL_HEADER_HTML}
+  ${getSchoolHeaderHTML()}
 
-  <div class="doc-titulo">IDENTIFICAÇÃO</div>
+  <div class="layout">
 
-  <div class="secao">
-    <table class="info-table">
-      <tr>
-        <td class="label-cell">DATA DO REGISTRO</td>
-        <td>${formatDate(o.date)} ${o.hour || ''}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">LOCAL</td>
-        <td>${o.location || '---'}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">ALUNO</td>
-        <td>${studentNamesHtml}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">TURMA</td>
-        <td>${turmaStr}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">LOCALIZADO POR</td>
-        <td>${o.locatedBy || '---'}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">REGISTRADO POR</td>
-        <td>${o.registeredBy || '---'}</td>
-      </tr>
-    </table>
-  </div>
+    <!-- SIDEBAR: IDENTIFICAÇÃO -->
+    <div class="sidebar">
+      <div class="sidebar-titulo">Identificação</div>
 
-  <div class="secao">
-    <div class="secao-titulo">INFRAÇÃO</div>
-    <table class="info-table">
-      <tr>
-        <td class="label-cell">ART.</td>
-        <td>${o.ruleCode}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">DESCRIÇÃO</td>
-        <td>${rule?.description || 'Ocorrência personalizada'}</td>
-      </tr>
-    </table>
-  </div>
-
-  <div class="secao">
-    <div class="secao-titulo">MEDIDA</div>
-    <div class="medida-box">
-      <div class="medida-item">
-        <span class="medida-label">Gravidade</span>
-        <span class="medida-valor">${o.severity || '---'}</span>
+      <div class="sid-item">
+        <span class="sid-label">Data do Registro</span>
+        <span class="sid-valor">${formatDate(o.date)} ${o.hour || ''}</span>
       </div>
-      <div class="medida-item">
-        <span class="medida-label">Medida</span>
-        <span class="medida-valor">${measuresStr}</span>
+      <div class="sid-item">
+        <span class="sid-label">Local</span>
+        <span class="sid-valor">${o.location || '---'}</span>
       </div>
-      <div class="medida-item">
-        <span class="medida-label">Impacto</span>
-        <span class="medida-valor">${
-          o.severity === 'Leve' ? '-0,10 PONTOS'
-          : o.severity === 'Media' ? '-0,30 PONTOS'
-          : o.severity === 'Grave' ? '-0,50 PONTOS'
-          : '---'
-        }</span>
+      <div class="sid-item">
+        <span class="sid-label">Aluno</span>
+        <span class="sid-valor">${studentNamesHtml}</span>
+      </div>
+      <div class="sid-item">
+        <span class="sid-label">Turma</span>
+        <span class="sid-valor">${turmaStr}</span>
+      </div>
+      <div class="sid-item">
+        <span class="sid-label">Localizado por</span>
+        <span class="sid-valor">${o.locatedBy || '---'}</span>
+      </div>
+      <div class="sid-item">
+        <span class="sid-label">Registrado por</span>
+        <span class="sid-valor">${o.registeredBy || '---'}</span>
+      </div>
+
+      <div class="sid-separator">Infração</div>
+      <div class="sid-item">
+        <span class="sid-label">Art. ${o.ruleCode}</span>
+        <span class="sid-valor">${rule?.description || 'Ocorrência personalizada'}</span>
+      </div>
+
+      <div class="sid-separator">Medida</div>
+      <div class="sid-medida-box">
+        <div class="sid-medida-row">
+          <span class="sid-label">Gravidade</span>
+          <span class="sid-valor">${o.severity || '---'}</span>
+        </div>
+        <div class="sid-medida-row">
+          <span class="sid-label">Medida aplicada</span>
+          <span class="sid-valor">${measuresStr}</span>
+        </div>
+        <div class="sid-medida-row">
+          <span class="sid-label">Impacto</span>
+          <span class="sid-valor">${
+            o.severity === 'Leve' ? '-0,10 pts'
+            : o.severity === 'Media' ? '-0,30 pts'
+            : o.severity === 'Grave' ? '-0,50 pts'
+            : '---'
+          }</span>
+        </div>
+      </div>
+      ${isReincidente ? `<div class="reincidencia-tag">REINCIDENCIA — ${reincidenteCount}ª vez</div>` : ''}
+    </div>
+
+    <!-- MAIN: ATA -->
+    <div class="main-col">
+      <div class="main-titulo">ATA — Relato do Ocorrido</div>
+      <div class="ata-corpo">${ataText}</div>
+
+      <div class="assinaturas">
+        <div class="sig-box">
+          <div class="sig-linha">Diretora / Coord. Pedagógico</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-linha">Gestor Cívico Militar / Educacional</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-linha">Responsável Legal</div>
+        </div>
       </div>
     </div>
-    ${isReincidente ? `<div class="reincidencia-box">REINCIDENCIA — ${reincidenteCount}ª ocorrência nesta infração</div>` : ''}
-  </div>
 
-  <div class="secao">
-    <div class="secao-titulo">ATA — Relato do Ocorrido</div>
-    <div class="ata-relato">${ataText}</div>
-  </div>
+  </div><!-- /layout -->
 
-  <div class="assinaturas">
-    <div class="sig-row">
-      <div class="sig-box">
-        <div class="sig-linha">DIRETORA / COORD. PEDAGÓGICO</div>
-      </div>
-      <div class="sig-box">
-        <div class="sig-linha">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
-      </div>
-      <div class="sig-box">
-        <div class="sig-linha">RESPONSÁVEL LEGAL</div>
-      </div>
-    </div>
-  </div>
-
-  ${SCHOOL_FOOTER_HTML}
+  ${getSchoolFooterHTML()}
 
 </body>
 </html>`);
@@ -1046,7 +1093,7 @@ function RegistroDisciplinarContent() {
           </style>
         </head>
         <body>
-          ${SCHOOL_HEADER_HTML}
+          ${getSchoolHeaderHTML()}
           <div class="doc-titulo">${docTitle}</div>
 
           <table class="info-table">
@@ -1075,7 +1122,7 @@ function RegistroDisciplinarContent() {
             <div class="sig-line">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
             <div class="sig-line">RESPONSÁVEL LEGAL</div>
           </div>
-          ${SCHOOL_FOOTER_HTML}
+          ${getSchoolFooterHTML()}
         </body>
       </h${""}tml>
     `);
