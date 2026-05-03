@@ -50,8 +50,8 @@ export const SCHOOL_HEADER_CSS = `
     padding-bottom: 8px;
     margin-bottom: 12px;
   }
-  .cab-logo-left  { height: 78px; width: auto; object-fit: contain; }
-  .cab-logo-right { height: 52px; width: auto; object-fit: contain; }
+  .cab-logo-left  { height: 96px; width: auto; object-fit: contain; }
+  .cab-logo-right { height: 68px; width: auto; object-fit: contain; }
   .cab-center {
     flex: 1;
     display: flex;
