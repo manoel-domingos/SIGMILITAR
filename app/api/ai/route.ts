@@ -16,12 +16,14 @@ function getClient(): OpenAI {
   return _client;
 }
 
-const CONFIGS: Record<string, { maxTokens: number; temperature: number }> = {
-  ata:       { maxTokens: 400,  temperature: 0.4 },
-  analise:   { maxTokens: 500,  temperature: 0.5 },
-  relatorio: { maxTokens: 600,  temperature: 0.4 },
-  chat:      { maxTokens: 250,  temperature: 0.5 },
-  sugestao:  { maxTokens: 700,  temperature: 0.3 }, // recomendações pós-ATA baseadas no regimento
+// max_tokens removido intencionalmente — DeepSeek usa seu limite padrão (4096+)
+// Restrição de input é feita no prompt; nunca limitar a saída gerada.
+const CONFIGS: Record<string, { temperature: number }> = {
+  ata:       { temperature: 0.4 },
+  analise:   { temperature: 0.5 },
+  relatorio: { temperature: 0.4 },
+  chat:      { temperature: 0.5 },
+  sugestao:  { temperature: 0.3 },
 };
 
 function buildPrompts(type: string, payload: Record<string, any>): { system: string; user: string } {
@@ -225,7 +227,6 @@ export async function POST(req: NextRequest) {
                 { role: 'user', content: user },
               ],
               temperature: cfg.temperature,
-              max_tokens: cfg.maxTokens,
               stream: true,
             },
             { signal: abort.signal }
