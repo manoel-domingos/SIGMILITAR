@@ -73,6 +73,22 @@ export default function Relatorios() {
 
   return (
     <AppShell>
+      {/* Cabeçalho e rodapé visíveis apenas na impressão */}
+      <style>{`
+        @media print {
+          .print-header { display: block !important; }
+          .print-footer { display: block !important; }
+          .print\\:hidden { display: none !important; }
+        }
+      `}</style>
+
+      <div className="print-header hidden border-y-2 border-black py-2 mb-5 text-center leading-6">
+        <p className="text-[10pt] uppercase tracking-wide">GOVERNO DO ESTADO DE MATO GROSSO</p>
+        <p className="text-[10pt] uppercase tracking-wide">SECRETARIA DE ESTADO DE EDUCAÇÃO</p>
+        <p className="text-[13pt] font-bold uppercase tracking-widest">ESCOLA ESTADUAL CÍVICO-MILITAR</p>
+        <p className="text-[13pt] font-bold uppercase tracking-widest">PROF. JOÃO BATISTA</p>
+      </div>
+
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
@@ -283,6 +299,13 @@ export default function Relatorios() {
           )}
 
         </div>
+      </div>
+
+      <div className="print-footer hidden border-t border-gray-400 pt-2 mt-6 text-center text-[8.5pt] text-gray-500 leading-6">
+        <p>E.E Cívico-Militar Prof. João Batista</p>
+        <p>(65) 3329-1021 | (65) 99944-6304</p>
+        <p>Av. Ismael José do Nascimento nº 892-N Jardim Europa — CEP 78.300-152 – TANGARÁ DA SERRA/MT</p>
+        <p>escola.16020@edu.mt.gov.br</p>
       </div>
     </AppShell>
   );

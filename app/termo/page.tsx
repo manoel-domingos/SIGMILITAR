@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { FileText, Printer, Search, Plus, X, Edit2, Archive } from 'lucide-react';
 import { ConductTerm } from '@/lib/data';
 import { getLocalDateString, formatDate } from '@/lib/utils';
+import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function TermoDeConduta() {
   const { students, conductTerms, addConductTerm, updateConductTerm, archiveConductTerm, currentUserRole } = useAppContext();
@@ -80,39 +81,33 @@ export default function TermoDeConduta() {
         <head>
           <title>Termo de Conduta - ${student?.name}</title>
           <style>
-            body { font-family: sans-serif; padding: 50px; line-height: 1.6; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 40px; }
-            .title { font-size: 18px; font-weight: bold; }
-            .content { margin-bottom: 60px; text-align: justify; }
-            .commitments { background: #f9fafb; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 40px; }
-            .footer { text-align: center; margin-top: 100px; display: flex; flex-direction: column; gap: 40px; }
-            .sig-block { display: flex; justify-content: space-between; }
-            .sig-line { border-top: 1px solid #000; width: 250px; padding-top: 5px; font-size: 12px; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            ${SCHOOL_HEADER_CSS}
+            body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1.7; color: #111; }
+            .doc-titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; border-bottom: 1px solid #1a237e; padding-bottom: 6px; color: #1a237e; }
+            .content { margin-bottom: 24px; text-align: justify; font-size: 11pt; }
+            .content p { margin-bottom: 14px; }
+            .commitments { background: #f9fafb; padding: 14px 16px; border: 1px solid #ddd; margin: 10px 0 20px; white-space: pre-wrap; font-size: 10.5pt; }
+            .assinaturas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 60px; }
+            .sig-line { border-top: 1px solid #000; padding-top: 6px; font-size: 8.5pt; text-align: center; font-weight: bold; text-transform: uppercase; }
+            @media print { button { display: none !important; } }
           </style>
         </head>
         <body>
-          <div style="width: 100%; margin-bottom: 20px;">
-            <img src="${window.location.origin}/CABEÇALHO JB.svg" style="width: 100%; height: auto;" alt="Cabeçalho Oficial">
-          </div>
-          <div class="header">
-            <div class="title">TERMO DE ADEQUAÇÃO DE CONDUTA (TAC)</div>
-            <div>Escola Estadual Cívico-Militar</div>
-          </div>
+          ${getSchoolHeaderHTML()}
+          <div class="doc-titulo">TERMO DE ADEQUAÇÃO DE CONDUTA (TAC)</div>
           <div class="content">
             <p>Pelo presente termo, o(a) aluno(a) <strong>${student?.name}</strong>, regularmente matriculado no <strong>${student?.class}</strong>, e seu responsável legal, Sr(a). <strong>${t.guardianName}</strong>, declaram estar cientes das faltas disciplinares cometidas e assumem o compromisso de adequação de conduta conforme as normas do Regimento Escolar.</p>
             <p><strong>Compromissos Assumidos:</strong></p>
             <div class="commitments">${t.commitments}</div>
             <p>O descumprimento deste termo poderá acarretar em medidas disciplinares mais severas, conforme previsto na legislação vigente.</p>
           </div>
-          <div class="footer">
-            <div class="sig-block">
-              <div class="sig-line">Assinatura do Aluno</div>
-              <div class="sig-line">Assinatura do Responsável</div>
-            </div>
-            <div class="sig-block" style="justify-content: center;">
-              <div class="sig-line">Gestão Escolar/Militar</div>
-            </div>
+          <div class="assinaturas">
+            <div class="sig-line">Assinatura do Aluno</div>
+            <div class="sig-line">Assinatura do Responsável</div>
+            <div class="sig-line">Gestão Escolar / Militar</div>
           </div>
+          ${getSchoolFooterHTML()}
         </body>
       </h${""}tml>
     `);
