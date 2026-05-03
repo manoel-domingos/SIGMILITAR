@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
+import { SCHOOL_HEADER_HTML, SCHOOL_FOOTER_HTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhatsApp } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
@@ -447,183 +448,179 @@ function RegistroDisciplinarContent() {
     const printWindow = window.open('', '_blank', 'width=850,height=700');
     if (!printWindow) return;
 
+    const measuresStr = Array.isArray(o.measures) && o.measures.length > 0
+      ? o.measures.join(' / ')
+      : (o.measure || 'A definir');
+
     printWindow.document.write(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <title>ATA de Ocorrência Disciplinar — ${o.id?.slice(0,8).toUpperCase()}</title>
+  <title>ATA de Ocorrência Disciplinar</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Times New Roman', Times, serif;
-      font-size: 12pt;
+      font-size: 11pt;
       color: #111;
       background: #fff;
-      padding: 20mm 20mm 15mm 20mm;
+      padding: 18mm 20mm 15mm 20mm;
       line-height: 1.6;
     }
-    .cabecalho {
+    ${SCHOOL_HEADER_CSS}
+    .doc-titulo {
       text-align: center;
-      border-top: 3px double #000;
-      border-bottom: 3px double #000;
-      padding: 12px 0;
-      margin-bottom: 24px;
+      font-size: 12pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
     }
-    .cabecalho .escola { font-size: 13pt; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
-    .cabecalho .tipo { font-size: 11pt; margin-top: 4px; }
-    .cabecalho .numero { font-size: 10pt; color: #444; margin-top: 6px; letter-spacing: 0.5px; }
-    .bloco { margin-bottom: 20px; }
-    .bloco-titulo {
+    .secao { margin-bottom: 18px; }
+    .secao-titulo {
       font-size: 9pt;
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #555;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 3px;
-      margin-bottom: 10px;
+      color: #444;
+      border-bottom: 1px solid #999;
+      padding-bottom: 2px;
+      margin-bottom: 8px;
     }
     .info-table { width: 100%; border-collapse: collapse; font-size: 11pt; }
-    .info-table td { padding: 5px 8px; vertical-align: top; }
-    .info-table tr:nth-child(even) td { background: #f8f8f8; }
-    .label-cell { font-weight: bold; width: 38%; color: #333; white-space: nowrap; }
-    .ata-texto {
-      font-size: 13pt;
+    .info-table td { padding: 4px 8px; vertical-align: top; border: 1px solid #ddd; }
+    .label-cell { font-weight: bold; width: 36%; background: #f5f5f5; white-space: nowrap; }
+    .medida-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      border: 1px solid #ddd;
+      font-size: 10.5pt;
+    }
+    .medida-item {
+      padding: 6px 10px;
+      border-right: 1px solid #ddd;
+    }
+    .medida-item:last-child { border-right: none; }
+    .medida-label { font-size: 8.5pt; color: #666; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
+    .medida-valor { font-weight: bold; font-size: 11pt; }
+    .ata-relato {
+      font-size: 11pt;
       line-height: 1.8;
       text-align: justify;
-      padding: 14px 16px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background: #fafafa;
+      padding: 12px 14px;
+      border: 1px solid #ddd;
       min-height: 80px;
+      background: #fafafa;
     }
-    .reincidencia-box {
-      margin-top: 10px;
-      padding: 8px 14px;
-      border: 2px solid #c00;
-      color: #c00;
-      font-weight: bold;
-      font-size: 11pt;
-      border-radius: 4px;
-      background: #fff5f5;
-    }
-    .page-break { page-break-before: always; }
-    .assinaturas { margin-top: 50px; }
-    .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 40px; }
-    .sig-row-single { display: grid; grid-template-columns: 1fr; max-width: 320px; }
+    .assinaturas { margin-top: 36px; }
+    .sig-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
     .sig-box { text-align: center; }
-    .sig-linha { border-top: 1px solid #000; padding-top: 6px; font-size: 10pt; }
-    .sig-nome { font-size: 9.5pt; color: #444; margin-top: 4px; }
-    .sig-data { font-size: 9.5pt; color: #444; margin-top: 2px; }
-    .rodape {
-      margin-top: 40px;
-      border-top: 1px solid #ccc;
-      padding-top: 10px;
-      text-align: center;
-      font-size: 8.5pt;
-      color: #777;
+    .sig-linha { border-top: 1px solid #000; padding-top: 6px; font-size: 9.5pt; font-weight: bold; text-transform: uppercase; }
+    .reincidencia-box {
+      margin-top: 8px; padding: 6px 12px;
+      border: 2px solid #c00; color: #c00;
+      font-weight: bold; font-size: 10pt; background: #fff5f5;
     }
     @media print {
-      body { padding: 20mm; }
-      .no-print { display: none !important; }
+      body { padding: 18mm 20mm 15mm 20mm; }
       button { display: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <div class="cabecalho">
-    <div class="escola">Escola Estadual Cívico-Militar</div>
-    <div class="tipo">ATA DE OCORRÊNCIA DISCIPLINAR</div>
-    <div class="numero">Nº ${(o.id || '').slice(0,8).toUpperCase()} — ${formatDate(o.date)}</div>
-  </div>
+  ${SCHOOL_HEADER_HTML}
 
-  <div class="bloco">
-    <div class="bloco-titulo">BLOCO 1 — IDENTIFICAÇÃO</div>
+  <div class="doc-titulo">IDENTIFICAÇÃO</div>
+
+  <div class="secao">
     <table class="info-table">
       <tr>
-        <td class="label-cell">Aluno(s)</td>
-        <td>${studentNamesHtml}</td>
+        <td class="label-cell">DATA DO REGISTRO</td>
+        <td>${formatDate(o.date)} ${o.hour || ''}</td>
       </tr>
       <tr>
-        <td class="label-cell">Turma / Turno</td>
-        <td>${turmaStr}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">Data e Hora do Fato</td>
-        <td>${formatDate(o.date)} às ${o.hour || '---'}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">Local</td>
+        <td class="label-cell">LOCAL</td>
         <td>${o.location || '---'}</td>
       </tr>
       <tr>
-        <td class="label-cell">Identificado por</td>
-        <td>${o.locatedBy || '—'}</td>
+        <td class="label-cell">ALUNO</td>
+        <td>${studentNamesHtml}</td>
       </tr>
       <tr>
-        <td class="label-cell">Registrado por</td>
+        <td class="label-cell">TURMA</td>
+        <td>${turmaStr}</td>
+      </tr>
+      <tr>
+        <td class="label-cell">LOCALIZADO POR</td>
+        <td>${o.locatedBy || '---'}</td>
+      </tr>
+      <tr>
+        <td class="label-cell">REGISTRADO POR</td>
         <td>${o.registeredBy || '---'}</td>
       </tr>
     </table>
   </div>
 
-  <div class="bloco">
-    <div class="bloco-titulo">BLOCO 2 — TEXTO DA ATA</div>
-    <div class="ata-texto">${ataText}</div>
-  </div>
-
-  <div class="bloco">
-    <div class="bloco-titulo">BLOCO 3 — CLASSIFICAÇÃO DA INFRAÇÃO</div>
+  <div class="secao">
+    <div class="secao-titulo">INFRAÇÃO</div>
     <table class="info-table">
       <tr>
-        <td class="label-cell">Artigo</td>
+        <td class="label-cell">ART.</td>
         <td>${o.ruleCode}</td>
       </tr>
       <tr>
-        <td class="label-cell">Descrição</td>
+        <td class="label-cell">DESCRIÇÃO</td>
         <td>${rule?.description || 'Ocorrência personalizada'}</td>
       </tr>
-      <tr>
-        <td class="label-cell">Gravidade</td>
-        <td>${o.severity || '---'}</td>
-      </tr>
-      <tr>
-        <td class="label-cell">Medida Administrativa</td>
-        <td>${o.measure || 'A definir'}</td>
-      </tr>
-      ${o.durationDays > 0 ? `<tr><td class="label-cell">Duração</td><td>${o.durationDays} dia(s)</td></tr>` : ''}
     </table>
   </div>
 
-  ${factorsBlock}
+  <div class="secao">
+    <div class="secao-titulo">MEDIDA</div>
+    <div class="medida-box">
+      <div class="medida-item">
+        <span class="medida-label">Gravidade</span>
+        <span class="medida-valor">${o.severity || '---'}</span>
+      </div>
+      <div class="medida-item">
+        <span class="medida-label">Medida</span>
+        <span class="medida-valor">${measuresStr}</span>
+      </div>
+      <div class="medida-item">
+        <span class="medida-label">Impacto</span>
+        <span class="medida-valor">${
+          o.severity === 'Leve' ? '-0,10 PONTOS'
+          : o.severity === 'Media' ? '-0,30 PONTOS'
+          : o.severity === 'Grave' ? '-0,50 PONTOS'
+          : '---'
+        }</span>
+      </div>
+    </div>
+    ${isReincidente ? `<div class="reincidencia-box">REINCIDENCIA — ${reincidenteCount}ª ocorrência nesta infração</div>` : ''}
+  </div>
+
+  <div class="secao">
+    <div class="secao-titulo">ATA — Relato do Ocorrido</div>
+    <div class="ata-relato">${ataText}</div>
+  </div>
 
   <div class="assinaturas">
     <div class="sig-row">
       <div class="sig-box">
-        <div class="sig-linha">Assinatura do Aluno</div>
-        <div class="sig-nome">Nome: _______________________</div>
-        <div class="sig-data">Data: ___/___/______</div>
+        <div class="sig-linha">DIRETORA / COORD. PEDAGÓGICO</div>
       </div>
       <div class="sig-box">
-        <div class="sig-linha">Assinatura do Responsável</div>
-        <div class="sig-nome">Nome: _______________________</div>
-        <div class="sig-data">Data: ___/___/______</div>
+        <div class="sig-linha">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
       </div>
-    </div>
-    <div class="sig-row-single">
       <div class="sig-box">
-        <div class="sig-linha">Gestão Escolar / Militar</div>
-        <div class="sig-nome">${o.registeredBy || ''}</div>
-        <div class="sig-data">Data: ___/___/______</div>
+        <div class="sig-linha">RESPONSÁVEL LEGAL</div>
       </div>
     </div>
   </div>
 
-  <div class="rodape">
-    Documento gerado em ${new Date().toLocaleString('pt-BR')} via Sistema Kallyteros de Gestão Disciplinar<br/>
-    ID do Registro: ${o.id || '---'}
-  </div>
+  ${SCHOOL_FOOTER_HTML}
 
 </body>
 </html>`);
@@ -1028,65 +1025,57 @@ function RegistroDisciplinarContent() {
       ? 0.50 * (o.durationDays || 1) 
       : Math.abs(rule?.points || 0);
 
-    const headerHtml = `
-      <div style="width: 180%; margin-left: -40%; margin-bottom: 10px;">
-        <img src="${window.location.origin}/CABEÇALHO JB.svg" style="width: 100%; height: auto;" alt="Cabeçalho Oficial">
-      </div>
-    `;
-
     printWindow.document.write(`
       <h${""}tml lang="pt-BR">
         <head>
           <title>${docTitle} - ${primaryStudent?.name}</title>
           <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 0 40px 25px 40px; color: #1e293b; line-height: 1.5; max-width: 850px; margin: 0 auto; }
-            .header-container { margin-bottom: 15px; }
-            .title-section { text-align: center; margin-bottom: 20px; text-decoration: underline; }
-            .title { font-size: 24px; font-weight: bold; margin: 0; color: #000; text-transform: uppercase; }
-            .row { margin-bottom: 10px; font-size: 15px; display: flex; }
-            .label { font-weight: bold; color: #000; min-width: 170px; }
-            .value { color: #000; flex: 1; border-bottom: 1px dotted #ccc; padding-left: 5px; }
-            .box { border: 1px solid #000; padding: 15px; margin-top: 20px; }
-            .signature { margin-top: 60px; display: flex; justify-content: space-between; gap: 20px; }
-            .sig-line { border-top: 1px solid #000; padding-top: 5px; flex: 1; text-align: center; font-size: 10px; color: #000; font-weight: bold; }
-            .obs-box { margin-top: 5px; padding: 10px; border: 1px solid #000; min-height: 100px; font-size: 13px; }
-            @media print {
-              body { padding: 20px; }
-              .no-print { display: none; }
-            }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; padding: 18mm 20mm 15mm 20mm; color: #111; line-height: 1.6; }
+            ${SCHOOL_HEADER_CSS}
+            .doc-titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
+            .info-table { width: 100%; border-collapse: collapse; font-size: 11pt; margin-bottom: 16px; }
+            .info-table td { padding: 4px 8px; border: 1px solid #ddd; vertical-align: top; }
+            .label-cell { font-weight: bold; width: 36%; background: #f5f5f5; white-space: nowrap; }
+            .box { border: 1px solid #000; padding: 12px 14px; margin-bottom: 16px; }
+            .secao-titulo { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #444; border-bottom: 1px solid #999; padding-bottom: 2px; margin-bottom: 10px; }
+            .ata-box { padding: 12px; border: 1px solid #ddd; min-height: 120px; font-size: 11pt; text-align: justify; background: #fafafa; }
+            .signature { margin-top: 48px; display: flex; justify-content: space-between; gap: 20px; }
+            .sig-line { border-top: 1px solid #000; padding-top: 6px; flex: 1; text-align: center; font-size: 9pt; font-weight: bold; text-transform: uppercase; }
+            @media print { body { padding: 18mm 20mm; } }
           </style>
         </head>
         <body>
-          <div class="header-container">${headerHtml}</div>
-          
-          <div class="title-section">
-            <h1 class="title">${docTitle}</h1>
-          </div>
-          
-          <div class="row"><span class="label">DATA DO REGISTRO:</span><span class="value">${formatDate(o.date)} ${o.hour || ''}</span></div>
-          <div class="row"><span class="label">LOCAL:</span><span class="value">${o.location || 'NÃO INFORMADO'}</span></div>
-          <div class="row"><span class="label">${relatedStudents.length > 1 ? 'ALUNOS' : 'ALUNO'}:</span><span class="value">${studentNames.toUpperCase()}</span></div>
-          <div class="row"><span class="label">${relatedStudents.length > 1 ? 'TURMAS' : 'TURMA'}:</span><span class="value">${studentClasses.toUpperCase()}</span></div>
-          <div class="row"><span class="label">LOCALIZADO POR:</span><span class="value">${o.locatedBy?.toUpperCase() || 'NÃO INFORMADO'}</span></div>
-          <div class="row"><span class="label">REGISTRADO POR:</span><span class="value">${o.registeredBy?.toUpperCase() || 'SISTEMA'}</span></div>
-          
-          <div class="box">
-            <div class="row"><span class="label">INFRAÇÃO (ART. ${rule?.code}):</span><span class="value" style="font-size: 12px;">${rule?.description?.toUpperCase()}</span></div>
-            <div class="row"><span class="label">GRAVIDADE:</span><span class="value">${rule?.severity?.toUpperCase()}</span></div>
-            <div class="row"><span class="label">MEDIDA ADMINISTRATIVA:</span><span class="value">${measure?.toUpperCase()} ${o.durationDays ? `(${o.durationDays} ${o.durationDays === 1 ? 'DIA' : 'DIAS'})` : ''}</span></div>
-            <div class="row"><span class="label">IMPACTO NA PONTUAÇÃO:</span><span class="value">-${pointsToDeduct.toFixed(2)} PONTOS</span></div>
-          </div>
-          
-          <div style="margin-top: 20px;">
-            <span class="label">ATA:</span>
-            <div class="obs-box" style="min-height: 180px; font-size: 15px;">${o.observations || 'Nenhum registro de ATA detalhado foi fornecido no momento do registro.'}</div>
-          </div>
+          ${SCHOOL_HEADER_HTML}
+          <div class="doc-titulo">${docTitle}</div>
+
+          <table class="info-table">
+            <tr><td class="label-cell">DATA DO REGISTRO</td><td>${formatDate(o.date)} ${o.hour || ''}</td></tr>
+            <tr><td class="label-cell">LOCAL</td><td>${o.location || 'NÃO INFORMADO'}</td></tr>
+            <tr><td class="label-cell">${relatedStudents.length > 1 ? 'ALUNOS' : 'ALUNO'}</td><td>${studentNames.toUpperCase()}</td></tr>
+            <tr><td class="label-cell">${relatedStudents.length > 1 ? 'TURMAS' : 'TURMA'}</td><td>${studentClasses.toUpperCase()}</td></tr>
+            <tr><td class="label-cell">LOCALIZADO POR</td><td>${o.locatedBy?.toUpperCase() || 'NÃO INFORMADO'}</td></tr>
+            <tr><td class="label-cell">REGISTRADO POR</td><td>${o.registeredBy?.toUpperCase() || 'SISTEMA'}</td></tr>
+          </table>
+
+          <div class="secao-titulo">INFRAÇÃO</div>
+          <table class="info-table">
+            <tr><td class="label-cell">ARTIGO</td><td>${rule?.code}</td></tr>
+            <tr><td class="label-cell">DESCRIÇÃO</td><td>${rule?.description?.toUpperCase()}</td></tr>
+            <tr><td class="label-cell">GRAVIDADE</td><td>${rule?.severity?.toUpperCase()}</td></tr>
+            <tr><td class="label-cell">MEDIDA ADMINISTRATIVA</td><td>${measure?.toUpperCase()} ${o.durationDays ? `(${o.durationDays} ${o.durationDays === 1 ? 'DIA' : 'DIAS'})` : ''}</td></tr>
+            <tr><td class="label-cell">IMPACTO NA PONTUAÇÃO</td><td>-${pointsToDeduct.toFixed(2)} PONTOS</td></tr>
+          </table>
+
+          <div class="secao-titulo">ATA — RELATO DO OCORRIDO</div>
+          <div class="ata-box">${o.observations || 'Nenhum registro de ATA detalhado foi fornecido no momento do registro.'}</div>
 
           <div class="signature">
-            <div class="sig-line">DIRETORA / COORD. PEDAGÓGICO<br>(ASSINATURA E CARIMBO)</div>
-            <div class="sig-line">GESTOR CÍVICO MILITAR/EDUCACIONAL<br>(ASSINATURA E CARIMBO)</div>
-            <div class="sig-line">RESPONSÁVEL LEGAL<br>(ASSINATURA)</div>
+            <div class="sig-line">DIRETORA / COORD. PEDAGÓGICO</div>
+            <div class="sig-line">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
+            <div class="sig-line">RESPONSÁVEL LEGAL</div>
           </div>
+          ${SCHOOL_FOOTER_HTML}
         </body>
       </h${""}tml>
     `);

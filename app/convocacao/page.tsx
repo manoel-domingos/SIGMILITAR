@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { UserPlus, Printer, Search, Plus, X, Edit2, Archive } from 'lucide-react';
 import { Summons } from '@/lib/data';
 import { getLocalDateString, formatDate } from '@/lib/utils';
+import { SCHOOL_HEADER_HTML, SCHOOL_FOOTER_HTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function ConvocacaoPais() {
   const { students, summons, addSummons, updateSummons, archiveSummons, currentUserRole } = useAppContext();
@@ -84,23 +85,19 @@ export default function ConvocacaoPais() {
         <head>
           <title>Convocação - ${student?.name}</title>
           <style>
-            body { font-family: sans-serif; padding: 50px; line-height: 1.6; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 40px; }
-            .title { font-size: 20px; font-weight: bold; }
-            .date { text-align: right; margin-bottom: 40px; }
-            .content { margin-bottom: 60px; text-align: justify; }
-            .footer { text-align: center; margin-top: 100px; }
-            .sig-line { border-top: 1px solid #000; width: 300px; margin: 0 auto; padding-top: 5px; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; padding: 18mm 20mm 15mm 20mm; line-height: 1.6; color: #111; }
+            ${SCHOOL_HEADER_CSS}
+            .doc-titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+            .date { text-align: right; margin-bottom: 30px; font-size: 10.5pt; }
+            .content { margin-bottom: 50px; text-align: justify; font-size: 11pt; line-height: 1.8; }
+            .content p { margin-bottom: 14px; }
+            .sig-line { border-top: 1px solid #000; width: 300px; margin: 80px auto 0; padding-top: 6px; text-align: center; font-size: 9.5pt; font-weight: bold; text-transform: uppercase; }
           </style>
         </head>
         <body>
-          <div style="width: 100%; margin-bottom: 20px;">
-            <img src="${window.location.origin}/CABEÇALHO JB.svg" style="width: 100%; height: auto;" alt="Cabeçalho Oficial">
-          </div>
-          <div class="header">
-            <div class="title">CARTA DE CONVOCAÇÃO Nº ${s.id.slice(-4).toUpperCase()}</div>
-            <div>Escola Estadual Cívico-Militar</div>
-          </div>
+          ${SCHOOL_HEADER_HTML}
+          <div class="doc-titulo">CARTA DE CONVOCAÇÃO Nº ${s.id.slice(-4).toUpperCase()}</div>
           <div class="date">São Paulo, ${new Date().toLocaleDateString('pt-BR')}</div>
           <div class="content">
             <p>Ao Sr(a). Responsável pelo aluno(a) <strong>${student?.name}</strong>, da turma <strong>${student?.class}</strong>.</p>
@@ -108,9 +105,8 @@ export default function ConvocacaoPais() {
             <p><strong>Motivo:</strong> ${s.reason}</p>
             <p>Certos de sua compreensão e compromisso com o processo educacional, agradecemos antecipadamente.</p>
           </div>
-          <div class="footer">
-            <div class="sig-line">Gestão Escolar/Militar</div>
-          </div>
+          <div class="sig-line">Gestão Escolar/Militar</div>
+          ${SCHOOL_FOOTER_HTML}
         </body>
       </h${""}tml>
     `);

@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { FileText, Printer, Search, Plus, X, Edit2, Archive } from 'lucide-react';
 import { ConductTerm } from '@/lib/data';
 import { getLocalDateString, formatDate } from '@/lib/utils';
+import { SCHOOL_HEADER_HTML, SCHOOL_FOOTER_HTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function TermoDeConduta() {
   const { students, conductTerms, addConductTerm, updateConductTerm, archiveConductTerm, currentUserRole } = useAppContext();
@@ -80,24 +81,20 @@ export default function TermoDeConduta() {
         <head>
           <title>Termo de Conduta - ${student?.name}</title>
           <style>
-            body { font-family: sans-serif; padding: 50px; line-height: 1.6; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 40px; }
-            .title { font-size: 18px; font-weight: bold; }
-            .content { margin-bottom: 60px; text-align: justify; }
-            .commitments { background: #f9fafb; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 40px; }
-            .footer { text-align: center; margin-top: 100px; display: flex; flex-direction: column; gap: 40px; }
-            .sig-block { display: flex; justify-content: space-between; }
-            .sig-line { border-top: 1px solid #000; width: 250px; padding-top: 5px; font-size: 12px; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; padding: 18mm 20mm 15mm 20mm; line-height: 1.6; color: #111; }
+            ${SCHOOL_HEADER_CSS}
+            .doc-titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+            .content { margin-bottom: 40px; text-align: justify; font-size: 11pt; }
+            .commitments { background: #f9fafb; padding: 16px; border: 1px solid #ddd; margin-bottom: 30px; }
+            .footer { display: flex; flex-direction: column; gap: 36px; margin-top: 60px; }
+            .sig-block { display: flex; justify-content: space-between; gap: 24px; }
+            .sig-line { border-top: 1px solid #000; flex: 1; padding-top: 6px; font-size: 9pt; text-align: center; font-weight: bold; text-transform: uppercase; }
           </style>
         </head>
         <body>
-          <div style="width: 100%; margin-bottom: 20px;">
-            <img src="${window.location.origin}/CABEÇALHO JB.svg" style="width: 100%; height: auto;" alt="Cabeçalho Oficial">
-          </div>
-          <div class="header">
-            <div class="title">TERMO DE ADEQUAÇÃO DE CONDUTA (TAC)</div>
-            <div>Escola Estadual Cívico-Militar</div>
-          </div>
+          ${SCHOOL_HEADER_HTML}
+          <div class="doc-titulo">TERMO DE ADEQUAÇÃO DE CONDUTA (TAC)</div>
           <div class="content">
             <p>Pelo presente termo, o(a) aluno(a) <strong>${student?.name}</strong>, regularmente matriculado no <strong>${student?.class}</strong>, e seu responsável legal, Sr(a). <strong>${t.guardianName}</strong>, declaram estar cientes das faltas disciplinares cometidas e assumem o compromisso de adequação de conduta conforme as normas do Regimento Escolar.</p>
             <p><strong>Compromissos Assumidos:</strong></p>
@@ -113,6 +110,7 @@ export default function TermoDeConduta() {
               <div class="sig-line">Gestão Escolar/Militar</div>
             </div>
           </div>
+          ${SCHOOL_FOOTER_HTML}
         </body>
       </h${""}tml>
     `);
