@@ -43,10 +43,24 @@ export interface Occurrence {
   signedDocUrls?: string[];
   durationDays?: number;
   measure?: string;
+  measures?: string[];     // Múltiplas medidas aplicadas (novo)
+  resolved?: boolean;      // Se a ocorrência foi marcada como cumprida
+  resolvedAt?: string;     // Timestamp da resolução
   attenuatingFactors?: string[];
   aggravatingFactors?: string[];
   createdAt?: string;      // Timestamp do servidor (para ordenação real)
 }
+
+export const AVAILABLE_MEASURES = [
+  'Advertência Oral',
+  'Advertência Escrita',
+  'Acionar os pais',
+  'Medida pedagógica',
+  'Suspensão de Recreação',
+  'Suspensão Escolar',
+  'Ação Educativa',
+  'Transferência Educativa',
+] as const;
 
 export interface StaffMember {
   id: string;

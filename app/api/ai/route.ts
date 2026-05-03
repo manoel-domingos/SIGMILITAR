@@ -4,10 +4,17 @@ import { REGIMENTO_CORPUS, HIERARQUIA_FONTES } from '@/lib/regimento';
 
 export const maxDuration = 60;
 
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: 'https://api.deepseek.com/v1',
-});
+// Lazy initialization para evitar erro quando env var não está disponível no build
+let _client: OpenAI | null = null;
+function getClient(): OpenAI {
+  if (!_client) {
+    _client = new OpenAI({
+      apiKey: process.env.DEEPSEEK_API_KEY || 'placeholder',
+      baseURL: 'https://api.deepseek.com/v1',
+    });
+  }
+  return _client;
+}
 
 const CONFIGS: Record<string, { maxTokens: number; temperature: number }> = {
   ata:       { maxTokens: 400,  temperature: 0.4 },
@@ -210,7 +217,7 @@ export async function POST(req: NextRequest) {
         }, FIRST_CHUNK_TIMEOUT_MS);
 
         try {
-          const completion = await client.chat.completions.create(
+          const completion = await getClient().chat.completions.create(
             {
               model,
               messages: [
@@ -225,6 +232,9 @@ export async function POST(req: NextRequest) {
           );
 
           let full = '';
+          let totalTokens = 0;
+          let promptTokens = 0;
+          let completionTokens = 0;
           for await (const chunk of completion) {
             if (!firstChunkReceived) {
               firstChunkReceived = true;
@@ -236,9 +246,19 @@ export async function POST(req: NextRequest) {
               full += delta;
               send({ delta, model });
             }
+            // Captura tokens do último chunk (DeepSeek envia usage no final)
+            if (chunk.usage) {
+              promptTokens = chunk.usage.prompt_tokens || 0;
+              completionTokens = chunk.usage.completion_tokens || 0;
+              totalTokens = chunk.usage.total_tokens || (promptTokens + completionTokens);
+            }
           }
           clearTimeout(timeoutId);
-          send({ done: true, result: full.trim(), model });
+          
+          // Log de tokens no console do servidor
+          console.log(`[AI] Modelo: ${model} | Tokens: ${totalTokens} (prompt: ${promptTokens}, completion: ${completionTokens})`);
+          
+          send({ done: true, result: full.trim(), model, usage: { totalTokens, promptTokens, completionTokens } });
           return; // sucesso — sai do loop
         } catch (err: any) {
           clearTimeout(timeoutId);

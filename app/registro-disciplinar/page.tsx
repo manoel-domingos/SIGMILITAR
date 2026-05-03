@@ -5,7 +5,7 @@ import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
 import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
-import { Occurrence, StaffMember, Student } from '@/lib/data';
+import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhatsApp } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
@@ -73,6 +73,7 @@ function RegistroDisciplinarContent() {
   const [graveMeasureType, setGraveMeasureType] = useState<'Suspensão Escolar' | 'Suspensão de Recreação' | 'Ação Educativa' | 'Transferência Educativa'>('Suspensão Escolar');
   const [measureOverride, setMeasureOverride] = useState<string | null>(null);
   const [measurePanelOpen, setMeasurePanelOpen] = useState<Record<string, boolean>>({});
+  const [selectedMeasures, setSelectedMeasures] = useState<string[]>([]);
   const [isImproving, setIsImproving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState('');
@@ -81,6 +82,18 @@ function RegistroDisciplinarContent() {
   // Checklist flutuante de pendências pós-ocorrência
   const [checklistTasks, setChecklistTasks] = useState<OccurrenceTask[]>([]);
   const userId = user?.email ?? 'guest';
+
+  // Auto-seleciona "Acionar os pais" para infrações Média/Grave
+  useEffect(() => {
+    if (selectedRules.length === 0) return;
+    const primaryRule = rules.find(r => r.code === parseInt(selectedRules[0], 10));
+    if (!primaryRule) return;
+    if (primaryRule.severity === 'Media' || primaryRule.severity === 'Grave') {
+      setSelectedMeasures(prev =>
+        prev.includes('Acionar os pais') ? prev : [...prev, 'Acionar os pais']
+      );
+    }
+  }, [selectedRules, rules]);
 
   // Carrega o checklist do localStorage ao montar (persistência cross-session)
   useEffect(() => {
@@ -675,6 +688,7 @@ function RegistroDisciplinarContent() {
           registeredBy,
           observations,
           measure: measureToSave,
+          measures: selectedMeasures.length > 0 ? selectedMeasures : [measureToSave],
           videoUrls,
           signedDocUrls,
           durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
@@ -724,6 +738,7 @@ function RegistroDisciplinarContent() {
         setEditingOccurrence(null);
         setMeasureOverride(null);
         setMeasurePanelOpen({});
+        setSelectedMeasures([]);
         setSuggestions('');
         setShowSuggestions(false);
         setSelectedStudents([]);
@@ -1572,46 +1587,42 @@ function RegistroDisciplinarContent() {
                               </div>
                             </div>
 
-                            {/* Painel colapsável de outras medidas */}
+                            {/* Painel colapsável — multi-select de medidas */}
                             {isPanelOpen && (
                               <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 animate-in fade-in slide-in-from-top-1 duration-150">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Selecionar medida alternativa</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {/* Medida recomendada como opção */}
-                                  <button
-                                    type="button"
-                                    onClick={() => { setMeasureOverride(null); setMeasurePanelOpen(p => ({ ...p, [ruleCode]: false })); }}
-                                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
-                                      !isOverriding
-                                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                                        : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600'
-                                    }`}
-                                  >
-                                    {!isOverriding && <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />}
-                                    {escalation.measure}
-                                    <span className="text-[10px] opacity-70">(recomendada)</span>
-                                  </button>
-
-                                  {/* Alternativas */}
-                                  {ALTERNATIVE_MEASURES.filter(m => m.label !== escalation.measure).map(({ label, color }) => (
-                                    <button
-                                      key={label}
-                                      type="button"
-                                      onClick={() => { setMeasureOverride(label); setMeasurePanelOpen(p => ({ ...p, [ruleCode]: false })); }}
-                                      className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
-                                        measureOverride === label
-                                          ? color === 'emerald' ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-                                            : color === 'amber' ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
-                                            : 'bg-red-600 border-red-600 text-white shadow-sm'
-                                          : color === 'emerald' ? 'bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-                                            : color === 'amber' ? 'bg-white border-amber-200 text-amber-700 hover:bg-amber-50'
-                                            : 'bg-white border-red-200 text-red-700 hover:bg-red-50'
-                                      }`}
-                                    >
-                                      {measureOverride === label && <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />}
-                                      {label}
-                                    </button>
-                                  ))}
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Medidas aplicadas (pode selecionar várias)</p>
+                                <div className="space-y-1.5">
+                                  {AVAILABLE_MEASURES.map((label) => {
+                                    const isChecked = selectedMeasures.includes(label);
+                                    const isRecommended = label === escalation.measure;
+                                    return (
+                                      <label
+                                        key={label}
+                                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium ${
+                                          isChecked
+                                            ? 'bg-blue-50 border-blue-400 text-blue-700'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                                        }`}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={isChecked}
+                                          onChange={() =>
+                                            setSelectedMeasures(prev =>
+                                              prev.includes(label)
+                                                ? prev.filter(m => m !== label)
+                                                : [...prev, label]
+                                            )
+                                          }
+                                          className="w-3.5 h-3.5 accent-blue-600"
+                                        />
+                                        {label}
+                                        {isRecommended && (
+                                          <span className="ml-auto text-[9px] font-bold text-blue-500 uppercase tracking-wider">Recomendada</span>
+                                        )}
+                                      </label>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -2567,30 +2578,46 @@ function RegistroDisciplinarContent() {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 pb-5">
-              <button
-                onClick={() => {
-                  // Adiciona ao checklist flutuante e fecha o alerta
-                  const task: OccurrenceTask = {
-                    occurrenceId: postSaveAlert.occurrenceId,
-                    occurrenceNum: postSaveAlert.occurrenceNum,
-                    studentName: postSaveAlert.studentName,
-                    items: postSaveAlert.checklistItems,
-                    createdAt: new Date().toISOString(),
-                  };
-                  const updated = addOccurrenceTask(userId, task);
-                  setChecklistTasks(updated);
-                  setPostSaveAlert(null);
-                }}
-                className={`w-full py-2.5 rounded-xl text-white font-semibold text-sm transition-colors ${
-                  postSaveAlert.isViolence
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                Ok, entendido — adicionar a lista de pendencias
-              </button>
+            {/* Footer — pergunta de cumprimento */}
+            <div className="px-5 pb-5 space-y-2">
+              <p className="text-xs text-slate-500 font-medium text-center">Esta medida já foi cumprida?</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    // Cumprida: marca como resolved sem entrar na To-Do
+                    updateOccurrence(postSaveAlert.occurrenceId, {
+                      resolved: true,
+                      resolvedAt: new Date().toISOString(),
+                    });
+                    setPostSaveAlert(null);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl border-2 border-emerald-500 text-emerald-700 font-semibold text-sm hover:bg-emerald-50 transition-colors"
+                >
+                  Sim, já foi
+                </button>
+                <button
+                  onClick={() => {
+                    // Não cumprida: entra na To-Do
+                    const task: OccurrenceTask = {
+                      occurrenceId: postSaveAlert.occurrenceId,
+                      occurrenceNum: postSaveAlert.occurrenceNum,
+                      studentName: postSaveAlert.studentName,
+                      items: postSaveAlert.checklistItems,
+                      createdAt: new Date().toISOString(),
+                    };
+                    const updated = addOccurrenceTask(userId, task);
+                    setChecklistTasks(updated);
+                    setPostSaveAlert(null);
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-white font-semibold text-sm transition-colors ${
+                    postSaveAlert.isViolence
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  Nao, adicionar pendencias
+                </button>
+              </div>
             </div>
           </div>
         </div>
