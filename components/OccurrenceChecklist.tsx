@@ -97,17 +97,25 @@ export function autocompleteWhatsapp(
   return tasks;
 }
 
+// ─── Helper export ────────────────────────────────────────────────────────────
+
+export function hasPendingTasks(userId: string): boolean {
+  const tasks = loadChecklists(userId);
+  return tasks.some((t) => t.items.some((i) => !i.done));
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 type Props = {
   userId: string;
   tasks: OccurrenceTask[];
   onUpdate: (tasks: OccurrenceTask[]) => void;
+  autoOpen?: boolean; // abre o painel automaticamente se true
 };
 
-export default function OccurrenceChecklist({ userId, tasks, onUpdate }: Props) {
+export default function OccurrenceChecklist({ userId, tasks, onUpdate, autoOpen = true }: Props) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(autoOpen);
 
   const pendingCount = tasks.reduce(
     (acc, t) => acc + t.items.filter((i) => !i.done).length,

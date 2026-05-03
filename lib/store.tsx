@@ -740,7 +740,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // We'll append these details to observations to avoid data loss.
       let enhancedObservations = o.observations || '';
       
-      if (o.measure) {
+      if (o.measures && o.measures.length > 0) {
+        enhancedObservations += `\nMedidas: ${o.measures.join(', ')}`;
+      } else if (o.measure) {
         enhancedObservations += `\nMedida: ${o.measure}`;
       }
       if (o.durationDays) {
@@ -784,6 +786,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             attenuatingFactors: o.attenuatingFactors || [],
             aggravatingFactors: o.aggravatingFactors || [],
             measure: o.measure,
+            measures: o.measures || [],
+            resolved: o.resolved || false,
+            resolvedAt: o.resolvedAt,
             durationDays: o.durationDays,
             archived: data.archived || false
           }, ...prev]);
@@ -797,7 +802,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
     const finalId = `O${occurrences.length + 1}`;
-    setOccurrences(prev => [{ ...o, id: finalId }, ...prev]);
+    setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false }, ...prev]);
     logAction('CREATE', 'Ocorrência', finalId, `Adicionada ocorrência (LOCAL) para ${o.studentIds?.length || 1} alunos (Art. ${o.ruleCode})`);
     return finalId;
   };

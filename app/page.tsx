@@ -1,15 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import CustomSelect from '@/components/CustomSelect';
 import { useAppContext } from '@/lib/store';
-import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, TrendingUp, ChevronDown } from 'lucide-react';
+import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, TrendingUp, ChevronDown, ClipboardList, X } from 'lucide-react';
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import Link from 'next/link';
+import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
 
 export default function Dashboard() {
-  const { students, occurrences, praises, rules, getStudentPoints } = useAppContext();
+  const { students, occurrences, praises, rules, getStudentPoints, user } = useAppContext();
+  const userId = (user as any)?.email ?? 'guest';
+  const [pendingBanner, setPendingBanner] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const tasks = loadChecklists(userId);
+    const count = tasks.reduce((acc, t) => acc + t.items.filter(i => !i.done).length, 0);
+    if (count > 0) {
+      setPendingCount(count);
+      setPendingBanner(true);
+    }
+  }, [userId]);
 
   const [selectedMonth, setSelectedMonth] = useState('Selecionar...');
   const [selectedClass, setSelectedClass] = useState('Todas as turmas');
@@ -81,6 +94,28 @@ export default function Dashboard() {
   return (
     <AppShell>
       <div className="space-y-6 max-w-[1400px] mx-auto">
+
+        {/* Banner de pendencias */}
+        {pendingBanner && (
+          <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <ClipboardList className="w-4 h-4 text-amber-600 shrink-0" />
+              <p className="text-sm font-semibold text-amber-800">
+                Voce tem <span className="font-bold">{pendingCount}</span> {pendingCount === 1 ? 'pendencia' : 'pendencias'} em aberto de ocorrencias anteriores.
+              </p>
+              <Link
+                href="/registro-disciplinar"
+                className="text-xs font-bold text-amber-700 underline underline-offset-2 hover:text-amber-900 transition-colors whitespace-nowrap"
+              >
+                Ver pendencias
+              </Link>
+            </div>
+            <button onClick={() => setPendingBanner(false)} className="text-amber-400 hover:text-amber-700 transition-colors shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Header & Filters */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 border-b border-white/10 pb-6">
           <div>
