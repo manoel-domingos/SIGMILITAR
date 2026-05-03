@@ -38,29 +38,38 @@ export const SCHOOL_HEADER_HTML: string = '';   // substituído por getSchoolHea
 export const SCHOOL_FOOTER_HTML: string = '';   // substituído por getSchoolFooterHTML()
 
 export const SCHOOL_HEADER_CSS = `
-  @page { margin: 0.5cm 1cm; }
+  /* Força orientação retrato (A4 vertical) e margens proporcionais */
+  @page {
+    size: A4 portrait;
+    margin: 0.5cm 1cm;
+  }
 
-  /* Cabeçalho */
+  html, body {
+    width: 100%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Cabeçalho — proporcional, com logos harmonizadas */
   .cabecalho-oficial {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
     border-bottom: 2.5px solid #1a237e;
     padding-bottom: 8px;
     margin-bottom: 12px;
   }
-  .cab-logo-left  { height: 96px; width: auto; object-fit: contain; }
-  .cab-logo-right { height: 68px; width: auto; object-fit: contain; }
+  .cab-logo-left  { height: 78px; width: auto; object-fit: contain; }
+  .cab-logo-right { height: 56px; width: auto; object-fit: contain; }
   .cab-center {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     line-height: 1.45;
   }
-  .cab-gov   { font-size: 7.5pt; font-weight: bold; text-transform: uppercase; color: #444; letter-spacing: 0.3px; }
+  .cab-gov    { font-size: 7.5pt; font-weight: bold; text-transform: uppercase; color: #444; letter-spacing: 0.3px; }
   .cab-escola { font-size: 12.5pt; font-weight: bold; text-transform: uppercase; color: #1a237e; letter-spacing: 1px; margin-top: 2px; }
 
   /* Rodapé — fixo no fundo */
@@ -86,5 +95,16 @@ export const SCHOOL_HEADER_CSS = `
 
   /* Espaço para o rodapé não sobrepor conteúdo */
   body { padding-bottom: 30px; }
+
+  /* ==============================================
+     Layout 2 colunas (sidebar + ATA)
+     Proporcional via grid: 28% sidebar / 72% ATA
+     ============================================== */
+  .ata-layout {
+    display: grid;
+    grid-template-columns: 28fr 72fr;
+    gap: 12px;
+    align-items: start;
+  }
 `;
 

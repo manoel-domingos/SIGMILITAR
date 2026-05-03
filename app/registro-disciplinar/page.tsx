@@ -467,16 +467,9 @@ function RegistroDisciplinarContent() {
       background: #fff;
       line-height: 1.55;
     }
-    /* Layout principal: sidebar + main */
-    .layout {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-    /* Coluna lateral — IDENTIFICAÇÃO */
+    /* Coluna lateral — IDENTIFICAÇÃO (proporcional via .ata-layout no print-header) */
     .sidebar {
-      width: 190px;
-      min-width: 190px;
+      width: 100%;
       border: 1px solid #1a237e;
       border-radius: 3px;
       overflow: hidden;
@@ -587,7 +580,7 @@ function RegistroDisciplinarContent() {
 
   ${getSchoolHeaderHTML()}
 
-  <div class="layout">
+  <div class="ata-layout">
 
     <!-- SIDEBAR: IDENTIFICAÇÃO -->
     <div class="sidebar">
@@ -1084,8 +1077,7 @@ function RegistroDisciplinarContent() {
             * { box-sizing: border-box; margin: 0; padding: 0; }
             ${SCHOOL_HEADER_CSS}
             body { font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; color: #111; line-height: 1.55; }
-            .layout { display: flex; gap: 12px; align-items: flex-start; }
-            .sidebar { width: 190px; min-width: 190px; border: 1px solid #1a237e; border-radius: 3px; overflow: hidden; font-size: 8.5pt; }
+            .sidebar { width: 100%; border: 1px solid #1a237e; border-radius: 3px; overflow: hidden; font-size: 8.5pt; }
             .sidebar-titulo { background: #1a237e; color: #fff; font-weight: bold; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 8px; text-align: center; }
             .sid-item { padding: 5px 8px; border-bottom: 1px solid #e0e4f0; }
             .sid-item:last-child { border-bottom: none; }
@@ -1106,7 +1098,7 @@ function RegistroDisciplinarContent() {
         <body>
           ${getSchoolHeaderHTML()}
 
-          <div class="layout">
+          <div class="ata-layout">
             <div class="sidebar">
               <div class="sidebar-titulo">Identificação</div>
               <div class="sid-item">
