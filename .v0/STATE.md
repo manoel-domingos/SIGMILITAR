@@ -4,31 +4,36 @@
 
 ## Última atualização
 
-**Data:** 2026-05-03  
-**Sessão:** Correções AI, Pendencias, Regras Supabase  
+**Data:** 2026-05-04  
+**Sessão:** Layout ATA, Perfil Supabase, Assinaturas, Correções SWC  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
-Estabilização do sistema: fluxo de ocorrências completo, IA funcional sem corte, pendencias visíveis no painel flutuante.
+Estabilização do documento de ATA (layout, impressão, DOCX) e persistência do perfil do usuário no Supabase.
 
 ## Última ação concluída
 
-- `max_tokens` removido da rota DeepSeek — saída agora livre (sem corte)
-- Aba "Pendencias" adicionada ao `AIChat.tsx` (painel flutuante real do app) como aba primária com badge de contagem
-- Modal pós-salvar com pergunta "Foi cumprida?" implementado
-- Multi-select de medidas com auto-seleção de "Acionar os pais" para infrações Média/Grave
-- Novos campos `measures`, `resolved`, `resolvedAt` na tabela `occurrences`
-- Dados de acidentes zerados (banco antigo → novo `imprdimqcjbndqewioyt`)
-- Regra cardinal adicionada em `.v0/rules/development.md`: todo salvamento vai para Supabase, sempre
-- v0-OS implantado com estrutura `.v0/` completa
-- `INSTRUCTIONS.md` comprimido para caber no campo de 2000 chars
+- Layout ATA migrado para A4 retrato (`210mm x 297mm`) com grid 28/72
+- Logo SEDUC trocada para SVG (`/public/logo-seduc-mt.svg`) com coluna 200px
+- Barra azul esquerda via `border-left: 2px solid #1a237e` no `body`
+- Rodapé fixo (`position: fixed; bottom: 0`) alinhado à direita com dados da escola
+- Preview markdown `**negrito**` no campo ATA (abas Editar / Preview)
+- Função `markdownBoldToHtml` exportada do `print-header.ts`, aplicada na impressão e no DOCX
+- Bloco de assinaturas reformulado: 3 colunas, espaço para assinar, cargo, campo "Nome:"
+- Funções `signaturesHTML()` e `signaturesDocxHTML()` centralizadas, usadas em print e export
+- Perfil do usuário migrado de `localStorage` para tabela `user_profiles` no Supabase
+- Modal de primeiro acesso agora consulta `setup_done` no banco antes de exibir
+- Botões "Salvar" e "Pular" gravam `setup_done = true` via upsert
+- `registro-disciplinar` lê nome do usuário logado direto do Supabase
+- Correções de erros SWC: template literals com acentos substituídos por escapes unicode
 
 ## Próxima ação
 
 - [ ] Concluir integração Google Drive (faltam env vars `NEXT_PUBLIC_GOOGLE_CLIENT_ID` e `NEXT_PUBLIC_GOOGLE_API_KEY`)
 - [ ] Validar fluxo completo: registrar ocorrência → pendencia aparece no painel → marcar cumprida → sair da lista
 - [ ] Testar ATA gerada sem corte após remoção do max_tokens
+- [ ] Verificar se ainda há template literals com acentos em outros arquivos do projeto
 
 ## Bloqueios
 
