@@ -452,6 +452,12 @@ function RegistroDisciplinarContent() {
       ? o.measures.join(' / ')
       : (o.measure || 'A definir');
 
+    const impactoStr =
+      o.severity === 'Leve' ? '-0,10 PONTOS'
+      : o.severity === 'Media' ? '-0,30 PONTOS'
+      : o.severity === 'Grave' ? '-0,50 PONTOS'
+      : '---';
+
     printWindow.document.write(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -459,120 +465,23 @@ function RegistroDisciplinarContent() {
   <title>ATA de Ocorrência Disciplinar</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    ${SCHOOL_HEADER_CSS}
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 10.5pt;
-      color: #111;
+      color: #000;
       background: #fff;
-      line-height: 1.55;
+      line-height: 1.5;
     }
-    /* Coluna lateral — IDENTIFICAÇÃO (proporcional via .ata-layout no print-header) */
-    .sidebar {
-      width: 100%;
-      border: 1px solid #1a237e;
-      border-radius: 3px;
-      overflow: hidden;
-      font-size: 8.5pt;
-    }
-    .sidebar-titulo {
-      background: #1a237e;
-      color: #fff;
-      font-weight: bold;
-      font-size: 8pt;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 4px 8px;
-      text-align: center;
-    }
-    .sid-item {
-      padding: 5px 8px;
-      border-bottom: 1px solid #e0e4f0;
-    }
-    .sid-item:last-child { border-bottom: none; }
-    .sid-label {
-      font-size: 7pt;
-      font-weight: bold;
-      text-transform: uppercase;
-      color: #1a237e;
-      letter-spacing: 0.3px;
-      display: block;
-      margin-bottom: 1px;
-    }
-    .sid-valor {
-      font-size: 8.5pt;
-      color: #111;
-      word-break: break-word;
-    }
-    .sid-separator {
-      background: #eef0f8;
-      padding: 3px 8px;
-      font-size: 7pt;
-      font-weight: bold;
-      text-transform: uppercase;
-      color: #555;
-      letter-spacing: 0.3px;
-      border-bottom: 1px solid #e0e4f0;
-    }
-    .sid-medida-box {
-      padding: 5px 8px;
-    }
-    .sid-medida-row { margin-bottom: 4px; }
+    ${SCHOOL_HEADER_CSS}
     .reincidencia-tag {
-      margin: 4px 8px;
-      padding: 3px 6px;
-      background: #fff5f5;
+      margin-top: 12px;
+      padding: 4px 8px;
       border: 1px solid #c00;
       color: #c00;
       font-weight: bold;
-      font-size: 7.5pt;
-      border-radius: 2px;
-    }
-    /* Coluna principal — ATA */
-    .main-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .main-titulo {
-      text-align: center;
-      font-size: 11pt;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 2px solid #1a237e;
-      padding-bottom: 4px;
-      color: #1a237e;
-    }
-    .ata-corpo {
-      font-size: 10.5pt;
-      line-height: 1.75;
-      text-align: justify;
-      white-space: pre-wrap;
-      min-height: 260px;
-      border: 1px solid #ccc;
-      padding: 10px 12px;
-      background: #fafafa;
-    }
-    /* Assinaturas */
-    .assinaturas {
-      margin-top: 32px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 20px;
-    }
-    .sig-box { text-align: center; }
-    .sig-linha {
-      border-top: 1px solid #000;
-      padding-top: 5px;
       font-size: 8pt;
-      font-weight: bold;
+      border-radius: 2px;
       text-transform: uppercase;
-      color: #222;
-    }
-    @media print {
-      button { display: none !important; }
     }
   </style>
 </head>
@@ -582,9 +491,9 @@ function RegistroDisciplinarContent() {
 
   <div class="ata-layout">
 
-    <!-- SIDEBAR: IDENTIFICAÇÃO -->
+    <!-- SIDEBAR: IDENTIFICAÇÃO / INFRAÇÃO / MEDIDA -->
     <div class="sidebar">
-      <div class="sidebar-titulo">Identificação</div>
+      <div class="sidebar-titulo">IDENTIFICAÇÃO</div>
 
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
@@ -611,54 +520,52 @@ function RegistroDisciplinarContent() {
         <span class="sid-valor">${o.registeredBy || '---'}</span>
       </div>
 
-      <div class="sid-separator">Infração</div>
+      <div class="sidebar-secao">INFRAÇÃO</div>
       <div class="sid-item">
         <span class="sid-label">Art. ${o.ruleCode}</span>
-        <span class="sid-valor">${rule?.description || 'Ocorrência personalizada'}</span>
+        <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
       </div>
 
-      <div class="sid-separator">Medida</div>
-      <div class="sid-medida-box">
-        <div class="sid-medida-row">
-          <span class="sid-label">Gravidade</span>
-          <span class="sid-valor">${o.severity || '---'}</span>
-        </div>
-        <div class="sid-medida-row">
-          <span class="sid-label">Medida aplicada</span>
-          <span class="sid-valor">${measuresStr}</span>
-        </div>
-        <div class="sid-medida-row">
-          <span class="sid-label">Impacto</span>
-          <span class="sid-valor">${
-            o.severity === 'Leve' ? '-0,10 pts'
-            : o.severity === 'Media' ? '-0,30 pts'
-            : o.severity === 'Grave' ? '-0,50 pts'
-            : '---'
-          }</span>
-        </div>
+      <div class="sidebar-secao">MEDIDA</div>
+      <div class="sid-medida-row">
+        <span class="sid-medida-label">Gravidade</span>
+        <span class="sid-medida-valor">${(o.severity || '---').toUpperCase()}</span>
       </div>
-      ${isReincidente ? `<div class="reincidencia-tag">REINCIDENCIA — ${reincidenteCount}ª vez</div>` : ''}
+      <div class="sid-medida-row">
+        <span class="sid-medida-label">Medida</span>
+        <span class="sid-medida-valor">${measuresStr.toUpperCase()}</span>
+      </div>
+      <div class="sid-medida-row">
+        <span class="sid-medida-label">Impacto</span>
+        <span class="sid-medida-valor">${impactoStr}</span>
+      </div>
+
+      ${isReincidente ? `<div class="reincidencia-tag">REINCIDÊNCIA — ${reincidenteCount}ª vez</div>` : ''}
     </div>
 
-    <!-- MAIN: ATA -->
+    <!-- COLUNA PRINCIPAL: ATA -->
     <div class="main-col">
-      <div class="main-titulo">ATA — Relato do Ocorrido</div>
+      <div class="ata-titulo-grande">ATA</div>
+      <div class="ata-subtitulo">Relato do Ocorrido</div>
       <div class="ata-corpo">${ataText}</div>
 
-      <div class="assinaturas">
-        <div class="sig-box">
-          <div class="sig-linha">Diretora / Coord. Pedagógico</div>
+      <div class="assinaturas-bloco">
+        <div class="sig-item">
+          <div class="sig-label">DIRETORA / COORD. PEDAGÓGICO</div>
+          <div class="sig-line"></div>
         </div>
-        <div class="sig-box">
-          <div class="sig-linha">Gestor Cívico Militar / Educacional</div>
+        <div class="sig-item">
+          <div class="sig-label">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
+          <div class="sig-line"></div>
         </div>
-        <div class="sig-box">
-          <div class="sig-linha">Responsável Legal</div>
+        <div class="sig-item">
+          <div class="sig-label">RESPONSÁVEL LEGAL</div>
+          <div class="sig-line"></div>
         </div>
       </div>
     </div>
 
-  </div><!-- /layout -->
+  </div><!-- /ata-layout -->
 
   ${getSchoolFooterHTML()}
 
@@ -1075,24 +982,14 @@ function RegistroDisciplinarContent() {
           <title>${docTitle} - ${primaryStudent?.name}</title>
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              font-size: 10.5pt;
+              color: #000;
+              background: #fff;
+              line-height: 1.5;
+            }
             ${SCHOOL_HEADER_CSS}
-            body { font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; color: #111; line-height: 1.55; }
-            .sidebar { width: 100%; border: 1px solid #1a237e; border-radius: 3px; overflow: hidden; font-size: 8.5pt; }
-            .sidebar-titulo { background: #1a237e; color: #fff; font-weight: bold; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 8px; text-align: center; }
-            .sid-item { padding: 5px 8px; border-bottom: 1px solid #e0e4f0; }
-            .sid-item:last-child { border-bottom: none; }
-            .sid-label { font-size: 7pt; font-weight: bold; text-transform: uppercase; color: #1a237e; letter-spacing: 0.3px; display: block; margin-bottom: 1px; }
-            .sid-valor { font-size: 8.5pt; color: #111; word-break: break-word; }
-            .sid-separator { background: #eef0f8; padding: 3px 8px; font-size: 7pt; font-weight: bold; text-transform: uppercase; color: #555; letter-spacing: 0.3px; border-bottom: 1px solid #e0e4f0; }
-            .sid-medida-box { padding: 5px 8px; }
-            .sid-medida-row { margin-bottom: 4px; }
-            .main-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-            .main-titulo { text-align: center; font-size: 11pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #1a237e; padding-bottom: 4px; color: #1a237e; }
-            .ata-corpo { font-size: 10.5pt; line-height: 1.75; text-align: justify; white-space: pre-wrap; min-height: 260px; border: 1px solid #ccc; padding: 10px 12px; background: #fafafa; }
-            .assinaturas { margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-            .sig-box { text-align: center; }
-            .sig-linha { border-top: 1px solid #000; padding-top: 5px; font-size: 8pt; font-weight: bold; text-transform: uppercase; color: #222; }
-            @media print { button { display: none !important; } }
           </style>
         </head>
         <body>
@@ -1100,7 +997,7 @@ function RegistroDisciplinarContent() {
 
           <div class="ata-layout">
             <div class="sidebar">
-              <div class="sidebar-titulo">Identificação</div>
+              <div class="sidebar-titulo">IDENTIFICAÇÃO</div>
               <div class="sid-item">
                 <span class="sid-label">Data do Registro</span>
                 <span class="sid-valor">${formatDate(o.date)} ${o.hour || ''}</span>
@@ -1126,36 +1023,45 @@ function RegistroDisciplinarContent() {
                 <span class="sid-valor">${o.registeredBy || '---'}</span>
               </div>
 
-              <div class="sid-separator">Infração</div>
+              <div class="sidebar-secao">INFRAÇÃO</div>
               <div class="sid-item">
                 <span class="sid-label">Art. ${rule?.code}</span>
-                <span class="sid-valor">${rule?.description || 'Ocorrência personalizada'}</span>
+                <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
               </div>
 
-              <div class="sid-separator">Medida</div>
-              <div class="sid-medida-box">
-                <div class="sid-medida-row">
-                  <span class="sid-label">Gravidade</span>
-                  <span class="sid-valor">${rule?.severity || '---'}</span>
-                </div>
-                <div class="sid-medida-row">
-                  <span class="sid-label">Medida aplicada</span>
-                  <span class="sid-valor">${exportMeasuresStr}${o.durationDays ? ` (${o.durationDays} dia${o.durationDays > 1 ? 's' : ''})` : ''}</span>
-                </div>
-                <div class="sid-medida-row">
-                  <span class="sid-label">Impacto</span>
-                  <span class="sid-valor">-${pointsToDeduct.toFixed(2)} pts</span>
-                </div>
+              <div class="sidebar-secao">MEDIDA</div>
+              <div class="sid-medida-row">
+                <span class="sid-medida-label">Gravidade</span>
+                <span class="sid-medida-valor">${(rule?.severity || '---').toUpperCase()}</span>
+              </div>
+              <div class="sid-medida-row">
+                <span class="sid-medida-label">Medida</span>
+                <span class="sid-medida-valor">${exportMeasuresStr.toUpperCase()}${o.durationDays ? ` (${o.durationDays} DIA${o.durationDays > 1 ? 'S' : ''})` : ''}</span>
+              </div>
+              <div class="sid-medida-row">
+                <span class="sid-medida-label">Impacto</span>
+                <span class="sid-medida-valor">-${pointsToDeduct.toFixed(2).replace('.', ',')} PONTOS</span>
               </div>
             </div>
 
             <div class="main-col">
-              <div class="main-titulo">${docTitle}</div>
+              <div class="ata-titulo-grande">ATA</div>
+              <div class="ata-subtitulo">Relato do Ocorrido</div>
               <div class="ata-corpo">${o.observations || 'Nenhum relato registrado.'}</div>
-              <div class="assinaturas">
-                <div class="sig-box"><div class="sig-linha">Diretora / Coord. Pedagógico</div></div>
-                <div class="sig-box"><div class="sig-linha">Gestor Cívico Militar / Educacional</div></div>
-                <div class="sig-box"><div class="sig-linha">Responsável Legal</div></div>
+
+              <div class="assinaturas-bloco">
+                <div class="sig-item">
+                  <div class="sig-label">DIRETORA / COORD. PEDAGÓGICO</div>
+                  <div class="sig-line"></div>
+                </div>
+                <div class="sig-item">
+                  <div class="sig-label">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
+                  <div class="sig-line"></div>
+                </div>
+                <div class="sig-item">
+                  <div class="sig-label">RESPONSÁVEL LEGAL</div>
+                  <div class="sig-line"></div>
+                </div>
               </div>
             </div>
           </div>
