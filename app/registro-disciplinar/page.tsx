@@ -430,22 +430,16 @@ function RegistroDisciplinarContent() {
         <div class="sig-espaco"></div>
         <div class="sig-line"></div>
         <div class="sig-cargo">Diretora / Coord. Pedagógico</div>
-        <div class="sig-nome-label">Nome:</div>
-        <div class="sig-nome">&nbsp;</div>
       </div>
       <div class="sig-item">
         <div class="sig-espaco"></div>
         <div class="sig-line"></div>
         <div class="sig-cargo">Gestor Cívico Militar / Educacional</div>
-        <div class="sig-nome-label">Nome:</div>
-        <div class="sig-nome">&nbsp;</div>
       </div>
       <div class="sig-item">
         <div class="sig-espaco"></div>
         <div class="sig-line"></div>
         <div class="sig-cargo">Responsável Legal</div>
-        <div class="sig-nome-label">Nome:</div>
-        <div class="sig-nome">&nbsp;</div>
       </div>
     </div>`;
 
@@ -459,24 +453,18 @@ function RegistroDisciplinarContent() {
           <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
             Diretora / Coord. Pedagógico
           </div>
-          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
-          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
         </td>
         <td style="width:33%; vertical-align: bottom; padding: 0 4pt;">
           <div style="height: 36pt;"></div>
           <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
             Gestor Cívico Militar / Educacional
           </div>
-          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
-          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
         </td>
         <td style="width:33%; vertical-align: bottom; padding: 0 0 0 8pt;">
           <div style="height: 36pt;"></div>
           <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
             Responsável Legal
           </div>
-          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
-          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
         </td>
       </tr>
     </table>`;
