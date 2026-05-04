@@ -1045,7 +1045,6 @@ function RegistroDisciplinarContent() {
     const htmlOpen = '<html lang="pt-BR"><head><title>' + docTitle + ' - ' + (primaryStudent?.name ?? '') + '</title><style>' + resetCSS + ' ' + bodyCSS + ' ' + SCHOOL_HEADER_CSS + '</style></head>';
     printWindow.document.write(htmlOpen + `
         <body>
-        <body>
           ${getSchoolHeaderHTML()}
 
           <div class="ata-layout">
