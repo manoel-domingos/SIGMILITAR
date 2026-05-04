@@ -8,7 +8,7 @@
  * - Coluna principal com título "ATA" grande em azul
  * - Rodapé alinhado à direita em múltiplas linhas (NÃO fixo)
  *
- * Logos: /logo-seduc-mt.png (SEDUC + Governo MT) | /logo-escola.png (brasão)
+ * Logos: /logo-seduc-mt.svg (SEDUC + Governo MT) | /logo-escola.png (brasão)
  * Margens via @page: 0.5cm top/bottom, 1cm left/right.
  */
 
@@ -17,7 +17,7 @@ const origin = (): string =>
 
 export const getSchoolHeaderHTML = (): string => `
 <div class="cabecalho-oficial">
-  <img class="cab-logo-seduc"  src="${origin()}/logo-seduc-mt.png" alt="Logo SEDUC e Governo MT" />
+  <img class="cab-logo-seduc"  src="${origin()}/logo-seduc-mt.svg" alt="Logo SEDUC e Governo MT" />
   <div class="cab-center">
     <span class="cab-gov">GOVERNO DO ESTADO DE MATO GROSSO</span>
     <span class="cab-gov">SECRETARIA DE ESTADO DE EDUCAÇÃO</span>
@@ -88,15 +88,17 @@ export const SCHOOL_HEADER_CSS = `
      ================================================ */
   .cabecalho-oficial {
     display: grid;
-    grid-template-columns: 150px 1fr 80px;
+    grid-template-columns: 200px 1fr 80px;
     align-items: center;
     gap: 10px;
     padding-bottom: 6px;
     margin-bottom: 12px;
   }
   .cab-logo-seduc {
-    height: 62px;
-    width: 150px;
+    height: auto;
+    width: 200px;
+    max-height: 72px;
+    display: block;
     object-fit: contain;
     object-position: left center;
   }
