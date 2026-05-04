@@ -48,27 +48,28 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
-      const historyContext = messages.map(m => `${m.role === 'user' ? 'Usuário' : 'Assistente'}: ${m.content}`).join('\n');
+      const historyContext = messages.map(m => (m.role === 'user' ? 'Usu\u00e1rio' : 'Assistente') + ': ' + m.content).join('\n');
       
-      const prompt = `
-        Você é um Assistente de Gestão Disciplinar Escolar de uma escola de elite.
-        Sua função é ajudar os gestores e professores a:
-        1. Escrever observações e atas de ocorrências de forma profissional e clara.
-        2. Sugerir medidas disciplinares baseadas nas regras da escola.
-        3. Analisar o histórico de alunos para identificar padrões de comportamento.
-
-        DADOS ATUAIS DA ESCOLA:
-        - Total de alunos: ${students.length}
-        - Regras Disciplinares (algumas): ${rules.slice(0, 10).map(r => `${r.code}: ${r.description} (${r.points} pts)`).join('; ')}
-        
-        HISTÓRICO DA CONVERSA:
-        ${historyContext}
-
-        PERGUNTA DO USUÁRIO:
-        ${messageText}
-
-        Responda em Português do Brasil de forma direta e profissional.
-      `;
+      const rulesContext = rules.slice(0, 10).map(r => r.code + ': ' + r.description + ' (' + r.points + ' pts)').join('; ');
+      const prompt = [
+        'Voc\u00ea \u00e9 um Assistente de Gest\u00e3o Disciplinar Escolar de uma escola de elite.',
+        'Sua fun\u00e7\u00e3o \u00e9 ajudar os gestores e professores a:',
+        '1. Escrever observa\u00e7\u00f5es e atas de ocorr\u00eancias de forma profissional e clara.',
+        '2. Sugerir medidas disciplinares baseadas nas regras da escola.',
+        '3. Analisar o hist\u00f3rico de alunos para identificar padr\u00f5es de comportamento.',
+        '',
+        'DADOS ATUAIS DA ESCOLA:',
+        '- Total de alunos: ' + students.length,
+        '- Regras Disciplinares (algumas): ' + rulesContext,
+        '',
+        'HIST\u00d3RICO DA CONVERSA:',
+        historyContext,
+        '',
+        'PERGUNTA DO USU\u00c1RIO:',
+        messageText,
+        '',
+        'Responda em Portugu\u00eas do Brasil de forma direta e profissional.',
+      ].join('\n');
 
       const result = await generateContentWithFallback(geminiApiKey, prompt, undefined, groqApiKey);
       const aiResponse = result.response.text();

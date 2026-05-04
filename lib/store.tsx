@@ -443,7 +443,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data) setAppUsers(prev => [...prev, data]);
       } catch (err: any) {
         console.error("Error adding app user:", err);
-        alert(`Erro ao salvar usuário no servidor: ${err.message}`);
+        alert('Erro ao salvar usu\u00e1rio no servidor: ' + err.message);
       }
       return;
     }
@@ -508,17 +508,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
             birthDate: data.birth_date
           }]);
           newId = data.id;
-          logAction('CREATE', 'Aluno', newId, `Adicionado aluno: ${s.name}`);
+          logAction('CREATE', 'Aluno', newId, 'Adicionado aluno: ' + s.name);
           return;
         }
       } catch (err: any) {
         console.error("Supabase insert error (student):", err);
-        alert(`Erro ao salvar no banco de dados: ${err.message || JSON.stringify(err)}`);
+        alert('Erro ao salvar no banco de dados: ' + (err.message || JSON.stringify(err)));
         return;
       }
     }
     setStudents(prev => [...prev, { ...s, id: newId, points: 8 }]);
-    logAction('CREATE', 'Aluno', newId, `Adicionado aluno (LOCAL): ${s.name}`);
+    logAction('CREATE', 'Aluno', newId, 'Adicionado aluno (LOCAL): ' + s.name);
   };
 
   const importStudents = async (newStudents: Omit<Student, 'id'>[]) => {
@@ -545,14 +545,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase!.from('students').upsert(studentsToUpsert, { onConflict: 'id' }).select();
         if (error) {
           console.error("Import error details:", error);
-          alert(`Erro na importação: ${error.message}`);
+          alert('Erro na importa\u00e7\u00e3o: ' + error.message);
           return;
         }
         if (data) {
           const mapped = data.map((d: any) => ({ ...d, points: 8 }));
           // Refresh the whole list to ensure correctness
           await refreshData();
-          logAction('SYSTEM', 'Aluno', 'LOTE', `Importados/Atualizados ${mapped.length} alunos`);
+          logAction('SYSTEM', 'Aluno', 'LOTE', 'Importados/Atualizados ' + mapped.length + ' alunos');
         }
       } catch (err) {
         console.error("Detailed import exception:", err);
@@ -563,7 +563,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     const mappedLocal = newStudents.map((s, idx) => ({ ...s, id: `S${Date.now()}_${idx}` }));
     setStudents(prev => [...prev, ...mappedLocal]);
-    logAction('SYSTEM', 'Aluno', 'LOTE', `Importados ${mappedLocal.length} alunos localmente`);
+    logAction('SYSTEM', 'Aluno', 'LOTE', 'Importados ' + mappedLocal.length + ' alunos localmente');
   };
 
   const updateStudent = async (id: string, s: Partial<Student>) => {
@@ -591,28 +591,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
     setStudents(prev => prev.map(item => item.id === id ? { ...item, ...s } : item));
-    logAction('UPDATE', 'Aluno', id, `Atualizado aluno: ${s.name || id}`);
+    logAction('UPDATE', 'Aluno', id, 'Atualizado aluno: ' + (s.name || id));
   };
 
   const archiveStudent = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('students').update({ archived: true }).eq('id', id);
     setStudents(prev => prev.map(item => item.id === id ? { ...item, archived: true } : item));
-    logAction('UPDATE', 'Aluno', id, `Arquivado aluno: ${id}`);
+    logAction('UPDATE', 'Aluno', id, 'Arquivado aluno: ' + id);
   };
 
   const deleteStudent = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('students').delete().eq('id', id);
     setStudents(prev => prev.filter(item => item.id !== id));
-    logAction('DELETE', 'Aluno', id, `Excluído aluno definitivamente: ${id}`);
+    logAction('DELETE', 'Aluno', id, 'Excu\u00eddo aluno definitivamente: ' + id);
   };
 
   const restoreStudent = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('students').update({ archived: false }).eq('id', id);
     setStudents(prev => prev.map(item => item.id === id ? { ...item, archived: false } : item));
-    logAction('UPDATE', 'Aluno', id, `Restaurado aluno: ${id}`);
+    logAction('UPDATE', 'Aluno', id, 'Restaurado aluno: ' + id);
   };
 
   const addStaffMember = async (s: Omit<StaffMember, 'id'>) => {
@@ -622,7 +622,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     const newId = `ST${staffMembers.length + 1}`;
     setStaffMembers(prev => [...prev, { ...s, id: newId }]);
-    logAction('CREATE', 'Membro Equipe', newId, `Adicionado membro: ${s.role} ${s.name}`);
+    logAction('CREATE', 'Membro Equipe', newId, 'Adicionado membro: ' + s.role + ' ' + s.name);
   };
 
   const refreshData = async () => {
@@ -743,20 +743,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (o.measures && o.measures.length > 0) {
         enhancedObservations += `\nMedidas: ${o.measures.join(', ')}`;
       } else if (o.measure) {
-        enhancedObservations += `\nMedida: ${o.measure}`;
+        enhancedObservations += '\nMedida: ' + o.measure;
       }
       if (o.durationDays) {
-        enhancedObservations += `\nDuração: ${o.durationDays} dias`;
+        enhancedObservations += '\nDura\u00e7\u00e3o: ' + o.durationDays + ' dias';
       }
       if (o.attenuatingFactors && o.attenuatingFactors.length > 0) {
-        enhancedObservations += `\nAtenuantes: ${o.attenuatingFactors.join(', ')}`;
+        enhancedObservations += '\nAtenuantes: ' + o.attenuatingFactors.join(', ');
       }
       if (o.aggravatingFactors && o.aggravatingFactors.length > 0) {
-        enhancedObservations += `\nAgravantes: ${o.aggravatingFactors.join(', ')}`;
+        enhancedObservations += '\nAgravantes: ' + o.aggravatingFactors.join(', ');
       }
       if (o.studentIds && o.studentIds.length > 1) {
         const otherStudents = o.studentIds.filter(id => id !== o.studentId);
-        enhancedObservations += `\nOutros alunos envolvidos: ${otherStudents.join(', ')}`;
+        enhancedObservations += '\nOutros alunos envolvidos: ' + otherStudents.join(', ');
       }
 
       dbPayload.observations = enhancedObservations.trim() || null;
@@ -765,7 +765,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase!.from('occurrences').insert([dbPayload]).select().single();
         if (error) {
           console.error("Supabase insert error (occurrence):", error);
-          alert(`Erro ao salvar ocorrência no servidor: ${error.message}`);
+          alert('Erro ao salvar ocorr\u00eancia no servidor: ' + error.message);
           throw error;
         }
         if (data) {
@@ -793,7 +793,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             archived: data.archived || false
           }, ...prev]);
           newId = data.id;
-          logAction('CREATE', 'Ocorrência', newId, `Adicionada ocorrência para ${o.studentIds?.length || 1} alunos (Art. ${o.ruleCode})`);
+          logAction('CREATE', 'Ocorr\u00eancia', newId, 'Adicionada ocorr\u00eancia para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
           return newId;
         }
       } catch (err: any) {
@@ -803,7 +803,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     const finalId = `O${occurrences.length + 1}`;
     setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false }, ...prev]);
-    logAction('CREATE', 'Ocorrência', finalId, `Adicionada ocorrência (LOCAL) para ${o.studentIds?.length || 1} alunos (Art. ${o.ruleCode})`);
+    logAction('CREATE', 'Ocorr\u00eancia', finalId, 'Adicionada ocorr\u00eancia (LOCAL) para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
     return finalId;
   };
 
@@ -829,10 +829,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         let enhancedObservations = o.observations !== undefined ? o.observations : (existing?.observations || '');
         
         // Only append if they are being updated or if we're building a new observations string
-        if (o.measure) enhancedObservations += `\nMedida: ${o.measure}`;
-        if (o.durationDays) enhancedObservations += `\nDuração: ${o.durationDays} dias`;
-        if (o.attenuatingFactors && o.attenuatingFactors.length > 0) enhancedObservations += `\nAtenuantes: ${o.attenuatingFactors.join(', ')}`;
-        if (o.aggravatingFactors && o.aggravatingFactors.length > 0) enhancedObservations += `\nAgravantes: ${o.aggravatingFactors.join(', ')}`;
+        if (o.measure) enhancedObservations += '\nMedida: ' + o.measure;
+        if (o.durationDays) enhancedObservations += '\nDura\u00e7\u00e3o: ' + o.durationDays + ' dias';
+        if (o.attenuatingFactors && o.attenuatingFactors.length > 0) enhancedObservations += '\nAtenuantes: ' + o.attenuatingFactors.join(', ');
+        if (o.aggravatingFactors && o.aggravatingFactors.length > 0) enhancedObservations += '\nAgravantes: ' + o.aggravatingFactors.join(', ');
 
         dbPayload.observations = enhancedObservations.trim();
       }
@@ -845,7 +845,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase!.from('occurrences').update(dbPayload).eq('id', id);
         if (error) {
           console.error("Supabase update error (occurrence):", error);
-          alert(`Erro ao atualizar ocorrência no servidor: ${error.message}`);
+          alert('Erro ao atualizar ocorr\u00eancia no servidor: ' + error.message);
           throw error;
         }
       } catch (err: any) {
@@ -854,28 +854,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
     setOccurrences(prev => prev.map(item => item.id === id ? { ...item, ...o } : item));
-    logAction('UPDATE', 'Ocorrência', id, `Atualizada ocorrência ${id}`);
+    logAction('UPDATE', 'Ocorr\u00eancia', id, 'Atualizada ocorr\u00eancia ' + id);
   };
 
   const archiveOccurrence = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('occurrences').update({ archived: true }).eq('id', id);
     setOccurrences(prev => prev.map(item => item.id === id ? { ...item, archived: true } : item));
-    logAction('UPDATE', 'Ocorrência', id, `Arquivada ocorrência ${id}`);
+    logAction('UPDATE', 'Ocorr\u00eancia', id, 'Arquivada ocorr\u00eancia ' + id);
   };
 
   const deleteOccurrence = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('occurrences').delete().eq('id', id);
     setOccurrences(prev => prev.filter(item => item.id !== id));
-    logAction('DELETE', 'Ocorrência', id, `Excluída ocorrência definitivamente ${id}`);
+    logAction('DELETE', 'Ocorr\u00eancia', id, 'Excu\u00edda ocorr\u00eancia definitivamente ' + id);
   };
 
   const restoreOccurrence = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('occurrences').update({ archived: false }).eq('id', id);
     setOccurrences(prev => prev.map(item => item.id === id ? { ...item, archived: false } : item));
-    logAction('UPDATE', 'Ocorrência', id, `Restaurada ocorrência ${id}`);
+    logAction('UPDATE', 'Ocorr\u00eancia', id, 'Restaurada ocorr\u00eancia ' + id);
   };
 
   const addAccident = async (a: Omit<Accident, 'id'>) => {
@@ -900,17 +900,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data) {
           setAccidents(prev => [{...data, studentId: data.student_id, registeredBy: data.registered_by, bodyPart: data.body_part, parentsNotified: data.parents_notified, medicForwarded: data.medic_forwarded}, ...prev]);
           newId = data.id;
-          logAction('CREATE', 'Acidente', newId, `Adicionado acidente para o aluno ID: ${a.studentId}`);
+          logAction('CREATE', 'Acidente', newId, 'Adicionado acidente para o aluno ID: ' + a.studentId);
           return;
         }
       } catch (err: any) {
         console.error("Accident insert error:", err);
-        alert(`Erro ao salvar acidente no servidor: ${err.message}`);
+        alert('Erro ao salvar acidente no servidor: ' + err.message);
         return;
       }
     }
     setAccidents(prev => [{ ...a, id: newId }, ...prev]);
-    logAction('CREATE', 'Acidente', newId, `Adicionado acidente (LOCAL) para o aluno ID: ${a.studentId}`);
+    logAction('CREATE', 'Acidente', newId, 'Adicionado acidente (LOCAL) para o aluno ID: ' + a.studentId);
   };
 
   const updateAccident = async (id: string, a: Partial<Accident>) => {
@@ -933,33 +933,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       } catch (err: any) {
         console.error("Accident update error:", err);
-        alert(`Erro ao atualizar acidente no servidor: ${err.message}`);
+        alert('Erro ao atualizar acidente no servidor: ' + err.message);
         throw err;
       }
     }
     setAccidents(prev => prev.map(item => item.id === id ? { ...item, ...a } : item));
-    logAction('UPDATE', 'Acidente', id, `Atualizado acidente ${id}`);
+    logAction('UPDATE', 'Acidente', id, 'Atualizado acidente ' + id);
   };
 
   const archiveAccident = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('accidents').update({ archived: true }).eq('id', id);
     setAccidents(prev => prev.map(item => item.id === id ? { ...item, archived: true } : item));
-    logAction('UPDATE', 'Acidente', id, `Arquivado acidente ${id}`);
+    logAction('UPDATE', 'Acidente', id, 'Arquivado acidente ' + id);
   };
 
   const deleteAccident = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('accidents').delete().eq('id', id);
     setAccidents(prev => prev.filter(item => item.id !== id));
-    logAction('DELETE', 'Acidente', id, `Excluído acidente definitivamente ${id}`);
+    logAction('DELETE', 'Acidente', id, 'Excu\u00eddo acidente definitivamente ' + id);
   };
 
   const restoreAccident = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('accidents').update({ archived: false }).eq('id', id);
     setAccidents(prev => prev.map(item => item.id === id ? { ...item, archived: false } : item));
-    logAction('UPDATE', 'Acidente', id, `Restaurado acidente ${id}`);
+    logAction('UPDATE', 'Acidente', id, 'Restaurado acidente ' + id);
   };
 
   const addPraise = async (p: Omit<Praise, 'id'>) => {
@@ -979,17 +979,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data) {
           setPraises(prev => [{ ...data, studentId: data.student_id, registeredBy: data.registered_by }, ...prev]);
           newId = data.id;
-          logAction('CREATE', 'Elogio', newId, `Adicionado elogio para o aluno ID: ${p.studentId}`);
+          logAction('CREATE', 'Elogio', newId, 'Adicionado elogio para o aluno ID: ' + p.studentId);
           return;
         }
       } catch (err: any) {
         console.error("Praise insert error:", err);
-        alert(`Erro ao salvar elogio no servidor: ${err.message}`);
+        alert('Erro ao salvar elogio no servidor: ' + err.message);
         return;
       }
     }
     setPraises(prev => [{ ...p, id: newId }, ...prev]);
-    logAction('CREATE', 'Elogio', newId, `Adicionado elogio (LOCAL) para o aluno ID: ${p.studentId}`);
+    logAction('CREATE', 'Elogio', newId, 'Adicionado elogio (LOCAL) para o aluno ID: ' + p.studentId);
   };
 
   const updatePraise = async (id: string, p: Partial<Praise>) => {
@@ -1007,45 +1007,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       } catch (err: any) {
         console.error("Praise update error:", err);
-        alert(`Erro ao atualizar elogio no servidor: ${err.message}`);
+        alert('Erro ao atualizar elogio no servidor: ' + err.message);
         throw err;
       }
     }
     setPraises(prev => prev.map(item => item.id === id ? { ...item, ...p } : item));
-    logAction('UPDATE', 'Elogio', id, `Atualizado elogio ${id}`);
+    logAction('UPDATE', 'Elogio', id, 'Atualizado elogio ' + id);
   };
 
   const archivePraise = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('praises').update({ archived: true }).eq('id', id);
     setPraises(prev => prev.map(item => item.id === id ? { ...item, archived: true } : item));
-    logAction('UPDATE', 'Elogio', id, `Arquivado elogio ${id}`);
+    logAction('UPDATE', 'Elogio', id, 'Arquivado elogio ' + id);
   };
 
   const deletePraise = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('praises').delete().eq('id', id);
     setPraises(prev => prev.filter(item => item.id !== id));
-    logAction('DELETE', 'Elogio', id, `Excluído elogio definitivamente ${id}`);
+    logAction('DELETE', 'Elogio', id, 'Excu\u00eddo elogio definitivamente ' + id);
   };
 
   const restorePraise = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('praises').update({ archived: false }).eq('id', id);
     setPraises(prev => prev.map(item => item.id === id ? { ...item, archived: false } : item));
-    logAction('UPDATE', 'Elogio', id, `Restaurado elogio ${id}`);
+    logAction('UPDATE', 'Elogio', id, 'Restaurado elogio ' + id);
   };
 
   const updateRule = async (code: number, r: Partial<DisciplineRule>) => {
     if (currentUserRole !== 'GESTOR') {
-      alert('Acesso Negado: Apenas gestores podem modificar as regras da instituição.');
+      alert('Acesso Negado: Apenas gestores podem modificar as regras da institui\u00e7\u00e3o.');
       return;
     }
     if (supabase && isSupabaseConnected) {
       await supabase!.from('rules').update(r).eq('code', code);
     }
     setRules(prev => prev.map(item => item.code === code ? { ...item, ...r } : item));
-    logAction('UPDATE', 'Regra', String(code), `Atualizada regra disciplinar Art. ${code}`);
+    logAction('UPDATE', 'Regra', String(code), 'Atualizada regra disciplinar Art. ' + code);
   };
 
   const addSummons = async (s: Omit<Summons, 'id'>) => {
@@ -1066,17 +1066,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data) {
            setSummons(prev => [{...data, studentId: data.student_id, registeredBy: data.registered_by}, ...prev]);
            newId = data.id;
-           logAction('CREATE', 'Convocação', newId, `Adicionada convocação para o aluno ID: ${s.studentId}`);
+           logAction('CREATE', 'Convoca\u00e7\u00e3o', newId, 'Adicionada convoca\u00e7\u00e3o para o aluno ID: ' + s.studentId);
            return;
         }
       } catch (err: any) {
         console.error("Summons insert error:", err);
-        alert(`Erro ao salvar convocação no servidor: ${err.message}`);
+        alert('Erro ao salvar convoca\u00e7\u00e3o no servidor: ' + err.message);
         return;
       }
     }
     setSummons(prev => [{ ...s, id: newId }, ...prev]);
-    logAction('CREATE', 'Convocação', newId, `Adicionada convocação (LOCAL) para o aluno ID: ${s.studentId}`);
+    logAction('CREATE', 'Convoca\u00e7\u00e3o', newId, 'Adicionada convoca\u00e7\u00e3o (LOCAL) para o aluno ID: ' + s.studentId);
   };
 
   const updateSummons = async (id: string, s: Partial<Summons>) => {
@@ -1095,33 +1095,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       } catch (err: any) {
         console.error("Summons update error:", err);
-        alert(`Erro ao atualizar convocação no servidor: ${err.message}`);
+        alert('Erro ao atualizar convoca\u00e7\u00e3o no servidor: ' + err.message);
         throw err;
       }
     }
     setSummons(prev => prev.map(item => item.id === id ? { ...item, ...s } : item));
-    logAction('UPDATE', 'Convocação', id, `Atualizada convocação ${id}`);
+    logAction('UPDATE', 'Convoca\u00e7\u00e3o', id, 'Atualizada convoca\u00e7\u00e3o ' + id);
   };
 
   const archiveSummons = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('summons').update({ archived: true }).eq('id', id);
     setSummons(prev => prev.map(item => item.id === id ? { ...item, archived: true } : item));
-    logAction('UPDATE', 'Convocação', id, `Arquivada convocação ${id}`);
+    logAction('UPDATE', 'Convoca\u00e7\u00e3o', id, 'Arquivada convoca\u00e7\u00e3o ' + id);
   };
 
   const deleteSummons = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('summons').delete().eq('id', id);
     setSummons(prev => prev.filter(item => item.id !== id));
-    logAction('DELETE', 'Convocação', id, `Excluída convocação definitivamente ${id}`);
+    logAction('DELETE', 'Convoca\u00e7\u00e3o', id, 'Excu\u00edda convoca\u00e7\u00e3o definitivamente ' + id);
   };
 
   const restoreSummons = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('summons').update({ archived: false }).eq('id', id);
     setSummons(prev => prev.map(item => item.id === id ? { ...item, archived: false } : item));
-    logAction('UPDATE', 'Convocação', id, `Restaurada convoca��ão ${id}`);
+    logAction('UPDATE', 'Convoca\u00e7\u00e3o', id, 'Restaurada convoca\u00e7\u00e3o ' + id);
   };
 
   const addConductTerm = async (t: Omit<ConductTerm, 'id'>) => {
@@ -1141,17 +1141,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data) {
            setConductTerms(prev => [{...data, studentId: data.student_id, registeredBy: data.registered_by, guardianName: data.guardian_name}, ...prev]);
            newId = data.id;
-           logAction('CREATE', 'Termo de Conduta', newId, `Adicionado TAC para o aluno ID: ${t.studentId}`);
+           logAction('CREATE', 'Termo de Conduta', newId, 'Adicionado TAC para o aluno ID: ' + t.studentId);
            return;
         }
       } catch (err: any) {
         console.error("Conduct term insert error:", err);
-        alert(`Erro ao salvar TAC no servidor: ${err.message}`);
+        alert('Erro ao salvar TAC no servidor: ' + err.message);
         return;
       }
     }
     setConductTerms(prev => [{ ...t, id: newId }, ...prev]);
-    logAction('CREATE', 'Termo de Conduta', newId, `Adicionado TAC (LOCAL) para o aluno ID: ${t.studentId}`);
+    logAction('CREATE', 'Termo de Conduta', newId, 'Adicionado TAC (LOCAL) para o aluno ID: ' + t.studentId);
   };
 
   const updateConductTerm = async (id: string, t: Partial<ConductTerm>) => {
@@ -1169,33 +1169,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       } catch (err: any) {
         console.error("Conduct term update error:", err);
-        alert(`Erro ao atualizar TAC no servidor: ${err.message}`);
+        alert('Erro ao atualizar TAC no servidor: ' + err.message);
         throw err;
       }
     }
     setConductTerms(prev => prev.map(item => item.id === id ? { ...item, ...t } : item));
-    logAction('UPDATE', 'Termo de Conduta', id, `Atualizado TAC ${id}`);
+    logAction('UPDATE', 'Termo de Conduta', id, 'Atualizado TAC ' + id);
   };
 
   const archiveConductTerm = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('conduct_terms').update({ archived: true }).eq('id', id);
     setConductTerms(prev => prev.map(item => item.id === id ? { ...item, archived: true } : item));
-    logAction('UPDATE', 'Termo de Conduta', id, `Arquivado TAC ${id}`);
+    logAction('UPDATE', 'Termo de Conduta', id, 'Arquivado TAC ' + id);
   };
 
   const deleteConductTerm = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('conduct_terms').delete().eq('id', id);
     setConductTerms(prev => prev.filter(item => item.id !== id));
-    logAction('DELETE', 'Termo de Conduta', id, `Excluído TAC definitivamente ${id}`);
+    logAction('DELETE', 'Termo de Conduta', id, 'Excu\u00eddo TAC definitivamente ' + id);
   };
 
   const restoreConductTerm = async (id: string) => {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) await supabase.from('conduct_terms').update({ archived: false }).eq('id', id);
     setConductTerms(prev => prev.map(item => item.id === id ? { ...item, archived: false } : item));
-    logAction('UPDATE', 'Termo de Conduta', id, `Restaurado TAC ${id}`);
+    logAction('UPDATE', 'Termo de Conduta', id, 'Restaurado TAC ' + id);
   };
 
   const getStudentOccurrences = (studentId: string) => occurrences.filter(o => {

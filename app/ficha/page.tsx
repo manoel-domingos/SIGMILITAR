@@ -25,7 +25,7 @@ export default function FichaDisciplinar() {
     try {
       const occurrencesSummary = occurrences.map(o => {
         const rule = rules.find(r => r.code === o.ruleCode);
-        return `- ${formatDate(o.date)}: Art. ${o.ruleCode} - ${rule?.description || 'Desconhecida'} (${rule?.severity || '-'})`;
+        return '- ' + formatDate(o.date) + ': Art. ' + o.ruleCode + ' - ' + (rule?.description || 'Desconhecida') + ' (' + (rule?.severity || '-') + ')';
       }).join('\n');
 
       await streamAI(

@@ -37,7 +37,7 @@ export default function Relatorios() {
         .sort((a, b) => b[1] - a[1]).slice(0, 5)
         .map(([code, count]) => {
           const rule = rules.find(r => r.code === parseInt(code));
-          return `Art. ${code}: ${rule?.description?.substring(0, 50) || 'Desconhecida'} (${count}x)`;
+          return 'Art. ' + code + ': ' + (rule?.description?.substring(0, 50) || 'Desconhecida') + ' (' + count + 'x)';
         }).join('\n');
 
       // Turmas com mais ocorrencias
@@ -60,7 +60,7 @@ export default function Relatorios() {
           studentsWithOccurrences,
           topInfractions,
           topClasses: topClasses || 'Sem dados',
-          severityDistribution: `Leves: ${leves}, Médias: ${medias}, Graves: ${graves}`,
+          severityDistribution: 'Leves: ' + leves + ', M\u00e9dias: ' + medias + ', Graves: ' + graves,
         },
         (delta) => setAiReport(prev => prev + delta)
       );

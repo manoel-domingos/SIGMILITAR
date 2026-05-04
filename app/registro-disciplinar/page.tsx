@@ -167,7 +167,7 @@ function RegistroDisciplinarContent() {
 
     const registradoPor = registeredBy.trim() || getLoggedUserName();
 
-    const ata = `Aos ${diaNum} dias do mês de ${mesExtenso} do ano de ${year}, às ${hour}, ${alunoStr} ${verboStr} no(a) ${location}${locatedByStr}, incorrendo em infração ao Art. ${ruleCode} do Regimento Interno (${ruleDesc}).${agravantesStr}${atenuantesStr}${reincidenteStr} O presente registro foi lavrado por ${registradoPor}.`;
+    const ata = 'Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + hour + ', ' + alunoStr + ' ' + verboStr + ' no(a) ' + location + locatedByStr + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + ruleCode + ' do Regimento Interno (' + ruleDesc + ').' + agravantesStr + atenuantesStr + reincidenteStr + ' O presente registro foi lavrado por ' + registradoPor + '.';
 
     setObservations(ata.trim());
   };
@@ -181,7 +181,7 @@ function RegistroDisciplinarContent() {
       const studentNames = selectedStudents.map(id => students.find(s => s.id === id)?.name).filter(Boolean).join(', ');
       const ruleDescriptions = selectedRules.map(code => {
         const r = rules.find(ru => ru.code === parseInt(code, 10));
-        return r ? `Art. ${r.code} — ${r.description} (${r.severity})` : '';
+        return r ? 'Art. ' + r.code + ' \u2014 ' + r.description + ' (' + r.severity + ')' : '';
       }).filter(Boolean).join('; ');
       const primaryRule = rules.find(r => r.code === parseInt(selectedRules[0], 10));
       const primaryStudentId = selectedStudents[0];
@@ -497,7 +497,7 @@ function RegistroDisciplinarContent() {
     const alunoStr = relatedStudents.length === 1
       ? `o(a) aluno(a) ${relatedStudents[0].name}`
       : `os alunos ${relatedStudents.slice(0,-1).map(s=>s.name).join(', ')} e ${relatedStudents[relatedStudents.length-1].name}`;
-    const autoAta = `Aos ${diaNum} dias do mês de ${mesExtenso} do ano de ${year}, às ${o.hour || '---'}, ${alunoStr} foi identificado(a) no(a) ${o.location || '---'}${o.locatedBy ? ` pelo(a) ${o.locatedBy}` : ''}, incorrendo em infração ao Art. ${o.ruleCode} do Regimento Interno (${rule?.description || 'Ocorrência personalizada'}). O presente registro foi lavrado por ${o.registeredBy || '---'}.`;
+    const autoAta = 'Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + (o.hour || '---') + ', ' + alunoStr + ' foi identificado(a) no(a) ' + (o.location || '---') + (o.locatedBy ? ' pelo(a) ' + o.locatedBy : '') + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + o.ruleCode + ' do Regimento Interno (' + (rule?.description || 'Ocorr\u00eancia personalizada') + '). O presente registro foi lavrado por ' + (o.registeredBy || '---') + '.';
     const ataText = (o.observations || '').trim() || autoAta;
 
     // Factors
@@ -1102,7 +1102,7 @@ function RegistroDisciplinarContent() {
               </div>
               <div class="sid-medida-row">
                 <span class="sid-medida-label">Medida</span>
-                <span class="sid-medida-valor">${exportMeasuresStr.toUpperCase()}${o.durationDays ? ` (${o.durationDays} DIA${o.durationDays > 1 ? 'S' : ''})` : ''}</span>
+                <span class="sid-medida-valor">${exportMeasuresStr.toUpperCase()}${o.durationDays ? ' (' + o.durationDays + ' DIA' + (o.durationDays > 1 ? 'S' : '') + ')' : ''}</span>
               </div>
               <div class="sid-medida-row">
                 <span class="sid-medida-label">Impacto</span>
@@ -1404,7 +1404,7 @@ function RegistroDisciplinarContent() {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-slate-600 mb-1">Aluno(s) *</label>
                     <SearchableSelect
-                      options={students.filter(s => !selectedStudents.includes(s.id)).map(s => ({ value: s.id, label: `${s.name} - ${s.class} (${s.shift})` }))}
+                      options={students.filter(s => !selectedStudents.includes(s.id)).map(s => ({ value: s.id, label: s.name + ' - ' + s.class + ' (' + s.shift + ')' }))}
                       value=""
                       onChange={(val) => {
                         if (val && !selectedStudents.includes(val)) {
@@ -2382,7 +2382,7 @@ function RegistroDisciplinarContent() {
                           <div key={index} className="aspect-square bg-slate-900 rounded overflow-hidden border border-slate-200">
                             {isImage ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={url} className="w-full h-full object-cover cursor-pointer" onClick={() => window.open(url, '_blank')} alt={`Evidência ${index + 1}`} />
+                              <img src={url} className="w-full h-full object-cover cursor-pointer" onClick={() => window.open(url, '_blank')} alt={'Evid\u00eancia ' + (index + 1)} />
                             ) : (
                               <video src={url} className="w-full h-full object-cover" controls />
                             )}
