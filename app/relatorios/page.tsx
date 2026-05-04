@@ -48,7 +48,7 @@ export default function Relatorios() {
       });
       const topClasses = Object.entries(classCount)
         .sort((a, b) => b[1] - a[1]).slice(0, 5)
-        .map(([cls, count]) => `${cls}: ${count} ocorrência(s)`).join(', ');
+        .map(([cls, count]) => cls + ': ' + count + ' ocorr\u00eancia(s)').join(', ');
 
       const studentsWithOccurrences = new Set(occurrences.map(o => o.studentId)).size;
 
