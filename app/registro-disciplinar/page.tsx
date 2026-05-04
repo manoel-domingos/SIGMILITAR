@@ -478,7 +478,7 @@ function RegistroDisciplinarContent() {
       ? students.filter(s => o.studentIds.includes(s.id))
       : [students.find(s => s.id === o.studentId)].filter((s): s is Student => Boolean(s));
 
-    const studentNamesHtml = relatedStudents.map(s => `<div>${s.name}</div>`).join('');
+    const studentNamesHtml = relatedStudents.map(s => '<div>' + s.name + '</div>').join('');
     const firstStudent = relatedStudents[0];
     const turmaStr = firstStudent ? `${firstStudent.class || '---'} — ${firstStudent.shift || '---'}` : '---';
 
@@ -1302,11 +1302,7 @@ function RegistroDisciplinarContent() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-0.5">
                             {allOccRules.map((r: any) => (
-                              <span key={r.code} className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                r.severity === 'Leve' ? 'bg-blue-500/10 text-blue-400' :
-                                r.severity === 'Media' ? 'bg-yellow-500/10 text-yellow-600' :
-                                'bg-red-500/10 text-red-400'
-                              }`}>
+                              <span key={r.code} className={'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ' + (r.severity === 'Leve' ? 'bg-blue-500/10 text-blue-400' : r.severity === 'Media' ? 'bg-yellow-500/10 text-yellow-600' : 'bg-red-500/10 text-red-400')}>
                                 {r.severity}
                               </span>
                             ))}
