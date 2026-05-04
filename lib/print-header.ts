@@ -38,6 +38,15 @@ export const getSchoolFooterHTML = (): string => `
 </div>
 `;
 
+/**
+ * Converte marcação simples **negrito** → <strong>negrito</strong>
+ * para uso no corpo da ATA impressa.
+ */
+export const markdownBoldToHtml = (text: string): string =>
+  text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br/>');
+
 // Mantém os exports antigos como alias para não quebrar imports existentes
 export const SCHOOL_HEADER_HTML: string = '';
 export const SCHOOL_FOOTER_HTML: string = '';
@@ -69,6 +78,8 @@ export const SCHOOL_HEADER_CSS = `
     background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    border-left: 5px solid #1a237e;
+    padding-left: 6px;
   }
 
   /* ================================================
