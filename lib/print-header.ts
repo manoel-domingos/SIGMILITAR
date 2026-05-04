@@ -43,109 +43,127 @@ export const SCHOOL_HEADER_HTML: string = '';
 export const SCHOOL_FOOTER_HTML: string = '';
 
 export const SCHOOL_HEADER_CSS = `
-  /* Orientação retrato (A4) e margens iguais ao modelo */
+  /* ================================================
+     Força A4 retrato com tamanho explícito.
+     O Chrome respeita o size apenas se a impressora
+     também estiver em retrato — definir width/height
+     no html garante a proporção correta na tela e no
+     preview de impressão.
+     ================================================ */
   @page {
-    size: A4 portrait;
-    margin: 0.5cm 1cm;
+    size: 210mm 297mm;
+    margin: 8mm 12mm 8mm 12mm;
   }
 
-  html, body {
-    width: 100%;
+  html {
+    width: 210mm;
+  }
+
+  body {
+    width: 210mm;
+    max-width: 210mm;
+    margin: 0 auto;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 9pt;
+    color: #000;
+    background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* ==============================================
+  /* ================================================
      Cabeçalho — SEDUC esq. / texto centro / brasão dir.
-     ============================================== */
+     Ambas as logos grandes e proporcionais.
+     ================================================ */
   .cabecalho-oficial {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 150px 1fr 80px;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     padding-bottom: 6px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
-  .cab-logo-seduc  { height: 52px; width: auto; object-fit: contain; }
-  .cab-logo-escola { height: 78px; width: auto; object-fit: contain; }
+  .cab-logo-seduc {
+    height: 62px;
+    width: 150px;
+    object-fit: contain;
+    object-position: left center;
+  }
+  .cab-logo-escola {
+    height: 80px;
+    width: 80px;
+    object-fit: contain;
+    object-position: right center;
+  }
   .cab-center {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    line-height: 1.4;
-    color: #000;
-    font-family: 'Times New Roman', Times, serif;
+    line-height: 1.5;
   }
   .cab-gov {
-    font-size: 11pt;
+    font-size: 10pt;
     font-weight: bold;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
   }
   .cab-escola {
-    font-size: 11pt;
+    font-size: 10pt;
     font-weight: bold;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
   }
 
-  /* ==============================================
-     Rodapé — alinhado à direita, em múltiplas linhas
-     (NÃO fixo, vai no fim do conteúdo)
-     ============================================== */
+  /* ================================================
+     Rodapé — alinhado à direita, NÃO fixo
+     ================================================ */
   .rodape-oficial {
-    margin-top: 60px;
+    margin-top: 20px;
     text-align: right;
-    font-size: 9.5pt;
+    font-size: 8.5pt;
     color: #1a237e;
-    line-height: 1.55;
-    font-family: 'Times New Roman', Times, serif;
+    line-height: 1.5;
   }
 
-  /* ==============================================
-     Layout 2 colunas — Sidebar + ATA
-     Linha vertical azul fina separa as colunas
-     ============================================== */
+  /* ================================================
+     Layout 2 colunas — 28% sidebar | 72% ATA
+     Linha vertical azul fina à direita da sidebar
+     ================================================ */
   .ata-layout {
     display: grid;
-    grid-template-columns: 30fr 70fr;
-    gap: 18px;
+    grid-template-columns: 28fr 72fr;
+    gap: 14px;
     align-items: start;
   }
 
-  /* SIDEBAR — sem caixa, só linha vertical à direita */
+  /* SIDEBAR */
   .sidebar {
     border-right: 2px solid #1a237e;
-    padding: 0 14px 0 4px;
-    font-size: 9pt;
-    color: #000;
+    padding: 0 12px 0 0;
   }
   .sidebar-titulo {
     color: #1a237e;
     font-weight: bold;
-    font-size: 9.5pt;
+    font-size: 9pt;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    padding-top: 4px;
+    margin-bottom: 6px;
   }
   .sidebar-secao {
     color: #1a237e;
     font-weight: bold;
-    font-size: 9.5pt;
+    font-size: 9pt;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-top: 16px;
-    margin-bottom: 8px;
+    margin-top: 10px;
+    margin-bottom: 6px;
   }
   .sid-item {
-    margin-bottom: 8px;
-    line-height: 1.35;
+    margin-bottom: 6px;
+    line-height: 1.3;
   }
   .sid-label {
     display: block;
-    font-size: 7.5pt;
+    font-size: 7pt;
     font-weight: bold;
     text-transform: uppercase;
     color: #1a237e;
@@ -154,73 +172,72 @@ export const SCHOOL_HEADER_CSS = `
   }
   .sid-valor {
     display: block;
-    font-size: 9pt;
+    font-size: 8.5pt;
     color: #000;
     font-weight: bold;
     word-break: break-word;
   }
   .sid-medida-row {
     display: flex;
-    gap: 6px;
+    gap: 5px;
     align-items: baseline;
     margin-bottom: 3px;
-    font-size: 9pt;
   }
-  .sid-medida-row .sid-medida-label {
+  .sid-medida-label {
     color: #1a237e;
-    font-size: 8pt;
+    font-size: 7.5pt;
     font-weight: normal;
+    white-space: nowrap;
   }
-  .sid-medida-row .sid-medida-valor {
+  .sid-medida-valor {
     color: #000;
     font-weight: bold;
-    font-size: 9pt;
+    font-size: 8.5pt;
   }
 
   /* COLUNA PRINCIPAL — ATA */
   .main-col {
-    padding-top: 4px;
+    padding-top: 2px;
   }
   .ata-titulo-grande {
-    font-size: 28pt;
+    font-size: 24pt;
     font-weight: bold;
     color: #1a237e;
     line-height: 1;
     margin-bottom: 2px;
-    font-family: 'Times New Roman', Times, serif;
   }
   .ata-subtitulo {
     font-style: italic;
     color: #555;
-    font-size: 10pt;
+    font-size: 9pt;
     border-bottom: 1px solid #c0a04a;
-    padding-bottom: 4px;
-    margin-bottom: 18px;
+    padding-bottom: 3px;
+    margin-bottom: 12px;
   }
   .ata-corpo {
-    font-size: 11pt;
-    line-height: 2;
+    font-size: 9.5pt;
+    line-height: 1.7;
     color: #000;
     white-space: pre-wrap;
     text-align: left;
-    min-height: 150px;
-    margin-bottom: 24px;
+    min-height: 100px;
+    margin-bottom: 16px;
   }
 
-  /* Assinaturas — label em cima, linha embaixo */
+  /* Assinaturas */
   .assinaturas-bloco {
-    margin-top: 24px;
+    margin-top: 16px;
   }
   .sig-item {
-    margin-bottom: 18px;
+    margin-bottom: 14px;
   }
   .sig-label {
-    font-size: 8.5pt;
+    font-size: 8pt;
     font-weight: bold;
     text-transform: uppercase;
     color: #444;
     letter-spacing: 0.5px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
   .sig-line {
     border-bottom: 1px solid #000;
@@ -229,5 +246,6 @@ export const SCHOOL_HEADER_CSS = `
 
   @media print {
     button { display: none !important; }
+    html, body { width: 210mm; }
   }
 `;
