@@ -994,7 +994,7 @@ function RegistroDisciplinarContent() {
         name: newStaffName,
         role: newStaffRole
       });
-      setLocatedBy(`${newStaffRole} ${newStaffName}`);
+      setLocatedBy(newStaffRole + ' ' + newStaffName);
       setNewStaffName('');
       setIsStaffModalOpen(false);
     } catch (err) {
