@@ -801,10 +801,10 @@ function RegistroDisciplinarContent() {
 
         let formatted = v;
         if (v.length > 0) {
-            if (v.length <= 2) formatted = `(${v}`;
-            else if (v.length <= 6) formatted = `(${v.slice(0, 2)}) ${v.slice(2)}`;
-            else if (v.length <= 10) formatted = `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
-            else formatted = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+            if (v.length <= 2) formatted = '(' + v;
+            else if (v.length <= 6) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+            else if (v.length <= 10) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+            else formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
         }
         contacts[index][field] = formatted;
         setIgnoredWarning(false);
