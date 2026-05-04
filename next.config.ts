@@ -1,8 +1,10 @@
 import type {NextConfig} from 'next';
 
-// NOTE: .babelrc presente na raiz desativa o SWC automaticamente (Next.js 15 behavior).
-// O SWC apresenta bug de parsing com template literals contendo caracteres acentuados
-// ou o padrao `(${...})` — o Babel processa corretamente sem restricoes.
+// NOTE: O SWC apresenta bug de parsing com template literals contendo:
+// - caracteres acentuados + interpolacao (ex: Infracao: ${x})
+// - padrao (${...}) imediatamente apos abre-parentese
+// - tags HTML dentro de template literals (ex: <div>${x}</div>)
+// Todos esses casos foram convertidos para concatenacao de strings.
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   eslint: {

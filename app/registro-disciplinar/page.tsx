@@ -478,7 +478,7 @@ function RegistroDisciplinarContent() {
       ? students.filter(s => o.studentIds.includes(s.id))
       : [students.find(s => s.id === o.studentId)].filter((s): s is Student => Boolean(s));
 
-    const studentNamesHtml = relatedStudents.map(s => `<div>${s.name}</div>`).join('');
+    const studentNamesHtml = relatedStudents.map(s => '<div>' + s.name + '</div>').join('');
     const firstStudent = relatedStudents[0];
     const turmaStr = firstStudent ? `${firstStudent.class || '---'} — ${firstStudent.shift || '---'}` : '---';
 
@@ -1042,75 +1042,48 @@ function RegistroDisciplinarContent() {
 
     const resetCSS = '* { box-sizing: border-box; margin: 0; padding: 0; }';
     const bodyCSS = "body { font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; color: #000; background: #fff; line-height: 1.5; }";
-    const htmlOpen = '<html lang="pt-BR"><head><title>' + docTitle + ' - ' + (primaryStudent?.name ?? '') + '</title><style>' + resetCSS + ' ' + bodyCSS + ' ' + SCHOOL_HEADER_CSS + '</style></head>';
-    printWindow.document.write(htmlOpen + `
-        <body>
-          ${getSchoolHeaderHTML()}
 
-          <div class="ata-layout">
-            <div class="sidebar">
-              <div class="sidebar-titulo">IDENTIFICAÇÃO</div>
-              <div class="sid-item">
-                <span class="sid-label">Data do Registro</span>
-                <span class="sid-valor">${formatDate(o.date)} ${o.hour || ''}</span>
-              </div>
-              <div class="sid-item">
-                <span class="sid-label">Local</span>
-                <span class="sid-valor">${o.location || '---'}</span>
-              </div>
-              <div class="sid-item">
-                <span class="sid-label">${relatedStudents.length > 1 ? 'Alunos' : 'Aluno'}</span>
-                <span class="sid-valor">${studentNames}</span>
-              </div>
-              <div class="sid-item">
-                <span class="sid-label">${relatedStudents.length > 1 ? 'Turmas' : 'Turma'}</span>
-                <span class="sid-valor">${studentClasses}</span>
-              </div>
-              <div class="sid-item">
-                <span class="sid-label">Localizado por</span>
-                <span class="sid-valor">${o.locatedBy || '---'}</span>
-              </div>
-              <div class="sid-item">
-                <span class="sid-label">Registrado por</span>
-                <span class="sid-valor">${o.registeredBy || '---'}</span>
-              </div>
+    const sidebarHTML =
+      '<div class="sidebar">' +
+        '<div class="sidebar-titulo">IDENTIFICA\u00c7\u00c3O</div>' +
+        '<div class="sid-item"><span class="sid-label">Data do Registro</span><span class="sid-valor">' + formatDate(o.date) + ' ' + (o.hour || '') + '</span></div>' +
+        '<div class="sid-item"><span class="sid-label">Local</span><span class="sid-valor">' + (o.location || '---') + '</span></div>' +
+        '<div class="sid-item"><span class="sid-label">' + (relatedStudents.length > 1 ? 'Alunos' : 'Aluno') + '</span><span class="sid-valor">' + studentNames + '</span></div>' +
+        '<div class="sid-item"><span class="sid-label">' + (relatedStudents.length > 1 ? 'Turmas' : 'Turma') + '</span><span class="sid-valor">' + studentClasses + '</span></div>' +
+        '<div class="sid-item"><span class="sid-label">Localizado por</span><span class="sid-valor">' + (o.locatedBy || '---') + '</span></div>' +
+        '<div class="sid-item"><span class="sid-label">Registrado por</span><span class="sid-valor">' + (o.registeredBy || '---') + '</span></div>' +
+        '<div class="sidebar-divisor"></div>' +
+        '<div class="sidebar-secao">INFRA\u00c7\u00c3O</div>' +
+        '<div class="sid-item"><span class="sid-label">Art. ' + rule?.code + '</span><span class="sid-valor" style="font-weight:normal;font-size:8.5pt;text-transform:uppercase;">' + (rule?.description || 'Ocorr\u00eancia personalizada') + '</span></div>' +
+        '<div class="sidebar-divisor"></div>' +
+        '<div class="sidebar-secao">MEDIDA</div>' +
+        '<div class="sid-medida-row"><span class="sid-medida-label">Gravidade</span><span class="sid-medida-valor">' + (rule?.severity || '---').toUpperCase() + '</span></div>' +
+        '<div class="sid-medida-row"><span class="sid-medida-label">Medida</span><span class="sid-medida-valor">' + exportMeasuresStr.toUpperCase() + (o.durationDays ? ' (' + o.durationDays + ' DIA' + (o.durationDays > 1 ? 'S' : '') + ')' : '') + '</span></div>' +
+        '<div class="sid-medida-row"><span class="sid-medida-label">Impacto</span><span class="sid-medida-valor">-' + pointsToDeduct.toFixed(2).replace('.', ',') + ' PONTOS</span></div>' +
+      '</div>';
 
-              <div class="sidebar-divisor"></div>
-              <div class="sidebar-secao">INFRA\u00c7\u00c3O</div>
-              <div class="sid-item">
-                <span class="sid-label">Art. ${rule?.code}</span>
-                <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorr\u00eancia personalizada'}</span>
-              </div>
+    const mainColHTML =
+      '<div class="main-col">' +
+        '<div class="ata-titulo-grande">ATA</div>' +
+        '<div class="ata-subtitulo">Relato do Ocorrido</div>' +
+        '<div class="ata-corpo">' + markdownBoldToHtml(o.observations || 'Nenhum relato registrado.') + '</div>' +
+        signaturesHTML() +
+      '</div>';
 
-              <div class="sidebar-divisor"></div>
-              <div class="sidebar-secao">MEDIDA</div>
-              <div class="sid-medida-row">
-                <span class="sid-medida-label">Gravidade</span>
-                <span class="sid-medida-valor">${(rule?.severity || '---').toUpperCase()}</span>
-              </div>
-              <div class="sid-medida-row">
-                <span class="sid-medida-label">Medida</span>
-                <span class="sid-medida-valor">${exportMeasuresStr.toUpperCase()}${o.durationDays ? ' (' + o.durationDays + ' DIA' + (o.durationDays > 1 ? 'S' : '') + ')' : ''}</span>
-              </div>
-              <div class="sid-medida-row">
-                <span class="sid-medida-label">Impacto</span>
-                <span class="sid-medida-valor">-${pointsToDeduct.toFixed(2).replace('.', ',')} PONTOS</span>
-              </div>
-            </div>
+    const printHTML =
+      '<html lang="pt-BR">' +
+        '<head>' +
+          '<title>' + docTitle + ' - ' + (primaryStudent?.name ?? '') + '</title>' +
+          '<style>' + resetCSS + ' ' + bodyCSS + ' ' + SCHOOL_HEADER_CSS + '</style>' +
+        '</head>' +
+        '<body>' +
+          getSchoolHeaderHTML() +
+          '<div class="ata-layout">' + sidebarHTML + mainColHTML + '</div>' +
+          getSchoolFooterHTML() +
+        '</body>' +
+      '</html>';
 
-            <div class="main-col">
-              <div class="ata-titulo-grande">ATA</div>
-              <div class="ata-subtitulo">Relato do Ocorrido</div>
-              <div class="ata-corpo">${markdownBoldToHtml(o.observations || 'Nenhum relato registrado.')}</div>
-
-              ${signaturesHTML()}
-            </div>
-          </div>
-
-          ${getSchoolFooterHTML()}
-        </body>
-      </h${""}tml>
-    `);
+    printWindow.document.write(printHTML);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
@@ -1149,53 +1122,43 @@ function RegistroDisciplinarContent() {
       ? 0.50 * (o.durationDays || 1) 
       : Math.abs(rule?.points || 0);
 
-    const headerHtmlDocx = `
-      <div style="width: 160%; margin-left: -30%; margin-bottom: 10px;">
-        <img src="${window.location.origin}/CABEÇALHO JB.svg" width="100%" style="width: 100%; height: auto;" alt="Cabeçalho">
-      </div>
-    `;
+    const headerHtmlDocx =
+      '<div style="width:160%;margin-left:-30%;margin-bottom:10px;">' +
+        '<img src="' + window.location.origin + '/CABE\u00c7ALHO JB.svg" width="100%" style="width:100%;height:auto;" alt="Cabe\u00e7alho">' +
+      '</div>';
 
-    const htmlContent = `
-      <div style="font-family: Arial, sans-serif;">
-        ${headerHtmlDocx}
-        
-        <h1 style="text-align: center; font-size: 22pt; text-decoration: underline; margin-bottom: 15px;">${docTitle}</h1>
-        
-        <p style="font-size: 14pt;"><strong>DATA DO REGISTRO:</strong> ${formatDate(o.date)} ${o.hour || ''}</p>
-        <p style="font-size: 14pt;"><strong>LOCAL:</strong> ${o.location || 'NÃO INFORMADO'}</p>
-        <p style="font-size: 14pt;"><strong>${relatedStudents.length > 1 ? 'ALUNOS' : 'ALUNO'}:</strong> ${studentNames.toUpperCase()}</p>
-        <p style="font-size: 14pt;"><strong>${relatedStudents.length > 1 ? 'TURMAS' : 'TURMA'}:</strong> ${studentClasses.toUpperCase()}</p>
-        <p style="font-size: 14pt;"><strong>LOCALIZADO POR:</strong> ${o.locatedBy?.toUpperCase() || 'NÃO INFORMADO'}</p>
-        <p style="font-size: 14pt;"><strong>REGISTRADO POR:</strong> ${o.registeredBy?.toUpperCase() || 'SISTEMA'}</p>
-        
-        <div style="border: 1px solid #000; padding: 10pt; margin: 20pt 0; font-size: 11pt;">
-          <p><strong>INFRAÇÃO (ART. ${rule?.code}):</strong> ${rule?.description?.toUpperCase()}</p>
-          <p><strong>GRAVIDADE:</strong> ${rule?.severity?.toUpperCase()}</p>
-              <p><strong>MEDIDA ADMINISTRATIVA:</strong> ${measure?.toUpperCase()} ${o.durationDays ? '(' + o.durationDays + ' ' + (o.durationDays === 1 ? 'DIA' : 'DIAS') + ')' : ''}</p>
-          <p><strong>IMPACTO NA PONTUAÇÃO:</strong> -${pointsToDeduct.toFixed(2)} PONTOS</p>
-        </div>
-        
-        <p><strong>ATA:</strong></p>
-        <div style="border: 1px solid #000; min-height: 180pt; padding: 10pt; font-size: 12pt;">
-          ${o.observations || 'Nenhum registro de ATA detalhado.'}
-        </div>
+    const htmlContent =
+      '<div style="font-family:Arial,sans-serif;">' +
+        headerHtmlDocx +
+        '<h1 style="text-align:center;font-size:22pt;text-decoration:underline;margin-bottom:15px;">' + docTitle + '</h1>' +
+        '<p style="font-size:14pt;"><strong>DATA DO REGISTRO:</strong> ' + formatDate(o.date) + ' ' + (o.hour || '') + '</p>' +
+        '<p style="font-size:14pt;"><strong>LOCAL:</strong> ' + (o.location || 'N\u00c3O INFORMADO') + '</p>' +
+        '<p style="font-size:14pt;"><strong>' + (relatedStudents.length > 1 ? 'ALUNOS' : 'ALUNO') + ':</strong> ' + studentNames.toUpperCase() + '</p>' +
+        '<p style="font-size:14pt;"><strong>' + (relatedStudents.length > 1 ? 'TURMAS' : 'TURMA') + ':</strong> ' + studentClasses.toUpperCase() + '</p>' +
+        '<p style="font-size:14pt;"><strong>LOCALIZADO POR:</strong> ' + (o.locatedBy?.toUpperCase() || 'N\u00c3O INFORMADO') + '</p>' +
+        '<p style="font-size:14pt;"><strong>REGISTRADO POR:</strong> ' + (o.registeredBy?.toUpperCase() || 'SISTEMA') + '</p>' +
+        '<div style="border:1px solid #000;padding:10pt;margin:20pt 0;font-size:11pt;">' +
+          '<p><strong>INFRA\u00c7\u00c3O (ART. ' + rule?.code + '):</strong> ' + (rule?.description?.toUpperCase() || '') + '</p>' +
+          '<p><strong>GRAVIDADE:</strong> ' + (rule?.severity?.toUpperCase() || '') + '</p>' +
+          '<p><strong>MEDIDA ADMINISTRATIVA:</strong> ' + (measure?.toUpperCase() || '') + ' ' + (o.durationDays ? '(' + o.durationDays + ' ' + (o.durationDays === 1 ? 'DIA' : 'DIAS') + ')' : '') + '</p>' +
+          '<p><strong>IMPACTO NA PONTUA\u00c7\u00c3O:</strong> -' + pointsToDeduct.toFixed(2) + ' PONTOS</p>' +
+        '</div>' +
+        '<p><strong>ATA:</strong></p>' +
+        '<div style="border:1px solid #000;min-height:180pt;padding:10pt;font-size:12pt;">' + (o.observations || 'Nenhum registro de ATA detalhado.') + '</div>' +
+        signaturesDocxHTML() +
+      '</div>';
 
-        ${signaturesDocxHTML()}
-      </div>
-    `;
-
-    const fullHtml = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><meta charset='utf-8'><title>${docTitle}</title></head>
-      <body>${htmlContent}</body>
-      </html>
-    `;
+    const fullHtml =
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+      '<head><meta charset="utf-8"><title>' + docTitle + '</title></head>' +
+      '<body>' + htmlContent + '</body>' +
+      '</html>';
 
     const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${docTitle.replace(/ /g, '_')}_${primaryStudent?.name?.replace(/ /g, '_')}.doc`;
+    link.download = docTitle.replace(/ /g, '_') + '_' + (primaryStudent?.name?.replace(/ /g, '_') || '') + '.doc';
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -1339,11 +1302,7 @@ function RegistroDisciplinarContent() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-0.5">
                             {allOccRules.map((r: any) => (
-                              <span key={r.code} className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                r.severity === 'Leve' ? 'bg-blue-500/10 text-blue-400' :
-                                r.severity === 'Media' ? 'bg-yellow-500/10 text-yellow-600' :
-                                'bg-red-500/10 text-red-400'
-                              }`}>
+                              <span key={r.code} className={'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ' + (r.severity === 'Leve' ? 'bg-blue-500/10 text-blue-400' : r.severity === 'Media' ? 'bg-yellow-500/10 text-yellow-600' : 'bg-red-500/10 text-red-400')}>
                                 {r.severity}
                               </span>
                             ))}
