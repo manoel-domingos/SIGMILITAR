@@ -18,6 +18,9 @@ export const supabase = supabaseUrl && supabaseAnonKey
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'eecm-auth-token',
+        flowType: 'pkce',
       },
     }) 
   : null;
