@@ -179,9 +179,7 @@ export default function OccurrenceChecklist({ userId, tasks, onUpdate, autoOpen 
               <div key={task.occurrenceId} className="text-sm">
                 {/* Task header */}
                 <div
-                  className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${
-                    allDone ? "bg-green-50" : "bg-white hover:bg-slate-50"
-                  }`}
+                  className={'flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ' + (allDone ? 'bg-green-50' : 'bg-white hover:bg-slate-50')}
                   onClick={() =>
                     setCollapsed((c) => ({
                       ...c,
@@ -232,11 +230,7 @@ export default function OccurrenceChecklist({ userId, tasks, onUpdate, autoOpen 
                           onClick={() =>
                             handleToggleItem(task.occurrenceId, item.id)
                           }
-                          className={`mt-0.5 shrink-0 transition-colors ${
-                            item.done
-                              ? "text-green-500"
-                              : "text-slate-300 hover:text-blue-500"
-                          }`}
+                          className={'mt-0.5 shrink-0 transition-colors ' + (item.done ? 'text-green-500' : 'text-slate-300 hover:text-blue-500')}
                           aria-label={item.done ? "Marcar como pendente" : "Marcar como concluído"}
                         >
                           {item.done ? (
@@ -246,11 +240,7 @@ export default function OccurrenceChecklist({ userId, tasks, onUpdate, autoOpen 
                           )}
                         </button>
                         <span
-                          className={`text-xs leading-relaxed ${
-                            item.done
-                              ? "line-through text-slate-400"
-                              : "text-slate-700"
-                          }`}
+                          className={'text-xs leading-relaxed ' + (item.done ? 'line-through text-slate-400' : 'text-slate-700')}
                         >
                           {item.label}
                         </span>

@@ -291,9 +291,7 @@ function ComportamentoContent() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${s.classColor}`}>
-                              <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                s.points >= 7.5 ? 'bg-emerald-500' : s.points >= 5.0 ? 'bg-amber-500' : 'bg-rose-500'
-                              }`}></div>
+                              <div className={'w-1.5 h-1.5 rounded-full mr-1.5 ' + (s.points >= 7.5 ? 'bg-emerald-500' : s.points >= 5.0 ? 'bg-amber-500' : 'bg-rose-500')}></div>
                               {s.classification}
                             </span>
                           </td>
@@ -370,11 +368,7 @@ function ComportamentoContent() {
                     <span className="text-slate-400 font-bold text-sm w-4 mt-0.5">{i + 1}</span>
                     <div className="flex-1">
                       <p className="text-slate-800 text-sm font-medium mb-1 line-clamp-2">{r.description}</p>
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
-                        r.severity === 'Leve' ? 'bg-slate-100 text-slate-700' :
-                        r.severity === 'Media' ? 'bg-amber-100 text-amber-700' :
-                        'bg-rose-100 text-rose-700'
-                      }`}>
+                      <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ' + (r.severity === 'Leve' ? 'bg-slate-100 text-slate-700' : r.severity === 'Media' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700')}>
                         {r.severity}
                       </span>
                     </div>

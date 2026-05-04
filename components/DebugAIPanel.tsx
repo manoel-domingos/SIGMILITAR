@@ -78,9 +78,7 @@ export default function DebugAIPanel() {
           logs.map((log) => (
             <div 
               key={log.id} 
-              className={`border rounded-xl overflow-hidden transition-all ${
-                log.status === 'error' ? 'border-red-900/50 bg-red-950/10' : 'border-slate-800 bg-slate-900/50'
-              }`}
+              className={'border rounded-xl overflow-hidden transition-all ' + (log.status === 'error' ? 'border-red-900/50 bg-red-950/10' : 'border-slate-800 bg-slate-900/50')}
             >
               <div 
                 className="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/50"
@@ -140,9 +138,7 @@ export default function DebugAIPanel() {
                             {copiedId === log.id + 'out' ? <Check size={12} /> : <Copy size={12} />}
                           </button>
                         </div>
-                        <pre className={`p-2 rounded border whitespace-pre-wrap break-all max-h-40 overflow-y-auto ${
-                          log.status === 'error' ? 'bg-red-950/20 border-red-900/30 text-red-300' : 'bg-slate-950 border-slate-800 text-slate-300'
-                        }`}>
+                        <pre className={'p-2 rounded border whitespace-pre-wrap break-all max-h-40 overflow-y-auto ' + (log.status === 'error' ? 'bg-red-950/20 border-red-900/30 text-red-300' : 'bg-slate-950 border-slate-800 text-slate-300')}>
                           {log.response || log.error}
                         </pre>
                       </div>

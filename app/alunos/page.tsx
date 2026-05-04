@@ -893,14 +893,7 @@ export default function Alunos() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                          getStudentBehavior(getStudentPoints(s.id)) === 'Excepcional' ? 'bg-emerald-500/10 text-emerald-600' :
-                          getStudentBehavior(getStudentPoints(s.id)) === 'Ótimo' ? 'bg-blue-500/10 text-blue-600' :
-                          getStudentBehavior(getStudentPoints(s.id)) === 'Bom' ? 'bg-slate-500/10 text-slate-600' :
-                          getStudentBehavior(getStudentPoints(s.id)) === 'Regular' ? 'bg-yellow-500/10 text-yellow-600' :
-                          getStudentBehavior(getStudentPoints(s.id)) === 'Insuficiente' ? 'bg-rose-500/10 text-rose-600' :
-                          'bg-red-500/10 text-red-600'
-                        }`}>
+                        <span className={'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ' + (getStudentBehavior(getStudentPoints(s.id)) === 'Excepcional' ? 'bg-emerald-500/10 text-emerald-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Ótimo' ? 'bg-blue-500/10 text-blue-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Bom' ? 'bg-slate-500/10 text-slate-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Regular' ? 'bg-yellow-500/10 text-yellow-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Insuficiente' ? 'bg-rose-500/10 text-rose-600' : 'bg-red-500/10 text-red-600')}>
                           {getStudentBehavior(getStudentPoints(s.id))}
                         </span>
                       </td>

@@ -127,11 +127,7 @@ export default function Rankings() {
                   <span className="text-slate-500 font-medium text-sm mt-0.5">{i + 1}</span>
                   <div className="flex-1">
                     <p className="text-slate-800 text-sm font-medium mb-1 line-clamp-2">{r.description}</p>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
-                      r.severity === 'Leve' ? 'bg-slate-100 text-slate-700' :
-                      r.severity === 'Media' ? 'bg-amber-100 text-amber-700' :
-                      'bg-rose-100 text-rose-700'
-                    }`}>
+                    <span className={'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ' + (r.severity === 'Leve' ? 'bg-slate-100 text-slate-700' : r.severity === 'Media' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700')}>
                       {r.severity} • Cód. {r.code}
                     </span>
                   </div>
