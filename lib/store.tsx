@@ -378,7 +378,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Pasta central de documentos no Google Drive — repositório principal
   const DRIVE_FOLDER_ID = '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
-  const DRIVE_FOLDER_URL = `https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}`;
+  const DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/' + DRIVE_FOLDER_ID;
 
   const uploadFile = async (file: File, _bucket: string): Promise<string | null> => {
     // Google Drive é o repositório principal de todos os arquivos (fotos, vídeos, docs assinados)
@@ -420,7 +420,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error('Audit log failed', err);
       }
     }
-    setAuditLogs(prev => [{ ...newLog, id: `LOG${prev.length + 1}` }, ...prev]);
+    setAuditLogs(prev => [{ ...newLog, id: 'LOG' + (prev.length + 1) }, ...prev]);
   };
 
   const checkWriteAccess = () => {
@@ -448,7 +448,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const newId = `U${appUsers.length + 1}`;
+    const newId = 'U' + (appUsers.length + 1);
     setAppUsers(prev => [...prev, { ...u, id: newId }]);
   };
 
@@ -484,7 +484,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addStudent = async (s: Omit<Student, 'id'>) => {
     checkWriteAccess();
-    let newId = `S${students.length + 1}`;
+    let newId = 'S' + (students.length + 1);
     if (supabase && isSupabaseConnected) {
       const dbPayload: any = {
         name: s.name,
@@ -561,7 +561,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    const mappedLocal = newStudents.map((s, idx) => ({ ...s, id: `S${Date.now()}_${idx}` }));
+    const mappedLocal = newStudents.map((s, idx) => ({ ...s, id: 'S' + Date.now() + '_' + idx }));
     setStudents(prev => [...prev, ...mappedLocal]);
     logAction('SYSTEM', 'Aluno', 'LOTE', 'Importados ' + mappedLocal.length + ' alunos localmente');
   };
@@ -620,7 +620,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       alert('Acesso Negado: Apenas gestores podem gerenciar membros da equipe.');
       return;
     }
-    const newId = `ST${staffMembers.length + 1}`;
+    const newId = 'ST' + (staffMembers.length + 1);
     setStaffMembers(prev => [...prev, { ...s, id: newId }]);
     logAction('CREATE', 'Membro Equipe', newId, 'Adicionado membro: ' + s.role + ' ' + s.name);
   };
@@ -717,7 +717,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addOccurrence = async (o: Omit<Occurrence, 'id'>): Promise<string> => {
     checkWriteAccess();
-    let newId = `O${occurrences.length + 1}`;
+    let newId = 'O' + (occurrences.length + 1);
     if (supabase && isSupabaseConnected) {
       // Create a base payload with columns we know exist based on our fetch logic
       const dbPayload: any = {
@@ -741,7 +741,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let enhancedObservations = o.observations || '';
       
       if (o.measures && o.measures.length > 0) {
-        enhancedObservations += `\nMedidas: ${o.measures.join(', ')}`;
+        enhancedObservations += '\nMedidas: ' + o.measures.join(', ');
       } else if (o.measure) {
         enhancedObservations += '\nMedida: ' + o.measure;
       }
@@ -801,7 +801,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw err; // Re-throw to handle in UI
       }
     }
-    const finalId = `O${occurrences.length + 1}`;
+      const finalId = 'O' + (occurrences.length + 1);
     setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false }, ...prev]);
     logAction('CREATE', 'Ocorr\u00eancia', finalId, 'Adicionada ocorr\u00eancia (LOCAL) para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
     return finalId;
@@ -880,7 +880,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addAccident = async (a: Omit<Accident, 'id'>) => {
     checkWriteAccess();
-    let newId = `A${accidents.length + 1}`;
+    let newId = 'A' + (accidents.length + 1);
     if (supabase && isSupabaseConnected) {
        const dbPayload = {
         student_id: a.studentId,
@@ -964,7 +964,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addPraise = async (p: Omit<Praise, 'id'>) => {
     checkWriteAccess();
-    let newId = `P${praises.length + 1}`;
+    let newId = 'P' + (praises.length + 1);
     if (supabase && isSupabaseConnected) {
       const dbPayload: any = {
         student_id: p.studentId,
@@ -1050,7 +1050,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addSummons = async (s: Omit<Summons, 'id'>) => {
     checkWriteAccess();
-    let newId = `SUMM${summons.length + 1}`;
+    let newId = 'SUMM' + (summons.length + 1);
     if (supabase && isSupabaseConnected) {
       const dbPayload = {
         student_id: s.studentId,
@@ -1126,7 +1126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addConductTerm = async (t: Omit<ConductTerm, 'id'>) => {
     checkWriteAccess();
-    let newId = `TAC${conductTerms.length + 1}`;
+    let newId = 'TAC' + (conductTerms.length + 1);
     if (supabase && isSupabaseConnected) {
       const dbPayload = {
         student_id: t.studentId,
