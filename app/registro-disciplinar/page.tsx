@@ -409,6 +409,66 @@ function RegistroDisciplinarContent() {
     }
   };
 
+  // -------------------------------------------------------
+  // Bloco de assinaturas — HTML compartilhado (print/export)
+  // -------------------------------------------------------
+  const signaturesHTML = () => `
+    <div class="assinaturas-bloco">
+      <div class="sig-item">
+        <div class="sig-espaco"></div>
+        <div class="sig-line"></div>
+        <div class="sig-cargo">Diretora / Coord. Pedagógico</div>
+        <div class="sig-nome-label">Nome:</div>
+        <div class="sig-nome">&nbsp;</div>
+      </div>
+      <div class="sig-item">
+        <div class="sig-espaco"></div>
+        <div class="sig-line"></div>
+        <div class="sig-cargo">Gestor Cívico Militar / Educacional</div>
+        <div class="sig-nome-label">Nome:</div>
+        <div class="sig-nome">&nbsp;</div>
+      </div>
+      <div class="sig-item">
+        <div class="sig-espaco"></div>
+        <div class="sig-line"></div>
+        <div class="sig-cargo">Responsável Legal</div>
+        <div class="sig-nome-label">Nome:</div>
+        <div class="sig-nome">&nbsp;</div>
+      </div>
+    </div>`;
+
+  // Versão DOCX — mesma estrutura via <table> (compatível com Word)
+  const signaturesDocxHTML = () => `
+    <br/><br/>
+    <table style="width:100%; border-collapse: collapse; margin-top: 32pt;">
+      <tr>
+        <td style="width:33%; vertical-align: bottom; padding: 0 8pt 0 0;">
+          <div style="height: 36pt;"></div>
+          <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
+            Diretora / Coord. Pedagógico
+          </div>
+          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
+          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
+        </td>
+        <td style="width:33%; vertical-align: bottom; padding: 0 4pt;">
+          <div style="height: 36pt;"></div>
+          <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
+            Gestor Cívico Militar / Educacional
+          </div>
+          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
+          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
+        </td>
+        <td style="width:33%; vertical-align: bottom; padding: 0 0 0 8pt;">
+          <div style="height: 36pt;"></div>
+          <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
+            Responsável Legal
+          </div>
+          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
+          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
+        </td>
+      </tr>
+    </table>`;
+
   const handlePrint = (o: any) => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
@@ -562,20 +622,7 @@ function RegistroDisciplinarContent() {
       <div class="ata-subtitulo">Relato do Ocorrido</div>
       <div class="ata-corpo">${markdownBoldToHtml(ataText)}</div>
 
-      <div class="assinaturas-bloco">
-        <div class="sig-item">
-          <div class="sig-label">DIRETORA / COORD. PEDAGÓGICO</div>
-          <div class="sig-line"></div>
-        </div>
-        <div class="sig-item">
-          <div class="sig-label">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
-          <div class="sig-line"></div>
-        </div>
-        <div class="sig-item">
-          <div class="sig-label">RESPONSÁVEL LEGAL</div>
-          <div class="sig-line"></div>
-        </div>
-      </div>
+      ${signaturesHTML()}
     </div>
 
   </div><!-- /ata-layout -->
@@ -583,7 +630,7 @@ function RegistroDisciplinarContent() {
   ${getSchoolFooterHTML()}
 
 </body>
-</html>`);
+</html>\`);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => { printWindow.print(); }, 300);
@@ -1062,20 +1109,7 @@ function RegistroDisciplinarContent() {
               <div class="ata-subtitulo">Relato do Ocorrido</div>
               <div class="ata-corpo">${markdownBoldToHtml(o.observations || 'Nenhum relato registrado.')}</div>
 
-              <div class="assinaturas-bloco">
-                <div class="sig-item">
-                  <div class="sig-label">DIRETORA / COORD. PEDAGÓGICO</div>
-                  <div class="sig-line"></div>
-                </div>
-                <div class="sig-item">
-                  <div class="sig-label">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
-                  <div class="sig-line"></div>
-                </div>
-                <div class="sig-item">
-                  <div class="sig-label">RESPONSÁVEL LEGAL</div>
-                  <div class="sig-line"></div>
-                </div>
-              </div>
+              ${signaturesHTML()}
             </div>
           </div>
 
@@ -1152,16 +1186,7 @@ function RegistroDisciplinarContent() {
           ${o.observations || 'Nenhum registro de ATA detalhado.'}
         </div>
 
-        <br><br><br>
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="border-top: 1px solid #000; text-align: center; width: 30%;">DIRETORA / COORD. PEDAGÓGICO</td>
-            <td style="width: 5%;"></td>
-            <td style="border-top: 1px solid #000; text-align: center; width: 30%;">GESTOR CÍVICO MILITAR/EDUCACIONAL</td>
-            <td style="width: 5%;"></td>
-            <td style="border-top: 1px solid #000; text-align: center; width: 30%;">RESPONSÁVEL LEGAL</td>
-          </tr>
-        </table>
+        ${signaturesDocxHTML()}
       </div>
     `;
 

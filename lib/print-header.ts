@@ -245,24 +245,44 @@ export const SCHOOL_HEADER_CSS = `
     margin-bottom: 16px;
   }
 
-  /* Assinaturas */
+  /* Assinaturas — 3 colunas lado a lado */
   .assinaturas-bloco {
-    margin-top: 16px;
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
   }
   .sig-item {
-    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
   }
-  .sig-label {
-    font-size: 8pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    color: #444;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
+  .sig-espaco {
+    height: 28px;
   }
   .sig-line {
     border-bottom: 1px solid #000;
-    height: 0;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  .sig-cargo {
+    font-size: 7.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+    letter-spacing: 0.4px;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .sig-nome {
+    font-size: 7.5pt;
+    color: #333;
+    border-bottom: 1px dotted #999;
+    padding-bottom: 2px;
+  }
+  .sig-nome-label {
+    font-size: 6.5pt;
+    color: #666;
+    text-transform: uppercase;
   }
 
   @media print {
