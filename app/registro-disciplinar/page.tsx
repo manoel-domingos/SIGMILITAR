@@ -1040,22 +1040,11 @@ function RegistroDisciplinarContent() {
       ? o.measures.join(' / ')
       : (o.measure || measure || 'A definir');
 
-    const htmlOpen = '<html lang="pt-BR">';
+    const resetCSS = '* { box-sizing: border-box; margin: 0; padding: 0; }';
+    const bodyCSS = "body { font-family: 'Times New Roman', Times, serif; font-size: 10.5pt; color: #000; background: #fff; line-height: 1.5; }";
+    const htmlOpen = '<html lang="pt-BR"><head><title>' + docTitle + ' - ' + (primaryStudent?.name ?? '') + '</title><style>' + resetCSS + ' ' + bodyCSS + ' ' + SCHOOL_HEADER_CSS + '</style></head>';
     printWindow.document.write(htmlOpen + `
-        <head>
-          <title>${docTitle} - ${primaryStudent?.name}</title>
-          <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body {
-              font-family: 'Times New Roman', Times, serif;
-              font-size: 10.5pt;
-              color: #000;
-              background: #fff;
-              line-height: 1.5;
-            }
-            ${SCHOOL_HEADER_CSS}
-          </style>
-        </head>
+        <body>
         <body>
           ${getSchoolHeaderHTML()}
 
@@ -1147,7 +1136,7 @@ function RegistroDisciplinarContent() {
     let isEscalated = sameRuleCount > 1;
     let measure = rule?.measure || '';
     if (isEscalated) {
-         measure = rule?.severity === 'Leve' ? 'Advertência Escrita (Agravada)' : 'Suspensão (Agravada)';
+         measure = rule?.severity === 'Leve' ? 'Advert��ncia Escrita (Agravada)' : 'Suspensão (Agravada)';
     } else if (rule?.severity === 'Leve' && studentOccurrences.filter(oc => rules.find(r => r.code === oc.ruleCode)?.severity === 'Leve').length >= 3) {
          isEscalated = true;
          measure = 'Advertência Escrita (Agravada por acúmulo)';
