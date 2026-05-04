@@ -7,6 +7,7 @@ import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS, markdownBoldToHtml } from '@/lib/print-header';
+import AtaEditor from '@/components/AtaEditor';
 import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhatsApp } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'next/navigation';
@@ -67,7 +68,6 @@ function RegistroDisciplinarContent() {
   const [ruleSearch, setRuleSearch] = useState('');
   const [registeredBy, setRegisteredBy] = useState('');
   const [observations, setObservations] = useState('');
-  const [ataPreviewMode, setAtaPreviewMode] = useState(false);
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
   const [signedDocUrls, setSignedDocUrls] = useState<string[]>([]);
   const [durationDays, setDurationDays] = useState(1);
@@ -370,7 +370,6 @@ function RegistroDisciplinarContent() {
     setRuleSearch('');
     setRegisteredBy(getLoggedUserName());
     setObservations('');
-    setAtaPreviewMode(false);
     setVideoUrls([]);
     setSignedDocUrls([]);
     setDurationDays(1);
@@ -593,12 +592,14 @@ function RegistroDisciplinarContent() {
         <span class="sid-valor">${o.registeredBy || '---'}</span>
       </div>
 
-      <div class="sidebar-secao">INFRAÇÃO</div>
+      <div class="sidebar-divisor"></div>
+      <div class="sidebar-secao">INFRA\u00c7\u00c3O</div>
       <div class="sid-item">
         <span class="sid-label">Art. ${o.ruleCode}</span>
-        <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
+        <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorr\u00eancia personalizada'}</span>
       </div>
 
+      <div class="sidebar-divisor"></div>
       <div class="sidebar-secao">MEDIDA</div>
       <div class="sid-medida-row">
         <span class="sid-medida-label">Gravidade</span>
@@ -720,7 +721,7 @@ function RegistroDisciplinarContent() {
           },
           {
             id: 'realizar_medida',
-            label: `Realizar a medida sugerida: ${measureToSave}`,
+            label: 'Realizar a medida sugerida: ' + measureToSave,
             done: false,
           },
           {
@@ -800,10 +801,10 @@ function RegistroDisciplinarContent() {
 
         let formatted = v;
         if (v.length > 0) {
-            if (v.length <= 2) formatted = `(${v}`;
-            else if (v.length <= 6) formatted = `(${v.slice(0, 2)}) ${v.slice(2)}`;
-            else if (v.length <= 10) formatted = `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
-            else formatted = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+            if (v.length <= 2) formatted = '(' + v;
+            else if (v.length <= 6) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+            else if (v.length <= 10) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+            else formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
         }
         contacts[index][field] = formatted;
         setIgnoredWarning(false);
@@ -1086,12 +1087,14 @@ function RegistroDisciplinarContent() {
                 <span class="sid-valor">${o.registeredBy || '---'}</span>
               </div>
 
-              <div class="sidebar-secao">INFRAÇÃO</div>
+              <div class="sidebar-divisor"></div>
+              <div class="sidebar-secao">INFRA\u00c7\u00c3O</div>
               <div class="sid-item">
                 <span class="sid-label">Art. ${rule?.code}</span>
-                <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
+                <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorr\u00eancia personalizada'}</span>
               </div>
 
+              <div class="sidebar-divisor"></div>
               <div class="sidebar-secao">MEDIDA</div>
               <div class="sid-medida-row">
                 <span class="sid-medida-label">Gravidade</span>
@@ -1802,63 +1805,8 @@ function RegistroDisciplinarContent() {
                     </div>
                     <span className="text-[10px] text-slate-400 font-normal uppercase tracking-wider">Ajuste o tamanho se necessário</span>
                   </label>
-                  {/* Editor ATA com preview de markdown bold */}
-                  <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    {/* Barra de abas */}
-                    <div className="flex items-center gap-0 border-b border-slate-200 bg-slate-50 px-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setAtaPreviewMode(false)}
-                        className={`px-3 py-1 text-[11px] font-medium rounded-t border-b-2 transition-colors ${
-                          !ataPreviewMode
-                            ? 'border-blue-500 text-blue-700 bg-white'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAtaPreviewMode(true)}
-                        className={`px-3 py-1 text-[11px] font-medium rounded-t border-b-2 transition-colors ${
-                          ataPreviewMode
-                            ? 'border-blue-500 text-blue-700 bg-white'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        Preview
-                      </button>
-                    </div>
-                    {/* Painel edição */}
-                    {!ataPreviewMode && (
-                      <textarea
-                        rows={4}
-                        value={observations}
-                        onChange={(e) => {
-                          setObservations(e.target.value);
-                          e.target.style.height = 'auto';
-                          e.target.style.height = e.target.scrollHeight + 'px';
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.height = 'auto';
-                          e.target.style.height = e.target.scrollHeight + 'px';
-                        }}
-                        className="w-full bg-white px-4 py-3 text-slate-800 focus:outline-none resize-y min-h-[120px] text-sm font-mono"
-                        placeholder="Descreva o que ocorreu... Use **negrito** para destacar."
-                      />
-                    )}
-                    {/* Painel preview */}
-                    {ataPreviewMode && (
-                      <div
-                        className="w-full bg-white px-4 py-3 text-slate-800 min-h-[120px] text-sm leading-relaxed prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{
-                          __html: observations
-                            ? markdownBoldToHtml(observations)
-                            : '<span class="text-slate-400">Nenhum texto ainda...</span>',
-                        }}
-                      />
-                    )}
-                  </div>
+                  {/* Campo ATA com negrito em tempo real: **texto** → bold */}
+                  <AtaEditor value={observations} onChange={setObservations} />
 
                   {/* Painel de sugestões baseado no Regimento */}
                   {showSuggestions && (
