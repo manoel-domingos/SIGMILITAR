@@ -736,8 +736,9 @@ function ProfileMenu({
   // Carregar perfil salvo no Supabase e verificar primeiro acesso
   useEffect(() => {
     if (!mounted || !user?.email || !supabase) return;
+    const sb = supabase;
     const loadProfile = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('user_profiles')
         .select('name, role, setup_done')
         .eq('email', user.email)
@@ -770,9 +771,10 @@ function ProfileMenu({
       setProfileError('Sessão inválida. Faça login novamente.');
       return;
     }
+    const sb = supabase;
     setProfileLoading(true);
     try {
-      const { error } = await supabase
+      const { error } = await sb
         .from('user_profiles')
         .upsert(
           {
