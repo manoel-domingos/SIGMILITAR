@@ -719,7 +719,7 @@ function RegistroDisciplinarContent() {
           },
           {
             id: 'realizar_medida',
-            label: `Realizar a medida sugerida: ${measureToSave}`,
+            label: 'Realizar a medida sugerida: ' + measureToSave,
             done: false,
           },
           {
