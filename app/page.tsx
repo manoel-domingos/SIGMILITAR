@@ -183,7 +183,7 @@ export default function Dashboard() {
         {/* Row 1: KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link 
-            href={`/registro-disciplinar?year=${selectedYear}&month=${selectedMonth === 'Selecionar...' ? '' : selectedMonth}&shift=${selectedShift === 'Todos' ? '' : selectedShift}&class=${selectedClass === 'Todas as turmas' ? '' : selectedClass}`}
+            href={'/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-blue-200/50 dark:border-blue-500/20 bg-blue-50/60 dark:bg-blue-500/5 hover:bg-blue-100/80 dark:hover:bg-blue-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -199,7 +199,7 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            href={`/registro-disciplinar?year=${selectedYear}&month=${selectedMonth === 'Selecionar...' ? '' : selectedMonth}&severity=Grave&shift=${selectedShift === 'Todos' ? '' : selectedShift}&class=${selectedClass === 'Todas as turmas' ? '' : selectedClass}`}
+            href={'/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&severity=Grave&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/60 dark:bg-red-500/5 hover:bg-red-100/80 dark:hover:bg-red-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -215,7 +215,7 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            href={`/comportamento?year=${selectedYear}&month=${selectedMonth === 'Selecionar...' ? '' : selectedMonth}&class=${selectedClass === 'Todas as turmas' ? '' : selectedClass}`}
+            href={'/comportamento?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-purple-200/50 dark:border-purple-500/20 bg-purple-50/60 dark:bg-purple-500/5 hover:bg-purple-100/80 dark:hover:bg-purple-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -231,7 +231,7 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            href={`/comportamento?year=${selectedYear}&month=${selectedMonth === 'Selecionar...' ? '' : selectedMonth}&class=${selectedClass === 'Todas as turmas' ? '' : selectedClass}`}
+            href={'/comportamento?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-emerald-200/50 dark:border-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-500/5 hover:bg-emerald-100/80 dark:hover:bg-emerald-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -290,7 +290,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Link 
-                href={`/registro-disciplinar?year=${selectedYear}&month=${selectedMonth}&shift=${selectedShift}&class=${selectedClass}`}
+                href={'/registro-disciplinar?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass}
                 className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-3 py-1.5 rounded-lg text-blue-600 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all hover:bg-blue-100 dark:hover:bg-blue-500/20"
               >
                 Ver tudo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -333,7 +333,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Link 
-                href={`/elogios?year=${selectedYear}&month=${selectedMonth}&shift=${selectedShift}&class=${selectedClass}`}
+                href={'/elogios?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass}
                 className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
               >
                 Ver tudo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -356,7 +356,7 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-center items-center text-xs">
-              <span className="text-slate-500 dark:text-slate-400">{praises?.length > 0 ? `${praises.length} elogios no período` : 'Nenhum elogio no período'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{praises?.length > 0 ? praises.length + ' elogios no per\u00edodo' : 'Nenhum elogio no per\u00edodo'}</span>
             </div>
           </div>
 
@@ -373,7 +373,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Link 
-                href={`/acidentes?year=${selectedYear}&month=${selectedMonth}&shift=${selectedShift}&class=${selectedClass}`}
+                href={'/acidentes?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass}
                 className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 px-3 py-1.5 rounded-lg text-orange-600 dark:text-orange-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all hover:bg-orange-100 dark:hover:bg-orange-500/20"
               >
                 Ver tudo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -479,7 +479,7 @@ export default function Dashboard() {
                     stroke="none"
                   >
                     {severityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell key={'cell-' + index} fill={entry.color} />
                     ))}
                   </Pie>
                   <RechartsTooltip 

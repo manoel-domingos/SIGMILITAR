@@ -136,8 +136,8 @@ function RegistroDisciplinarContent() {
     // Student names
     const studentNames = selectedStudents.map(id => students.find(s => s.id === id)?.name).filter(Boolean) as string[];
     const alunoStr = studentNames.length === 1
-      ? `o(a) aluno(a) ${studentNames[0]}`
-      : `os alunos ${studentNames.slice(0, -1).join(', ')} e ${studentNames[studentNames.length - 1]}`;
+      ? 'o(a) aluno(a) ' + studentNames[0]
+      : 'os alunos ' + studentNames.slice(0, -1).join(', ') + ' e ' + studentNames[studentNames.length - 1];
     const verboStr = studentNames.length === 1 ? 'foi encontrado(a)' : 'foram encontrados';
 
     // Rule info (use first selected rule)
@@ -146,7 +146,7 @@ function RegistroDisciplinarContent() {
     const ruleDesc = rule?.description ?? '';
 
     // Located by
-    const locatedByStr = locatedBy.trim() ? ` pelo(a) ${locatedBy.trim()}` : '';
+    const locatedByStr = locatedBy.trim() ? ' pelo(a) ' + locatedBy.trim() : '';
 
     // Reincidencia (exclui a propria ocorrencia ao editar)
     const isReincidente = selectedStudents.some(id => {
@@ -156,10 +156,10 @@ function RegistroDisciplinarContent() {
 
     // Agravantes / atenuantes
     const agravantesStr = aggravatingFactors.length
-      ? ` Verificaram-se os seguintes fatores agravantes: ${aggravatingFactors.join(', ')}.`
+      ? ' Verificaram-se os seguintes fatores agravantes: ' + aggravatingFactors.join(', ') + '.'
       : '';
     const atenuantesStr = attenuatingFactors.length
-      ? ` Foram considerados os seguintes fatores atenuantes: ${attenuatingFactors.join(', ')}.`
+      ? ' Foram considerados os seguintes fatores atenuantes: ' + attenuatingFactors.join(', ') + '.'
       : '';
     const reincidenteStr = isReincidente
       ? ' O(A) aluno(a) já possui registro anterior da mesma infração, caracterizando reincidência.'
@@ -226,7 +226,7 @@ function RegistroDisciplinarContent() {
         {
           students: studentNames || 'Não identificado',
           infractions: ruleDescriptions || 'Não especificada',
-          dateTime: `${date} ${hour}`,
+          dateTime: date + ' ' + hour,
           location,
           text: observations,
         },
@@ -272,7 +272,7 @@ function RegistroDisciplinarContent() {
           setRegisteredBy(buildUserLabel(data.name, data.role));
         } else if (user.email) {
           const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
-          setRegisteredBy(staff ? `${staff.role} ${staff.name}` : user.email.split('@')[0]);
+          setRegisteredBy(staff ? staff.role + ' ' + staff.name : user.email.split('@')[0]);
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -332,8 +332,8 @@ function RegistroDisciplinarContent() {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
     // Fallback: usar date + hour se createdAt não estiver disponível
-    const dateTimeA = new Date(`${a.date}T${a.hour || '00:00'}`).getTime();
-    const dateTimeB = new Date(`${b.date}T${b.hour || '00:00'}`).getTime();
+        const dateTimeA = new Date(a.date + 'T' + (a.hour || '00:00')).getTime();
+        const dateTimeB = new Date(b.date + 'T' + (b.hour || '00:00')).getTime();
     if (dateTimeB !== dateTimeA) return dateTimeB - dateTimeA;
     // Se tudo mais for igual, por ID (mais recente ID primeiro)
     return b.id.localeCompare(a.id);
@@ -356,7 +356,7 @@ function RegistroDisciplinarContent() {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    const localDate = `${year}-${month}-${day}`;
+    const localDate = year + '-' + month + '-' + day;
     
     const localHour = now.toTimeString().split(' ')[0].substring(0, 5);
 
@@ -480,7 +480,7 @@ function RegistroDisciplinarContent() {
 
     const studentNamesHtml = relatedStudents.map(s => '<div>' + s.name + '</div>').join('');
     const firstStudent = relatedStudents[0];
-    const turmaStr = firstStudent ? `${firstStudent.class || '---'} — ${firstStudent.shift || '---'}` : '---';
+    const turmaStr = firstStudent ? (firstStudent.class || '---') + ' \u2014 ' + (firstStudent.shift || '---') : '---';
 
     // Reincidence check
     const reincidenteCount = occurrences.filter(oc =>
@@ -495,8 +495,8 @@ function RegistroDisciplinarContent() {
     const mesExtenso = MESES[parseInt(month, 10) - 1] ?? '';
     const diaNum = parseInt(day, 10);
     const alunoStr = relatedStudents.length === 1
-      ? `o(a) aluno(a) ${relatedStudents[0].name}`
-      : `os alunos ${relatedStudents.slice(0,-1).map(s=>s.name).join(', ')} e ${relatedStudents[relatedStudents.length-1].name}`;
+      ? 'o(a) aluno(a) ' + relatedStudents[0].name
+      : 'os alunos ' + relatedStudents.slice(0,-1).map(s=>s.name).join(', ') + ' e ' + relatedStudents[relatedStudents.length-1].name;
     const autoAta = 'Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + (o.hour || '---') + ', ' + alunoStr + ' foi identificado(a) no(a) ' + (o.location || '---') + (o.locatedBy ? ' pelo(a) ' + o.locatedBy : '') + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + o.ruleCode + ' do Regimento Interno (' + (rule?.description || 'Ocorr\u00eancia personalizada') + '). O presente registro foi lavrado por ' + (o.registeredBy || '---') + '.';
     const ataText = (o.observations || '').trim() || autoAta;
 
@@ -1668,7 +1668,7 @@ function RegistroDisciplinarContent() {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-slate-600 mb-1">Localizado por</label>
                     <SearchableSelect
-                      options={staffMembers.map(s => ({ value: `${s.role} ${s.name}`, label: `${s.role} ${s.name}` }))}
+                      options={staffMembers.map(s => ({ value: s.role + ' ' + s.name, label: s.role + ' ' + s.name }))}
                       value={locatedBy}
                       onChange={setLocatedBy}
                       placeholder="Quem localizou a infração?"
@@ -2060,7 +2060,7 @@ function RegistroDisciplinarContent() {
                       value={newClassName.replace(/ [A-Z]$/i, '') || '6º Ano'}
                       onChange={(e) => {
                         const letter = newClassName.match(/ ([A-Z])$/i)?.[1] || 'A';
-                        setNewClassName(`${e.target.value} ${letter}`);
+                        setNewClassName(e.target.value + ' ' + letter);
                       }}
                       className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
@@ -2077,7 +2077,7 @@ function RegistroDisciplinarContent() {
                       value={newClassName.match(/ ([A-Z])$/i)?.[1] || 'A'}
                       onChange={(e) => {
                         const prefix = newClassName.replace(/ [A-Z]$/i, '') || '6º Ano';
-                        setNewClassName(`${prefix} ${e.target.value}`);
+                        setNewClassName(prefix + ' ' + e.target.value);
                       }}
                       className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >

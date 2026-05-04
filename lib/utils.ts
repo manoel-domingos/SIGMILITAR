@@ -10,7 +10,7 @@ export function getLocalDateString() {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return year + '-' + month + '-' + day;
 }
 
 export function getLocalTimeString() {
@@ -24,7 +24,7 @@ export function formatDate(dateStr: string) {
   const parts = dateStr.split('T')[0].split('-');
   if (parts.length === 3) {
     const [year, month, day] = parts;
-    return `${day}/${month}/${year}`;
+    return day + '/' + month + '/' + year;
   }
   return new Date(dateStr).toLocaleDateString('pt-BR');
 }
@@ -32,7 +32,7 @@ export function formatDate(dateStr: string) {
 export function formatDateTime(dateStr: string) {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatPhoneForWhatsApp(phone: string, studentName: string) {
@@ -42,7 +42,7 @@ export function formatPhoneForWhatsApp(phone: string, studentName: string) {
   if (numbers.length < 10) return '';
   // Adiciona o código do DDI do Brasil (55) se não o usuário não colocou
   const hasCountryCode = numbers.startsWith('55') && numbers.length >= 12;
-  const baseUrl = `https://wa.me/${hasCountryCode ? '' : '55'}${numbers}`;
+  const baseUrl = 'https://wa.me/' + (hasCountryCode ? '' : '55') + numbers;
   
   // Greeting depending on time
   const hour = new Date().getHours();
