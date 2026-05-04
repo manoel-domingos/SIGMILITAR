@@ -1537,7 +1537,7 @@ function RegistroDisciplinarContent() {
                                   className={'flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-all ' + (isPanelOpen ? 'bg-slate-100 border-slate-300 text-slate-600' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700')}
                                 >
                                   Outras medidas
-                                  <ChevronDown className={`w-3 h-3 transition-transform ${isPanelOpen ? 'rotate-180' : ''}`} />
+                                  <ChevronDown className={'w-3 h-3 transition-transform ' + (isPanelOpen ? 'rotate-180' : '')} />
                                 </button>
                               </div>
                             </div>
@@ -2471,7 +2471,7 @@ function RegistroDisciplinarContent() {
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
             {/* Header */}
-            <div className={`px-5 py-4 ${postSaveAlert.isViolence ? 'bg-red-600' : 'bg-blue-600'}`}>
+            <div className={'px-5 py-4 ' + (postSaveAlert.isViolence ? 'bg-red-600' : 'bg-blue-600')}>
               <p className="text-white font-bold text-sm">
                 {postSaveAlert.isViolence ? 'Atencao — Caso de Violencia' : 'Ocorrencia Registrada'}
               </p>

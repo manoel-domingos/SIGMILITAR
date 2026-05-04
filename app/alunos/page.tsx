@@ -854,7 +854,7 @@ export default function Alunos() {
                   </tr>
                 ) : (
                   filteredStudents.map((s) => (
-                    <tr key={s.id} onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)} className={`transition border-b border-slate-100 last:border-0 text-slate-600 ${currentUserRole !== 'GUEST' ? 'hover:bg-slate-50 cursor-pointer' : ''}`}>
+                    <tr key={s.id} onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)} className={'transition border-b border-slate-100 last:border-0 text-slate-600 ' + (currentUserRole !== 'GUEST' ? 'hover:bg-slate-50 cursor-pointer' : '')}>
                       <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-3">
                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shrink-0">
                            {s.name.charAt(0)}
@@ -899,12 +899,12 @@ export default function Alunos() {
                       </td>
                       <td className="px-6 py-4">
                          <div className="flex flex-col items-center gap-1">
-                            <span className={`text-sm font-black ${getStudentPoints(s.id) >= 7 ? 'text-blue-600' : 'text-red-500'}`}>
+                            <span className={'text-sm font-black ' + (getStudentPoints(s.id) >= 7 ? 'text-blue-600' : 'text-red-500')}>
                                {getStudentPoints(s.id).toFixed(1)}
                             </span>
                             <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
                                <div 
-                                 className={`h-full transition-all duration-500 ${getStudentPoints(s.id) >= 7 ? 'bg-blue-500' : 'bg-red-500'}`} 
+                                 className={'h-full transition-all duration-500 ' + (getStudentPoints(s.id) >= 7 ? 'bg-blue-500' : 'bg-red-500')} 
                                  style={{ width: `${getStudentPoints(s.id) * 10}%` }}
                                />
                             </div>
@@ -1275,7 +1275,7 @@ export default function Alunos() {
                             type="text" 
                             value={student.name}
                             onChange={(e) => handleReviewChange(index, 'name', e.target.value)}
-                            className={`w-full px-3 py-1.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${!student.name ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'}`}
+                            className={'w-full px-3 py-1.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ' + (!student.name ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white')}
                             placeholder="Nome..."
                           />
                         </td>

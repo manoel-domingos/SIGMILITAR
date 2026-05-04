@@ -108,8 +108,8 @@ export default function FaltasDisciplinares() {
           {/* Legenda */}
           <div className="flex flex-wrap gap-2">
             {(Object.entries(SEVERITY_CONFIG) as [SeverityKey, typeof SEVERITY_CONFIG[SeverityKey]][]).map(([key, cfg]) => (
-              <div key={key} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border ${cfg.badge}`}>
-                <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+              <div key={key} className={'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border ' + cfg.badge}>
+                <span className={'w-2 h-2 rounded-full ' + cfg.dot} />
                 <span>{cfg.label}</span>
                 <span className="opacity-60">·</span>
                 <span>{cfg.points}</span>
@@ -153,14 +153,14 @@ export default function FaltasDisciplinares() {
                   {/* Group header */}
                   <button
                     onClick={() => toggleGroup(sev)}
-                    className={`w-full flex items-center justify-between px-5 py-3 border-b text-left transition ${cfg.header}`}
+                    className={'w-full flex items-center justify-between px-5 py-3 border-b text-left transition ' + cfg.header}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
+                      <span className={'w-2.5 h-2.5 rounded-full ' + cfg.dot} />
                       <span className="font-bold text-sm uppercase tracking-wide">
                         Natureza {cfg.label}
                       </span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>
+                      <span className={'text-xs font-medium px-2 py-0.5 rounded-full ' + cfg.badge}>
                         {items.length} {items.length === 1 ? 'artigo' : 'artigos'}
                       </span>
                       <span className="text-xs opacity-60">· {cfg.points} · {cfg.measure}</span>
@@ -189,7 +189,7 @@ export default function FaltasDisciplinares() {
                           {items.map(r => (
                             <tr key={r.code} className="hover:bg-slate-50/70 transition group">
                               <td className="px-5 py-3 text-center">
-                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold ${cfg.badge}`}>
+                                <span className={'inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold ' + cfg.badge}>
                                   {r.code}
                                 </span>
                               </td>
@@ -202,7 +202,7 @@ export default function FaltasDisciplinares() {
                                 </span>
                               </td>
                               <td className="px-5 py-3">
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${cfg.badge}`}>
+                                <span className={'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ' + cfg.badge}>
                                   {r.measure}
                                 </span>
                               </td>
@@ -236,7 +236,7 @@ export default function FaltasDisciplinares() {
           <div className="glass-modal max-w-lg w-full flex flex-col animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between p-5 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold ${SEVERITY_CONFIG[editingRule.severity as SeverityKey]?.badge ?? ''}`}>
+                <span className={'inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold ' + (SEVERITY_CONFIG[editingRule.severity as SeverityKey]?.badge ?? '')}>
                   {editingRule.code}
                 </span>
                 Editar Artigo {editingRule.code}

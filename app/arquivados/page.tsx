@@ -78,37 +78,37 @@ export default function Arquivados() {
         <div className="flex overflow-x-auto space-x-1 border-b border-slate-200 pb-px">
           <button
             onClick={() => setActiveTab('alunos')}
-            className={`flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ${activeTab === 'alunos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            className={'flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ' + (activeTab === 'alunos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300')}
           >
             <Users className="w-4 h-4" /> Alunos ({archivedStudents.length})
           </button>
           <button
             onClick={() => setActiveTab('ocorrencias')}
-            className={`flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ${activeTab === 'ocorrencias' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            className={'flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ' + (activeTab === 'ocorrencias' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300')}
           >
             <FileText className="w-4 h-4" /> Reg. Disciplinar ({archivedOccurrences.length})
           </button>
           <button
             onClick={() => setActiveTab('acidentes')}
-            className={`flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ${activeTab === 'acidentes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            className={'flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ' + (activeTab === 'acidentes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300')}
           >
             <AlertTriangle className="w-4 h-4" /> Acidentes ({archivedAccidents.length})
           </button>
           <button
             onClick={() => setActiveTab('elogios')}
-            className={`flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ${activeTab === 'elogios' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            className={'flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ' + (activeTab === 'elogios' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300')}
           >
             <Star className="w-4 h-4" /> Elogios ({archivedPraises.length})
           </button>
           <button
             onClick={() => setActiveTab('convocacoes')}
-            className={`flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ${activeTab === 'convocacoes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            className={'flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ' + (activeTab === 'convocacoes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300')}
           >
             <UserPlus className="w-4 h-4" /> Convocações ({archivedSummons.length})
           </button>
           <button
             onClick={() => setActiveTab('termos')}
-            className={`flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ${activeTab === 'termos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}
+            className={'flex px-4 py-2.5 items-center gap-2 text-sm font-medium border-b-2 whitespace-nowrap transition ' + (activeTab === 'termos' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300')}
           >
             <FileBadge className="w-4 h-4" /> Termos de Conduta ({archivedTerms.length})
           </button>

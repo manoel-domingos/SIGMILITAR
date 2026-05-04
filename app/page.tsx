@@ -314,7 +314,7 @@ export default function Dashboard() {
 
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-between items-center text-xs">
               <span className="text-slate-500 dark:text-slate-400">Nota comportamental média</span>
-              <span className={`font-bold ${averagePoints >= 7 ? 'text-emerald-600 dark:text-emerald-400' : averagePoints >= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+              <span className={'font-bold ' + (averagePoints >= 7 ? 'text-emerald-600 dark:text-emerald-400' : averagePoints >= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')}>
                 {averagePointsStr} • {averagePoints >= 7 ? 'Bom' : averagePoints >= 5 ? 'Atenção' : 'Crítico'}
               </span>
             </div>

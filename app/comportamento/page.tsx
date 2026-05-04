@@ -290,7 +290,7 @@ function ComportamentoContent() {
                             {s.points.toFixed(1)}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${s.classColor}`}>
+                            <span className={'inline-flex items-center px-2 py-1 rounded text-xs font-semibold ' + s.classColor}>
                               <div className={'w-1.5 h-1.5 rounded-full mr-1.5 ' + (s.points >= 7.5 ? 'bg-emerald-500' : s.points >= 5.0 ? 'bg-amber-500' : 'bg-rose-500')}></div>
                               {s.classification}
                             </span>

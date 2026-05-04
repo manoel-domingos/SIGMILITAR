@@ -154,7 +154,7 @@ export default function AtaEditor({
           isComposing.current = false;
           handleInput();
         }}
-        className={`w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed whitespace-pre-wrap break-words ${className}`}
+        className={'w-full bg-white border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed whitespace-pre-wrap break-words ' + className}
         style={{ minHeight }}
       />
     </div>

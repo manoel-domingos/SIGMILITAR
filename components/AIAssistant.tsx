@@ -179,10 +179,10 @@ export default function AIAssistant() {
                                 className="flex items-start gap-2 cursor-pointer"
                                 onClick={() => setChecklistTasks(toggleChecklistItem(userId, task.occurrenceId, item.id))}
                               >
-                                <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
+                                <div className={'mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ' + (item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300')}>
                                   {item.done && <div className="w-1.5 h-1 border-b-2 border-r-2 border-white rotate-45 -translate-y-px" />}
                                 </div>
-                                <span className={`text-xs leading-relaxed ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{item.label}</span>
+                                <span className={'text-xs leading-relaxed ' + (item.done ? 'line-through text-slate-400' : 'text-slate-700')}>{item.label}</span>
                               </li>
                             ))}
                           </ul>
@@ -200,7 +200,7 @@ export default function AIAssistant() {
                 {/* Messages */}
                 <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950/50">
                   {messages.map((m, i) => (
-                    <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={i} className={'flex ' + (m.role === 'user' ? 'justify-end' : 'justify-start')}>
                       <div className={'max-w-[85%] p-3 rounded-2xl text-sm ' + (m.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none shadow-md' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200 dark:border-slate-700 shadow-sm')}>
                         {m.content}
                       </div>

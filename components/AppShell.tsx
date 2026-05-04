@@ -214,7 +214,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className={`min-h-screen bg-[#eef3f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 ${layoutMode === 'sidebar' ? 'flex' : 'flex flex-col'}`}>
+    <div className={'min-h-screen bg-[#eef3f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 ' + (layoutMode === 'sidebar' ? 'flex' : 'flex flex-col')}>
       {/* Background decoration for liquid glass effect */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full" />
@@ -323,7 +323,7 @@ function SidebarLayout({
                       href={group.href}
                       className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                     >
-                      <group.icon className={`w-5 h-5 ${active ? 'text-blue-400' : 'text-slate-500'}`} />
+                      <group.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
                       {group.label}
                     </Link>
                   </li>
@@ -344,7 +344,7 @@ function SidebarLayout({
                             href={item.href}
                             className={'flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-colors ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                           >
-                            <item.icon className={`w-4 h-4 ${active ? 'text-blue-400' : 'text-slate-500'}`} />
+                            <item.icon className={'w-4 h-4 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
                             {item.label}
                           </Link>
                         </li>
@@ -503,7 +503,7 @@ function GroupPill({
         href={group.href}
         className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
       >
-        <group.icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400 group-hover/item:text-white'}`} />
+        <group.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
         <span className="whitespace-nowrap">{group.label}</span>
       </Link>
     );
@@ -521,9 +521,9 @@ function GroupPill({
         onClick={handleButtonClick}
         className={'shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (isActive || open ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
       >
-        <group.icon className={`w-4 h-4 transition-colors ${isActive || open ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+        <group.icon className={'w-4 h-4 transition-colors ' + (isActive || open ? 'text-white' : 'text-slate-400 group-hover:text-white')} />
         <span className="whitespace-nowrap">{group.label}</span>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={'w-3.5 h-3.5 transition-transform ' + (open ? 'rotate-180' : '')} />
       </button>
 
       {open && (
@@ -538,7 +538,7 @@ function GroupPill({
                   onClick={() => setOpen(false)}
                   className={'flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ' + (active ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700')}
                 >
-                  <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                  <item.icon className={'w-4 h-4 shrink-0 ' + (active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400')} />
                   <span className="whitespace-nowrap">{item.label}</span>
                 </Link>
               );

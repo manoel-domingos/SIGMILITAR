@@ -86,7 +86,7 @@ export default function DebugAIPanel() {
               >
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${log.status === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    <span className={'w-2 h-2 rounded-full ' + (log.status === 'success' ? 'bg-emerald-500' : 'bg-red-500')} />
                     <span className="font-mono text-[10px] font-bold text-slate-300">{log.model}</span>
                     <span className="text-[10px] text-slate-500">{log.timestamp}</span>
                   </div>
