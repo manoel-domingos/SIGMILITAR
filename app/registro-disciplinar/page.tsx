@@ -259,6 +259,19 @@ function RegistroDisciplinarContent() {
     return parts.length ? parts.join(' ') : (user?.email?.split('@')[0] || 'Gestor Escolar');
   };
 
+  // Retorna o rotulo do usuario logado: usa registeredBy atual se ja preenchido,
+  // senao tenta casar pelo nome em staffMembers, com fallback para email/'Gestor Escolar'.
+  const getLoggedUserName = (): string => {
+    if (registeredBy && registeredBy.trim()) return registeredBy.trim();
+    const emailUser = user?.email?.split('@')[0] || '';
+    if (emailUser) {
+      const staff = staffMembers.find(s => s.name.toLowerCase() === emailUser.toLowerCase());
+      if (staff) return staff.role + ' ' + staff.name;
+      return emailUser;
+    }
+    return 'Gestor Escolar';
+  };
+
   // Carregar perfil do Supabase para preencher "Registrado por"
   useEffect(() => {
     if (!user?.email || !supabase) return;
