@@ -8,6 +8,7 @@ import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhatsApp } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
 import OccurrenceChecklist, {
@@ -252,26 +253,36 @@ function RegistroDisciplinarContent() {
 
   const locations = ['Pátio', 'Quadra', 'Refeitório', 'Sala'].sort();
 
-  const getLoggedUserName = () => {
-    // Checar perfil personalizado primeiro
-    const userKey = user?.email || 'guest';
-    const savedProfile = typeof window !== 'undefined' ? localStorage.getItem(`eecm_profile_${userKey}`) : null;
-    if (savedProfile) {
-      const p = JSON.parse(savedProfile);
-      const parts = [p.role, p.name].filter(Boolean);
-      if (parts.length) return parts.join(' ');
-    }
-    if (user?.email) {
-      const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
-      if (staff) return `${staff.role} ${staff.name}`;
-      return user.email.split('@')[0];
-    }
-    return isGuest ? 'Somente Leitura' : 'Gestor Escolar';
+  const buildUserLabel = (name: string, role: string) => {
+    const parts = [role, name].filter(Boolean);
+    return parts.length ? parts.join(' ') : (user?.email?.split('@')[0] || 'Gestor Escolar');
   };
 
-  // Atualizar registeredBy quando o perfil mudar
+  // Carregar perfil do Supabase para preencher "Registrado por"
   useEffect(() => {
-    const handler = () => setRegisteredBy(getLoggedUserName());
+    if (!user?.email || !supabase) return;
+    supabase
+      .from('user_profiles')
+      .select('name, role')
+      .eq('email', user.email)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) {
+          setRegisteredBy(buildUserLabel(data.name, data.role));
+        } else if (user.email) {
+          const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
+          setRegisteredBy(staff ? `${staff.role} ${staff.name}` : user.email.split('@')[0]);
+        }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
+
+  // Atualizar registeredBy em tempo real quando o perfil for salvo no AppShell
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { name, role } = (e as CustomEvent).detail || {};
+      if (name) setRegisteredBy(buildUserLabel(name, role));
+    };
     window.addEventListener('eecm_profile_updated', handler);
     return () => window.removeEventListener('eecm_profile_updated', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps

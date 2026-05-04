@@ -769,50 +769,77 @@ function ProfileMenu({
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
 
-  // Carregar perfil salvo e verificar primeiro acesso
+  // Carregar perfil salvo no Supabase e verificar primeiro acesso
   useEffect(() => {
-    if (!mounted || !user?.email) return; // aguarda usuario autenticado com email real
-    const userKey = user.email;
-    const saved = localStorage.getItem(`eecm_profile_${userKey}`);
-    if (saved) {
-      try {
-        const p = JSON.parse(saved);
-        setProfileName(p.name || '');
-        setProfileRole(p.role || '');
-      } catch {
-        // JSON invalido, ignorar
+    if (!mounted || !user?.email || !supabase) return;
+    const loadProfile = async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('name, role, setup_done')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      if (error) {
+        // Falha na consulta: não exibe o modal para não bloquear o usuário
+        return;
       }
-      setShowFirstAccessModal(false);
-    } else {
-      // Primeiro acesso real: nenhum perfil salvo para este email
-      setShowFirstAccessModal(true);
-    }
+
+      if (data) {
+        setProfileName(data.name || '');
+        setProfileRole(data.role || '');
+        setShowFirstAccessModal(!data.setup_done);
+      } else {
+        // Nenhum registro: primeiro acesso real
+        setShowFirstAccessModal(true);
+      }
+    };
+    loadProfile();
   }, [mounted, user?.email]);
 
-  const getProfileKey = () => user?.email ?? 'guest';
-
-  const saveProfile = (name: string, role: string) => {
-    const key = getProfileKey();
-    localStorage.setItem(`eecm_profile_${key}`, JSON.stringify({ name, role }));
-    // Atualizar o campo "registrado por" via evento customizado
-    window.dispatchEvent(new CustomEvent('eecm_profile_updated', { detail: { name, role } }));
-  };
-
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     setProfileError('');
     if (!profileName.trim()) {
       setProfileError('O nome é obrigatório.');
       return;
     }
+    if (!user?.email || !supabase) {
+      setProfileError('Sessão inválida. Faça login novamente.');
+      return;
+    }
     setProfileLoading(true);
-    saveProfile(profileName.trim(), profileRole.trim());
-    setProfileSuccess('Perfil atualizado com sucesso!');
-    setProfileLoading(false);
-    setTimeout(() => {
-      setShowProfileModal(false);
-      setShowFirstAccessModal(false);
-      setProfileSuccess('');
-    }, 1200);
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert(
+          {
+            email: user.email,
+            name: profileName.trim(),
+            role: profileRole.trim(),
+            setup_done: true,
+          },
+          { onConflict: 'email' }
+        );
+
+      if (error) throw error;
+
+      // Notifica outros componentes (ex: "Registrado por" no formulário)
+      window.dispatchEvent(
+        new CustomEvent('eecm_profile_updated', {
+          detail: { name: profileName.trim(), role: profileRole.trim() },
+        })
+      );
+
+      setProfileSuccess('Perfil atualizado com sucesso!');
+      setTimeout(() => {
+        setShowProfileModal(false);
+        setShowFirstAccessModal(false);
+        setProfileSuccess('');
+      }, 1200);
+    } catch (err: any) {
+      setProfileError(err.message || 'Erro ao salvar perfil.');
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   // Change password state
@@ -1216,10 +1243,16 @@ function ProfileMenu({
                 )}
                 {showFirstAccessModal && (
                   <button
-                    onClick={() => {
-                      // Salvar um marcador para não mostrar novamente mesmo se pulado
-                      const key = getProfileKey();
-                      localStorage.setItem(`eecm_profile_${key}`, JSON.stringify({ name: profileName || '', role: profileRole || '' }));
+                    onClick={async () => {
+                      // Persiste setup_done=true no Supabase mesmo ao pular
+                      if (user?.email && supabase) {
+                        await supabase
+                          .from('user_profiles')
+                          .upsert(
+                            { email: user.email, name: profileName || '', role: profileRole || '', setup_done: true },
+                            { onConflict: 'email' }
+                          );
+                      }
                       setShowFirstAccessModal(false);
                     }}
                     className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-500 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg transition"
