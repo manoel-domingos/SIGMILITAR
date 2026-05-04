@@ -513,7 +513,7 @@ function RegistroDisciplinarContent() {
           <tr><td class="label-cell">Fatores Atenuantes</td><td>${atenuantes}</td></tr>
           <tr><td class="label-cell">Fatores Agravantes</td><td>${agravantes}</td></tr>
         </table>
-        ${isReincidente ? `<div class="reincidencia-box">⚠ REINCIDÊNCIA — ${reincidenteCount}ª ocorrência nesta infração</div>` : ''}
+        ${isReincidente ? '<div class="reincidencia-box">REINCID\u00caNCIA \u2014 ' + reincidenteCount + '\u00aa ocorr\u00eancia nesta infra\u00e7\u00e3o</div>' : ''}
       </div>
       <div class="page-break"></div>
     ` : '<div class="page-break"></div>';
@@ -613,7 +613,7 @@ function RegistroDisciplinarContent() {
         <span class="sid-medida-valor">${impactoStr}</span>
       </div>
 
-      ${isReincidente ? `<div class="reincidencia-tag">REINCIDÊNCIA — ${reincidenteCount}ª vez</div>` : ''}
+      ${isReincidente ? '<div class="reincidencia-tag">REINCID\u00caNCIA \u2014 ' + reincidenteCount + '\u00aa vez</div>' : ''}
     </div>
 
     <!-- COLUNA PRINCIPAL: ATA -->
@@ -678,7 +678,8 @@ function RegistroDisciplinarContent() {
         // Escalation alert for new occurrences
         if (escalation.isEscalated) {
           const student = students.find(s => s.id === primaryStudentId);
-          const confirmed = window.confirm(`ATENCAO (${student?.name}): ${escalation.reason}!\n\nA medida sugerida subiu para: ${escalation.measure}.\n\nDeseja confirmar este registro com a medida agravada?`);
+          const confirmMsg = 'ATEN\u00c7\u00c3O (' + (student?.name ?? '') + '): ' + escalation.reason + '!\n\nA medida sugerida subiu para: ' + escalation.measure + '.\n\nDeseja confirmar este registro com a medida agravada?';
+          const confirmed = window.confirm(confirmMsg);
           if (!confirmed) return;
         }
 
