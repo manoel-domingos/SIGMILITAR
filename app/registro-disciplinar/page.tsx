@@ -1040,8 +1040,8 @@ function RegistroDisciplinarContent() {
       ? o.measures.join(' / ')
       : (o.measure || measure || 'A definir');
 
-    printWindow.document.write(`
-      <h${""}tml lang="pt-BR">
+    const htmlOpen = '<html lang="pt-BR">';
+    printWindow.document.write(htmlOpen + `
         <head>
           <title>${docTitle} - ${primaryStudent?.name}</title>
           <style>
