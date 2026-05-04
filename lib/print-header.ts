@@ -16,7 +16,6 @@ const origin = (): string =>
   typeof window !== 'undefined' ? window.location.origin : '';
 
 export const getSchoolHeaderHTML = (): string => `
-<div class="barra-lateral-esq"></div>
 <div class="cabecalho-oficial">
   <img class="cab-logo-seduc"  src="${origin()}/logo-seduc-mt.svg" alt="Logo SEDUC e Governo MT" />
   <div class="cab-center">
@@ -80,6 +79,8 @@ export const SCHOOL_HEADER_CSS = `
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     padding-bottom: 40px;
+    border-left: 2px solid #1a237e;
+    padding-left: 8px;
   }
 
   /* ================================================
@@ -142,19 +143,6 @@ export const SCHOOL_HEADER_CSS = `
     color: #1a237e;
     line-height: 1.45;
     background: #fff;
-  }
-
-  /* ================================================
-     Barra vertical azul fina — esquerda da página,
-     proporcional à linha divisória da sidebar (2px)
-     ================================================ */
-  .barra-lateral-esq {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 12mm;
-    width: 2px;
-    background: #1a237e;
   }
 
   /* ================================================
