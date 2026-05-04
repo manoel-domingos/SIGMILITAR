@@ -197,29 +197,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async function initAuthAndData() {
       let usingMockSession = false;
       // Restore session from localStorage if within 10 minutes
+      // Restaurar sessão mock/guest (sem timeout - permanece até logout)
       try {
         const stored = localStorage.getItem('eecm_session');
         if (stored) {
-          const { type, email, timestamp } = JSON.parse(stored);
-          const now = Date.now();
-          const TEN_MINUTES = 10 * 60 * 1000;
-          
-          if (now - timestamp < TEN_MINUTES) {
-            if (type === 'mock') {
-              setUser({ email, role: 'admin' });
-              setIsGuest(false);
-              // Refresh timestamp to extend session on F5
-              localStorage.setItem('eecm_session', JSON.stringify({ type, email, timestamp: now }));
-              usingMockSession = true;
-            } else if (type === 'guest') {
-              setIsGuest(true);
-              setUser(null);
-              // Refresh timestamp
-              localStorage.setItem('eecm_session', JSON.stringify({ type, timestamp: now }));
-              usingMockSession = true;
-            }
-          } else {
-            localStorage.removeItem('eecm_session');
+          const { type, email } = JSON.parse(stored);
+          if (type === 'mock' && email) {
+            setUser({ email, role: 'admin' });
+            setIsGuest(false);
+            usingMockSession = true;
+          } else if (type === 'guest') {
+            setIsGuest(true);
+            setUser(null);
+            usingMockSession = true;
           }
         }
       } catch (err) {
@@ -1350,20 +1340,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setGuestMode = () => {
     setIsGuest(true);
-    localStorage.setItem('eecm_session', JSON.stringify({
-      type: 'guest',
-      timestamp: Date.now()
-    }));
+    localStorage.setItem('eecm_session', JSON.stringify({ type: 'guest' }));
   };
 
   const setMockUser = (username: string) => {
     setUser({ email: username, role: 'admin' });
     setIsGuest(false);
-    localStorage.setItem('eecm_session', JSON.stringify({
-      type: 'mock',
-      email: username,
-      timestamp: Date.now()
-    }));
+    localStorage.setItem('eecm_session', JSON.stringify({ type: 'mock', email: username }));
   };
 
   const logout = React.useCallback(async () => {
