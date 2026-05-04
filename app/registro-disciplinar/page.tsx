@@ -6,8 +6,9 @@ import { useAppContext } from '@/lib/store';
 import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
-import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
+import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS, markdownBoldToHtml } from '@/lib/print-header';
 import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhatsApp } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
 import OccurrenceChecklist, {
@@ -66,6 +67,7 @@ function RegistroDisciplinarContent() {
   const [ruleSearch, setRuleSearch] = useState('');
   const [registeredBy, setRegisteredBy] = useState('');
   const [observations, setObservations] = useState('');
+  const [ataPreviewMode, setAtaPreviewMode] = useState(false);
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
   const [signedDocUrls, setSignedDocUrls] = useState<string[]>([]);
   const [durationDays, setDurationDays] = useState(1);
@@ -252,26 +254,36 @@ function RegistroDisciplinarContent() {
 
   const locations = ['Pátio', 'Quadra', 'Refeitório', 'Sala'].sort();
 
-  const getLoggedUserName = () => {
-    // Checar perfil personalizado primeiro
-    const userKey = user?.email || 'guest';
-    const savedProfile = typeof window !== 'undefined' ? localStorage.getItem(`eecm_profile_${userKey}`) : null;
-    if (savedProfile) {
-      const p = JSON.parse(savedProfile);
-      const parts = [p.role, p.name].filter(Boolean);
-      if (parts.length) return parts.join(' ');
-    }
-    if (user?.email) {
-      const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
-      if (staff) return `${staff.role} ${staff.name}`;
-      return user.email.split('@')[0];
-    }
-    return isGuest ? 'Somente Leitura' : 'Gestor Escolar';
+  const buildUserLabel = (name: string, role: string) => {
+    const parts = [role, name].filter(Boolean);
+    return parts.length ? parts.join(' ') : (user?.email?.split('@')[0] || 'Gestor Escolar');
   };
 
-  // Atualizar registeredBy quando o perfil mudar
+  // Carregar perfil do Supabase para preencher "Registrado por"
   useEffect(() => {
-    const handler = () => setRegisteredBy(getLoggedUserName());
+    if (!user?.email || !supabase) return;
+    supabase
+      .from('user_profiles')
+      .select('name, role')
+      .eq('email', user.email)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) {
+          setRegisteredBy(buildUserLabel(data.name, data.role));
+        } else if (user.email) {
+          const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
+          setRegisteredBy(staff ? `${staff.role} ${staff.name}` : user.email.split('@')[0]);
+        }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
+
+  // Atualizar registeredBy em tempo real quando o perfil for salvo no AppShell
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { name, role } = (e as CustomEvent).detail || {};
+      if (name) setRegisteredBy(buildUserLabel(name, role));
+    };
     window.addEventListener('eecm_profile_updated', handler);
     return () => window.removeEventListener('eecm_profile_updated', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -358,6 +370,7 @@ function RegistroDisciplinarContent() {
     setRuleSearch('');
     setRegisteredBy(getLoggedUserName());
     setObservations('');
+    setAtaPreviewMode(false);
     setVideoUrls([]);
     setSignedDocUrls([]);
     setDurationDays(1);
@@ -395,6 +408,66 @@ function RegistroDisciplinarContent() {
       archiveOccurrence(id);
     }
   };
+
+  // -------------------------------------------------------
+  // Bloco de assinaturas — HTML compartilhado (print/export)
+  // -------------------------------------------------------
+  const signaturesHTML = () => `
+    <div class="assinaturas-bloco">
+      <div class="sig-item">
+        <div class="sig-espaco"></div>
+        <div class="sig-line"></div>
+        <div class="sig-cargo">Diretora / Coord. Pedagógico</div>
+        <div class="sig-nome-label">Nome:</div>
+        <div class="sig-nome">&nbsp;</div>
+      </div>
+      <div class="sig-item">
+        <div class="sig-espaco"></div>
+        <div class="sig-line"></div>
+        <div class="sig-cargo">Gestor Cívico Militar / Educacional</div>
+        <div class="sig-nome-label">Nome:</div>
+        <div class="sig-nome">&nbsp;</div>
+      </div>
+      <div class="sig-item">
+        <div class="sig-espaco"></div>
+        <div class="sig-line"></div>
+        <div class="sig-cargo">Responsável Legal</div>
+        <div class="sig-nome-label">Nome:</div>
+        <div class="sig-nome">&nbsp;</div>
+      </div>
+    </div>`;
+
+  // Versão DOCX — mesma estrutura via <table> (compatível com Word)
+  const signaturesDocxHTML = () => `
+    <br/><br/>
+    <table style="width:100%; border-collapse: collapse; margin-top: 32pt;">
+      <tr>
+        <td style="width:33%; vertical-align: bottom; padding: 0 8pt 0 0;">
+          <div style="height: 36pt;"></div>
+          <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
+            Diretora / Coord. Pedagógico
+          </div>
+          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
+          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
+        </td>
+        <td style="width:33%; vertical-align: bottom; padding: 0 4pt;">
+          <div style="height: 36pt;"></div>
+          <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
+            Gestor Cívico Militar / Educacional
+          </div>
+          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
+          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
+        </td>
+        <td style="width:33%; vertical-align: bottom; padding: 0 0 0 8pt;">
+          <div style="height: 36pt;"></div>
+          <div style="border-top: 1px solid #000; padding-top: 4pt; font-size: 8pt; font-weight: bold; text-align: center; text-transform: uppercase;">
+            Responsável Legal
+          </div>
+          <div style="font-size: 7pt; color: #555; margin-top: 6pt;">Nome:</div>
+          <div style="border-bottom: 1px dotted #999; min-height: 12pt;">&nbsp;</div>
+        </td>
+      </tr>
+    </table>`;
 
   const handlePrint = (o: any) => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -452,6 +525,12 @@ function RegistroDisciplinarContent() {
       ? o.measures.join(' / ')
       : (o.measure || 'A definir');
 
+    const impactoStr =
+      o.severity === 'Leve' ? '-0,10 PONTOS'
+      : o.severity === 'Media' ? '-0,30 PONTOS'
+      : o.severity === 'Grave' ? '-0,50 PONTOS'
+      : '---';
+
     printWindow.document.write(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -459,127 +538,23 @@ function RegistroDisciplinarContent() {
   <title>ATA de Ocorrência Disciplinar</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    ${SCHOOL_HEADER_CSS}
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 10.5pt;
-      color: #111;
+      color: #000;
       background: #fff;
-      line-height: 1.55;
+      line-height: 1.5;
     }
-    /* Layout principal: sidebar + main */
-    .layout {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-    /* Coluna lateral — IDENTIFICAÇÃO */
-    .sidebar {
-      width: 190px;
-      min-width: 190px;
-      border: 1px solid #1a237e;
-      border-radius: 3px;
-      overflow: hidden;
-      font-size: 8.5pt;
-    }
-    .sidebar-titulo {
-      background: #1a237e;
-      color: #fff;
-      font-weight: bold;
-      font-size: 8pt;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 4px 8px;
-      text-align: center;
-    }
-    .sid-item {
-      padding: 5px 8px;
-      border-bottom: 1px solid #e0e4f0;
-    }
-    .sid-item:last-child { border-bottom: none; }
-    .sid-label {
-      font-size: 7pt;
-      font-weight: bold;
-      text-transform: uppercase;
-      color: #1a237e;
-      letter-spacing: 0.3px;
-      display: block;
-      margin-bottom: 1px;
-    }
-    .sid-valor {
-      font-size: 8.5pt;
-      color: #111;
-      word-break: break-word;
-    }
-    .sid-separator {
-      background: #eef0f8;
-      padding: 3px 8px;
-      font-size: 7pt;
-      font-weight: bold;
-      text-transform: uppercase;
-      color: #555;
-      letter-spacing: 0.3px;
-      border-bottom: 1px solid #e0e4f0;
-    }
-    .sid-medida-box {
-      padding: 5px 8px;
-    }
-    .sid-medida-row { margin-bottom: 4px; }
+    ${SCHOOL_HEADER_CSS}
     .reincidencia-tag {
-      margin: 4px 8px;
-      padding: 3px 6px;
-      background: #fff5f5;
+      margin-top: 12px;
+      padding: 4px 8px;
       border: 1px solid #c00;
       color: #c00;
       font-weight: bold;
-      font-size: 7.5pt;
-      border-radius: 2px;
-    }
-    /* Coluna principal — ATA */
-    .main-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .main-titulo {
-      text-align: center;
-      font-size: 11pt;
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 2px solid #1a237e;
-      padding-bottom: 4px;
-      color: #1a237e;
-    }
-    .ata-corpo {
-      font-size: 10.5pt;
-      line-height: 1.75;
-      text-align: justify;
-      white-space: pre-wrap;
-      min-height: 260px;
-      border: 1px solid #ccc;
-      padding: 10px 12px;
-      background: #fafafa;
-    }
-    /* Assinaturas */
-    .assinaturas {
-      margin-top: 32px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 20px;
-    }
-    .sig-box { text-align: center; }
-    .sig-linha {
-      border-top: 1px solid #000;
-      padding-top: 5px;
       font-size: 8pt;
-      font-weight: bold;
+      border-radius: 2px;
       text-transform: uppercase;
-      color: #222;
-    }
-    @media print {
-      button { display: none !important; }
     }
   </style>
 </head>
@@ -587,11 +562,11 @@ function RegistroDisciplinarContent() {
 
   ${getSchoolHeaderHTML()}
 
-  <div class="layout">
+  <div class="ata-layout">
 
-    <!-- SIDEBAR: IDENTIFICAÇÃO -->
+    <!-- SIDEBAR: IDENTIFICAÇÃO / INFRAÇÃO / MEDIDA -->
     <div class="sidebar">
-      <div class="sidebar-titulo">Identificação</div>
+      <div class="sidebar-titulo">IDENTIFICAÇÃO</div>
 
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
@@ -618,59 +593,44 @@ function RegistroDisciplinarContent() {
         <span class="sid-valor">${o.registeredBy || '---'}</span>
       </div>
 
-      <div class="sid-separator">Infração</div>
+      <div class="sidebar-secao">INFRAÇÃO</div>
       <div class="sid-item">
         <span class="sid-label">Art. ${o.ruleCode}</span>
-        <span class="sid-valor">${rule?.description || 'Ocorrência personalizada'}</span>
+        <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
       </div>
 
-      <div class="sid-separator">Medida</div>
-      <div class="sid-medida-box">
-        <div class="sid-medida-row">
-          <span class="sid-label">Gravidade</span>
-          <span class="sid-valor">${o.severity || '---'}</span>
-        </div>
-        <div class="sid-medida-row">
-          <span class="sid-label">Medida aplicada</span>
-          <span class="sid-valor">${measuresStr}</span>
-        </div>
-        <div class="sid-medida-row">
-          <span class="sid-label">Impacto</span>
-          <span class="sid-valor">${
-            o.severity === 'Leve' ? '-0,10 pts'
-            : o.severity === 'Media' ? '-0,30 pts'
-            : o.severity === 'Grave' ? '-0,50 pts'
-            : '---'
-          }</span>
-        </div>
+      <div class="sidebar-secao">MEDIDA</div>
+      <div class="sid-medida-row">
+        <span class="sid-medida-label">Gravidade</span>
+        <span class="sid-medida-valor">${(o.severity || '---').toUpperCase()}</span>
       </div>
-      ${isReincidente ? `<div class="reincidencia-tag">REINCIDENCIA — ${reincidenteCount}ª vez</div>` : ''}
+      <div class="sid-medida-row">
+        <span class="sid-medida-label">Medida</span>
+        <span class="sid-medida-valor">${measuresStr.toUpperCase()}</span>
+      </div>
+      <div class="sid-medida-row">
+        <span class="sid-medida-label">Impacto</span>
+        <span class="sid-medida-valor">${impactoStr}</span>
+      </div>
+
+      ${isReincidente ? `<div class="reincidencia-tag">REINCIDÊNCIA — ${reincidenteCount}ª vez</div>` : ''}
     </div>
 
-    <!-- MAIN: ATA -->
+    <!-- COLUNA PRINCIPAL: ATA -->
     <div class="main-col">
-      <div class="main-titulo">ATA — Relato do Ocorrido</div>
-      <div class="ata-corpo">${ataText}</div>
+      <div class="ata-titulo-grande">ATA</div>
+      <div class="ata-subtitulo">Relato do Ocorrido</div>
+      <div class="ata-corpo">${markdownBoldToHtml(ataText)}</div>
 
-      <div class="assinaturas">
-        <div class="sig-box">
-          <div class="sig-linha">Diretora / Coord. Pedagógico</div>
-        </div>
-        <div class="sig-box">
-          <div class="sig-linha">Gestor Cívico Militar / Educacional</div>
-        </div>
-        <div class="sig-box">
-          <div class="sig-linha">Responsável Legal</div>
-        </div>
-      </div>
+      ${signaturesHTML()}
     </div>
 
-  </div><!-- /layout -->
+  </div><!-- /ata-layout -->
 
   ${getSchoolFooterHTML()}
 
 </body>
-</html>`);
+</html>\`);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => { printWindow.print(); }, 300);
@@ -686,10 +646,12 @@ function RegistroDisciplinarContent() {
       const primaryRuleCode = ruleCodesInt[0];
       // Ao editar, exclui a própria ocorrência do cálculo de reincidência
       const escalation = getEscalationStatus(primaryStudentId, primaryRuleCode, editingOccurrence ?? undefined);
+      const suspensaoLabel = 'Suspensão Escolar';
+      const suspensaoValue = `Suspensao (${durationDays}d)`;
       const measureToSave = measureOverride
         ? measureOverride
         : escalation.severity === 'Grave'
-          ? (graveMeasureType === 'Suspensão Escolar' ? `Suspensão (${durationDays}d)` : graveMeasureType)
+          ? (graveMeasureType === suspensaoLabel ? suspensaoValue : graveMeasureType)
           : escalation.measure;
 
       if (editingOccurrence) {
@@ -1072,56 +1034,87 @@ function RegistroDisciplinarContent() {
       ? 0.50 * (o.durationDays || 1) 
       : Math.abs(rule?.points || 0);
 
+    const exportMeasuresStr = Array.isArray(o.measures) && o.measures.length > 0
+      ? o.measures.join(' / ')
+      : (o.measure || measure || 'A definir');
+
     printWindow.document.write(`
       <h${""}tml lang="pt-BR">
         <head>
           <title>${docTitle} - ${primaryStudent?.name}</title>
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
-            body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; padding: 18mm 20mm 15mm 20mm; color: #111; line-height: 1.6; }
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              font-size: 10.5pt;
+              color: #000;
+              background: #fff;
+              line-height: 1.5;
+            }
             ${SCHOOL_HEADER_CSS}
-            .doc-titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
-            .info-table { width: 100%; border-collapse: collapse; font-size: 11pt; margin-bottom: 16px; }
-            .info-table td { padding: 4px 8px; border: 1px solid #ddd; vertical-align: top; }
-            .label-cell { font-weight: bold; width: 36%; background: #f5f5f5; white-space: nowrap; }
-            .box { border: 1px solid #000; padding: 12px 14px; margin-bottom: 16px; }
-            .secao-titulo { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #444; border-bottom: 1px solid #999; padding-bottom: 2px; margin-bottom: 10px; }
-            .ata-box { padding: 12px; border: 1px solid #ddd; min-height: 120px; font-size: 11pt; text-align: justify; background: #fafafa; }
-            .signature { margin-top: 48px; display: flex; justify-content: space-between; gap: 20px; }
-            .sig-line { border-top: 1px solid #000; padding-top: 6px; flex: 1; text-align: center; font-size: 9pt; font-weight: bold; text-transform: uppercase; }
-            @media print { body { padding: 18mm 20mm; } }
           </style>
         </head>
         <body>
           ${getSchoolHeaderHTML()}
-          <div class="doc-titulo">${docTitle}</div>
 
-          <table class="info-table">
-            <tr><td class="label-cell">DATA DO REGISTRO</td><td>${formatDate(o.date)} ${o.hour || ''}</td></tr>
-            <tr><td class="label-cell">LOCAL</td><td>${o.location || 'NÃO INFORMADO'}</td></tr>
-            <tr><td class="label-cell">${relatedStudents.length > 1 ? 'ALUNOS' : 'ALUNO'}</td><td>${studentNames.toUpperCase()}</td></tr>
-            <tr><td class="label-cell">${relatedStudents.length > 1 ? 'TURMAS' : 'TURMA'}</td><td>${studentClasses.toUpperCase()}</td></tr>
-            <tr><td class="label-cell">LOCALIZADO POR</td><td>${o.locatedBy?.toUpperCase() || 'NÃO INFORMADO'}</td></tr>
-            <tr><td class="label-cell">REGISTRADO POR</td><td>${o.registeredBy?.toUpperCase() || 'SISTEMA'}</td></tr>
-          </table>
+          <div class="ata-layout">
+            <div class="sidebar">
+              <div class="sidebar-titulo">IDENTIFICAÇÃO</div>
+              <div class="sid-item">
+                <span class="sid-label">Data do Registro</span>
+                <span class="sid-valor">${formatDate(o.date)} ${o.hour || ''}</span>
+              </div>
+              <div class="sid-item">
+                <span class="sid-label">Local</span>
+                <span class="sid-valor">${o.location || '---'}</span>
+              </div>
+              <div class="sid-item">
+                <span class="sid-label">${relatedStudents.length > 1 ? 'Alunos' : 'Aluno'}</span>
+                <span class="sid-valor">${studentNames}</span>
+              </div>
+              <div class="sid-item">
+                <span class="sid-label">${relatedStudents.length > 1 ? 'Turmas' : 'Turma'}</span>
+                <span class="sid-valor">${studentClasses}</span>
+              </div>
+              <div class="sid-item">
+                <span class="sid-label">Localizado por</span>
+                <span class="sid-valor">${o.locatedBy || '---'}</span>
+              </div>
+              <div class="sid-item">
+                <span class="sid-label">Registrado por</span>
+                <span class="sid-valor">${o.registeredBy || '---'}</span>
+              </div>
 
-          <div class="secao-titulo">INFRAÇÃO</div>
-          <table class="info-table">
-            <tr><td class="label-cell">ARTIGO</td><td>${rule?.code}</td></tr>
-            <tr><td class="label-cell">DESCRIÇÃO</td><td>${rule?.description?.toUpperCase()}</td></tr>
-            <tr><td class="label-cell">GRAVIDADE</td><td>${rule?.severity?.toUpperCase()}</td></tr>
-            <tr><td class="label-cell">MEDIDA ADMINISTRATIVA</td><td>${measure?.toUpperCase()} ${o.durationDays ? `(${o.durationDays} ${o.durationDays === 1 ? 'DIA' : 'DIAS'})` : ''}</td></tr>
-            <tr><td class="label-cell">IMPACTO NA PONTUAÇÃO</td><td>-${pointsToDeduct.toFixed(2)} PONTOS</td></tr>
-          </table>
+              <div class="sidebar-secao">INFRAÇÃO</div>
+              <div class="sid-item">
+                <span class="sid-label">Art. ${rule?.code}</span>
+                <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
+              </div>
 
-          <div class="secao-titulo">ATA — RELATO DO OCORRIDO</div>
-          <div class="ata-box">${o.observations || 'Nenhum registro de ATA detalhado foi fornecido no momento do registro.'}</div>
+              <div class="sidebar-secao">MEDIDA</div>
+              <div class="sid-medida-row">
+                <span class="sid-medida-label">Gravidade</span>
+                <span class="sid-medida-valor">${(rule?.severity || '---').toUpperCase()}</span>
+              </div>
+              <div class="sid-medida-row">
+                <span class="sid-medida-label">Medida</span>
+                <span class="sid-medida-valor">${exportMeasuresStr.toUpperCase()}${o.durationDays ? ` (${o.durationDays} DIA${o.durationDays > 1 ? 'S' : ''})` : ''}</span>
+              </div>
+              <div class="sid-medida-row">
+                <span class="sid-medida-label">Impacto</span>
+                <span class="sid-medida-valor">-${pointsToDeduct.toFixed(2).replace('.', ',')} PONTOS</span>
+              </div>
+            </div>
 
-          <div class="signature">
-            <div class="sig-line">DIRETORA / COORD. PEDAGÓGICO</div>
-            <div class="sig-line">GESTOR CÍVICO MILITAR / EDUCACIONAL</div>
-            <div class="sig-line">RESPONSÁVEL LEGAL</div>
+            <div class="main-col">
+              <div class="ata-titulo-grande">ATA</div>
+              <div class="ata-subtitulo">Relato do Ocorrido</div>
+              <div class="ata-corpo">${markdownBoldToHtml(o.observations || 'Nenhum relato registrado.')}</div>
+
+              ${signaturesHTML()}
+            </div>
           </div>
+
           ${getSchoolFooterHTML()}
         </body>
       </h${""}tml>
@@ -1195,16 +1188,7 @@ function RegistroDisciplinarContent() {
           ${o.observations || 'Nenhum registro de ATA detalhado.'}
         </div>
 
-        <br><br><br>
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="border-top: 1px solid #000; text-align: center; width: 30%;">DIRETORA / COORD. PEDAGÓGICO</td>
-            <td style="width: 5%;"></td>
-            <td style="border-top: 1px solid #000; text-align: center; width: 30%;">GESTOR CÍVICO MILITAR/EDUCACIONAL</td>
-            <td style="width: 5%;"></td>
-            <td style="border-top: 1px solid #000; text-align: center; width: 30%;">RESPONSÁVEL LEGAL</td>
-          </tr>
-        </table>
+        ${signaturesDocxHTML()}
       </div>
     `;
 
@@ -1817,21 +1801,63 @@ function RegistroDisciplinarContent() {
                     </div>
                     <span className="text-[10px] text-slate-400 font-normal uppercase tracking-wider">Ajuste o tamanho se necessário</span>
                   </label>
-                  <textarea 
-                    rows={4}
-                    value={observations}
-                    onChange={(e) => {
-                      setObservations(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.height = 'auto';
-                      e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y min-h-[120px] text-sm overflow-hidden"
-                    placeholder="Descreva o que ocorreu..."
-                  />
+                  {/* Editor ATA com preview de markdown bold */}
+                  <div className="rounded-lg border border-slate-200 overflow-hidden">
+                    {/* Barra de abas */}
+                    <div className="flex items-center gap-0 border-b border-slate-200 bg-slate-50 px-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setAtaPreviewMode(false)}
+                        className={`px-3 py-1 text-[11px] font-medium rounded-t border-b-2 transition-colors ${
+                          !ataPreviewMode
+                            ? 'border-blue-500 text-blue-700 bg-white'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAtaPreviewMode(true)}
+                        className={`px-3 py-1 text-[11px] font-medium rounded-t border-b-2 transition-colors ${
+                          ataPreviewMode
+                            ? 'border-blue-500 text-blue-700 bg-white'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Preview
+                      </button>
+                    </div>
+                    {/* Painel edição */}
+                    {!ataPreviewMode && (
+                      <textarea
+                        rows={4}
+                        value={observations}
+                        onChange={(e) => {
+                          setObservations(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        className="w-full bg-white px-4 py-3 text-slate-800 focus:outline-none resize-y min-h-[120px] text-sm font-mono"
+                        placeholder="Descreva o que ocorreu... Use **negrito** para destacar."
+                      />
+                    )}
+                    {/* Painel preview */}
+                    {ataPreviewMode && (
+                      <div
+                        className="w-full bg-white px-4 py-3 text-slate-800 min-h-[120px] text-sm leading-relaxed prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{
+                          __html: observations
+                            ? markdownBoldToHtml(observations)
+                            : '<span class="text-slate-400">Nenhum texto ainda...</span>',
+                        }}
+                      />
+                    )}
+                  </div>
 
                   {/* Painel de sugestões baseado no Regimento */}
                   {showSuggestions && (
