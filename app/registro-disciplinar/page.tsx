@@ -861,10 +861,10 @@ function RegistroDisciplinarContent() {
 
     let formatted = v;
     if (v.length > 0) {
-        if (v.length <= 2) formatted = `(${v}`;
-        else if (v.length <= 6) formatted = `(${v.slice(0, 2)}) ${v.slice(2)}`;
-        else if (v.length <= 10) formatted = `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
-        else formatted = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+        if (v.length <= 2) formatted = '(' + v;
+        else if (v.length <= 6) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+        else if (v.length <= 10) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+        else formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
     }
     setNewGuardianPhone(formatted);
     setGuardianIgnoredWarning(false);
@@ -1183,7 +1183,7 @@ function RegistroDisciplinarContent() {
         <div style="border: 1px solid #000; padding: 10pt; margin: 20pt 0; font-size: 11pt;">
           <p><strong>INFRAÇÃO (ART. ${rule?.code}):</strong> ${rule?.description?.toUpperCase()}</p>
           <p><strong>GRAVIDADE:</strong> ${rule?.severity?.toUpperCase()}</p>
-          <p><strong>MEDIDA ADMINISTRATIVA:</strong> ${measure?.toUpperCase()} ${o.durationDays ? `(${o.durationDays} ${o.durationDays === 1 ? 'DIA' : 'DIAS'})` : ''}</p>
+              <p><strong>MEDIDA ADMINISTRATIVA:</strong> ${measure?.toUpperCase()} ${o.durationDays ? '(' + o.durationDays + ' ' + (o.durationDays === 1 ? 'DIA' : 'DIAS') + ')' : ''}</p>
           <p><strong>IMPACTO NA PONTUAÇÃO:</strong> -${pointsToDeduct.toFixed(2)} PONTOS</p>
         </div>
         
