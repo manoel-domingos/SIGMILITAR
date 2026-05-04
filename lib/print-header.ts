@@ -16,6 +16,7 @@ const origin = (): string =>
   typeof window !== 'undefined' ? window.location.origin : '';
 
 export const getSchoolHeaderHTML = (): string => `
+<div class="barra-lateral-esq"></div>
 <div class="cabecalho-oficial">
   <img class="cab-logo-seduc"  src="${origin()}/logo-seduc-mt.svg" alt="Logo SEDUC e Governo MT" />
   <div class="cab-center">
@@ -78,8 +79,7 @@ export const SCHOOL_HEADER_CSS = `
     background: #fff;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    border-left: 5px solid #1a237e;
-    padding-left: 6px;
+    padding-bottom: 40px;
   }
 
   /* ================================================
@@ -127,14 +127,34 @@ export const SCHOOL_HEADER_CSS = `
   }
 
   /* ================================================
-     Rodapé — alinhado à direita, NÃO fixo
+     Rodapé — fixo no fundo, alinhado à direita
+     com linha azul no topo
      ================================================ */
   .rodape-oficial {
-    margin-top: 20px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-top: 2px solid #1a237e;
+    padding: 4px 12mm 3px 12mm;
     text-align: right;
-    font-size: 8.5pt;
+    font-size: 8pt;
     color: #1a237e;
-    line-height: 1.5;
+    line-height: 1.45;
+    background: #fff;
+  }
+
+  /* ================================================
+     Barra vertical azul fina — esquerda da página,
+     proporcional à linha divisória da sidebar (2px)
+     ================================================ */
+  .barra-lateral-esq {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 12mm;
+    width: 2px;
+    background: #1a237e;
   }
 
   /* ================================================
