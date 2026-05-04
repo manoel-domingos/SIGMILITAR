@@ -646,8 +646,8 @@ function RegistroDisciplinarContent() {
       const primaryRuleCode = ruleCodesInt[0];
       // Ao editar, exclui a própria ocorrência do cálculo de reincidência
       const escalation = getEscalationStatus(primaryStudentId, primaryRuleCode, editingOccurrence ?? undefined);
-      const suspensaoLabel = 'Suspensão Escolar';
-      const suspensaoValue = `Suspensao (${durationDays}d)`;
+      const suspensaoLabel = 'Suspens\u00e3o Escolar';
+      const suspensaoValue = 'Suspens\u00e3o (' + durationDays + 'd)';
       const measureToSave = measureOverride
         ? measureOverride
         : escalation.severity === 'Grave'
