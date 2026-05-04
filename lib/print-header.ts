@@ -169,13 +169,17 @@ export const SCHOOL_HEADER_CSS = `
     letter-spacing: 0.5px;
     margin-bottom: 6px;
   }
+  .sidebar-divisor {
+    border-top: 2px solid #1a237e;
+    margin: 10px 0 0 0;
+  }
   .sidebar-secao {
     color: #1a237e;
     font-weight: bold;
     font-size: 9pt;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-top: 10px;
+    margin-top: 6px;
     margin-bottom: 6px;
   }
   .sid-item {

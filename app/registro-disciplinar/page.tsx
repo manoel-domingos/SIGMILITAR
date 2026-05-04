@@ -592,12 +592,14 @@ function RegistroDisciplinarContent() {
         <span class="sid-valor">${o.registeredBy || '---'}</span>
       </div>
 
-      <div class="sidebar-secao">INFRAÇÃO</div>
+      <div class="sidebar-divisor"></div>
+      <div class="sidebar-secao">INFRA\u00c7\u00c3O</div>
       <div class="sid-item">
         <span class="sid-label">Art. ${o.ruleCode}</span>
-        <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
+        <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorr\u00eancia personalizada'}</span>
       </div>
 
+      <div class="sidebar-divisor"></div>
       <div class="sidebar-secao">MEDIDA</div>
       <div class="sid-medida-row">
         <span class="sid-medida-label">Gravidade</span>
@@ -1085,12 +1087,14 @@ function RegistroDisciplinarContent() {
                 <span class="sid-valor">${o.registeredBy || '---'}</span>
               </div>
 
-              <div class="sidebar-secao">INFRAÇÃO</div>
+              <div class="sidebar-divisor"></div>
+              <div class="sidebar-secao">INFRA\u00c7\u00c3O</div>
               <div class="sid-item">
                 <span class="sid-label">Art. ${rule?.code}</span>
-                <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorrência personalizada'}</span>
+                <span class="sid-valor" style="font-weight: normal; font-size: 8.5pt; text-transform: uppercase;">${rule?.description || 'Ocorr\u00eancia personalizada'}</span>
               </div>
 
+              <div class="sidebar-divisor"></div>
               <div class="sidebar-secao">MEDIDA</div>
               <div class="sid-medida-row">
                 <span class="sid-medida-label">Gravidade</span>
