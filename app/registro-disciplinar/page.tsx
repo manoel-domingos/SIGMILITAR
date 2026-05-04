@@ -631,7 +631,7 @@ function RegistroDisciplinarContent() {
   ${getSchoolFooterHTML()}
 
 </body>
-</html>\`);
+</html>`);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => { printWindow.print(); }, 300);
