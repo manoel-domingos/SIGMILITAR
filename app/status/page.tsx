@@ -112,8 +112,8 @@ export default function StatusPage() {
     : !server.supabase.reachable
     ? server.supabase.error || 'Não foi possível alcançar o Supabase.'
     : server.supabase.queryTest?.success === false
-    ? `Conexão OK, mas consulta falhou: ${server.supabase.queryTest.error}`
-    : `Conexão e consulta bem-sucedidas.${server.supabase.hasServiceKey ? ' Service key presente.' : ''}`;
+    ? 'Conex\u00e3o OK, mas consulta falhou: ' + server.supabase.queryTest.error
+    : 'Conex\u00e3o e consulta bem-sucedidas.' + (server.supabase.hasServiceKey ? ' Service key presente.' : '');
 
   const supaCard: Card = {
     icon: <Database className="w-5 h-5" />,
@@ -145,7 +145,7 @@ export default function StatusPage() {
     : !server.deepseek.configured
     ? 'A variável DEEPSEEK_API_KEY não foi configurada.'
     : server.deepseek.reachable
-    ? `Chave válida. Modelos disponíveis: ${server.deepseek.models.join(', ') || '—'}`
+    ? 'Chave v\u00e1lida. Modelos dispon\u00edveis: ' + (server.deepseek.models.join(', ') || '\u2014')
     : server.deepseek.error || 'Chave configurada, mas a API recusou a conexão.';
 
   const deepseekCard: Card = {

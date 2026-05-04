@@ -198,10 +198,10 @@ export default function Alunos() {
 
         let formatted = v;
         if (v.length > 0) {
-            if (v.length <= 2) formatted = `(${v}`;
-            else if (v.length <= 6) formatted = `(${v.slice(0, 2)}) ${v.slice(2)}`;
-            else if (v.length <= 10) formatted = `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`;
-            else formatted = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+            if (v.length <= 2) formatted = '(' + v;
+            else if (v.length <= 6) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+            else if (v.length <= 10) formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+            else formatted = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
         }
 
         newContacts[index][field] = formatted;
@@ -527,11 +527,11 @@ export default function Alunos() {
                     let n = p.replace(/\D/g, '');
                     if (n.length === 8 || n.length === 9) n = '65' + n;
                     if (n.length >= 10 && n.length <= 11) {
-                       if (n.length === 10) return [`(${n.substring(0, 2)}) ${n.substring(2, 6)}-${n.substring(6, 10)}`];
-                       if (n.length === 11) return [`(${n.substring(0, 2)}) ${n.substring(2, 7)}-${n.substring(7, 11)}`];
+                       if (n.length === 10) return ['(' + n.substring(0, 2) + ') ' + n.substring(2, 6) + '-' + n.substring(6, 10)];
+                       if (n.length === 11) return ['(' + n.substring(0, 2) + ') ' + n.substring(2, 7) + '-' + n.substring(7, 11)];
                     }
                     if (n.length > 11) {
-                        return [`(${n.substring(0, 2)}) ${n.substring(2, Math.min(n.length, 7))}-${n.substring(Math.min(n.length, 7), Math.min(n.length, 11))}`];
+                        return ['(' + n.substring(0, 2) + ') ' + n.substring(2, Math.min(n.length, 7)) + '-' + n.substring(Math.min(n.length, 7), Math.min(n.length, 11))];
                     }
                     return [];
                  });
@@ -556,8 +556,8 @@ export default function Alunos() {
              }
              
              return extracted.map(n => {
-                 if (n.length === 10) return `(${n.substring(0, 2)}) ${n.substring(2, 6)}-${n.substring(6, 10)}`;
-                 if (n.length === 11) return `(${n.substring(0, 2)}) ${n.substring(2, 7)}-${n.substring(7, 11)}`;
+                 if (n.length === 10) return '(' + n.substring(0, 2) + ') ' + n.substring(2, 6) + '-' + n.substring(6, 10);
+                 if (n.length === 11) return '(' + n.substring(0, 2) + ') ' + n.substring(2, 7) + '-' + n.substring(7, 11);
                  return n;
              });
           };
@@ -576,17 +576,17 @@ export default function Alunos() {
         const contacts: {name: string, phone: string}[] = [];
         const phones1 = extractPhones(tel1);
         phones1.forEach((phone, i) => {
-             contacts.push({ name: mae ? (i===0 ? `Mãe: ${mae}` : `Responsável (Mãe ${i+1})`) : `Resp. 1 - ${i+1}`, phone });
+             contacts.push({ name: mae ? (i===0 ? 'M\u00e3e: ' + mae : 'Respons\u00e1vel (M\u00e3e ' + (i+1) + ')') : 'Resp. 1 - ' + (i+1), phone });
         });
         
         const phones2 = extractPhones(tel2);
         phones2.forEach((phone, i) => {
-             contacts.push({ name: pai ? (i===0 ? `Pai: ${pai}` : `Responsável (Pai ${i+1})`) : `Resp. 2 - ${i+1}`, phone });
+             contacts.push({ name: pai ? (i===0 ? 'Pai: ' + pai : 'Respons\u00e1vel (Pai ' + (i+1) + ')') : 'Resp. 2 - ' + (i+1), phone });
         });
         
         if (contacts.length === 0) {
-            if (mae) contacts.push({ name: `Mãe: ${mae}`, phone: '' });
-            if (pai) contacts.push({ name: `Pai: ${pai}`, phone: '' });
+            if (mae) contacts.push({ name: 'M\u00e3e: ' + mae, phone: '' });
+            if (pai) contacts.push({ name: 'Pai: ' + pai, phone: '' });
         }
 
         let error = '';
@@ -655,9 +655,9 @@ export default function Alunos() {
     
     if (field === 'phone') {
         let v = value.replace(/\D/g, '');
-        if (v.length > 2 && v.length <= 6) v = `(${v.substring(0,2)}) ${v.substring(2)}`;
-        else if (v.length > 6 && v.length <= 10) v = `(${v.substring(0,2)}) ${v.substring(2,6)}-${v.substring(6)}`;
-        else if (v.length > 10) v = `(${v.substring(0,2)}) ${v.substring(2,7)}-${v.substring(7,11)}`;
+        if (v.length > 2 && v.length <= 6) v = '(' + v.substring(0,2) + ') ' + v.substring(2);
+        else if (v.length > 6 && v.length <= 10) v = '(' + v.substring(0,2) + ') ' + v.substring(2,6) + '-' + v.substring(6);
+        else if (v.length > 10) v = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7,11);
         updated[index].contacts[contactIndex][field] = v;
     } else {
         updated[index].contacts[contactIndex][field] = value;
@@ -696,7 +696,7 @@ export default function Alunos() {
     setIsImporting(false);
     setIsReviewOpen(false);
     setPendingImports([]);
-    alert(`Importação concluída! ${validStudents.length} aluno(s) adicionados.`);
+    alert('Importa\u00e7\u00e3o concu\u00edda! ' + validStudents.length + ' aluno(s) adicionados.');
   };
 
   const handleExport = () => {
@@ -745,7 +745,7 @@ export default function Alunos() {
       greeting = 'Boa noite';
     }
 
-    const message = `Olá, ${greeting}! Estou entrando em contato para falar sobre o ${studentName}.`;
+    const message = 'Ol\u00e1, ' + greeting + '! Estou entrando em contato para falar sobre o ' + studentName + '.';
     return `${baseUrl}?text=${encodeURIComponent(message)}`;
   }
 

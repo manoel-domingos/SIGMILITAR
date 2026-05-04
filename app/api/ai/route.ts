@@ -39,7 +39,7 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
           '',
           HIERARQUIA_FONTES,
         ].join('\n'),
-        user: `Formalize para ata:\nAluno(s): ${payload.students}\nInfração: ${payload.infractions}\nData/Hora: ${payload.dateTime} | Local: ${payload.location}\nRelato: ${payload.text || 'Crie modelo padrão baseado na infração.'}`,
+        user: 'Formalize para ata:\nAluno(s): ' + payload.students + '\nInfra\u00e7\u00e3o: ' + payload.infractions + '\nData/Hora: ' + payload.dateTime + ' | Local: ' + payload.location + '\nRelato: ' + (payload.text || 'Crie modelo padr\u00e3o baseado na infra\u00e7\u00e3o.'),
       };
 
     case 'sugestao':
@@ -63,13 +63,13 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
           'Seja conciso, cite artigos do regimento e use linguagem formal institucional.',
         ].join('\n'),
         user: [
-          `Aluno(s): ${payload.students}`,
-          `Infração registrada: ${payload.infractions} (Natureza: ${payload.severity ?? 'não informada'})`,
-          `Medida atribuída: ${payload.measure ?? 'não informada'}`,
-          `Reincidente: ${payload.isReincidente ? 'Sim' : 'Não'}`,
-          `Histórico: ${payload.totalOccurrences ?? 0} ocorrência(s) anteriores`,
-          `Pontuação atual: ${payload.currentPoints ?? 'não informada'}`,
-          `Observações da ATA: ${payload.ataText ?? 'não fornecido'}`,
+          'Aluno(s): ' + payload.students,
+          'Infra\u00e7\u00e3o registrada: ' + payload.infractions + ' (Natureza: ' + (payload.severity ?? 'n\u00e3o informada') + ')',
+          'Medida atribu\u00edda: ' + (payload.measure ?? 'n\u00e3o informada'),
+          'Reincidente: ' + (payload.isReincidente ? 'Sim' : 'N\u00e3o'),
+          'Hist\u00f3rico: ' + (payload.totalOccurrences ?? 0) + ' ocorr\u00eancia(s) anteriores',
+          'Pontua\u00e7\u00e3o atual: ' + (payload.currentPoints ?? 'n\u00e3o informada'),
+          'Observa\u00e7\u00f5es da ATA: ' + (payload.ataText ?? 'n\u00e3o fornecido'),
           '',
           'Gere as recomendações pós-ATA conforme o Regimento Interno.',
         ].join('\n'),
@@ -85,13 +85,13 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
           '',
           HIERARQUIA_FONTES,
         ].join('\n'),
-        user: `Aluno: ${payload.studentName} | Turma: ${payload.class}\nOcorrências: ${payload.totalOccurrences} | Pontos: ${payload.currentPoints}\nDetalhes: ${payload.occurrences}\nForneça: padrão de comportamento, causas prováveis e 3 recomendações práticas baseadas no Regimento.`,
+        user: 'Aluno: ' + payload.studentName + ' | Turma: ' + payload.class + '\nOcorr\u00eancias: ' + payload.totalOccurrences + ' | Pontos: ' + payload.currentPoints + '\nDetalhes: ' + payload.occurrences + '\nForne\u00e7a: padr\u00e3o de comportamento, causas prov\u00e1veis e 3 recomenda\u00e7\u00f5es pr\u00e1ticas baseadas no Regimento.',
       };
 
     case 'relatorio':
       return {
         system: 'Especialista em gestão educacional. Gere relatórios disciplinares concisos com insights acionáveis.',
-        user: `Período: ${payload.period} | Total ocorrências: ${payload.totalOccurrences}\nAlunos envolvidos: ${payload.studentsWithOccurrences}\nTop infrações: ${payload.topInfractions}\nTop turmas: ${payload.topClasses}\nGravidade: ${payload.severityDistribution}\nGere: resumo executivo, tendências e recomendações prioritárias.`,
+        user: 'Per\u00edodo: ' + payload.period + ' | Total ocorr\u00eancias: ' + payload.totalOccurrences + '\nAlunos envolvidos: ' + payload.studentsWithOccurrences + '\nTop infra\u00e7\u00f5es: ' + payload.topInfractions + '\nTop turmas: ' + payload.topClasses + '\nGravidade: ' + payload.severityDistribution + '\nGere: resumo executivo, tend\u00eancias e recomenda\u00e7\u00f5es priorit\u00e1rias.',
       };
 
     case 'chat':
@@ -155,9 +155,9 @@ const DEEPSEEK_ERRORS: Record<number, { label: string; cause: string; solution: 
 function deepseekErrorMessage(status: number, rawMessage: string): string {
   const known = DEEPSEEK_ERRORS[status];
   if (known) {
-    return `[HTTP ${status}] ${known.label} — ${known.cause} | Solução: ${known.solution}`;
+    return '[HTTP ' + status + '] ' + known.label + ' \u2014 ' + known.cause + ' | Solu\u00e7\u00e3o: ' + known.solution;
   }
-  return `[HTTP ${status}] ${rawMessage}`;
+  return '[HTTP ' + status + '] ' + rawMessage;
 }
 
 export async function POST(req: NextRequest) {

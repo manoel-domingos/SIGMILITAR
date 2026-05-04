@@ -132,7 +132,7 @@ export async function streamAI(
             if (m.fallback) {
               updateLog(logId, {
                 model: m.to,
-                error: `Fallback: ${m.from} → ${m.to} (${m.reason})`,
+                error: 'Fallback: ' + m.from + ' \u2192 ' + m.to + ' (' + m.reason + ')',
                 status: 'streaming',
               });
             } else if (m.model) {

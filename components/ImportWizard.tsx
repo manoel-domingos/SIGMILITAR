@@ -171,7 +171,7 @@ export default function ImportWizard({ isOpen, onClose, onImport }: ImportWizard
   const handleConfirm = () => {
     const validation = validateColumnMappings(columnMapping);
     if (!validation.valid) {
-      setError(`Faltam campos obrigatórios: ${validation.missingRequired.join(", ")}`);
+      setError('Faltam campos obrigat\u00f3rios: ' + validation.missingRequired.join(', '));
       return;
     }
     onImport(mappedData);

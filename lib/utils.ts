@@ -53,6 +53,6 @@ export function formatPhoneForWhatsApp(phone: string, studentName: string) {
     greeting = 'Boa noite';
   }
 
-  const message = encodeURIComponent(`Olá, ${greeting}! Estou entrando em contato para falar sobre o aluno(a) ${studentName}.`);
-  return `${baseUrl}?text=${message}`;
+  const message = encodeURIComponent('Ol\u00e1, ' + greeting + '! Estou entrando em contato para falar sobre o aluno(a) ' + studentName + '.');
+  return baseUrl + '?text=' + message;
 }

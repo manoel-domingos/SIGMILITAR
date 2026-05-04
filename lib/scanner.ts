@@ -479,9 +479,9 @@ export function smartHeuristicScan(rows: any[][], options: ScanOptions = {}): Sc
 
   let needsAI = false;
   let reason: string | undefined;
-  if (missingRequired.length > 0) { needsAI = true; reason = `Colunas obrigatórias não encontradas: ${missingRequired.join(', ')}`; }
-  else if (finalConfidence < confidenceThreshold) { needsAI = true; reason = `Confiança ${finalConfidence}% abaixo do limiar ${confidenceThreshold}%`; }
-  else if (contentScore < 40) { needsAI = true; reason = `Validação de conteúdo baixa (${Math.round(contentScore)}%)`; }
+  if (missingRequired.length > 0) { needsAI = true; reason = 'Colunas obrigat\u00f3rias n\u00e3o encontradas: ' + missingRequired.join(', '); }
+  else if (finalConfidence < confidenceThreshold) { needsAI = true; reason = 'Confian\u00e7a ' + finalConfidence + '% abaixo do limiar ' + confidenceThreshold + '%'; }
+  else if (contentScore < 40) { needsAI = true; reason = 'Valida\u00e7\u00e3o de conte\u00fado baixa (' + Math.round(contentScore) + '%)'; }
 
   return {
     headerRowIndex: best.rowIndex,
