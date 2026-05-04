@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
         let firstChunkReceived = false;
         const timeoutId = setTimeout(() => {
           if (!firstChunkReceived) {
-            console.error(`[v0] Timeout ${FIRST_CHUNK_TIMEOUT_MS}ms sem resposta do modelo ${model}`);
+            console.error('[v0] Timeout ' + FIRST_CHUNK_TIMEOUT_MS + 'ms sem resposta do modelo ' + model);
             abort.abort();
           }
         }, FIRST_CHUNK_TIMEOUT_MS);
@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
           clearTimeout(timeoutId);
           
           // Log de tokens no console do servidor
-          console.log(`[AI] Modelo: ${model} | Tokens: ${totalTokens} (prompt: ${promptTokens}, completion: ${completionTokens})`);
+          console.log('[AI] Modelo: ' + model + ' | Tokens: ' + totalTokens + ' (prompt: ' + promptTokens + ', completion: ' + completionTokens + ')');
           
           send({ done: true, result: full.trim(), model, usage: { totalTokens, promptTokens, completionTokens } });
           return; // sucesso — sai do loop
@@ -266,11 +266,11 @@ export async function POST(req: NextRequest) {
           const isTimeout = err?.name === 'AbortError' || err?.code === 'ETIMEDOUT';
           const httpStatus: number = isTimeout ? 504 : (err?.status ?? 500);
           const rawMsg: string = isTimeout
-            ? `Modelo ${model} nao respondeu em ${FIRST_CHUNK_TIMEOUT_MS / 1000}s`
+            ? 'Modelo ' + model + ' nao respondeu em ' + (FIRST_CHUNK_TIMEOUT_MS / 1000) + 's'
             : (err?.message ?? 'Erro desconhecido.');
 
           lastError = { httpStatus, rawMsg };
-          console.error(`[v0] Erro modelo ${model}:`, httpStatus, rawMsg);
+          console.error('[v0] Erro modelo ' + model + ':', httpStatus, rawMsg);
 
           const isLastModel = model === MODEL_CHAIN[MODEL_CHAIN.length - 1];
           if (!isLastModel) {

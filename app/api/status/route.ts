@@ -30,7 +30,7 @@ export async function GET() {
         deepseekModels = (data?.data ?? []).map((m: any) => m.id);
       } else {
         const text = await res.text();
-        deepseekError = `HTTP ${res.status}: ${text.slice(0, 160)}`;
+        deepseekError = 'HTTP ' + res.status + ': ' + text.slice(0, 160);
       }
     } catch (err: unknown) {
       deepseekError = err instanceof Error ? err.message : String(err);
