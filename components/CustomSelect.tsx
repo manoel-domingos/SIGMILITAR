@@ -59,7 +59,7 @@ export default function CustomSelect({
   const selectedOption = options.find(o => o.value === value);
 
   return (
-    <div className={`relative w-full ${className}`}>
+    <div className={'relative w-full ' + className}>
       <button
         ref={triggerRef}
         type="button"
@@ -69,7 +69,7 @@ export default function CustomSelect({
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={'w-4 h-4 text-slate-400 transition-transform duration-200 ' + (isOpen ? 'rotate-180' : '')} />
       </button>
 
       {mounted && ReactDOM.createPortal(
@@ -93,7 +93,7 @@ export default function CustomSelect({
                     return (
                       <li
                         key={opt.value}
-                        className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer mx-1 rounded-md transition-colors ${ isSelected ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50' }`}
+                        className={'flex items-center justify-between px-3 py-2 text-sm cursor-pointer mx-1 rounded-md transition-colors ' + (isSelected ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50')}
                         onMouseDown={(e) => {
                           e.preventDefault();
                           onChange(opt.value);

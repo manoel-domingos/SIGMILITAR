@@ -122,11 +122,7 @@ export default function AIAssistant() {
             <div className="flex bg-slate-800 border-b border-slate-700">
               <button
                 onClick={() => setActiveTab('pendencias')}
-                className={`flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ${
-                  activeTab === 'pendencias'
-                    ? 'text-white border-b-2 border-blue-400'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={'flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ' + (activeTab === 'pendencias' ? 'text-white border-b-2 border-blue-400' : 'text-slate-400 hover:text-slate-200')}
               >
                 <ClipboardList size={13} />
                 Pendencias
@@ -138,11 +134,7 @@ export default function AIAssistant() {
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ${
-                  activeTab === 'chat'
-                    ? 'text-white border-b-2 border-blue-400'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                className={'flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ' + (activeTab === 'chat' ? 'text-white border-b-2 border-blue-400' : 'text-slate-400 hover:text-slate-200')}
               >
                 <MessageSquare size={13} />
                 Chat IA
@@ -187,10 +179,10 @@ export default function AIAssistant() {
                                 className="flex items-start gap-2 cursor-pointer"
                                 onClick={() => setChecklistTasks(toggleChecklistItem(userId, task.occurrenceId, item.id))}
                               >
-                                <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
+                                <div className={'mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ' + (item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300')}>
                                   {item.done && <div className="w-1.5 h-1 border-b-2 border-r-2 border-white rotate-45 -translate-y-px" />}
                                 </div>
-                                <span className={`text-xs leading-relaxed ${item.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{item.label}</span>
+                                <span className={'text-xs leading-relaxed ' + (item.done ? 'line-through text-slate-400' : 'text-slate-700')}>{item.label}</span>
                               </li>
                             ))}
                           </ul>
@@ -208,12 +200,8 @@ export default function AIAssistant() {
                 {/* Messages */}
                 <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950/50">
                   {messages.map((m, i) => (
-                    <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                        m.role === 'user' 
-                        ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
-                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200 dark:border-slate-700 shadow-sm'
-                      }`}>
+                    <div key={i} className={'flex ' + (m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                      <div className={'max-w-[85%] p-3 rounded-2xl text-sm ' + (m.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none shadow-md' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200 dark:border-slate-700 shadow-sm')}>
                         {m.content}
                       </div>
                     </div>
@@ -275,9 +263,7 @@ export default function AIAssistant() {
 
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95 ${
-          isOpen ? 'bg-slate-800 text-white rotate-90' : 'bg-blue-600 text-white'
-        }`}
+        className={'w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95 ' + (isOpen ? 'bg-slate-800 text-white rotate-90' : 'bg-blue-600 text-white')}
       >
         {isOpen ? <X size={28} /> : <Bot size={32} />}
       </button>

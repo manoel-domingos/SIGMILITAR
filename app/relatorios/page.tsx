@@ -121,21 +121,21 @@ export default function Relatorios() {
         {/* Tabs */}
         <div className="flex gap-6 border-b border-slate-200 overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-hide">
           <button 
-            className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === 'gerencial' ? 'text-blue-400' : 'text-slate-500 hover:text-slate-600'}`}
+            className={'pb-3 text-sm font-medium transition-colors relative ' + (activeTab === 'gerencial' ? 'text-blue-400' : 'text-slate-500 hover:text-slate-600')}
             onClick={() => setActiveTab('gerencial')}
           >
             Gerencial Mensal
             {activeTab === 'gerencial' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full" />}
           </button>
           <button 
-            className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === 'registro' ? 'text-blue-400' : 'text-slate-500 hover:text-slate-600'}`}
+            className={'pb-3 text-sm font-medium transition-colors relative ' + (activeTab === 'registro' ? 'text-blue-400' : 'text-slate-500 hover:text-slate-600')}
             onClick={() => setActiveTab('registro')}
           >
             Registro Disciplinar
             {activeTab === 'registro' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full" />}
           </button>
           <button 
-            className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === 'ficha' ? 'text-blue-400' : 'text-slate-500 hover:text-slate-600'}`}
+            className={'pb-3 text-sm font-medium transition-colors relative ' + (activeTab === 'ficha' ? 'text-blue-400' : 'text-slate-500 hover:text-slate-600')}
             onClick={() => setActiveTab('ficha')}
           >
             Ficha Individual

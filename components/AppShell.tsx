@@ -214,7 +214,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className={`min-h-screen bg-[#eef3f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 ${layoutMode === 'sidebar' ? 'flex' : 'flex flex-col'}`}>
+    <div className={'min-h-screen bg-[#eef3f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 ' + (layoutMode === 'sidebar' ? 'flex' : 'flex flex-col')}>
       {/* Background decoration for liquid glass effect */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full" />
@@ -321,13 +321,9 @@ function SidebarLayout({
                   <li key={group.label}>
                     <Link
                       href={group.href}
-                      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
-                        active
-                          ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                      }`}
+                      className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                     >
-                      <group.icon className={`w-5 h-5 ${active ? 'text-blue-400' : 'text-slate-500'}`} />
+                      <group.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
                       {group.label}
                     </Link>
                   </li>
@@ -346,13 +342,9 @@ function SidebarLayout({
                         <li key={item.href}>
                           <Link
                             href={item.href}
-                            className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-colors ${
-                              active
-                                ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500'
-                                : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                            }`}
+                            className={'flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-colors ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                           >
-                            <item.icon className={`w-4 h-4 ${active ? 'text-blue-400' : 'text-slate-500'}`} />
+                            <item.icon className={'w-4 h-4 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
                             {item.label}
                           </Link>
                         </li>
@@ -509,13 +501,9 @@ function GroupPill({
     return (
       <Link
         href={group.href}
-        className={`shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ${
-          active
-            ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
-            : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500'
-        }`}
+        className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
       >
-        <group.icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400 group-hover/item:text-white'}`} />
+        <group.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
         <span className="whitespace-nowrap">{group.label}</span>
       </Link>
     );
@@ -531,15 +519,11 @@ function GroupPill({
       <button
         type="button"
         onClick={handleButtonClick}
-        className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ${
-          isActive || open
-            ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
-            : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500'
-        }`}
+        className={'shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (isActive || open ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
       >
-        <group.icon className={`w-4 h-4 transition-colors ${isActive || open ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+        <group.icon className={'w-4 h-4 transition-colors ' + (isActive || open ? 'text-white' : 'text-slate-400 group-hover:text-white')} />
         <span className="whitespace-nowrap">{group.label}</span>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={'w-3.5 h-3.5 transition-transform ' + (open ? 'rotate-180' : '')} />
       </button>
 
       {open && (
@@ -552,13 +536,9 @@ function GroupPill({
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                    active
-                      ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium'
-                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
-                  }`}
+                  className={'flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ' + (active ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700')}
                 >
-                  <item.icon className={`w-4 h-4 shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                  <item.icon className={'w-4 h-4 shrink-0 ' + (active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400')} />
                   <span className="whitespace-nowrap">{item.label}</span>
                 </Link>
               );
@@ -583,9 +563,7 @@ function MobileDrawer({
 }) {
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden ${
-        open ? 'translate-x-0' : '-translate-x-full'
-      }`}
+      className={'fixed inset-y-0 left-0 z-50 w-64 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden ' + (open ? 'translate-x-0' : '-translate-x-full')}
     >
       <div className="p-6 flex flex-col items-center border-b border-slate-800 relative">
         <button className="absolute top-4 right-4 text-slate-400" onClick={onClose}>
@@ -605,11 +583,7 @@ function MobileDrawer({
                   <Link
                     href={group.href}
                     onClick={onClose}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium ${
-                      active
-                        ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                    }`}
+                    className={'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                   >
                     <group.icon className="w-5 h-5" />
                     {group.label}
@@ -631,11 +605,7 @@ function MobileDrawer({
                         <Link
                           href={item.href}
                           onClick={onClose}
-                          className={`flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm ${
-                            active
-                              ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                          }`}
+                          className={'flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                         >
                           <item.icon className="w-4 h-4" />
                           {item.label}
@@ -689,11 +659,7 @@ function RightControls(props: RightControlsProps) {
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-          isSupabaseConnected
-            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30'
-            : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30'
-        }`}
+        className={'hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ' + (isSupabaseConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30')}
       >
         {isSupabaseConnected ? <CloudCheck className="w-3.5 h-3.5" /> : <CloudOff className="w-3.5 h-3.5" />}
         <span>{isSupabaseConnected ? 'Online' : 'Offline'}</span>
@@ -702,9 +668,7 @@ function RightControls(props: RightControlsProps) {
       <button
         onClick={refreshData}
         disabled={isSyncing}
-        className={`w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 transition shadow-sm ${
-          isSyncing ? 'animate-spin text-blue-500' : ''
-        }`}
+        className={'w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 transition shadow-sm ' + (isSyncing ? 'animate-spin text-blue-500' : '')}
         title="Sincronizar"
       >
         <RefreshCw className="w-4 h-4" />
@@ -998,22 +962,14 @@ function ProfileMenu({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={layoutMode !== 'topbar' ? toggleLayout : undefined}
-                className={`flex flex-col items-center gap-1 py-2 rounded-lg border transition ${
-                  layoutMode === 'topbar'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
+                className={'flex flex-col items-center gap-1 py-2 rounded-lg border transition ' + (layoutMode === 'topbar' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700')}
               >
                 <PanelsTopLeft className="w-4 h-4" />
                 <span className="text-[11px] font-medium">Horizontal</span>
               </button>
               <button
                 onClick={layoutMode !== 'sidebar' ? toggleLayout : undefined}
-                className={`flex flex-col items-center gap-1 py-2 rounded-lg border transition ${
-                  layoutMode === 'sidebar'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
+                className={'flex flex-col items-center gap-1 py-2 rounded-lg border transition ' + (layoutMode === 'sidebar' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700')}
               >
                 <PanelLeft className="w-4 h-4" />
                 <span className="text-[11px] font-medium">Lateral</span>

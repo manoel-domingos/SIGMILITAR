@@ -358,9 +358,7 @@ export default function AIChat() {
         role="dialog"
         aria-modal="true"
         aria-label="Assistente ARIA"
-        className={`fixed bottom-20 right-6 z-[9800] w-80 sm:w-[28rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden print:hidden transition-all duration-300 origin-bottom-right ${
-          isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
-        }`}
+        className={'fixed bottom-20 right-6 z-[9800] w-80 sm:w-[28rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden print:hidden transition-all duration-300 origin-bottom-right ' + (isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none')}
         style={{ maxHeight: '580px' }}
       >
         {/* Header */}
@@ -392,9 +390,7 @@ export default function AIChat() {
           <div className="flex mt-2 px-4">
             <button
               onClick={() => setActivePanel('pendencias')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
-                activePanel === 'pendencias' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100'
-              }`}
+              className={'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ' + (activePanel === 'pendencias' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100')}
             >
               <ClipboardList className="w-3.5 h-3.5" />
               Pendencias
@@ -406,18 +402,14 @@ export default function AIChat() {
             </button>
             <button
               onClick={() => setActivePanel('chat')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
-                activePanel === 'chat' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100'
-              }`}
+              className={'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ' + (activePanel === 'chat' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100')}
             >
               <Sparkles className="w-3.5 h-3.5" />
               Chat
             </button>
             <button
               onClick={() => setActivePanel('logs')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ${
-                activePanel === 'logs' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100'
-              }`}
+              className={'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ' + (activePanel === 'logs' ? 'border-white text-white' : 'border-transparent text-violet-300 hover:text-violet-100')}
             >
               <Activity className="w-3.5 h-3.5" />
               Logs IA
@@ -474,12 +466,10 @@ export default function AIChat() {
                             className="flex items-start gap-2 cursor-pointer"
                             onClick={() => setChecklistTasks(toggleChecklistItem(userId, task.occurrenceId, item.id))}
                           >
-                            <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
-                              item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'
-                            }`}>
+                            <div className={'mt-0.5 w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ' + (item.done ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300')}>
                               {item.done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
                             </div>
-                            <span className={`text-xs leading-relaxed ${item.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                            <span className={'text-xs leading-relaxed ' + (item.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-300')}>
                               {item.label}
                             </span>
                           </li>
@@ -498,12 +488,8 @@ export default function AIChat() {
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ maxHeight: '400px' }}>
               {messages.map((msg, i) => (
-                <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
-                    msg.role === 'user'
-                      ? 'bg-violet-600 text-white rounded-br-sm'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-sm'
-                  }`}>
+                <div key={i} className={'flex flex-col ' + (msg.role === 'user' ? 'items-end' : 'items-start')}>
+                  <div className={'max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap ' + (msg.role === 'user' ? 'bg-violet-600 text-white rounded-br-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-sm')}>
                     {msg.content}
                     {msg.streaming && <span className="inline-block w-1.5 h-3.5 bg-violet-400 rounded-sm ml-0.5 animate-pulse align-middle" />}
                   </div>
@@ -572,21 +558,17 @@ export default function AIChat() {
                     const hasError = log.status === 'error' || (log.httpStatus !== null && log.httpStatus >= 400);
                     return (
                       <div key={log.id}
-                        className={`transition-colors ${
-                          hasError ? 'bg-rose-50/60 dark:bg-rose-900/10'
-                          : log.status === 'streaming' || log.status === 'pending' ? 'bg-amber-50/60 dark:bg-amber-900/10'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                        }`}
+                        className={'transition-colors ' + (hasError ? 'bg-rose-50/60 dark:bg-rose-900/10' : log.status === 'streaming' || log.status === 'pending' ? 'bg-amber-50/60 dark:bg-amber-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40')}
                       >
                         {/* Row de resumo — sempre visivel */}
                         <button
                           onClick={() => setExpandedLog(isExpanded ? null : log.id)}
                           className="w-full text-left px-4 py-3 flex items-center gap-3"
                         >
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor(log.status, log.httpStatus)}`} />
+                          <span className={'w-2 h-2 rounded-full shrink-0 ' + statusColor(log.status, log.httpStatus)} />
 
                           {/* HTTP status */}
-                          <span className={`shrink-0 text-[10px] font-mono font-bold rounded px-1.5 py-0.5 ${httpBadgeColor(log.httpStatus)}`}>
+                          <span className={'shrink-0 text-[10px] font-mono font-bold rounded px-1.5 py-0.5 ' + httpBadgeColor(log.httpStatus)}>
                             {log.httpStatus !== null ? `HTTP ${log.httpStatus}` : '...'}
                           </span>
 

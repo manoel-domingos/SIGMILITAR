@@ -42,7 +42,7 @@ export default function ChatWidget({ forceOpen, forceOnClose }: { forceOpen?: bo
           </div>
           <div className="h-64 flex flex-col flex-1 p-3 overflow-y-auto gap-3 bg-slate-50">
             {messages.map((msg, idx) => (
-              <div key={idx} className={`max-w-[85%] rounded-lg p-2.5 text-sm ${msg.role === 'agent' ? 'bg-white border border-slate-100 text-slate-800 self-start' : 'bg-blue-600 text-white self-end'}`}>
+              <div key={idx} className={'max-w-[85%] rounded-lg p-2.5 text-sm ' + (msg.role === 'agent' ? 'bg-white border border-slate-100 text-slate-800 self-start' : 'bg-blue-600 text-white self-end')}>
                 {msg.text}
               </div>
             ))}

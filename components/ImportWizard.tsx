@@ -223,11 +223,7 @@ export default function ImportWizard({ isOpen, onClose, onImport }: ImportWizard
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onClick={() => fileInputRef.current?.click()}
-                className={`w-full max-w-xl border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer group flex flex-col items-center gap-6 ${
-                  dragOver 
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-500/5" 
-                  : "border-slate-300 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-500/5"
-                }`}
+                className={'w-full max-w-xl border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer group flex flex-col items-center gap-6 ' + (dragOver ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/5' : 'border-slate-300 dark:border-slate-700 hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-500/5')}
               >
                 <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                   <FileUp className="w-10 h-10 text-slate-400 group-hover:text-blue-500" />
@@ -262,11 +258,7 @@ export default function ImportWizard({ isOpen, onClose, onImport }: ImportWizard
                       <button
                         key={sheet}
                         onClick={() => changeSheet(sheet)}
-                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                          activeSheet === sheet
-                            ? "bg-blue-500 text-white shadow-lg shadow-blue-600/20 scale-105"
-                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-blue-500"
-                        }`}
+                        className={'px-4 py-2 rounded-xl text-sm font-bold transition-all ' + (activeSheet === sheet ? 'bg-blue-500 text-white shadow-lg shadow-blue-600/20 scale-105' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-blue-500')}
                       >
                         {sheet}
                       </button>
@@ -309,21 +301,13 @@ export default function ImportWizard({ isOpen, onClose, onImport }: ImportWizard
                         <tr
                           key={rowIdx}
                           onClick={() => setHeaderRowIndex(rowIdx)}
-                          className={`cursor-pointer transition-all ${
-                            rowIdx === headerRowIndex
-                              ? "bg-blue-50/50 dark:bg-blue-500/10"
-                              : "hover:bg-slate-50 dark:hover:bg-slate-800/30"
-                          }`}
+                          className={'cursor-pointer transition-all ' + (rowIdx === headerRowIndex ? 'bg-blue-50/50 dark:bg-blue-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30')}
                         >
-                          <td className={`p-3 text-center font-bold text-xs ${
-                             rowIdx === headerRowIndex ? 'text-blue-600' : 'text-slate-400'
-                          }`}>
+                          <td className={'p-3 text-center font-bold text-xs ' + (rowIdx === headerRowIndex ? 'text-blue-600' : 'text-slate-400')}>
                             {rowIdx === headerRowIndex ? '↓' : rowIdx}
                           </td>
                           {headers.map((_, colIdx) => (
-                            <td key={colIdx} className={`p-3 whitespace-nowrap text-xs transition-colors ${
-                               rowIdx === headerRowIndex ? 'text-blue-700 dark:text-blue-400 font-bold' : 'text-slate-500'
-                            }`}>
+                            <td key={colIdx} className={'p-3 whitespace-nowrap text-xs transition-colors ' + (rowIdx === headerRowIndex ? 'text-blue-700 dark:text-blue-400 font-bold' : 'text-slate-500')}>
                               <div className="truncate max-w-[200px]">
                                 {row[colIdx] || <span className="text-slate-300 opacity-30">—</span>}
                               </div>
