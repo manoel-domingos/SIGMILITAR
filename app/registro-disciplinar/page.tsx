@@ -634,7 +634,6 @@ function RegistroDisciplinarContent() {
 
     <!-- COLUNA PRINCIPAL: ATA -->
     <div class="main-col">
-      <div class="ata-titulo-grande">ATA N\u00ba ${occurrenceNum}</div>
       <div class="ata-subtitulo">Relato do Ocorrido</div>
       <div class="ata-corpo">${markdownBoldToHtml(ataText)}</div>
 
