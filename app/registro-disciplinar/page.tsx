@@ -371,7 +371,7 @@ function RegistroDisciplinarContent() {
     const day = String(now.getDate()).padStart(2, '0');
     const localDate = year + '-' + month + '-' + day;
     
-    const localHour = now.toTimeString().split(' ')[0].substring(0, 5);
+    const localHour = now.toTimeString().split(' ')[0]; // Pega HH:MM:SS completo
 
     setEditingOccurrence(null);
     setSelectedStudents([]);
@@ -1418,11 +1418,24 @@ function RegistroDisciplinarContent() {
                       <Clock className="w-4 h-4" /> HORA
                     </label>
                     <input 
-                      type="time" 
+                      type="text"
+                      placeholder="HH:MM:SS"
                       required
                       value={hour}
-                      onChange={(e) => setHour(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Aceita HH:MM ou HH:MM:SS
+                        if (/^\d{2}:\d{2}(:\d{2})?$/.test(val) || val === '') {
+                          setHour(val);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Se foi digitado só HH:MM, adiciona :SS automático
+                        if (hour && hour.length === 5 && hour.includes(':')) {
+                          setHour(hour + ':00');
+                        }
+                      }}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
                     />
                   </div>
                   <div>

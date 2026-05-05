@@ -4,29 +4,27 @@
 
 ## Última atualização
 
-**Data:** 2026-05-04  
-**Sessão:** Correções Build, Sessão Permanente, Assinaturas  
+**Data:** 2026-05-05  
+**Sessão:** Faltas Disciplinares, Ocorrências Individuais, Coluna Nº, Horário com Segundos  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
-Estabilização do build e persistência de sessão de autenticação.
+Registro disciplinar com suporte a múltiplos alunos e captura completa de data/hora.
 
 ## Última ação concluída
 
-- Corrigidos todos os classNames com template literals multilinha para concatenação (compatibilidade SWC Next.js 15)
-- Corrigido backtick escapado `\`` que causava "Unterminated template" no template HTML de impressão
-- Adicionada função `getLoggedUserName()` faltante no registro-disciplinar
-- Corrigido TypeScript narrowing do `supabase` em `AppShell.tsx` (captura em const local após null-check)
-- Removidas linhas "Nome:" e pontilhados extras do bloco de assinaturas (signaturesHTML e signaturesDocxHTML)
-- **Sessão permanente:** removido timeout de 10 minutos da sessão mock/guest — agora só desloga via logout explícito
-- Configuração Supabase auth aprimorada: `storageKey: 'eecm-auth-token'`, `flowType: 'pkce'`
+- Lista de faltas disciplinares atualizada para 91 itens conforme regimento oficial: 26 leve + 36 média + 29 grave
+- **Ocorrências individuais:** `handleSubmit` agora cria uma ocorrência separada para cada aluno selecionado (antes criava uma com múltiplos `studentIds`)
+- **Coluna Nº:** adicionada à esquerda da tabela exibindo o número sequencial (posição + 1) em badge circular
+- **Horário com segundos:** input de hora convertido de `type="time"` para texto com validação `HH:MM:SS`, captura automática de segundos ao desfocar, pré-preenchimento usa hora completa
+- **Confirmado:** todas as ocorrências anteriores mostravam mesmo horário (07:08) porque foram criadas no mesmo segundo/milissegundo
 
 ## Próxima ação
 
-- [ ] Concluir integração Google Drive (faltam env vars `NEXT_PUBLIC_GOOGLE_CLIENT_ID` e `NEXT_PUBLIC_GOOGLE_API_KEY`)
-- [ ] Validar fluxo completo: registrar ocorrência → pendencia aparece no painel → marcar cumprida → sair da lista
-- [ ] Testar ATA gerada sem corte após remoção do max_tokens
+- [ ] Concluir integração Google Drive (env vars ainda faltam)
+- [ ] Validar fluxo: múltiplos alunos → criar ocorrências individuais → cada uma com seu Nº sequencial
+- [ ] Testar impressão/DOCX com novas colunas
 
 ## Bloqueios
 
