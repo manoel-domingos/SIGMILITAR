@@ -807,6 +807,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error("Occurrence insert error:", err);
         throw err; // Re-throw to handle in UI
       }
+      // Fallback: se insert não retornou data mas não deu erro, retorna ID gerado
+      return newId;
     } else {
       // Fallback local (sem Supabase)
       const finalId = 'O' + (occurrences.length + 1);
