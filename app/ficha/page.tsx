@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { FileBadge, Search, Printer, Brain, X, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { streamAI } from '@/components/AIChat';
+import SearchableSelect from '@/components/SearchableSelect';
 
 export default function FichaDisciplinar() {
   const { students, getStudentPoints, getStudentOccurrences, rules } = useAppContext();
@@ -59,19 +60,18 @@ export default function FichaDisciplinar() {
 
         <div className="bg-white border border-slate-200 rounded-xl p-6">
           <label className="block text-sm font-medium text-slate-600 mb-2">Selecione o Aluno</label>
-          <div className="relative max-w-xl">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
-            <select
-              value={selectedStudent}
-              onChange={(e) => { setSelectedStudent(e.target.value); setShowAnalysis(false); setAnalysisResult(''); }}
-              className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-            >
-              <option value="">Buscar aluno...</option>
-              {students.map(s => (
-                <option key={s.id} value={s.id}>{s.name} - {s.class} ({s.shift})</option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            options={students.map(s => ({ value: s.id, label: s.name + ' - ' + s.class + ' (' + s.shift + ')' }))}
+            value={selectedStudent}
+            onChange={(val) => {
+              if (val) {
+                setSelectedStudent(val);
+                setShowAnalysis(false);
+                setAnalysisResult('');
+              }
+            }}
+            placeholder="Buscar aluno..."
+          />
         </div>
 
         {student && (
