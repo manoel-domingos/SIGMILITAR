@@ -371,7 +371,7 @@ function RegistroDisciplinarContent() {
     const day = String(now.getDate()).padStart(2, '0');
     const localDate = year + '-' + month + '-' + day;
     
-    const localHour = now.toTimeString().split(' ')[0].substring(0, 5);
+    const localHour = now.toTimeString().split(' ')[0]; // Pega HH:MM:SS completo
 
     setEditingOccurrence(null);
     setSelectedStudents([]);
@@ -685,25 +685,32 @@ function RegistroDisciplinarContent() {
           if (!confirmed) return;
         }
 
-        const savedId = await addOccurrence({
-          studentId: primaryStudentId,
-          studentIds: selectedStudents,
-          date,
-          hour,
-          location,
-          locatedBy,
-          ruleCode: primaryRuleCode,
-          ruleCodes: ruleCodesInt,
-          registeredBy,
-          observations,
-          measure: measureToSave,
-          measures: selectedMeasures.length > 0 ? selectedMeasures : [measureToSave],
-          videoUrls,
-          signedDocUrls,
-          durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
-          attenuatingFactors,
-          aggravatingFactors
-        });
+        // Cria UMA ocorrência por aluno selecionado
+        const savedIds: string[] = [];
+        for (const studentId of selectedStudents) {
+          const id = await addOccurrence({
+            studentId,
+            studentIds: [studentId],
+            date,
+            hour,
+            location,
+            locatedBy,
+            ruleCode: primaryRuleCode,
+            ruleCodes: ruleCodesInt,
+            registeredBy,
+            observations,
+            measure: measureToSave,
+            measures: selectedMeasures.length > 0 ? selectedMeasures : [measureToSave],
+            videoUrls,
+            signedDocUrls,
+            durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
+            attenuatingFactors,
+            aggravatingFactors
+          });
+          if (id) savedIds.push(id);
+        }
+
+        const savedId = savedIds[0];
 
         // Códigos de infrações que envolvem violência física / bullying / agressão
         const VIOLENCIA_CODES = [64, 65, 69, 75, 76, 78, 80, 83, 84, 89];
@@ -1249,6 +1256,7 @@ function RegistroDisciplinarContent() {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-white border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold">
                 <tr>
+                  <th className="px-4 py-3 font-medium w-12 text-center">N\u00ba</th>
                   <th className="px-6 py-3 font-medium">Data</th>
                   <th className="px-6 py-3 font-medium">Horário</th>
                   <th className="px-6 py-3 font-medium">Aluno</th>
@@ -1264,7 +1272,7 @@ function RegistroDisciplinarContent() {
               <tbody className="divide-y divide-slate-100 text-slate-600">
                 {filteredOccurrences.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
                       Nenhuma ocorrência encontrada.
                     </td>
                   </tr>
@@ -1287,6 +1295,11 @@ function RegistroDisciplinarContent() {
                             className="hover:bg-slate-50 transition cursor-pointer"
                             title="Clique para ver os detalhes ou exportar"
                           >
+                            <td className="px-4 py-4 text-center">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+                                {filteredOccurrences.indexOf(o) + 1}
+                              </span>
+                            </td>
                             <td className="px-6 py-4">
                               <span>{formatDate(o.date)}</span>
                             </td>
@@ -1405,11 +1418,24 @@ function RegistroDisciplinarContent() {
                       <Clock className="w-4 h-4" /> HORA
                     </label>
                     <input 
-                      type="time" 
+                      type="text"
+                      placeholder="HH:MM:SS"
                       required
                       value={hour}
-                      onChange={(e) => setHour(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Aceita HH:MM ou HH:MM:SS
+                        if (/^\d{2}:\d{2}(:\d{2})?$/.test(val) || val === '') {
+                          setHour(val);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Se foi digitado só HH:MM, adiciona :SS automático
+                        if (hour && hour.length === 5 && hour.includes(':')) {
+                          setHour(hour + ':00');
+                        }
+                      }}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
                     />
                   </div>
                   <div>
