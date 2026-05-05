@@ -408,17 +408,18 @@ function TopbarLayout({
       <header className="z-30 px-4 pt-2 pb-1 space-y-2 pointer-events-none">
         {/* top row: logo + right controls */}
         <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-4 px-4 md:px-6 py-1">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
-              className="p-1 -ml-1 text-slate-500 dark:text-slate-400 md:hidden"
+              className="w-11 h-11 -ml-1 flex items-center justify-center text-slate-500 dark:text-slate-400 md:hidden rounded-xl active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
               onClick={openMobileMenu}
+              aria-label="Abrir menu"
             >
               <Menu className="w-6 h-6" />
             </button>
             <img
               src="/logo_dash.svg"
               alt="EECM"
-              className="w-auto h-12 md:h-16 object-contain shrink-0 drop-shadow-sm"
+              className="w-auto h-10 sm:h-12 md:h-16 object-contain shrink-0 drop-shadow-sm"
             />
             <div className="hidden sm:block min-w-0">
               <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
@@ -563,18 +564,22 @@ function MobileDrawer({
 }) {
   return (
     <aside
-      className={'fixed inset-y-0 left-0 z-50 w-64 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden ' + (open ? 'translate-x-0' : '-translate-x-full')}
+      className={'fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden safe-area-inset ' + (open ? 'translate-x-0' : '-translate-x-full')}
     >
-      <div className="p-6 flex flex-col items-center border-b border-slate-800 relative">
-        <button className="absolute top-4 right-4 text-slate-400" onClick={onClose}>
-          <X className="w-5 h-5" />
-        </button>
-        <div className="w-24 h-24 flex items-center justify-center">
+      <div className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-800">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
           <img src="/nova_logo.png" alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
         </div>
+        <button 
+          className="w-11 h-11 flex items-center justify-center text-slate-400 rounded-xl active:bg-slate-700 transition-colors" 
+          onClick={onClose}
+          aria-label="Fechar menu"
+        >
+          <X className="w-6 h-6" />
+        </button>
       </div>
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-4 px-3">
+      <nav className="flex-1 overflow-y-auto py-3 overscroll-contain">
+        <ul className="space-y-3 px-2 sm:px-3">
           {MENU_GROUPS.map((group) => {
             if (group.href) {
               const active = pathname === group.href;
@@ -583,9 +588,9 @@ function MobileDrawer({
                   <Link
                     href={group.href}
                     onClick={onClose}
-                    className={'flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
+                    className={'flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
                   >
-                    <group.icon className="w-5 h-5" />
+                    <group.icon className="w-5 h-5 shrink-0" />
                     {group.label}
                   </Link>
                 </li>
@@ -593,11 +598,11 @@ function MobileDrawer({
             }
             return (
               <li key={group.label}>
-                <p className="px-4 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-2">
-                  <group.icon className="w-3.5 h-3.5" />
+                <p className="px-4 mb-2 text-[11px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-2">
+                  <group.icon className="w-4 h-4" />
                   {group.label}
                 </p>
-                <ul className="space-y-0.5">
+                <ul className="space-y-1">
                   {group.children!.map((item) => {
                     const active = pathname === item.href;
                     return (
@@ -605,9 +610,9 @@ function MobileDrawer({
                         <Link
                           href={item.href}
                           onClick={onClose}
-                          className={'flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
+                          className={'flex items-center gap-3 pl-8 pr-4 py-3 rounded-xl text-base transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
                         >
-                          <item.icon className="w-4 h-4" />
+                          <item.icon className="w-5 h-5 shrink-0" />
                           {item.label}
                         </Link>
                       </li>
@@ -619,8 +624,8 @@ function MobileDrawer({
           })}
         </ul>
       </nav>
-      <div className="p-4 border-t border-slate-800">
-        <p className="text-[11px] text-slate-500 italic text-center">
+      <div className="p-4 border-t border-slate-800 safe-area-bottom">
+        <p className="text-xs text-slate-500 italic text-center">
           Versão: {versionData.version}
         </p>
       </div>
@@ -657,27 +662,30 @@ function RightControls(props: RightControlsProps) {
   } = props;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
+      {/* Status badge - compacto no mobile */}
       <div
-        className={'hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ' + (isSupabaseConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30')}
+        className={'inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ' + (isSupabaseConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30')}
       >
         {isSupabaseConnected ? <CloudCheck className="w-3.5 h-3.5" /> : <CloudOff className="w-3.5 h-3.5" />}
-        <span>{isSupabaseConnected ? 'Online' : 'Offline'}</span>
+        <span className="hidden xs:inline">{isSupabaseConnected ? 'Online' : 'Offline'}</span>
       </div>
 
       <button
         onClick={refreshData}
         disabled={isSyncing}
-        className={'w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 transition shadow-sm ' + (isSyncing ? 'animate-spin text-blue-500' : '')}
+        className={'w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 active:bg-slate-100 dark:active:bg-slate-700 transition shadow-sm ' + (isSyncing ? 'animate-spin text-blue-500' : '')}
         title="Sincronizar"
+        aria-label="Sincronizar dados"
       >
         <RefreshCw className="w-4 h-4" />
       </button>
 
       <button
         onClick={toggleTheme}
-        className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 transition shadow-sm"
+        className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 active:bg-slate-100 dark:active:bg-slate-700 transition shadow-sm"
         title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+        aria-label={isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
       >
         {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>

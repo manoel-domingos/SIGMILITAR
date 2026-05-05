@@ -80,7 +80,7 @@ export default function SearchableSelect({
       <div className="relative">
         <input
           type="text"
-          className={'glass-input w-full pl-4 pr-10 text-slate-800 dark:text-slate-200 ' + heightClass}
+          className={'glass-input w-full pl-4 pr-10 text-slate-800 dark:text-slate-200 text-base sm:text-sm ' + heightClass}
           placeholder={selectedOption ? selectedOption.label : placeholder}
           value={displayValue}
           onChange={(e) => {
@@ -89,29 +89,31 @@ export default function SearchableSelect({
           }}
           onFocus={handleOpen}
         />
-        <div 
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer p-1" 
+        <button 
+          type="button"
+          className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg active:bg-slate-100 dark:active:bg-slate-700 transition-colors" 
           onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? 'Fechar lista' : 'Abrir lista'}
         >
           <ChevronDown className={'w-4 h-4 transition-transform ' + (isOpen ? 'rotate-180' : '')} />
-        </div>
+        </button>
       </div>
 
       {mounted && dropdownPos && ReactDOM.createPortal(
         isOpen ? (
           <div
             ref={dropdownRef}
-            className="glass-dropdown fixed max-h-60 flex flex-col animate-in fade-in slide-in-from-top-2 duration-200"
+            className="glass-dropdown fixed max-h-60 sm:max-h-60 flex flex-col animate-in fade-in slide-in-from-top-2 duration-200"
             style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, zIndex: 99999 }}
           >
-            <ul className="overflow-y-auto p-1">
+            <ul className="overflow-y-auto p-1 overscroll-contain">
               {filteredOptions.length === 0 ? (
-                <li className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400 text-center">Nenhum resultado</li>
+                <li className="px-3 py-3 sm:py-2 text-sm text-slate-500 dark:text-slate-400 text-center">Nenhum resultado</li>
               ) : (
                 filteredOptions.map((opt) => (
                   <li
                     key={opt.value}
-                    className={'px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ' + (value === opt.value ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50')}
+                    className={'px-3 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl sm:rounded-lg cursor-pointer transition-colors active:scale-[0.98] ' + (value === opt.value ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-300 active:bg-slate-100 dark:active:bg-slate-700/50')}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       onChange(opt.value);

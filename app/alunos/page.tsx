@@ -833,16 +833,16 @@ export default function Alunos() {
             </div>
           </div>
           
-          <div className="overflow-auto flex-1">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="sticky top-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-white/10 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold z-10">
+          <div className="overflow-auto flex-1 -mx-4 sm:mx-0 px-4 sm:px-0 scroll-smooth-mobile">
+            <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+              <thead className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold z-10">
                 <tr>
-                  <th className="px-6 py-3 font-medium">Nome</th>
-                  <th className="px-6 py-3 font-medium">Turma</th>
-                  <th className="px-6 py-3 font-medium">Turno</th>
-                  <th className="px-6 py-3 font-medium">Contatos</th>
-                  <th className="px-6 py-3 font-medium">Classe Comportamental</th>
-                  <th className="px-6 py-3 font-medium text-center">Nota Atual</th>
+                  <th className="px-4 sm:px-6 py-3 font-medium">Nome</th>
+                  <th className="px-4 sm:px-6 py-3 font-medium">Turma</th>
+                  <th className="px-4 sm:px-6 py-3 font-medium hidden sm:table-cell">Turno</th>
+                  <th className="px-4 sm:px-6 py-3 font-medium hidden md:table-cell">Contatos</th>
+                  <th className="px-4 sm:px-6 py-3 font-medium">Comportamento</th>
+                  <th className="px-4 sm:px-6 py-3 font-medium text-center">Nota</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-600">
@@ -854,19 +854,24 @@ export default function Alunos() {
                   </tr>
                 ) : (
                   filteredStudents.map((s) => (
-                    <tr key={s.id} onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)} className={'transition border-b border-slate-100 last:border-0 text-slate-600 ' + (currentUserRole !== 'GUEST' ? 'hover:bg-slate-50 cursor-pointer' : '')}>
-                      <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-3">
-                         <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shrink-0">
-                           {s.name.charAt(0)}
+                    <tr key={s.id} onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)} className={'transition border-b border-slate-100 last:border-0 text-slate-600 active:bg-slate-100 ' + (currentUserRole !== 'GUEST' ? 'hover:bg-slate-50 cursor-pointer' : '')}>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-slate-800">
+                         <div className="flex items-center gap-2 sm:gap-3">
+                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shrink-0 text-sm">
+                             {s.name.charAt(0)}
+                           </div>
+                           <div className="min-w-0">
+                             <span className="truncate block text-sm sm:text-base">{s.name}</span>
+                             <span className="text-xs text-slate-400 sm:hidden">{s.shift}</span>
+                           </div>
                          </div>
-                         <span className="truncate">{s.name}</span>
                       </td>
-                      <td className="px-6 py-4">{s.class}</td>
-                      <td className="px-6 py-4">{s.shift}</td>
-                      <td className="px-6 py-4 text-slate-500">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">{s.class}</td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">{s.shift}</td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-slate-500 hidden md:table-cell">
                         {s.contacts && s.contacts.length > 0 ? (
-                           <div className="flex flex-col gap-1.5 mt-1">
-                             {s.contacts.map((c, i) => {
+                           <div className="flex flex-col gap-1.5">
+                             {s.contacts.slice(0, 2).map((c, i) => {
                                const waLink = formatPhoneForWhatsApp(c.phone, s.name);
                                return (
                                  <div key={i} className="text-xs flex items-center gap-1.5">
@@ -887,22 +892,23 @@ export default function Alunos() {
                                  </div>
                                );
                              })}
+                             {s.contacts.length > 2 && <span className="text-[10px] text-slate-400">+{s.contacts.length - 2} mais</span>}
                            </div>
                         ) : (
                            <span className="text-xs italic text-slate-400">---</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={'inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ' + (getStudentBehavior(getStudentPoints(s.id)) === 'Excepcional' ? 'bg-emerald-500/10 text-emerald-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Ótimo' ? 'bg-blue-500/10 text-blue-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Bom' ? 'bg-slate-500/10 text-slate-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Regular' ? 'bg-yellow-500/10 text-yellow-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Insuficiente' ? 'bg-rose-500/10 text-rose-600' : 'bg-red-500/10 text-red-600')}>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <span className={'inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ' + (getStudentBehavior(getStudentPoints(s.id)) === 'Excepcional' ? 'bg-emerald-500/10 text-emerald-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Ótimo' ? 'bg-blue-500/10 text-blue-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Bom' ? 'bg-slate-500/10 text-slate-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Regular' ? 'bg-yellow-500/10 text-yellow-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Insuficiente' ? 'bg-rose-500/10 text-rose-600' : 'bg-red-500/10 text-red-600')}>
                           {getStudentBehavior(getStudentPoints(s.id))}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
                          <div className="flex flex-col items-center gap-1">
                             <span className={'text-sm font-black ' + (getStudentPoints(s.id) >= 7 ? 'text-blue-600' : 'text-red-500')}>
                                {getStudentPoints(s.id).toFixed(1)}
                             </span>
-                            <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="w-12 sm:w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
                                <div 
                                  className={'h-full transition-all duration-500 ' + (getStudentPoints(s.id) >= 7 ? 'bg-blue-500' : 'bg-red-500')} 
                                  style={{ width: `${getStudentPoints(s.id) * 10}%` }}
@@ -921,11 +927,11 @@ export default function Alunos() {
 
       {/* Modal Novo/Editar Aluno */}
       {isModalOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9990] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="glass-modal max-w-md w-full flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-            <div className="flex items-center justify-between p-5 border-b border-slate-200">
-              <h2 className="text-xl font-bold text-slate-800">
-                {editingStudent ? 'Editar Aluno' : 'Cadastrar Aluno Manualmente'}
+        <div className="fixed inset-0 glass-overlay z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="glass-modal w-full sm:max-w-md flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 rounded-t-3xl sm:rounded-2xl">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 safe-area-top">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800">
+                {editingStudent ? 'Editar Aluno' : 'Cadastrar Aluno'}
               </h2>
               <button 
                 onClick={() => setIsModalOpen(false)}

@@ -580,7 +580,7 @@ function RegistroDisciplinarContent() {
 
     <!-- SIDEBAR: IDENTIFICAÇÃO / INFRAÇÃO / MEDIDA -->
     <div class="sidebar">
-      <div class="sidebar-titulo">IDENTIFICAÇÃO</div>
+      <div class="sidebar-titulo">IDENTIFICA��ÃO</div>
 
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
@@ -1269,8 +1269,8 @@ function RegistroDisciplinarContent() {
             </div>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 scroll-smooth-mobile">
+            <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
               <thead className="bg-white border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold">
                 <tr>
                   <th className="px-4 py-3 font-medium w-12 text-center">N\u00ba</th>
@@ -1362,22 +1362,23 @@ function RegistroDisciplinarContent() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9990] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="glass-modal max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-            <div className="flex items-center justify-between p-5 border-b border-slate-200 sticky top-0 bg-white z-10">
-              <h2 className="text-xl font-bold text-slate-800">
+        <div className="fixed inset-0 glass-overlay z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="glass-modal w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 rounded-t-3xl sm:rounded-2xl safe-area-bottom">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 sticky top-0 bg-white z-10 safe-area-top">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800">
                 {editingOccurrence ? 'Editar Ocorrência' : 'Nova Ocorrência'}
               </h2>
               <button 
                 onClick={() => { setIsModalOpen(false); setIsGuardianListOpen(false); }}
-                className="text-slate-500 hover:text-slate-800 transition rounded-lg hover:bg-white p-1"
+                className="w-10 h-10 flex items-center justify-center text-slate-500 active:text-slate-800 transition rounded-xl active:bg-slate-100"
+                aria-label="Fechar"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-5">
-              <div className="max-w-md mx-auto space-y-5">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-5 pb-6 sm:pb-5">
+              <div className="max-w-md mx-auto space-y-4 sm:space-y-5">
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-slate-600 mb-1">Aluno(s) *</label>
@@ -1410,16 +1411,17 @@ function RegistroDisciplinarContent() {
                   <button 
                     type="button"
                     onClick={() => setIsStudentModalOpen(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg transition shrink-0"
+                    className="bg-blue-600 active:bg-blue-700 text-white w-11 h-11 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition shrink-0"
                     title="Cadastrar novo aluno"
+                    aria-label="Cadastrar novo aluno"
                   >
                     <Plus className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-600 mb-1 flex items-center gap-2">
+                    <label className="block text-sm font-medium text-slate-600 mb-1.5 flex items-center gap-2">
                       <Edit2 className="w-4 h-4" /> DATA
                     </label>
                     <input 
@@ -1427,11 +1429,11 @@ function RegistroDisciplinarContent() {
                       required
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 sm:py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-600 mb-1 flex items-center gap-2">
+                    <label className="block text-sm font-medium text-slate-600 mb-1.5 flex items-center gap-2">
                       <Clock className="w-4 h-4" /> HORA
                     </label>
                     <input 
@@ -1452,17 +1454,17 @@ function RegistroDisciplinarContent() {
                           setHour(hour + ':00');
                         }
                       }}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 sm:py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-600 mb-1 flex items-center gap-2">
+                    <label className="block text-sm font-medium text-slate-600 mb-1.5 flex items-center gap-2">
                       <MapPin className="w-4 h-4" /> LOCAL
                     </label>
                     <select
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 sm:py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     >
                       {locations.map(loc => (
                         <option key={loc} value={loc}>{loc}</option>
