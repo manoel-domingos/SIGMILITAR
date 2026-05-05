@@ -33,6 +33,14 @@ function RegistroDisciplinarContent() {
   const paramSeverity = searchParams.get('severity');
 
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Remove acentos para busca insensível a acentuação
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
   const [selectedMonth, setSelectedMonth] = useState(paramMonth && paramMonth !== 'Selecionar...' ? paramMonth : 'Todos os meses');
   const [selectedClass, setSelectedClass] = useState(paramClass && paramClass !== 'Todas' ? paramClass : 'Todas as turmas');
   const [selectedSeverity, setSelectedSeverity] = useState(paramSeverity || 'Todas');
@@ -333,10 +341,10 @@ function RegistroDisciplinarContent() {
 
     if (!searchTerm) return true;
     
-    // Search in all student names
-    const searchLower = searchTerm.toLowerCase();
-    const anyNameMatch = relatedStudents.some(s => s.name.toLowerCase().includes(searchLower));
-    const obsMatch = o.observations?.toLowerCase().includes(searchLower);
+    // Search in all student names com insensibilidade a acentos
+    const searchNormalized = normalizeText(searchTerm);
+    const anyNameMatch = relatedStudents.some(s => normalizeText(s.name).includes(searchNormalized));
+    const obsMatch = o.observations ? normalizeText(o.observations).includes(searchNormalized) : false;
     
     return anyNameMatch || obsMatch || false;
   }).sort((a, b) => {
