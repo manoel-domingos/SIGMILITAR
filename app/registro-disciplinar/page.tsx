@@ -694,8 +694,10 @@ function RegistroDisciplinarContent() {
         }
 
         // Cria UMA ocorrência por aluno selecionado
+        console.log('[v0] Criando ocorrências para', selectedStudents.length, 'alunos:', selectedStudents);
         const savedIds: string[] = [];
         for (const studentId of selectedStudents) {
+          console.log('[v0] Criando ocorrência para aluno:', studentId);
           const id = await addOccurrence({
             studentId,
             studentIds: [studentId],
@@ -715,8 +717,12 @@ function RegistroDisciplinarContent() {
             attenuatingFactors,
             aggravatingFactors
           });
-          if (id) savedIds.push(id);
+          if (id) {
+            console.log('[v0] Ocorrência criada com ID:', id);
+            savedIds.push(id);
+          }
         }
+        console.log('[v0] Total de ocorrências criadas:', savedIds.length, 'IDs:', savedIds);
 
         const savedId = savedIds[0];
 
