@@ -606,13 +606,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addStaffMember = async (s: Omit<StaffMember, 'id'>) => {
-    if (currentUserRole !== 'GESTOR') {
-      alert('Acesso Negado: Apenas gestores podem gerenciar membros da equipe.');
-      return;
+    if (supabase && isSupabaseConnected) {
+      // Salva no Supabase
+      const { data, error } = await supabase
+        .from('staff_members')
+        .insert({ name: s.name, role: s.role })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Erro ao adicionar membro:', error);
+        return;
+      }
+      
+      setStaffMembers(prev => [...prev, { ...s, id: data.id }]);
+      logAction('CREATE', 'Membro Equipe', data.id, 'Adicionado membro: ' + s.role + ' ' + s.name);
+    } else {
+      // Fallback local
+      const newId = 'ST' + (staffMembers.length + 1);
+      setStaffMembers(prev => [...prev, { ...s, id: newId }]);
+      logAction('CREATE', 'Membro Equipe', newId, 'Adicionado membro: ' + s.role + ' ' + s.name);
     }
-    const newId = 'ST' + (staffMembers.length + 1);
-    setStaffMembers(prev => [...prev, { ...s, id: newId }]);
-    logAction('CREATE', 'Membro Equipe', newId, 'Adicionado membro: ' + s.role + ' ' + s.name);
   };
 
   const refreshData = async () => {
@@ -626,7 +640,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase!.from('praises').select('*').order('date', { ascending: false }),
         supabase!.from('summons').select('*').order('date', { ascending: false }),
         supabase!.from('conduct_terms').select('*').order('date', { ascending: false }),
-        supabase!.from('audit_logs').select('*').order('date', { ascending: false })
+        supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
+        supabase!.from('staff_members').select('*').order('name', { ascending: true })
       ]);
       
       const [
@@ -636,7 +651,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { data: praisesData },
         { data: summonsData },
         { data: conductTermsData },
-        { data: auditLogsData }
+        { data: auditLogsData },
+        { data: staffData }
       ] = responses;
 
       if (studentsData) setStudents(studentsData.map(s => ({ ...s, points: 8 })));
@@ -670,6 +686,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (summonsData) setSummons(summonsData.map((s: any) => ({...s, studentId: s.student_id, registeredBy: s.registered_by})));
       if (conductTermsData) setConductTerms(conductTermsData.map((t: any) => ({...t, studentId: t.student_id, registeredBy: t.registered_by, guardianName: t.guardian_name})));
       if (auditLogsData) setAuditLogs(auditLogsData.map((l: any) => ({...l, entityName: l.entity_name, entityId: l.entity_id, userEmail: l.user_email})));
+      if (staffData) setStaffMembers(staffData.map((s: any) => ({ id: s.id, name: s.name, role: s.role })));
       
     } catch (err) {
       console.error("Refresh failed", err);
