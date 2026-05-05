@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { FileBadge, Search, Printer, Brain, X, Loader2 } from 'lucide-react';
+import { FileBadge, Search, Printer, Brain, X, Loader2, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { streamAI } from '@/components/AIChat';
 import SearchableSelect from '@/components/SearchableSelect';
@@ -15,9 +15,13 @@ export default function FichaDisciplinar() {
   const [analysisResult, setAnalysisResult] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [filterWithOccurrences, setFilterWithOccurrences] = useState(false);
 
   const student = students.find(s => s.id === selectedStudent);
   const occurrences = student ? getStudentOccurrences(student.id) : [];
+
+  const studentsWithOccurrences = students.filter(s => getStudentOccurrences(s.id).length > 0);
+  const filteredStudentOptions = filterWithOccurrences ? studentsWithOccurrences : students;
 
   const handlePrintFicha = () => {
     if (!student) return;
@@ -226,9 +230,32 @@ export default function FichaDisciplinar() {
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-6">
-          <label className="block text-sm font-medium text-slate-600 mb-2">Selecione o Aluno</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-slate-600">Selecione o Aluno</label>
+            <button
+              type="button"
+              onClick={() => {
+                setFilterWithOccurrences(prev => !prev);
+                setSelectedStudent('');
+                setShowAnalysis(false);
+                setAnalysisResult('');
+              }}
+              title={filterWithOccurrences ? 'Mostrar todos os alunos' : 'Mostrar apenas alunos com infrações'}
+              className={
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ' +
+                (filterWithOccurrences
+                  ? 'bg-amber-50 border-amber-400 text-amber-700 hover:bg-amber-100'
+                  : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300 hover:text-amber-600')
+              }
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {filterWithOccurrences
+                ? 'Com infrações (' + studentsWithOccurrences.length + ')'
+                : 'Filtrar com infrações'}
+            </button>
+          </div>
           <SearchableSelect
-            options={students.map(s => ({ value: s.id, label: s.name + ' - ' + s.class + ' (' + s.shift + ')' }))}
+            options={filteredStudentOptions.map(s => ({ value: s.id, label: s.name + ' - ' + s.class + ' (' + s.shift + ')' }))}
             value={selectedStudent}
             onChange={(val) => {
               if (val) {
@@ -237,8 +264,14 @@ export default function FichaDisciplinar() {
                 setAnalysisResult('');
               }
             }}
-            placeholder="Buscar aluno..."
+            placeholder={filterWithOccurrences ? 'Buscar aluno com infrações...' : 'Buscar aluno...'}
           />
+          {filterWithOccurrences && (
+            <p className="mt-2 text-xs text-amber-600 flex items-center gap-1.5">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              Exibindo {studentsWithOccurrences.length} de {students.length} alunos — apenas aqueles com ao menos uma infração registrada.
+            </p>
+          )}
         </div>
 
         {student && (
