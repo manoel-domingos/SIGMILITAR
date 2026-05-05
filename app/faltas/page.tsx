@@ -35,6 +35,14 @@ const SEVERITY_CONFIG = {
 
 type SeverityKey = keyof typeof SEVERITY_CONFIG;
 
+// Remove acentos para busca insensível a acentuação
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
 export default function FaltasDisciplinares() {
   const { rules, updateRule, currentUserRole } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,7 +58,7 @@ export default function FaltasDisciplinares() {
 
   const filteredRules = useMemo(() =>
     rules.filter(r =>
-      r.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      normalizeText(r.description).includes(normalizeText(searchTerm)) ||
       r.code.toString().includes(searchTerm)
     ),
     [rules, searchTerm]
