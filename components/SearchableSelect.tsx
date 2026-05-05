@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 
+// Remove acentos para busca insensível a acentuação
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
 interface Option {
   value: string;
   label: string;
@@ -64,7 +72,7 @@ export default function SearchableSelect({
   const displayValue = isOpen ? search : (selectedOption ? selectedOption.label : '');
 
   const filteredOptions = options.filter(opt => 
-    opt.label.toLowerCase().includes(search.toLowerCase())
+    normalizeText(opt.label).includes(normalizeText(search))
   );
 
   return (
