@@ -407,7 +407,9 @@ function RegistroDisciplinarContent() {
     e.stopPropagation();
     setEditingOccurrence(o.id);
     setSelectedStudents(o.studentIds && o.studentIds.length > 0 ? o.studentIds : [o.studentId]);
-    setDate(o.date);
+    // Garante formato YYYY-MM-DD para o input type="date"
+    const normalizedDate = o.date ? o.date.substring(0, 10) : '';
+    setDate(normalizedDate);
     setHour(o.hour || '');
     setLocation(o.location || 'Pátio');
     setLocatedBy(o.locatedBy || '');
@@ -580,7 +582,7 @@ function RegistroDisciplinarContent() {
 
     <!-- SIDEBAR: IDENTIFICAÇÃO / INFRAÇÃO / MEDIDA -->
     <div class="sidebar">
-      <div class="sidebar-titulo">IDENTIFICA��ÃO</div>
+      <div class="sidebar-titulo">IDENTIFICA����ÃO</div>
 
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
@@ -1397,7 +1399,7 @@ function RegistroDisciplinarContent() {
                           const s = students.find(x => x.id === id);
                           return (
                             <div key={id} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm flex items-center gap-1 border border-blue-200">
-                               {s?.name}
+                               <span>{s?.name}{s?.class ? <span className="font-normal opacity-75"> - {s.class}</span> : ''}</span>
                                <button type="button" onClick={() => setSelectedStudents(prev => prev.filter(x => x !== id))} className="text-blue-500 hover:text-blue-800 ml-1 translate-y-px">
                                   <X className="w-3 h-3 border border-transparent rounded hover:border-blue-400 bg-white bg-opacity-0 hover:bg-opacity-50 transition" />
                                </button>
@@ -1442,14 +1444,14 @@ function RegistroDisciplinarContent() {
                       value={hour}
                       onChange={(e) => {
                         const val = e.target.value;
-                        // Aceita HH:MM ou HH:MM:SS
-                        if (/^\d{2}:\d{2}(:\d{2})?$/.test(val) || val === '') {
+                        // Permite digitação incremental de hora (aceita parcial)
+                        if (/^[\d:]*$/.test(val) && val.length <= 8) {
                           setHour(val);
                         }
                       }}
                       onBlur={() => {
-                        // Se foi digitado só HH:MM, adiciona :SS automático
-                        if (hour && hour.length === 5 && hour.includes(':')) {
+                        // Completa formato se necessário
+                        if (hour && /^\d{2}:\d{2}$/.test(hour)) {
                           setHour(hour + ':00');
                         }
                       }}
