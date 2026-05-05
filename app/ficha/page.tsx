@@ -7,6 +7,7 @@ import { FileBadge, Search, Printer, Brain, X, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { streamAI } from '@/components/AIChat';
 import SearchableSelect from '@/components/SearchableSelect';
+import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function FichaDisciplinar() {
   const { students, getStudentPoints, getStudentOccurrences, rules } = useAppContext();
@@ -17,6 +18,172 @@ export default function FichaDisciplinar() {
 
   const student = students.find(s => s.id === selectedStudent);
   const occurrences = student ? getStudentOccurrences(student.id) : [];
+
+  const handlePrintFicha = () => {
+    if (!student) return;
+
+    const occurrencesRows = occurrences.length === 0
+      ? '<tr><td colspan="5" style="border: 1px solid #000; padding: 12px; text-align: center; font-style: italic;">Nenhuma ocorrência registrada no histórico deste aluno.</td></tr>'
+      : occurrences.map(o => {
+          const rule = rules.find(r => r.code === o.ruleCode);
+          return `<tr>
+            <td style="border: 1px solid #000; padding: 6px;">${formatDate(o.date)}</td>
+            <td style="border: 1px solid #000; padding: 6px; text-align: center;">${o.ruleCode}</td>
+            <td style="border: 1px solid #000; padding: 6px; font-size: 8pt;">${rule?.description || '-'}</td>
+            <td style="border: 1px solid #000; padding: 6px; text-align: center; white-space: nowrap;">${rule?.severity || '-'} (${rule?.points || 0})</td>
+            <td style="border: 1px solid #000; padding: 6px; font-size: 8pt;">${o.registeredBy || '-'}</td>
+          </tr>`;
+        }).join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Ficha Disciplinar - ${student.name}</title>
+  <style>
+    ${SCHOOL_HEADER_CSS}
+
+    body {
+      border-left: none !important;
+      padding-left: 0 !important;
+    }
+
+    .ficha-titulo {
+      text-align: center;
+      margin: 16px 0 24px 0;
+    }
+    .ficha-titulo h2 {
+      font-size: 14pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 0 0 4px 0;
+      color: #1a237e;
+    }
+    .ficha-titulo h3 {
+      font-size: 11pt;
+      font-weight: bold;
+      text-decoration: underline;
+      margin: 0;
+    }
+
+    .dados-aluno {
+      border: 2px solid #000;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 24px;
+      font-size: 10pt;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .dados-aluno .nota {
+      font-size: 16pt;
+      font-weight: bold;
+      color: #1a237e;
+    }
+
+    .secao-titulo {
+      font-size: 10pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 2px solid #000;
+      padding-bottom: 4px;
+      margin-bottom: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+    }
+    th {
+      background: #e2e8f0;
+      border: 1px solid #000;
+      padding: 8px 6px;
+      text-align: left;
+      text-transform: uppercase;
+      font-size: 8pt;
+      font-weight: bold;
+    }
+    th.center { text-align: center; }
+
+    .assinaturas {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 60px;
+      padding-top: 40px;
+    }
+    .assinatura-box {
+      text-align: center;
+    }
+    .assinatura-linha {
+      width: 200px;
+      border-bottom: 1px solid #000;
+      margin-bottom: 6px;
+    }
+    .assinatura-label {
+      font-size: 8pt;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  ${getSchoolHeaderHTML()}
+
+  <div class="ficha-titulo">
+    <h2>Ficha Disciplinar Individual</h2>
+    <h3>ANEXO II</h3>
+  </div>
+
+  <div class="dados-aluno">
+    <div>NOME: ${student.name}</div>
+    <div>TURMA: ${student.class}</div>
+    <div>TURNO: ${student.shift}</div>
+    <div>NOTA ATUAL: <span class="nota">${getStudentPoints(student.id).toFixed(1)}</span></div>
+  </div>
+
+  <div class="secao-titulo">Histórico de Ocorrências</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 70px;">Data</th>
+        <th style="width: 50px;" class="center">Art.</th>
+        <th>Falta/Infração</th>
+        <th style="width: 90px;" class="center">Grav./Pontos</th>
+        <th style="width: 120px;">Registrado Por</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${occurrencesRows}
+    </tbody>
+  </table>
+
+  <div class="assinaturas">
+    <div class="assinatura-box">
+      <div class="assinatura-linha"></div>
+      <div class="assinatura-label">Assinatura do Aluno</div>
+    </div>
+    <div class="assinatura-box">
+      <div class="assinatura-linha"></div>
+      <div class="assinatura-label">Assinatura do Gestor</div>
+    </div>
+  </div>
+
+  ${getSchoolFooterHTML()}
+</body>
+</html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 300);
+    }
+  };
 
   const handleAnalyzeStudent = async () => {
     if (!student || occurrences.length === 0) return;
@@ -114,26 +281,26 @@ export default function FichaDisciplinar() {
               </div>
             )}
 
-            {/* Ficha impressa */}
+            {/* Preview da Ficha */}
             <div className="bg-slate-50 text-slate-900 rounded-xl p-8 max-w-4xl shadow-2xl relative">
               <button
-                className="absolute top-8 right-8 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition text-sm print:hidden"
-                onClick={() => window.print()}
+                className="absolute top-8 right-8 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition text-sm"
+                onClick={handlePrintFicha}
               >
                 <Printer className="w-4 h-4" /> Imprimir Ficha
               </button>
 
-              <div className="text-center mb-8 pr-32 print:pr-0">
-                <h2 className="font-bold text-lg uppercase">Escola Estadual Cívico-Militar</h2>
-                <h3 className="font-semibold text-md mt-2 underline">FICHA DISCIPLINAR INDIVIDUAL (ANEXO II)</h3>
+              <div className="text-center mb-8 pr-32">
+                <h2 className="font-bold text-lg uppercase text-blue-900">Ficha Disciplinar Individual</h2>
+                <h3 className="font-semibold text-md mt-2 underline">ANEXO II</h3>
               </div>
 
               <div className="space-y-6 text-sm">
-                <div className="grid grid-cols-2 gap-4 border border-slate-900 p-4 font-semibold uppercase">
+                <div className="grid grid-cols-2 gap-4 border-2 border-slate-900 p-4 font-semibold uppercase">
                   <div>NOME: {student.name}</div>
                   <div>TURMA: {student.class}</div>
                   <div>TURNO: {student.shift}</div>
-                  <div>NOTA ATUAL: <span className="text-xl">{getStudentPoints(student.id).toFixed(1)}</span></div>
+                  <div>NOTA ATUAL: <span className="text-xl text-blue-900 font-bold">{getStudentPoints(student.id).toFixed(1)}</span></div>
                 </div>
 
                 <h4 className="font-bold uppercase border-b-2 border-slate-900 pb-1 mt-6">Histórico de Ocorrências</h4>
@@ -142,7 +309,7 @@ export default function FichaDisciplinar() {
                   <thead>
                     <tr className="bg-slate-200 uppercase text-xs">
                       <th className="border border-slate-900 p-2 text-left w-24">Data</th>
-                      <th className="border border-slate-900 p-2 text-left w-16">Art.</th>
+                      <th className="border border-slate-900 p-2 text-center w-16">Art.</th>
                       <th className="border border-slate-900 p-2 text-left">Falta/Infração</th>
                       <th className="border border-slate-900 p-2 text-center w-24">Grav./Pontos</th>
                       <th className="border border-slate-900 p-2 text-left">Registrado Por</th>
@@ -174,13 +341,13 @@ export default function FichaDisciplinar() {
                   </tbody>
                 </table>
 
-                <div className="mt-20 pt-8 flex justify-around text-center">
+                <div className="mt-16 pt-8 flex justify-around text-center">
                   <div>
-                    <div className="w-64 border-b border-slate-900 mb-2"></div>
+                    <div className="w-52 border-b border-slate-900 mb-2"></div>
                     <p className="font-bold uppercase text-xs">Assinatura do Aluno</p>
                   </div>
                   <div>
-                    <div className="w-64 border-b border-slate-900 mb-2"></div>
+                    <div className="w-52 border-b border-slate-900 mb-2"></div>
                     <p className="font-bold uppercase text-xs">Assinatura do Gestor</p>
                   </div>
                 </div>
