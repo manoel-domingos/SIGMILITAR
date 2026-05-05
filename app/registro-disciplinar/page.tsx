@@ -175,7 +175,10 @@ function RegistroDisciplinarContent() {
 
     const registradoPor = registeredBy.trim() || getLoggedUserName();
 
-    const ata = 'Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + hour + ', ' + alunoStr + ' ' + verboStr + ' no(a) ' + location + locatedByStr + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + ruleCode + ' do Regimento Interno (' + ruleDesc + ').' + agravantesStr + atenuantesStr + reincidenteStr + ' O presente registro foi lavrado por ' + registradoPor + '.';
+    // Número da ATA = próxima ocorrência (total atual + 1)
+    const nextOccurrenceNum = occurrences.length + 1;
+
+    const ata = 'ATA N\u00ba ' + nextOccurrenceNum + '. Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + hour + ', ' + alunoStr + ' ' + verboStr + ' no(a) ' + location + locatedByStr + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + ruleCode + ' do Regimento Interno (' + ruleDesc + ').' + agravantesStr + atenuantesStr + reincidenteStr + ' O presente registro foi lavrado por ' + registradoPor + '.';
 
     setObservations(ata.trim());
   };
@@ -480,6 +483,9 @@ function RegistroDisciplinarContent() {
   const handlePrint = (o: any) => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
+    // Calcula número da ocorrência igual à coluna Nº da tabela
+    const occurrenceNum = filteredOccurrences.length - filteredOccurrences.indexOf(o);
+
     const rule = rules.find(r => r.code === o.ruleCode);
 
     // Resolve all students for this occurrence
@@ -506,7 +512,7 @@ function RegistroDisciplinarContent() {
     const alunoStr = relatedStudents.length === 1
       ? 'o(a) aluno(a) ' + relatedStudents[0].name
       : 'os alunos ' + relatedStudents.slice(0,-1).map(s=>s.name).join(', ') + ' e ' + relatedStudents[relatedStudents.length-1].name;
-    const autoAta = 'Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + (o.hour || '---') + ', ' + alunoStr + ' foi identificado(a) no(a) ' + (o.location || '---') + (o.locatedBy ? ' pelo(a) ' + o.locatedBy : '') + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + o.ruleCode + ' do Regimento Interno (' + (rule?.description || 'Ocorr\u00eancia personalizada') + '). O presente registro foi lavrado por ' + (o.registeredBy || '---') + '.';
+    const autoAta = 'ATA N\u00ba ' + occurrenceNum + '. Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + (o.hour || '---') + ', ' + alunoStr + ' foi identificado(a) no(a) ' + (o.location || '---') + (o.locatedBy ? ' pelo(a) ' + o.locatedBy : '') + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + o.ruleCode + ' do Regimento Interno (' + (rule?.description || 'Ocorr\u00eancia personalizada') + '). O presente registro foi lavrado por ' + (o.registeredBy || '---') + '.';
     const ataText = (o.observations || '').trim() || autoAta;
 
     // Factors
@@ -628,7 +634,7 @@ function RegistroDisciplinarContent() {
 
     <!-- COLUNA PRINCIPAL: ATA -->
     <div class="main-col">
-      <div class="ata-titulo-grande">ATA</div>
+      <div class="ata-titulo-grande">ATA N\u00ba ${occurrenceNum}</div>
       <div class="ata-subtitulo">Relato do Ocorrido</div>
       <div class="ata-corpo">${markdownBoldToHtml(ataText)}</div>
 
@@ -1019,6 +1025,9 @@ function RegistroDisciplinarContent() {
   };
 
   const handleExport = (o: Occurrence) => {
+    // Calcula número da ocorrência igual à coluna Nº da tabela
+    const occurrenceNum = filteredOccurrences.length - filteredOccurrences.indexOf(o);
+
     const relatedStudents = o.studentIds && o.studentIds.length > 0
       ? students.filter(s => o.studentIds?.includes(s.id))
       : [students.find(s => s.id === o.studentId)].filter((s): s is Student => Boolean(s));
@@ -1080,7 +1089,7 @@ function RegistroDisciplinarContent() {
 
     const mainColHTML =
       '<div class="main-col">' +
-        '<div class="ata-titulo-grande">ATA</div>' +
+        '<div class="ata-titulo-grande">ATA N\u00ba ' + occurrenceNum + '</div>' +
         '<div class="ata-subtitulo">Relato do Ocorrido</div>' +
         '<div class="ata-corpo">' + markdownBoldToHtml(o.observations || 'Nenhum relato registrado.') + '</div>' +
         signaturesHTML() +
