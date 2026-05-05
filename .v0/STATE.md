@@ -5,26 +5,30 @@
 ## Última atualização
 
 **Data:** 2026-05-05  
-**Sessão:** Faltas Disciplinares, Ocorrências Individuais, Coluna Nº, Horário com Segundos  
+**Sessão:** Otimização Mobile UX, Correção Duplicação Ocorrências, Impressão Ficha  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
-Registro disciplinar com suporte a múltiplos alunos e captura completa de data/hora.
+Experiência móvel otimizada com touch targets adequados, navegação fluida e responsividade total.
 
 ## Última ação concluída
 
-- Lista de faltas disciplinares atualizada para 91 itens conforme regimento oficial: 26 leve + 36 média + 29 grave
-- **Ocorrências individuais:** `handleSubmit` agora cria uma ocorrência separada para cada aluno selecionado (antes criava uma com múltiplos `studentIds`)
-- **Coluna Nº:** adicionada à esquerda da tabela exibindo o número sequencial (posição + 1) em badge circular
-- **Horário com segundos:** input de hora convertido de `type="time"` para texto com validação `HH:MM:SS`, captura automática de segundos ao desfocar, pré-preenchimento usa hora completa
-- **Confirmado:** todas as ocorrências anteriores mostravam mesmo horário (07:08) porque foram criadas no mesmo segundo/milissegundo
+- **Correção duplicação ocorrências:** Corrigido bug no `addOccurrence` que criava registros duplicados quando Supabase estava conectado (fallback local executava mesmo após insert no banco)
+- **Impressão Ficha Disciplinar:** Atualizada para usar o mesmo cabeçalho institucional completo das ocorrências (com logos SEDUC e EECM, rodapé oficial)
+- **Otimização Mobile UX completa:**
+  - `layout.tsx`: viewport mobile com theme-color dinâmico, PWA-ready, `touch-manipulation`
+  - `AppShell.tsx`: touch targets 44px+, drawer mobile mais largo (72/80px), botões acessíveis, safe-area insets
+  - `globals.css`: utilitários mobile (safe-area, touch-target, scroll-smooth, btn-mobile, fab, breakpoint xs)
+  - Tabelas de ocorrências e alunos: scroll horizontal suave, colunas responsivas ocultas em telas pequenas
+  - Modais: sheet-style no mobile (slide-up from bottom), formulários com inputs maiores (py-3 em vez de py-2)
+  - `SearchableSelect`: touch targets maiores, texto responsivo, dropdown otimizado
 
 ## Próxima ação
 
 - [ ] Concluir integração Google Drive (env vars ainda faltam)
-- [ ] Validar fluxo: múltiplos alunos → criar ocorrências individuais → cada uma com seu Nº sequencial
-- [ ] Testar impressão/DOCX com novas colunas
+- [ ] Testar experiência mobile em dispositivos reais
+- [ ] Validar PWA install prompt se necessário
 
 ## Bloqueios
 

@@ -772,7 +772,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase!.from('occurrences').insert([dbPayload]).select().single();
         if (error) {
           console.error("Supabase insert error (occurrence):", error);
-          alert('Erro ao salvar ocorr\u00eancia no servidor: ' + error.message);
+          alert('Erro ao salvar ocorrência no servidor: ' + error.message);
           throw error;
         }
         if (data) {
@@ -800,18 +800,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
             archived: data.archived || false
           }, ...prev]);
           newId = data.id;
-          logAction('CREATE', 'Ocorr\u00eancia', newId, 'Adicionada ocorr\u00eancia para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
+          logAction('CREATE', 'Ocorrência', newId, 'Adicionada ocorrência para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
           return newId;
         }
       } catch (err: any) {
         console.error("Occurrence insert error:", err);
         throw err; // Re-throw to handle in UI
       }
-    }
+    } else {
+      // Fallback local (sem Supabase)
       const finalId = 'O' + (occurrences.length + 1);
-    setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false }, ...prev]);
-    logAction('CREATE', 'Ocorr\u00eancia', finalId, 'Adicionada ocorr\u00eancia (LOCAL) para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
-    return finalId;
+      setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false }, ...prev]);
+      logAction('CREATE', 'Ocorrência', finalId, 'Adicionada ocorrência (LOCAL) para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
+      return finalId;
+    }
   };
 
   const updateOccurrence = async (id: string, o: Partial<Occurrence>) => {
