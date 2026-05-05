@@ -407,7 +407,9 @@ function RegistroDisciplinarContent() {
     e.stopPropagation();
     setEditingOccurrence(o.id);
     setSelectedStudents(o.studentIds && o.studentIds.length > 0 ? o.studentIds : [o.studentId]);
-    setDate(o.date);
+    // Garante formato YYYY-MM-DD para o input type="date"
+    const normalizedDate = o.date ? o.date.substring(0, 10) : '';
+    setDate(normalizedDate);
     setHour(o.hour || '');
     setLocation(o.location || 'Pátio');
     setLocatedBy(o.locatedBy || '');
@@ -580,7 +582,7 @@ function RegistroDisciplinarContent() {
 
     <!-- SIDEBAR: IDENTIFICAÇÃO / INFRAÇÃO / MEDIDA -->
     <div class="sidebar">
-      <div class="sidebar-titulo">IDENTIFICA��ÃO</div>
+      <div class="sidebar-titulo">IDENTIFICA����ÃO</div>
 
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
@@ -1442,14 +1444,14 @@ function RegistroDisciplinarContent() {
                       value={hour}
                       onChange={(e) => {
                         const val = e.target.value;
-                        // Aceita HH:MM ou HH:MM:SS
-                        if (/^\d{2}:\d{2}(:\d{2})?$/.test(val) || val === '') {
+                        // Permite digitação incremental de hora (aceita parcial)
+                        if (/^[\d:]*$/.test(val) && val.length <= 8) {
                           setHour(val);
                         }
                       }}
                       onBlur={() => {
-                        // Se foi digitado só HH:MM, adiciona :SS automático
-                        if (hour && hour.length === 5 && hour.includes(':')) {
+                        // Completa formato se necessário
+                        if (hour && /^\d{2}:\d{2}$/.test(hour)) {
                           setHour(hour + ':00');
                         }
                       }}
