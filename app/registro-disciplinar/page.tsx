@@ -1397,7 +1397,7 @@ function RegistroDisciplinarContent() {
                           const s = students.find(x => x.id === id);
                           return (
                             <div key={id} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm flex items-center gap-1 border border-blue-200">
-                               {s?.name}
+                               <span>{s?.name}{s?.class ? <span className="font-normal opacity-75"> - {s.class}</span> : ''}</span>
                                <button type="button" onClick={() => setSelectedStudents(prev => prev.filter(x => x !== id))} className="text-blue-500 hover:text-blue-800 ml-1 translate-y-px">
                                   <X className="w-3 h-3 border border-transparent rounded hover:border-blue-400 bg-white bg-opacity-0 hover:bg-opacity-50 transition" />
                                </button>
