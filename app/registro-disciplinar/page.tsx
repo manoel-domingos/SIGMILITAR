@@ -1319,7 +1319,7 @@ function RegistroDisciplinarContent() {
                           >
                             <td className="px-4 py-4 text-center">
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
-                                {o.id}
+                                {o.ataNumber || '—'}
                               </span>
                             </td>
                             <td className="px-6 py-4">
