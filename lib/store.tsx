@@ -314,6 +314,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
             return {
               id: o.id,
+              ataNumber: o.ata_number,
               date: o.date,
               hour: o.hour,
               location: o.location,
@@ -778,6 +779,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (data) {
           setOccurrences(prev => [{
             id: data.id,
+            ataNumber: data.ata_number,
             date: data.date,
             hour: data.hour,
             location: data.location,
