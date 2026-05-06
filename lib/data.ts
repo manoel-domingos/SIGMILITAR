@@ -28,6 +28,7 @@ export interface DisciplineRule {
 
 export interface Occurrence {
   id: string;
+  ataNumber?: number;      // Número sequencial fixo da ATA (auto-incremento)
   studentId: string;
   studentIds?: string[]; // Multiple students in one occurrence
   date: string;

@@ -586,7 +586,7 @@ function RegistroDisciplinarContent() {
 
       <div class="sid-item">
         <span class="sid-label">Nº ATA</span>
-        <span class="sid-valor">${o.id || '---'}</span>
+        <span class="sid-valor">${o.ataNumber || '---'}</span>
       </div>
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
