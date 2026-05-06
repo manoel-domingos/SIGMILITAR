@@ -313,26 +313,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (occurrencesData) {
             console.log("[v0] Primeiro occurrence do banco:", occurrencesData[0]);
             setOccurrences(occurrencesData.map((o: any) => {
-            const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
-            return {
-              id: o.id,
-              ataNumber: o.ata_number,
-              date: o.date,
-              hour: o.hour,
-              location: o.location,
-              locatedBy: o.located_by,
-              ruleCode: allCodes[0],
-              ruleCodes: allCodes,
-              studentId: String(o.student_id),
-              studentIds: o.student_ids || [String(o.student_id)],
-              registeredBy: o.registered_by,
-              observations: o.observations,
-              videoUrls: o.video_urls || (o.video_url ? [o.video_url] : []),
-              signedDocUrls: o.signed_doc_urls || (o.signed_doc_url ? [o.signed_doc_url] : []),
-              archived: o.archived || false,
-              createdAt: o.created_at
-            };
-          }));
+              const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
+              return {
+                id: o.id,
+                ataNumber: o.ata_number,
+                date: o.date,
+                hour: o.hour,
+                location: o.location,
+                locatedBy: o.located_by,
+                ruleCode: allCodes[0],
+                ruleCodes: allCodes,
+                studentId: String(o.student_id),
+                studentIds: o.student_ids || [String(o.student_id)],
+                registeredBy: o.registered_by,
+                observations: o.observations,
+                videoUrls: o.video_urls || (o.video_url ? [o.video_url] : []),
+                signedDocUrls: o.signed_doc_urls || (o.signed_doc_url ? [o.signed_doc_url] : []),
+                archived: o.archived || false,
+                createdAt: o.created_at
+              };
+            }));
+          }
           if (accidentsData) setAccidents(accidentsData.map(a => ({...a, studentId: a.student_id, registeredBy: a.registered_by, bodyPart: a.body_part, parentsNotified: a.parents_notified, medicForwarded: a.medic_forwarded})));
           if (praisesData) setPraises(praisesData.map(p => ({
             ...p, 
