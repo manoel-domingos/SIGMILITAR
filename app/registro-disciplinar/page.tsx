@@ -582,8 +582,12 @@ function RegistroDisciplinarContent() {
 
     <!-- SIDEBAR: IDENTIFICAÇÃO / INFRAÇÃO / MEDIDA -->
     <div class="sidebar">
-      <div class="sidebar-titulo">IDENTIFICA����ÃO</div>
+      <div class="sidebar-titulo">IDENTIFICAÇÃO</div>
 
+      <div class="sid-item">
+        <span class="sid-label">Nº ATA</span>
+        <span class="sid-valor">${o.id || '---'}</span>
+      </div>
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
         <span class="sid-valor">${formatDate(o.date)} ${o.hour || ''}</span>
