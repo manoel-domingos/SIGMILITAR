@@ -310,7 +310,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               });
             }
           }
-          if (occurrencesData) setOccurrences(occurrencesData.map((o: any) => {
+          if (occurrencesData) {
+            console.log("[v0] Primeiro occurrence do banco:", occurrencesData[0]);
+            setOccurrences(occurrencesData.map((o: any) => {
             const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
             return {
               id: o.id,
