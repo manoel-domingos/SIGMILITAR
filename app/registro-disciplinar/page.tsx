@@ -1530,8 +1530,9 @@ function RegistroDisciplinarContent() {
                           : { isEscalated: false, reason: '', measure: r.measure, severity: r.severity };
 
                         const isPanelOpen = !!measurePanelOpen[ruleCode];
-                        const activeMeasure = measureOverride ?? escalation.measure;
-                        const isOverriding = !!measureOverride;
+                        // Para infrações graves, usa graveMeasureType em vez da medida padrão
+                        const activeMeasure = measureOverride ?? (escalation.severity === 'Grave' ? graveMeasureType : escalation.measure);
+                        const isOverriding = !!measureOverride || (escalation.severity === 'Grave' && graveMeasureType !== 'Suspensão Escolar');
 
                         const ALTERNATIVE_MEASURES = [
                           { label: 'Atividade Pedagógica', color: 'emerald' },
