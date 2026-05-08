@@ -1094,7 +1094,7 @@ function RegistroDisciplinarContent() {
 
     const mainColHTML =
       '<div class="main-col">' +
-        '<div class="ata-titulo-grande">ATA N\u00ba ' + occurrenceNum + '</div>' +
+        '<div class="ata-titulo-grande">ATA N\u00ba ' + o.ataNumber + '</div>' +
         '<div class="ata-subtitulo">Relato do Ocorrido</div>' +
         '<div class="ata-corpo">' + markdownBoldToHtml(o.observations || 'Nenhum relato registrado.') + '</div>' +
         signaturesHTML() +
