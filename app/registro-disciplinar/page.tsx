@@ -78,6 +78,8 @@ function RegistroDisciplinarContent() {
   const [observations, setObservations] = useState('');
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
   const [signedDocUrls, setSignedDocUrls] = useState<string[]>([]);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   const [durationDays, setDurationDays] = useState(1);
   const [attenuatingFactors, setAttenuatingFactors] = useState<string[]>([]);
   const [aggravatingFactors, setAggravatingFactors] = useState<string[]>([]);
@@ -1893,16 +1895,34 @@ function RegistroDisciplinarContent() {
                           </button>
                         </div>
                       ))}
-                      <label className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500 cursor-pointer">
+                      <label className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500 cursor-pointer relative group">
+                        {uploadingVideo && (
+                          <div className="absolute inset-0 bg-white/80 rounded-lg flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-xs font-medium text-blue-600">Enviando...</span>
+                            </div>
+                          </div>
+                        )}
                         <input
                           type="file"
                           accept="image/*,video/*"
                           className="hidden"
+                          disabled={uploadingVideo}
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file || selectedStudents.length === 0) return;
+                            setUploadingVideo(true);
+                            console.log("[v0] Iniciando upload de vídeo/foto:", file.name);
                             const url = await uploadFile(file, selectedStudents[0]);
-                            if (url) setVideoUrls(prev => [...prev, url]);
+                            console.log("[v0] Upload concluído, URL:", url);
+                            if (url) {
+                              setVideoUrls(prev => [...prev, url]);
+                              console.log("[v0] Vídeo/foto adicionado com sucesso");
+                            } else {
+                              alert('Falha ao fazer upload do arquivo. Verifique o console para mais detalhes.');
+                            }
+                            setUploadingVideo(false);
                             e.target.value = '';
                           }}
                         />
@@ -1928,16 +1948,34 @@ function RegistroDisciplinarContent() {
                           </button>
                         </div>
                       ))}
-                      <label className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500 cursor-pointer">
+                      <label className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500 cursor-pointer relative group">
+                        {uploadingDoc && (
+                          <div className="absolute inset-0 bg-white/80 rounded-lg flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-xs font-medium text-blue-600">Enviando...</span>
+                            </div>
+                          </div>
+                        )}
                         <input
                           type="file"
                           accept="image/*,application/pdf,.doc,.docx"
                           className="hidden"
+                          disabled={uploadingDoc}
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file || selectedStudents.length === 0) return;
+                            setUploadingDoc(true);
+                            console.log("[v0] Iniciando upload de documento:", file.name);
                             const url = await uploadFile(file, selectedStudents[0]);
-                            if (url) setSignedDocUrls(prev => [...prev, url]);
+                            console.log("[v0] Upload concluído, URL:", url);
+                            if (url) {
+                              setSignedDocUrls(prev => [...prev, url]);
+                              console.log("[v0] Documento adicionado com sucesso");
+                            } else {
+                              alert('Falha ao fazer upload do documento. Verifique o console para mais detalhes.');
+                            }
+                            setUploadingDoc(false);
                             e.target.value = '';
                           }}
                         />

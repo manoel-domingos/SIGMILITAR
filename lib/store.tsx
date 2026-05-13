@@ -375,16 +375,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/' + DRIVE_FOLDER_ID;
 
   const uploadFile = async (file: File, studentId: string): Promise<string | null> => {
-    if (!supabase || !isSupabaseConnected) {
-      console.error("Supabase não conectado para upload");
+    if (!supabase) {
+      console.error("[v0] Supabase não inicializado");
       return null;
     }
 
     try {
+      console.log("[v0] Iniciando upload:", { fileName: file.name, fileSize: file.size, studentId });
+      
       // Cria caminho: student-files/[studentId]/[timestamp]-[filename]
       const timestamp = Date.now();
       const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const filePath = `${studentId}/${timestamp}-${sanitizedFileName}`;
+
+      console.log("[v0] Caminho do arquivo:", filePath);
 
       // Faz upload para Supabase Storage
       const { data, error } = await supabase.storage
@@ -395,18 +399,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
 
       if (error) {
-        console.error("Erro no upload:", error);
+        console.error("[v0] Erro no upload:", error.message);
         return null;
       }
+
+      console.log("[v0] Upload completado, gerando URL pública...");
 
       // Retorna URL pública do arquivo
       const { data: publicUrlData } = supabase.storage
         .from('student-files')
         .getPublicUrl(filePath);
 
-      return publicUrlData?.publicUrl || null;
+      const publicUrl = publicUrlData?.publicUrl;
+      console.log("[v0] URL pública gerada:", publicUrl);
+      return publicUrl || null;
     } catch (err) {
-      console.error("Upload falhou:", err);
+      console.error("[v0] Upload falhou:", err);
       return null;
     }
   };
