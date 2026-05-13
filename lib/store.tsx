@@ -273,7 +273,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           if (studentsData) {
             setIsSupabaseConnected(true);
-            setStudents(studentsData.map(s => ({ ...s, points: 8 }))); 
+          setStudents(studentsData.map((s: any) => ({ ...s, points: 8, photoUrl: s.photo_url })));
+
           }
           
           if (rulesData) {
@@ -311,7 +312,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           }
           if (occurrencesData) {
-            console.log("[v0] Primeiro occurrence do banco:", occurrencesData[0]);
             setOccurrences(occurrencesData.map((o: any) => {
               const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
               return {
@@ -374,12 +374,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const DRIVE_FOLDER_ID = '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
   const DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/' + DRIVE_FOLDER_ID;
 
-  const uploadFile = async (file: File, _bucket: string): Promise<string | null> => {
-    // Google Drive é o repositório principal de todos os arquivos (fotos, vídeos, docs assinados)
-    // Abre a pasta do Drive em nova aba para o usuário fazer o upload
-    window.open(DRIVE_FOLDER_URL, '_blank', 'noopener,noreferrer');
-    // Retorna o link da pasta para registrar como referência na ocorrência
-    return DRIVE_FOLDER_URL;
+  const uploadFile = async (file: File, studentId: string): Promise<string | null> => {
+    if (!supabase || !isSupabaseConnected) {
+      console.error("Supabase não conectado para upload");
+      return null;
+    }
+
+    try {
+      // Cria caminho: student-files/[studentId]/[timestamp]-[filename]
+      const timestamp = Date.now();
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${studentId}/${timestamp}-${sanitizedFileName}`;
+
+      // Faz upload para Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('student-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error("Erro no upload:", error);
+        return null;
+      }
+
+      // Retorna URL pública do arquivo
+      const { data: publicUrlData } = supabase.storage
+        .from('student-files')
+        .getPublicUrl(filePath);
+
+      return publicUrlData?.publicUrl || null;
+    } catch (err) {
+      console.error("Upload falhou:", err);
+      return null;
+    }
   };
 
   const logAction = async (action: AuditLog['action'], entityName: string, entityId: string, details: string) => {
@@ -499,7 +528,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...data, 
             points: 8,
             registrationNumber: data.registration_number,
-            birthDate: data.birth_date
+            birthDate: data.birth_date,
+            photoUrl: data.photo_url
           }]);
           newId = data.id;
           logAction('CREATE', 'Aluno', newId, 'Adicionado aluno: ' + s.name);
@@ -576,6 +606,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // birth_date comentado ate a coluna ser criada no banco
       // if (s.birthDate !== undefined) dbPayload.birth_date = s.birthDate;
       if (s.archived !== undefined) dbPayload.archived = s.archived;
+      if (s.photoUrl !== undefined) dbPayload.photo_url = s.photoUrl;
 
       try {
         const { error } = await supabase!.from('students').update(dbPayload).eq('id', id);
