@@ -4,45 +4,38 @@
 
 ## Última atualização
 
-**Data:** 2026-05-05  
-**Sessão:** Otimização Mobile UX, Correção Duplicação Ocorrências, Impressão Ficha  
+**Data:** 2026-05-13  
+**Sessão:** Número fixo de ATA (ata_number), Limpeza Duplicatas, Supabase Storage para Uploads  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
-Experiência móvel otimizada com touch targets adequados, navegação fluida e responsividade total.
+Implementação de sistema robusto de armazenamento de arquivos no Supabase Storage com feedback visual ao usuário durante uploads.
 
 ## Última ação concluída
 
-- **Correção duplicação ocorrências:** Corrigido bug no `addOccurrence` que criava registros duplicados quando Supabase estava conectado (fallback local executava mesmo após insert no banco)
-- **Impressão Ficha Disciplinar:** Atualizada para usar o mesmo cabeçalho institucional completo das ocorrências (com logos SEDUC e EECM, rodapé oficial)
-- **Otimização Mobile UX completa:**
-  - `layout.tsx`: viewport mobile com theme-color dinâmico, PWA-ready, `touch-manipulation`
-  - `AppShell.tsx`: touch targets 44px+, drawer mobile mais largo (72/80px), botões acessíveis, safe-area insets
-  - `globals.css`: utilitários mobile (safe-area, touch-target, scroll-smooth, btn-mobile, fab, breakpoint xs)
-  - Tabelas de ocorrências e alunos: scroll horizontal suave, colunas responsivas ocultas em telas pequenas
-  - Modais: sheet-style no mobile (slide-up from bottom), formulários com inputs maiores (py-3 em vez de py-2)
-  - `SearchableSelect`: touch targets maiores, texto responsivo, dropdown otimizado
+- **Número fixo de ATA:** Adicionada coluna `ata_number` (SERIAL auto-incremento) na tabela `occurrences`, garantindo ID sequencial fixo (1, 2, 3...) independente de filtros
+- **Limpeza de duplicatas:** Removidas 22 ocorrências duplicadas geradas por duplo-envio do formulário (mantendo primeira ocorrência de cada grupo baseado em student_id, date, hour, rule_code)
+- **Supabase Storage para uploads:** 
+  - Bucket `student-files` criado com limite 50MB, policies RLS (leitura pública, escrita/delete públicos)
+  - Função `uploadFile` reescrita para fazer upload real com debug logs detalhados
+  - Campos de vídeo/documento na ocorrência com spinner "Enviando...", tratamento de erros e alert ao usuário
+  - Upload de foto de aluno adicionado (coluna `photo_url` em students, modal de edição com campo circular)
+  - Tabelas exibem foto do aluno quando disponível
 
 ## Próxima ação
 
-- [ ] Concluir integração Google Drive (env vars ainda faltam)
-- [ ] Testar experiência mobile em dispositivos reais
-- [ ] Validar PWA install prompt se necessário
+- [ ] Verificar se uploads estão funcionando corretamente após mudanças nas políticas RLS
+- [ ] Melhorar UX de preview dos arquivos após upload (gallery/thumbnail)
+- [ ] Implementar deleção de arquivos do Storage quando ocorrência/aluno é deletado
 
 ## Bloqueios
 
-- Aguardando credenciais Google Cloud para finalizar Drive
+Nenhum no momento.
 
 ## Drift Score
 
-`0` (sessão alinhada ao plano)
-
-> Drift score = quantas vezes saímos do plano nesta sessão sem registrar decisão. Resetar a cada sessão nova.
-
-## Planos ativos
-
-Nenhum no momento. Próximo plano nascerá da primeira feature solicitada.
+`0` (sessão alinhada)
 
 ---
 
