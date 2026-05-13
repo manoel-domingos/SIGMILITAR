@@ -373,12 +373,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const DRIVE_FOLDER_ID = '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
   const DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/' + DRIVE_FOLDER_ID;
 
-  const uploadFile = async (file: File, _bucket: string): Promise<string | null> => {
-    // Google Drive é o repositório principal de todos os arquivos (fotos, vídeos, docs assinados)
-    // Abre a pasta do Drive em nova aba para o usuário fazer o upload
-    window.open(DRIVE_FOLDER_URL, '_blank', 'noopener,noreferrer');
-    // Retorna o link da pasta para registrar como referência na ocorrência
-    return DRIVE_FOLDER_URL;
+  const uploadFile = async (file: File, studentId: string): Promise<string | null> => {
+    if (!supabase || !isSupabaseConnected) {
+      console.error("Supabase não conectado para upload");
+      return null;
+    }
+
+    try {
+      // Cria caminho: student-files/[studentId]/[timestamp]-[filename]
+      const timestamp = Date.now();
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${studentId}/${timestamp}-${sanitizedFileName}`;
+
+      // Faz upload para Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('student-files')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error("Erro no upload:", error);
+        return null;
+      }
+
+      // Retorna URL pública do arquivo
+      const { data: publicUrlData } = supabase.storage
+        .from('student-files')
+        .getPublicUrl(filePath);
+
+      return publicUrlData?.publicUrl || null;
+    } catch (err) {
+      console.error("Upload falhou:", err);
+      return null;
+    }
   };
 
   const logAction = async (action: AuditLog['action'], entityName: string, entityId: string, details: string) => {
