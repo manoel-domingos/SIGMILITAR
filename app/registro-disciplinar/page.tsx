@@ -121,6 +121,7 @@ function RegistroDisciplinarContent() {
     measure: string;
     isViolence: boolean;
     checklistItems: ChecklistItem[];
+    ataNumber?: number;
   } | null>(null);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 
@@ -792,6 +793,7 @@ function RegistroDisciplinarContent() {
           measure: measureToSave,
           isViolence,
           checklistItems: allItems,
+          ataNumber: savedOccurrence?.ataNumber,
         });
         return; // sai cedo — reset já feito acima
       }
@@ -2172,7 +2174,7 @@ function RegistroDisciplinarContent() {
                       <option value="7º Ano">7º Ano</option>
                       <option value="8º Ano">8º Ano</option>
                       <option value="9º Ano">9º Ano</option>
-                      <option value="1º Ano">1º Ano</option>
+                      <option value="1º Ano">1�� Ano</option>
                       <option value="2º Ano">2º Ano</option>
                       <option value="3º Ano">3º Ano</option>
                     </select>
@@ -2630,6 +2632,7 @@ function RegistroDisciplinarContent() {
                       studentName: postSaveAlert.studentName,
                       items: postSaveAlert.checklistItems,
                       createdAt: new Date().toISOString(),
+                      ataNumber: postSaveAlert.ataNumber,
                     };
                     const updated = addOccurrenceTask(userId, task);
                     setChecklistTasks(updated);
