@@ -738,7 +738,11 @@ function RegistroDisciplinarContent() {
         const isViolence = ruleCodesInt.some(c => VIOLENCIA_CODES.includes(c));
 
         const studentName = students.find(s => s.id === primaryStudentId)?.name ?? 'Aluno';
-        const occurrenceNum = savedId ?? 'Nova';
+        // Busca o ataNumber fixo da ocorrência recém-criada; fallback para UUID truncado
+        const savedOccurrence = occurrences.find(o => o.id === savedId);
+        const occurrenceNum = savedOccurrence?.ataNumber
+          ? 'ATA Nº ' + savedOccurrence.ataNumber
+          : (savedId ? 'ATA Nº ...' : 'Nova');
 
         // Monta os itens do checklist
         const baseItems: ChecklistItem[] = [

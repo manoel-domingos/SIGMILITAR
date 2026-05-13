@@ -189,7 +189,8 @@ export default function OccurrenceChecklist({ userId, tasks, onUpdate, autoOpen 
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-800 truncate text-xs">
-                      {task.occurrenceNum} — {task.studentName}
+                      {/* Se occurrenceNum for um UUID longo, exibe fallback legível */}
+                      {/^[0-9a-f]{8}-/i.test(task.occurrenceNum) ? 'ATA Nº —' : task.occurrenceNum} {task.studentName}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
                       {allDone ? (
