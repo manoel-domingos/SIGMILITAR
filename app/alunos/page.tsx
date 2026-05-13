@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown } from 'lucide-react';
+import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -82,7 +82,7 @@ Se não houver coluna para alguma dessas chaves internas, não inclua a chave no
 };
 
 export default function Alunos() {
-  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole } = useAppContext();
+  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,6 +98,8 @@ export default function Alunos() {
   const [cpf, setCpf] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   
@@ -153,6 +155,7 @@ export default function Alunos() {
     setCpf('');
     setRegistrationNumber('');
     setBirthDate('');
+    setPhotoUrl('');
     setIgnoredWarning(false);
     setIsModalOpen(true);
   };
@@ -168,6 +171,7 @@ export default function Alunos() {
     setCpf(s.cpf || '');
     setRegistrationNumber(s.registrationNumber || '');
     setBirthDate(s.birthDate || '');
+    setPhotoUrl(s.photoUrl || '');
     setIgnoredWarning(false);
     setIsModalOpen(true);
   };
@@ -268,7 +272,8 @@ export default function Alunos() {
         cpf: cpf || undefined,
         registrationNumber: registrationNumber || undefined,
         birthDate: birthDate || undefined,
-        contacts: validContacts.length > 0 ? validContacts : undefined
+        contacts: validContacts.length > 0 ? validContacts : undefined,
+        photoUrl: photoUrl || undefined
       });
     } else {
       addStudent({
@@ -857,8 +862,12 @@ export default function Alunos() {
                     <tr key={s.id} onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)} className={'transition border-b border-slate-100 last:border-0 text-slate-600 active:bg-slate-100 ' + (currentUserRole !== 'GUEST' ? 'hover:bg-slate-50 cursor-pointer' : '')}>
                       <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-slate-800">
                          <div className="flex items-center gap-2 sm:gap-3">
-                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shrink-0 text-sm">
-                             {s.name.charAt(0)}
+                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shrink-0 text-sm overflow-hidden">
+                             {s.photoUrl ? (
+                               <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" />
+                             ) : (
+                               s.name.charAt(0)
+                             )}
                            </div>
                            <div className="min-w-0">
                              <span className="truncate block text-sm sm:text-base">{s.name}</span>
@@ -942,6 +951,47 @@ export default function Alunos() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto overflow-x-hidden">
+
+              {/* Upload de Foto */}
+              <div className="flex flex-col items-center gap-2">
+                <label className="cursor-pointer group relative">
+                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 group-hover:border-blue-400 bg-slate-50 group-hover:bg-blue-50 transition-all flex items-center justify-center overflow-hidden">
+                    {photoUrl ? (
+                      <img src={photoUrl} alt="Foto do aluno" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-slate-400 group-hover:text-blue-500">
+                        <Camera className="w-6 h-6" />
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-center">Foto</span>
+                      </div>
+                    )}
+                    {isUploadingPhoto && (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full">
+                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setIsUploadingPhoto(true);
+                      const url = await uploadFile(file, editingStudent || 'new-student-' + Date.now());
+                      if (url) setPhotoUrl(url);
+                      setIsUploadingPhoto(false);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {photoUrl && (
+                  <button type="button" onClick={() => setPhotoUrl('')} className="text-xs text-rose-500 hover:text-rose-700">
+                    Remover foto
+                  </button>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1">Nome Completo *</label>
                 <input 

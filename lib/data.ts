@@ -16,6 +16,7 @@ export interface Student {
   registrationNumber?: string;
   birthDate?: string;
   archived?: boolean;
+  photoUrl?: string;
 }
 
 export interface DisciplineRule {

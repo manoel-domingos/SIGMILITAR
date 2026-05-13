@@ -273,7 +273,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           if (studentsData) {
             setIsSupabaseConnected(true);
-            setStudents(studentsData.map(s => ({ ...s, points: 8 }))); 
+          setStudents(studentsData.map((s: any) => ({ ...s, points: 8, photoUrl: s.photo_url })));
+
           }
           
           if (rulesData) {
@@ -527,7 +528,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...data, 
             points: 8,
             registrationNumber: data.registration_number,
-            birthDate: data.birth_date
+            birthDate: data.birth_date,
+            photoUrl: data.photo_url
           }]);
           newId = data.id;
           logAction('CREATE', 'Aluno', newId, 'Adicionado aluno: ' + s.name);
@@ -604,6 +606,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // birth_date comentado ate a coluna ser criada no banco
       // if (s.birthDate !== undefined) dbPayload.birth_date = s.birthDate;
       if (s.archived !== undefined) dbPayload.archived = s.archived;
+      if (s.photoUrl !== undefined) dbPayload.photo_url = s.photoUrl;
 
       try {
         const { error } = await supabase!.from('students').update(dbPayload).eq('id', id);
