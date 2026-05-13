@@ -1893,17 +1893,22 @@ function RegistroDisciplinarContent() {
                           </button>
                         </div>
                       ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          window.open('https://drive.google.com/drive/folders/1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk', '_blank', 'noopener,noreferrer');
-                          setVideoUrls(prev => [...prev, 'https://drive.google.com/drive/folders/1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk']);
-                        }}
-                        className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500"
-                      >
+                      <label className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || selectedStudents.length === 0) return;
+                            const url = await uploadFile(file, selectedStudents[0]);
+                            if (url) setVideoUrls(prev => [...prev, url]);
+                            e.target.value = '';
+                          }}
+                        />
                         <Camera className="w-5 h-5" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-center px-1">Adicionar no Drive</span>
-                      </button>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-center px-1">Adicionar Foto/Vídeo</span>
+                      </label>
                     </div>
                   </div>
 
@@ -1923,17 +1928,22 @@ function RegistroDisciplinarContent() {
                           </button>
                         </div>
                       ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          window.open('https://drive.google.com/drive/folders/1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk', '_blank', 'noopener,noreferrer');
-                          setSignedDocUrls(prev => [...prev, 'https://drive.google.com/drive/folders/1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk']);
-                        }}
-                        className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500"
-                      >
+                      <label className="w-full aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-slate-100 hover:border-blue-300 transition-all text-slate-400 hover:text-blue-500 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || selectedStudents.length === 0) return;
+                            const url = await uploadFile(file, selectedStudents[0]);
+                            if (url) setSignedDocUrls(prev => [...prev, url]);
+                            e.target.value = '';
+                          }}
+                        />
                         <FileText className="w-5 h-5" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-center px-1">Enviar para o Drive</span>
-                      </button>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-center px-1">Enviar Documento</span>
+                      </label>
                     </div>
                   </div>
                 </div>
