@@ -87,6 +87,58 @@ function RegistroDisciplinarContent() {
   const [measureOverride, setMeasureOverride] = useState<string | null>(null);
   const [measurePanelOpen, setMeasurePanelOpen] = useState<Record<string, boolean>>({});
   const [selectedMeasures, setSelectedMeasures] = useState<string[]>([]);
+
+  // Efeito de rotação sutil ao rolar a tabela
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const tableRotationRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+  const tiltFrame = useRef<number | null>(null);
+  const currentTilt = useRef(0);
+
+  useEffect(() => {
+    const wrapper = tableWrapperRef.current;
+    const inner = tableRotationRef.current;
+    if (!wrapper || !inner) return;
+
+    const onScroll = () => {
+      if (tiltFrame.current) cancelAnimationFrame(tiltFrame.current);
+      tiltFrame.current = requestAnimationFrame(() => {
+        const scrollY = wrapper.scrollTop;
+        const delta = scrollY - lastScrollY.current;
+        lastScrollY.current = scrollY;
+        // Inclina até ±2.5° proporcional à velocidade do scroll
+        const targetTilt = Math.max(-2.5, Math.min(2.5, delta * 0.25));
+        currentTilt.current = currentTilt.current * 0.6 + targetTilt * 0.4;
+        inner.style.transform = `perspective(1200px) rotateX(${currentTilt.current}deg)`;
+      });
+    };
+
+    // Retorna gradualmente ao neutro quando o scroll para
+    let decayTimer: ReturnType<typeof setInterval>;
+    const startDecay = () => {
+      clearInterval(decayTimer);
+      decayTimer = setInterval(() => {
+        currentTilt.current *= 0.78;
+        if (Math.abs(currentTilt.current) < 0.05) {
+          currentTilt.current = 0;
+          clearInterval(decayTimer);
+        }
+        if (inner) inner.style.transform = `perspective(1200px) rotateX(${currentTilt.current}deg)`;
+      }, 16);
+    };
+
+    wrapper.addEventListener('scroll', onScroll, { passive: true });
+    wrapper.addEventListener('scrollend', startDecay, { passive: true });
+    // fallback para browsers sem scrollend
+    wrapper.addEventListener('scroll', () => { clearTimeout((window as any)._tiltTimeout); (window as any)._tiltTimeout = setTimeout(startDecay, 80); }, { passive: true });
+
+    return () => {
+      wrapper.removeEventListener('scroll', onScroll);
+      wrapper.removeEventListener('scrollend', startDecay);
+      clearInterval(decayTimer);
+      if (tiltFrame.current) cancelAnimationFrame(tiltFrame.current);
+    };
+  }, []);
   const [isImproving, setIsImproving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState('');
@@ -1363,7 +1415,15 @@ function RegistroDisciplinarContent() {
             </div>
           </div>
           
-          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 scroll-smooth-mobile">
+          <div
+            ref={tableWrapperRef}
+            className="overflow-x-auto overflow-y-auto -mx-4 sm:mx-0 px-4 sm:px-0 scroll-smooth-mobile"
+            style={{ maxHeight: '70vh' }}
+          >
+            <div
+              ref={tableRotationRef}
+              style={{ transition: 'transform 0.05s linear', willChange: 'transform', transformOrigin: 'center top' }}
+            >
             <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
               <thead className="bg-white border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold">
                 <tr>
@@ -1451,6 +1511,7 @@ function RegistroDisciplinarContent() {
                 )}
               </tbody>
             </table>
+            </div>{/* fim div rotação */}
           </div>
         </div>
       </div>
