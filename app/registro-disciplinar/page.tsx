@@ -723,10 +723,17 @@ function RegistroDisciplinarContent() {
           : escalation.measure;
 
       if (editingOccurrence) {
-        // Ao editar nunca exibe alerta de reincidência — a escalação já foi decidida na criação
+        // Identifica alunos que já estavam na ocorrência original
+        const originalOccurrence = occurrences.find(o => o.id === editingOccurrence);
+        const originalStudentIds: string[] = originalOccurrence?.studentIds ?? (originalOccurrence?.studentId ? [originalOccurrence.studentId] : []);
+
+        // Alunos novos adicionados durante a edição
+        const newStudentIds = selectedStudents.filter(id => !originalStudentIds.includes(id));
+
+        // Atualiza a ocorrência original com os dados editados (mantém apenas alunos originais)
         await updateOccurrence(editingOccurrence, {
           studentId: primaryStudentId,
-          studentIds: selectedStudents,
+          studentIds: originalStudentIds.length > 0 ? originalStudentIds : selectedStudents,
           date,
           hour,
           location,
@@ -742,6 +749,33 @@ function RegistroDisciplinarContent() {
           attenuatingFactors,
           aggravatingFactors
         });
+
+        // Para cada aluno novo, cria uma ocorrência clonada
+        if (newStudentIds.length > 0) {
+          console.log('[v0] Criando ocorrências clonadas para novos alunos:', newStudentIds);
+          for (const studentId of newStudentIds) {
+            await addOccurrence({
+              studentId,
+              studentIds: [studentId],
+              date,
+              hour,
+              location,
+              locatedBy,
+              ruleCode: primaryRuleCode,
+              ruleCodes: ruleCodesInt,
+              registeredBy,
+              observations,
+              measure: measureToSave,
+              measures: [measureToSave],
+              videoUrls,
+              signedDocUrls,
+              durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
+              attenuatingFactors,
+              aggravatingFactors
+            });
+          }
+          console.log('[v0] Ocorrências clonadas criadas com sucesso para', newStudentIds.length, 'aluno(s)');
+        }
       } else {
         // Escalation alert for new occurrences
         if (escalation.isEscalated) {
