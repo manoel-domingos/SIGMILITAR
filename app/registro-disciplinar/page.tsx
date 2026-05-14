@@ -796,7 +796,7 @@ function RegistroDisciplinarContent() {
           measure: measureToSave,
           isViolence,
           checklistItems: allItems,
-          ataNumber: savedOccurrence?.ataNumber,
+          ataNumber: ataNumber,
         });
         return; // sai cedo — reset já feito acima
       }

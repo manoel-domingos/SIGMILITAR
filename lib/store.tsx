@@ -52,7 +52,7 @@ interface AppContextType extends AppState {
   deleteAllStudents: () => Promise<void>;
   refreshData: () => Promise<void>;
 
-  addOccurrence: (o: Omit<Occurrence, 'id'>) => Promise<string>;
+  addOccurrence: (o: Omit<Occurrence, 'id'>) => Promise<{ id: string; ataNumber?: number }>;
   updateOccurrence: (id: string, o: Partial<Occurrence>) => Promise<void>;
   archiveOccurrence: (id: string) => Promise<void>;
   restoreOccurrence: (id: string) => Promise<void>;
