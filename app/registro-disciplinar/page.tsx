@@ -709,8 +709,9 @@ function RegistroDisciplinarContent() {
 
         // Cria UMA ocorrência por aluno selecionado
         const savedIds: string[] = [];
+        let ataNumber: number | undefined;
         for (const studentId of selectedStudents) {
-          const id = await addOccurrence({
+          const result = await addOccurrence({
             studentId,
             studentIds: [studentId],
             date,
@@ -729,7 +730,10 @@ function RegistroDisciplinarContent() {
             attenuatingFactors,
             aggravatingFactors
           });
-          if (id) savedIds.push(id);
+          if (result && result.id) {
+            savedIds.push(result.id);
+            if (!ataNumber && result.ataNumber) ataNumber = result.ataNumber;
+          }
         }
 
         const savedId = savedIds[0];
@@ -739,10 +743,9 @@ function RegistroDisciplinarContent() {
         const isViolence = ruleCodesInt.some(c => VIOLENCIA_CODES.includes(c));
 
         const studentName = students.find(s => s.id === primaryStudentId)?.name ?? 'Aluno';
-        // Busca o ataNumber fixo da ocorrência recém-criada; fallback para UUID truncado
-        const savedOccurrence = occurrences.find(o => o.id === savedId);
-        const occurrenceNum = savedOccurrence?.ataNumber
-          ? 'ATA Nº ' + savedOccurrence.ataNumber
+        // Usa o ataNumber retornado do banco
+        const occurrenceNum = ataNumber
+          ? 'ATA Nº ' + ataNumber
           : (savedId ? 'ATA Nº ...' : 'Nova');
 
         // Monta os itens do checklist

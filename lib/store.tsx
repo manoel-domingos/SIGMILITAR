@@ -765,9 +765,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     logAction('DELETE', 'Aluno', 'ALL', 'Todos os alunos foram excluídos');
   };
 
-  const addOccurrence = async (o: Omit<Occurrence, 'id'>): Promise<string> => {
+  const addOccurrence = async (o: Omit<Occurrence, 'id'>): Promise<{ id: string; ataNumber?: number }> => {
     checkWriteAccess();
     let newId = 'O' + (occurrences.length + 1);
+    let ataNumber: number | undefined;
     if (supabase && isSupabaseConnected) {
       // Create a base payload with columns we know exist based on our fetch logic
       const dbPayload: any = {
@@ -819,6 +820,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           throw error;
         }
         if (data) {
+          ataNumber = data.ata_number;
           setOccurrences(prev => [{
             id: data.id,
             ataNumber: data.ata_number,
@@ -851,14 +853,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error("Occurrence insert error:", err);
         throw err; // Re-throw to handle in UI
       }
-      // Fallback: se insert não retornou data mas não deu erro, retorna ID gerado
-      return newId;
+      // Retorna objeto com ID e ataNumber se disponível
+      return { id: newId, ataNumber };
     } else {
       // Fallback local (sem Supabase)
       const finalId = 'O' + (occurrences.length + 1);
       setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false }, ...prev]);
       logAction('CREATE', 'Ocorrência', finalId, 'Adicionada ocorrência (LOCAL) para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
-      return finalId;
+      return { id: finalId };
     }
   };
 
