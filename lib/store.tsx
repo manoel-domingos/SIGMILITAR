@@ -847,13 +847,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }, ...prev]);
           newId = data.id;
           logAction('CREATE', 'Ocorrência', newId, 'Adicionada ocorrência para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
-          return newId;
+          return { id: newId, ataNumber };
         }
       } catch (err: any) {
         console.error("Occurrence insert error:", err);
         throw err; // Re-throw to handle in UI
       }
-      // Retorna objeto com ID e ataNumber se disponível
+      // Retorna objeto com ID e ataNumber se disponível (fallback se data vazio)
       return { id: newId, ataNumber };
     } else {
       // Fallback local (sem Supabase)
