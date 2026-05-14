@@ -178,10 +178,43 @@ function RegistroDisciplinarContent() {
 
     const registradoPor = registeredBy.trim() || getLoggedUserName();
 
-    // Número da ATA = próxima ocorrência (total atual + 1)
-    const nextOccurrenceNum = occurrences.length + 1;
+    // Monta o texto no modelo padrão institucional com campos em negrito (markdown)
+    const alunoNomesStr = studentNames.join(', ');
 
-    const ata = 'ATA N\u00ba ' + nextOccurrenceNum + '. Aos ' + diaNum + ' dias do m\u00eas de ' + mesExtenso + ' do ano de ' + year + ', \u00e0s ' + hour + ', ' + alunoStr + ' ' + verboStr + ' no(a) ' + location + locatedByStr + ', incorrendo em infra\u00e7\u00e3o ao Art. ' + ruleCode + ' do Regimento Interno (' + ruleDesc + ').' + agravantesStr + atenuantesStr + reincidenteStr + ' O presente registro foi lavrado por ' + registradoPor + '.';
+    // Classificação da infração com natureza e artigo
+    const naturezaMap: Record<string, string> = {
+      Leve: 'Leve',
+      Media: 'Média',
+      Grave: 'Grave',
+    };
+    const naturezaStr = naturezaMap[rule?.severity ?? ''] ?? (rule?.severity ?? '');
+    const classifStr = naturezaStr
+      ? `Infração de Natureza ${naturezaStr}, conforme Art. ${ruleCode} (${ruleDesc}) do Regimento Interno.`
+      : `Art. ${ruleCode} (${ruleDesc}) do Regimento Interno.`;
+
+    const reincidenciaStr = isReincidente
+      ? ` O(A) aluno(a) já possui registro anterior da mesma infração, caracterizando reincidência.`
+      : '';
+    const agravStr = aggravatingFactors.length
+      ? ` Fatores agravantes identificados: ${aggravatingFactors.join(', ')}.`
+      : '';
+    const atenStr = attenuatingFactors.length
+      ? ` Fatores atenuantes considerados: ${attenuatingFactors.join(', ')}.`
+      : '';
+
+    const ata = [
+      `**Data:** ${diaNum} de ${mesExtenso} de ${year}`,
+      `**Hora:** ${hour}`,
+      `**Local:** ${location}`,
+      ``,
+      `**Aluno(s) envolvido(s):** ${alunoNomesStr}`,
+      ``,
+      `**Relato dos Fatos:**`,
+      `No dia ${diaNum} de ${mesExtenso} de ${year}, às ${hour}, ${alunoStr} ${verboStr} no(a) ${location}${locatedByStr}${locatedBy.trim() ? '.' : '.'}${reincidenciaStr}${agravStr}${atenStr} O presente registro foi lavrado por ${registradoPor}.`,
+      ``,
+      `**Classificação da Infração:**`,
+      classifStr,
+    ].join('\n');
 
     setObservations(ata.trim());
   };
@@ -234,6 +267,14 @@ function RegistroDisciplinarContent() {
       const studentNames = selectedStudents.map(id => students.find(s => s.id === id)?.name).filter(Boolean).join(', ');
       const ruleDescriptions = selectedRules.map(code => rules.find(r => r.code === parseInt(code, 10))?.description).filter(Boolean).join('; ');
 
+      const primaryStudentId = selectedStudents[0];
+      const escalation = primaryStudentId
+        ? getEscalationStatus(primaryStudentId, parseInt(selectedRules[0], 10), editingOccurrence ?? undefined)
+        : null;
+      const isReincidente = selectedStudents.some(id =>
+        selectedRules.map(r => parseInt(r, 10)).some(rc => checkRecidivism(id, rc, editingOccurrence ?? undefined))
+      );
+
       setObservations('');
       await streamAI(
         'ata',
@@ -242,6 +283,9 @@ function RegistroDisciplinarContent() {
           infractions: ruleDescriptions || 'Não especificada',
           dateTime: date + ' ' + hour,
           location,
+          locatedBy: locatedBy || 'não informado',
+          measure: measureOverride ?? escalation?.measure ?? '',
+          isReincidente,
           text: observations,
         },
         (delta) => setObservations(prev => prev + delta)
