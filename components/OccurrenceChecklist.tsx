@@ -14,10 +14,11 @@ export type ChecklistItem = {
 
 export type OccurrenceTask = {
   occurrenceId: string;
-  occurrenceNum: string; // ex: "O47"
+  occurrenceNum: string; // ex: "O47" ou UUID (legado)
   studentName: string;
   items: ChecklistItem[];
   createdAt: string;
+  ataNumber?: number; // número fixo da ATA
 };
 
 // ─── Storage helpers ──────────────────────────────────────────────────────────
@@ -189,7 +190,7 @@ export default function OccurrenceChecklist({ userId, tasks, onUpdate, autoOpen 
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-slate-800 truncate text-xs">
-                      {task.occurrenceNum} — {task.studentName}
+                      {task.ataNumber ? `ATA Nº ${task.ataNumber}` : 'ATA Nº —'} — {task.studentName}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">
                       {allDone ? (

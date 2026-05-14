@@ -121,6 +121,7 @@ function RegistroDisciplinarContent() {
     measure: string;
     isViolence: boolean;
     checklistItems: ChecklistItem[];
+    ataNumber?: number;
   } | null>(null);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 
@@ -487,8 +488,8 @@ function RegistroDisciplinarContent() {
   const handlePrint = (o: any) => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
-    // Calcula número da ocorrência igual à coluna Nº da tabela
-    const occurrenceNum = filteredOccurrences.length - filteredOccurrences.indexOf(o);
+    // Usa o número fixo da ATA armazenado no banco
+    const occurrenceNum = o.ataNumber ?? filteredOccurrences.length - filteredOccurrences.indexOf(o);
 
     const rule = rules.find(r => r.code === o.ruleCode);
 
@@ -708,8 +709,9 @@ function RegistroDisciplinarContent() {
 
         // Cria UMA ocorrência por aluno selecionado
         const savedIds: string[] = [];
+        let ataNumber: number | undefined;
         for (const studentId of selectedStudents) {
-          const id = await addOccurrence({
+          const result = await addOccurrence({
             studentId,
             studentIds: [studentId],
             date,
@@ -728,7 +730,10 @@ function RegistroDisciplinarContent() {
             attenuatingFactors,
             aggravatingFactors
           });
-          if (id) savedIds.push(id);
+          if (result && result.id) {
+            savedIds.push(result.id);
+            if (!ataNumber && result.ataNumber) ataNumber = result.ataNumber;
+          }
         }
 
         const savedId = savedIds[0];
@@ -738,7 +743,10 @@ function RegistroDisciplinarContent() {
         const isViolence = ruleCodesInt.some(c => VIOLENCIA_CODES.includes(c));
 
         const studentName = students.find(s => s.id === primaryStudentId)?.name ?? 'Aluno';
-        const occurrenceNum = savedId ?? 'Nova';
+        // Usa o ataNumber retornado do banco
+        const occurrenceNum = ataNumber
+          ? 'ATA Nº ' + ataNumber
+          : (savedId ? 'ATA Nº ...' : 'Nova');
 
         // Monta os itens do checklist
         const baseItems: ChecklistItem[] = [
@@ -788,6 +796,7 @@ function RegistroDisciplinarContent() {
           measure: measureToSave,
           isViolence,
           checklistItems: allItems,
+          ataNumber: savedOccurrence?.ataNumber,
         });
         return; // sai cedo — reset já feito acima
       }
@@ -1032,8 +1041,8 @@ function RegistroDisciplinarContent() {
   };
 
   const handleExport = (o: Occurrence) => {
-    // Calcula número da ocorrência igual à coluna Nº da tabela
-    const occurrenceNum = filteredOccurrences.length - filteredOccurrences.indexOf(o);
+    // Usa o número fixo da ATA armazenado no banco
+    const occurrenceNum = o.ataNumber ?? filteredOccurrences.length - filteredOccurrences.indexOf(o);
 
     const relatedStudents = o.studentIds && o.studentIds.length > 0
       ? students.filter(s => o.studentIds?.includes(s.id))
@@ -2168,7 +2177,7 @@ function RegistroDisciplinarContent() {
                       <option value="7º Ano">7º Ano</option>
                       <option value="8º Ano">8º Ano</option>
                       <option value="9º Ano">9º Ano</option>
-                      <option value="1º Ano">1º Ano</option>
+                      <option value="1º Ano">1�� Ano</option>
                       <option value="2º Ano">2º Ano</option>
                       <option value="3º Ano">3º Ano</option>
                     </select>
@@ -2626,6 +2635,7 @@ function RegistroDisciplinarContent() {
                       studentName: postSaveAlert.studentName,
                       items: postSaveAlert.checklistItems,
                       createdAt: new Date().toISOString(),
+                      ataNumber: postSaveAlert.ataNumber,
                     };
                     const updated = addOccurrenceTask(userId, task);
                     setChecklistTasks(updated);
