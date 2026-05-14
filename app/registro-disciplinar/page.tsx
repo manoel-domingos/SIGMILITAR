@@ -488,8 +488,8 @@ function RegistroDisciplinarContent() {
   const handlePrint = (o: any) => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
-    // Calcula número da ocorrência igual à coluna Nº da tabela
-    const occurrenceNum = filteredOccurrences.length - filteredOccurrences.indexOf(o);
+    // Usa o número fixo da ATA armazenado no banco
+    const occurrenceNum = o.ataNumber ?? filteredOccurrences.length - filteredOccurrences.indexOf(o);
 
     const rule = rules.find(r => r.code === o.ruleCode);
 
@@ -1041,8 +1041,8 @@ function RegistroDisciplinarContent() {
   };
 
   const handleExport = (o: Occurrence) => {
-    // Calcula número da ocorrência igual à coluna Nº da tabela
-    const occurrenceNum = filteredOccurrences.length - filteredOccurrences.indexOf(o);
+    // Usa o número fixo da ATA armazenado no banco
+    const occurrenceNum = o.ataNumber ?? filteredOccurrences.length - filteredOccurrences.indexOf(o);
 
     const relatedStudents = o.studentIds && o.studentIds.length > 0
       ? students.filter(s => o.studentIds?.includes(s.id))
