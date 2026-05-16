@@ -67,7 +67,7 @@ export default function ConfiguracoesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [{ data: usersData }, { data: schoolsData }] = await Promise.all([
-      supabase.from('app_users').select('*').order('name'),
+      supabase.from('user_profiles').select('*').order('name'),
       supabase.from('schools').select('id, name').order('id'),
     ]);
     if (usersData) setUsers(usersData as UserRow[]);
@@ -87,7 +87,7 @@ export default function ConfiguracoesPage() {
   const saveEdit = async (id: string) => {
     setSaving(true);
     const { error } = await supabase
-      .from('app_users')
+      .from('user_profiles')
       .update({ role: editValues.role, school_id: editValues.school_id, updated_at: new Date().toISOString() })
       .eq('id', id);
     setSaving(false);

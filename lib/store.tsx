@@ -235,7 +235,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             supabase!.from('summons').select('*').order('date', { ascending: false }),
             supabase!.from('conduct_terms').select('*').order('date', { ascending: false }),
             supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
-            supabase!.from('app_users').select('*')
+            supabase!.from('user_profiles').select('*')
           ]);
 
           const [
@@ -251,7 +251,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ] = responses;
 
           if (appUsersData && appUsersData.length > 0) {
-            setAppUsers(appUsersData);
+            // user_profiles usa UUID como id — mapear para AppUser
+            setAppUsers(appUsersData.map((u: any) => ({
+              id: u.id,
+              name: u.name || '',
+              email: u.email || '',
+              role: u.role || 'GESTOR',
+              school_id: u.school_id || 'joaobatista',
+            })));
           }
 
           if (studentsData) {
@@ -445,51 +452,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addAppUser = async (u: Omit<AppUser, 'id'>) => {
-    if (currentUserRole !== 'GESTOR') {
+    if (currentUserRole !== 'GESTOR' && currentUserRole !== 'admin_global') {
       alert('Acesso Negado: Apenas gestores podem gerenciar usuários.');
       return;
     }
-    
     if (supabase && isSupabaseConnected) {
       try {
-        const { data, error } = await supabase.from('app_users').insert([u]).select().single();
+        const { data, error } = await supabase.from('user_profiles').insert([{
+          name: u.name, email: u.email, role: u.role, school_id: u.school_id
+        }]).select().single();
         if (error) throw error;
-        if (data) setAppUsers(prev => [...prev, data]);
+        if (data) setAppUsers(prev => [...prev, { id: data.id, name: data.name || '', email: data.email || '', role: data.role || 'GESTOR', school_id: data.school_id || 'joaobatista' }]);
       } catch (err: any) {
-        console.error("Error adding app user:", err);
-        alert('Erro ao salvar usu\u00e1rio no servidor: ' + err.message);
+        console.error("Error adding user:", err);
+        alert('Erro ao salvar usuário: ' + err.message);
       }
       return;
     }
-
-    const newId = 'U' + (appUsers.length + 1);
+    const newId = crypto.randomUUID();
     setAppUsers(prev => [...prev, { ...u, id: newId }]);
   };
 
   const updateAppUser = async (id: string, u: Partial<AppUser>) => {
-    if (currentUserRole !== 'GESTOR') return;
-    
+    if (currentUserRole !== 'GESTOR' && currentUserRole !== 'admin_global') return;
     if (supabase && isSupabaseConnected) {
       try {
-        const { error } = await supabase.from('app_users').update(u).eq('id', id);
+        const { error } = await supabase.from('user_profiles').update({
+          name: u.name, email: u.email, role: u.role, school_id: u.school_id
+        }).eq('id', id);
         if (error) throw error;
       } catch (err: any) {
-        console.error("Error updating app user:", err);
+        console.error("Error updating user:", err);
       }
     }
-    
     setAppUsers(prev => prev.map(item => item.id === id ? { ...item, ...u } : item));
   };
 
   const deleteAppUser = async (id: string) => {
-    if (currentUserRole !== 'GESTOR') return;
-    
+    if (currentUserRole !== 'GESTOR' && currentUserRole !== 'admin_global') return;
     if (supabase && isSupabaseConnected) {
       try {
-        const { error } = await supabase.from('app_users').delete().eq('id', id);
+        const { error } = await supabase.from('user_profiles').delete().eq('id', id);
         if (error) throw error;
       } catch (err: any) {
-        console.error("Error deleting app user:", err);
+        console.error("Error deleting user:", err);
       }
     }
     
