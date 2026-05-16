@@ -12,7 +12,10 @@
 
 Persistência 100% no Supabase — localStorage banido do projeto. Toda configuração de usuário é salva no banco.
 
-## Última ação concluída
+## Última ação concluída (2026-05-16)
+- **Protocolo de Erro adicionado:** criado `.v0/rules/debug.md` com sequência obrigatória de 4 etapas (Entender → Resolver → Check → Validar) para todo log/arquivo de erro recebido. Adicionado item **9** em `INSTRUCTIONS.md` e tabu de localStorage.
+
+## Ação anterior concluída
 
 - **Painel de Implantação:** Página `/implantacao` criada com checklist completo da escola cívico-militar, popup de conclusão com campo de relato, sistema de undo (desfazer), persistência em `implantacao_categories` + `implantacao_items` no Supabase
 - **KPI Dashboard:** Novo card de Implantação com progresso real vindo do Supabase + gráfico de rosca corrigido (não cortado)

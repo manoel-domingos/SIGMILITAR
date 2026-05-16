@@ -39,3 +39,11 @@ Para qualquer mudança não-trivial:
 - DECISIONS.md é append-only
 - Não assumir env vars sem checar
 - Não criar features fora do ROADMAP sem perguntar
+- localStorage é proibido para persistência — sempre Supabase
+
+**9. Protocolo de Erro** (ao receber qualquer log/arquivo de erro):
+Siga obrigatoriamente `.v0/rules/debug.md` em 4 etapas:
+1. ENTENDER — leia o stack trace completo, identifique causa raiz
+2. RESOLVER — correção mínima, sem refatoração desnecessária
+3. CHECK — `npx tsc --noEmit` + busca por outras ocorrências quebradas
+4. VALIDAR — reporte no formato ERRO / CAUSA / CORREÇÃO / VALIDAÇÃO e atualize STATE.md
