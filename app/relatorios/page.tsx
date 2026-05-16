@@ -17,6 +17,20 @@ export default function Relatorios() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [showAiReport, setShowAiReport] = useState(false);
 
+  // Determina a severity de uma ocorrência pelo primeiro ruleCode válido
+  const getOccurrenceSeverity = (o: { ruleCode?: number; ruleCodes?: number[] }): string => {
+    const codes = (o.ruleCodes && o.ruleCodes.length > 0) ? o.ruleCodes : (o.ruleCode ? [o.ruleCode] : []);
+    for (const code of codes) {
+      const rule = rules.find(r => r.code === code);
+      if (rule?.severity) return rule.severity;
+    }
+    return '';
+  };
+
+  const leves  = occurrences.filter(o => getOccurrenceSeverity(o) === 'Leve').length;
+  const medias = occurrences.filter(o => getOccurrenceSeverity(o) === 'Media').length;
+  const graves = occurrences.filter(o => getOccurrenceSeverity(o) === 'Grave').length;
+
   const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const classes = Array.from(new Set(students.map(s => s.class))).sort();
 
@@ -25,10 +39,7 @@ export default function Relatorios() {
     setShowAiReport(true);
     setAiReport('');
     try {
-      // Calcular distribuicao de gravidade
-      const leves = occurrences.filter(o => rules.find(r => r.code === o.ruleCode)?.severity === 'Leve').length;
-      const medias = occurrences.filter(o => rules.find(r => r.code === o.ruleCode)?.severity === 'Media').length;
-      const graves = occurrences.filter(o => rules.find(r => r.code === o.ruleCode)?.severity === 'Grave').length;
+      // Distribuição de gravidade — usa variáveis já computadas no componente
 
       // Infrações mais comuns
       const ruleCount: Record<number, number> = {};
@@ -238,15 +249,15 @@ export default function Relatorios() {
                     </tr>
                     <tr>
                       <td className="border border-slate-900 p-2 font-medium">Leves</td>
-                      <td className="border border-slate-900 p-2 text-center w-32">{occurrences.length > 0 ? 11 : 0}</td>
+                      <td className="border border-slate-900 p-2 text-center w-32">{leves}</td>
                     </tr>
                     <tr>
                       <td className="border border-slate-900 p-2 font-medium">Médias</td>
-                      <td className="border border-slate-900 p-2 text-center w-32">{occurrences.length > 0 ? 6 : 0}</td>
+                      <td className="border border-slate-900 p-2 text-center w-32">{medias}</td>
                     </tr>
                     <tr>
                       <td className="border border-slate-900 p-2 font-medium">Graves</td>
-                      <td className="border border-slate-900 p-2 text-center w-32">{occurrences.length > 0 ? 6 : 0}</td>
+                      <td className="border border-slate-900 p-2 text-center w-32">{graves}</td>
                     </tr>
                     <tr>
                       <td className="border border-slate-900 p-2 font-medium">Alunos em Acompanhamento (Nota &lt; 5.0)</td>

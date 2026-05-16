@@ -4,24 +4,23 @@
 
 ## Última atualização
 
-**Data:** 2026-05-13  
-**Sessão:** Número fixo de ATA (ata_number), Limpeza Duplicatas, Supabase Storage para Uploads  
+**Data:** 2026-05-16  
+**Sessão:** Painel de Implantação, KPI Dashboard, Configurador de Painéis com Supabase  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
-Implementação de sistema robusto de armazenamento de arquivos no Supabase Storage com feedback visual ao usuário durante uploads.
+Persistência 100% no Supabase — localStorage banido do projeto. Toda configuração de usuário é salva no banco.
 
-## Última ação concluída
+## Última ação concluída (2026-05-16)
+- **Protocolo de Erro adicionado:** criado `.v0/rules/debug.md` com sequência obrigatória de 4 etapas (Entender → Resolver → Check → Validar) para todo log/arquivo de erro recebido. Adicionado item **9** em `INSTRUCTIONS.md` e tabu de localStorage.
 
-- **Número fixo de ATA:** Adicionada coluna `ata_number` (SERIAL auto-incremento) na tabela `occurrences`, garantindo ID sequencial fixo (1, 2, 3...) independente de filtros
-- **Limpeza de duplicatas:** Removidas 22 ocorrências duplicadas geradas por duplo-envio do formulário (mantendo primeira ocorrência de cada grupo baseado em student_id, date, hour, rule_code)
-- **Supabase Storage para uploads:** 
-  - Bucket `student-files` criado com limite 50MB, policies RLS (leitura pública, escrita/delete públicos)
-  - Função `uploadFile` reescrita para fazer upload real com debug logs detalhados
-  - Campos de vídeo/documento na ocorrência com spinner "Enviando...", tratamento de erros e alert ao usuário
-  - Upload de foto de aluno adicionado (coluna `photo_url` em students, modal de edição com campo circular)
-  - Tabelas exibem foto do aluno quando disponível
+## Ação anterior concluída
+
+- **Painel de Implantação:** Página `/implantacao` criada com checklist completo da escola cívico-militar, popup de conclusão com campo de relato, sistema de undo (desfazer), persistência em `implantacao_categories` + `implantacao_items` no Supabase
+- **KPI Dashboard:** Novo card de Implantação com progresso real vindo do Supabase + gráfico de rosca corrigido (não cortado)
+- **Configurador de Painéis:** Drawer lateral no Dashboard com toggle e drag-and-drop para reordenar painéis. Configuração salva na tabela `dashboard_panels` no Supabase por `user_id` (DECISÃO 0005)
+- **Regra geral:** localStorage banido — toda persistência passa pelo Supabase
 
 ## Próxima ação
 

@@ -51,6 +51,19 @@
 - Trade-offs: menos benchmarks públicos, latência variável
 - Reversível?: sim (basta trocar baseURL e key)
 
+## 0005 — localStorage banido; toda persistência via Supabase
+
+- Data: 2026-05-16
+- Domínio: infra
+- Contexto: configurações de UI (painéis do dashboard, checklist de implantação) estavam sendo salvas apenas no localStorage — perdidas ao trocar dispositivo ou limpar cache
+- Opções:
+  - A) Manter localStorage como cache local + sync eventual para Supabase
+  - B) Supabase como fonte única de verdade; localStorage removido
+- Escolha: Opção B — Supabase como única fonte
+- Razão: dados consistentes entre dispositivos/usuários; auditável; sem risco de divergência de estado
+- Trade-offs: latência de leitura na primeira carga (compensado com estado padrão enquanto carrega)
+- Reversível?: sim, mas não desejado
+
 ## 0004 — Adoção do v0-OS (framework de trabalho)
 
 - Data: 2026-05-03
