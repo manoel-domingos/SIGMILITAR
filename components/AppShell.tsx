@@ -11,7 +11,7 @@ import {
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   PanelsTopLeft, PanelLeft, ChevronDown,
-  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket,
+  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, Shield,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -27,6 +27,7 @@ const MENU_GROUPS: MenuGroup[] = [
     children: [
       { href: '/alunos', label: 'Lista de Alunos', icon: Users },
       { href: '/ficha', label: 'Ficha Disciplinar', icon: FileBadge },
+      { href: '/xerife', label: 'Xerife', icon: Shield },
       { href: '/arquivados', label: 'Arquivados', icon: FileText },
     ],
   },
@@ -84,6 +85,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('topbar');
+
+  // Popup alerta xerife (sexta e segunda)
+  const [showXerifeAlert, setShowXerifeAlert] = useState(false);
+  useEffect(() => {
+    if (!user || isGuest) return;
+    const today = new Date();
+    const dow = today.getDay(); // 1=seg, 5=sex
+    if (dow !== 1 && dow !== 5) return;
+    const key = 'xerife_alert_dismissed_' + today.toISOString().split('T')[0];
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
+      setShowXerifeAlert(true);
+    }
+  }, [user, isGuest]);
+
+  const dismissXerifeAlert = (noMore: boolean) => {
+    if (noMore && typeof window !== 'undefined') {
+      const key = 'xerife_alert_dismissed_' + new Date().toISOString().split('T')[0];
+      sessionStorage.setItem(key, '1');
+    }
+    setShowXerifeAlert(false);
+  };
 
   // Inactivity session management
   const [showInactivityModal, setShowInactivityModal] = useState(false);
@@ -254,7 +276,49 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <AIChat />
-      
+
+      {/* Xerife Alert Popup — sexta e segunda */}
+      {showXerifeAlert && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9998] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
+            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
+              <Shield className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">
+                {new Date().getDay() === 5 ? 'E o fim de semana do Xerife?' : 'Nova Semana, Novo Xerife!'}
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                {new Date().getDay() === 5
+                  ? 'Hoje e sexta-feira. Lembre-se de coletar o feedback dos xerifes desta semana antes de encerrar.'
+                  : 'Hoje e segunda-feira. E hora de designar os novos Xerifes, Sub-Xerifes e Pelotao da Faxina para a semana.'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 pt-1">
+              <a
+                href="/xerife"
+                onClick={() => setShowXerifeAlert(false)}
+                className="block w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
+              >
+                {new Date().getDay() === 5 ? 'Registrar Feedback' : 'Designar Xerifes'}
+              </a>
+              <button
+                onClick={() => dismissXerifeAlert(false)}
+                className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              >
+                Lembrar mais tarde
+              </button>
+              <button
+                onClick={() => dismissXerifeAlert(true)}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors py-1"
+              >
+                Nao aparecer novamente hoje
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Inactivity Popup */}
       {showInactivityModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300">
