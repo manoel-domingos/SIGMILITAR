@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import CustomSelect from '@/components/CustomSelect';
 import { useAppContext } from '@/lib/store';
-import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, TrendingUp, ChevronDown, ClipboardList, X, Rocket } from 'lucide-react';
+import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, TrendingUp, ChevronDown, ClipboardList, X, Rocket, Settings2, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
@@ -15,12 +15,60 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+type PanelConfig = { id: string; label: string; enabled: boolean };
+
+const DEFAULT_PANELS: PanelConfig[] = [
+  { id: 'kpis',        label: 'Cards de KPIs',              enabled: true },
+  { id: 'alertas',     label: 'Alertas Críticos',           enabled: true },
+  { id: 'disciplina',  label: 'Painel Disciplina',          enabled: true },
+  { id: 'elogios',     label: 'Painel Elogios e Bônus',     enabled: true },
+  { id: 'acidentes',   label: 'Painel Acidentes',           enabled: true },
+  { id: 'tendencia',   label: 'Gráfico Tendência Mensal',   enabled: true },
+  { id: 'gravidade',   label: 'Gráfico Distribuição',       enabled: true },
+];
+
+function loadPanels(): PanelConfig[] {
+  if (typeof window === 'undefined') return DEFAULT_PANELS;
+  try {
+    const saved = localStorage.getItem('dashboard_panels');
+    if (!saved) return DEFAULT_PANELS;
+    const parsed: PanelConfig[] = JSON.parse(saved);
+    // garante que novos painéis adicionados apareçam
+    const ids = parsed.map(p => p.id);
+    const merged = [...parsed, ...DEFAULT_PANELS.filter(d => !ids.includes(d.id))];
+    return merged;
+  } catch { return DEFAULT_PANELS; }
+}
+
 export default function Dashboard() {
   const { students, occurrences, accidents, praises, rules, getStudentPoints, user } = useAppContext();
   const userId = (user as any)?.email ?? 'guest';
   const [pendingBanner, setPendingBanner] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [implantacaoProgress, setImplantacaoProgress] = useState<{ total: number; done: number } | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [panels, setPanels] = useState<PanelConfig[]>(DEFAULT_PANELS);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  useEffect(() => { setPanels(loadPanels()); }, []);
+
+  const savePanels = (next: PanelConfig[]) => {
+    setPanels(next);
+    localStorage.setItem('dashboard_panels', JSON.stringify(next));
+  };
+
+  const togglePanel = (id: string) => {
+    savePanels(panels.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p));
+  };
+
+  const movePanel = (from: number, to: number) => {
+    const next = [...panels];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    savePanels(next);
+  };
+
+  const isVisible = (id: string) => panels.find(p => p.id === id)?.enabled ?? true;
 
   useEffect(() => {
     supabase
@@ -195,11 +243,88 @@ export default function Dashboard() {
                 onChange={setSelectedClass}
               />
             </div>
+
+            {/* Botão configurar painéis */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-transparent uppercase tracking-widest px-1 select-none">.</label>
+              <button
+                onClick={() => setDrawerOpen(true)}
+                title="Configurar painéis"
+                className="flex items-center gap-2 px-3 h-[38px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all shadow-sm text-xs font-semibold whitespace-nowrap"
+              >
+                <Settings2 className="w-4 h-4" />
+                Painéis
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Drawer de configuração de painéis */}
+        {drawerOpen && (
+          <>
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+              onClick={() => setDrawerOpen(false)}
+            />
+            {/* Drawer */}
+            <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="font-bold text-slate-800 dark:text-white text-base">Configurar Painéis</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Ative, desative e reordene</p>
+                </div>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+                {panels.map((panel, idx) => (
+                  <div
+                    key={panel.id}
+                    draggable
+                    onDragStart={() => setDragIdx(idx)}
+                    onDragOver={e => { e.preventDefault(); }}
+                    onDrop={() => { if (dragIdx !== null && dragIdx !== idx) movePanel(dragIdx, idx); setDragIdx(null); }}
+                    onDragEnd={() => setDragIdx(null)}
+                    className={'flex items-center gap-3 px-3 py-3 rounded-xl border transition-all cursor-grab active:cursor-grabbing ' + (dragIdx === idx ? 'opacity-40 scale-95' : 'opacity-100') + ' ' + (panel.enabled ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50')}
+                  >
+                    <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                    <span className={'flex-1 text-sm font-medium ' + (panel.enabled ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500 line-through')}>
+                      {panel.label}
+                    </span>
+                    <button
+                      onClick={() => togglePanel(panel.id)}
+                      className="shrink-0 transition-colors"
+                      title={panel.enabled ? 'Desativar' : 'Ativar'}
+                    >
+                      {panel.enabled
+                        ? <ToggleRight className="w-7 h-7 text-blue-500" />
+                        : <ToggleLeft className="w-7 h-7 text-slate-300 dark:text-slate-600" />
+                      }
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="px-4 py-4 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => savePanels(DEFAULT_PANELS)}
+                  className="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  Restaurar padrão
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Row 1: KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {isVisible('kpis') && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Link 
             href={'/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-blue-200/50 dark:border-blue-500/20 bg-blue-50/60 dark:bg-blue-500/5 hover:bg-blue-100/80 dark:hover:bg-blue-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
@@ -299,10 +424,10 @@ export default function Dashboard() {
               )}
             </div>
           </Link>
-        </div>
+        </div>}
 
         {/* Alerts Section */}
-        {(() => {
+        {isVisible('alertas') && (() => {
           const criticalStudents = students.map(s => ({...s, currentPoints: getStudentPoints(s.id)})).filter(s => s.currentPoints < 5.0).sort((a,b) => a.currentPoints - b.currentPoints);
           if (criticalStudents.length === 0) return null;
           return (
@@ -332,7 +457,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           
           {/* Disciplina */}
-          <div className="glass-card p-5 flex flex-col group hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md">
+          {isVisible('disciplina') && <div className="glass-card p-5 flex flex-col group hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-50 dark:bg-slate-800/50 rounded-lg">
@@ -372,10 +497,10 @@ export default function Dashboard() {
                 {averagePointsStr} • {averagePoints >= 7 ? 'Bom' : averagePoints >= 5 ? 'Atenção' : 'Crítico'}
               </span>
             </div>
-          </div>
+          </div>}
 
           {/* Elogios e Bonificações */}
-          <div className="glass-card p-5 flex flex-col group hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md">
+          {isVisible('elogios') && <div className="glass-card p-5 flex flex-col group hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-50 dark:bg-slate-800/50 rounded-lg">
@@ -412,10 +537,10 @@ export default function Dashboard() {
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-center items-center text-xs">
               <span className="text-slate-500 dark:text-slate-400">{praises?.length > 0 ? praises.length + ' elogios no per\u00edodo' : 'Nenhum elogio no per\u00edodo'}</span>
             </div>
-          </div>
+          </div>}
 
           {/* Acidentes */}
-          <div className="glass-card p-5 flex flex-col group hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md">
+          {isVisible('acidentes') && <div className="glass-card p-5 flex flex-col group hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-orange-50 dark:bg-slate-800/50 rounded-lg">
@@ -476,13 +601,13 @@ export default function Dashboard() {
                 </>
               );
             })()}
-          </div>
+          </div>}
 
         </div>
 
         {/* Row 3: Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="glass-card p-5 col-span-1 lg:col-span-2">
+          {isVisible('tendencia') && <div className="glass-card p-5 col-span-1 lg:col-span-2">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-slate-800 dark:text-white font-bold flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-blue-500" />
@@ -515,9 +640,9 @@ export default function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </div>}
 
-          <div className="glass-card p-5 flex flex-col">
+          {isVisible('gravidade') && <div className="glass-card p-5 flex flex-col">
             <h3 className="text-slate-800 dark:text-white font-bold mb-4 text-center lg:text-left">Distribuição por Gravidade</h3>
             <div className="flex-1 w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height={240}>
@@ -549,7 +674,7 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     </AppShell>
