@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import AppShell from '@/components/AppShell';
 import {
   CheckCircle2, Circle, Plus, Trash2, Edit2, Check, X,
   ChevronDown, ChevronRight, Rocket, GripVertical,
@@ -251,6 +252,7 @@ export default function ImplantacaoPage() {
 
   // ---------- render ----------
   return (
+    <AppShell>
     <div className="max-w-3xl mx-auto space-y-6 pb-16">
 
       {/* cabecalho */}
@@ -501,5 +503,6 @@ export default function ImplantacaoPage() {
         </button>
       )}
     </div>
+    </AppShell>
   );
 }
