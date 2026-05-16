@@ -10,7 +10,7 @@ import {
   BarChart, AlertTriangle, Star, CheckSquare, FileBadge,
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
-  PanelsTopLeft, PanelLeft, ChevronDown,
+  ChevronDown,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, ShieldCheck, Building2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -1100,28 +1100,6 @@ function ProfileMenu({
           <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
             <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{userName}</p>
             <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user?.email || 'Sem e-mail'}</p>
-          </div>
-
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-2">
-              Aparência do menu
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={layoutMode !== 'topbar' ? toggleLayout : undefined}
-                className={'flex flex-col items-center gap-1 py-2 rounded-lg border transition ' + (layoutMode === 'topbar' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700')}
-              >
-                <PanelsTopLeft className="w-4 h-4" />
-                <span className="text-[11px] font-medium">Horizontal</span>
-              </button>
-              <button
-                onClick={layoutMode !== 'sidebar' ? toggleLayout : undefined}
-                className={'flex flex-col items-center gap-1 py-2 rounded-lg border transition ' + (layoutMode === 'sidebar' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700')}
-              >
-                <PanelLeft className="w-4 h-4" />
-                <span className="text-[11px] font-medium">Lateral</span>
-              </button>
-            </div>
           </div>
 
           <div className="py-2">
