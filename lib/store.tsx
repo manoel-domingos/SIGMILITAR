@@ -23,6 +23,9 @@ interface AppState {
   user: any | null;
   isGuest: boolean;
   currentUserRole: AppUserRole | 'GUEST';
+  currentUserSchoolId: string | null;
+  activeSchoolContext: string;
+  setActiveSchoolContext: (id: string) => void;
   isAuthRestored: boolean;
   isDebugMode: boolean;
   geminiApiKey: string;
@@ -133,15 +136,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const emailLower = user.email.toLowerCase();
       const isConvidadoAccount = emailLower.includes('convidado') || emailLower === 'guest' || emailLower === 'convidado@eecm.local';
       if (isConvidadoAccount) return 'GUEST';
-
       const matched = appUsers.find(u => u.email.toLowerCase() === emailLower);
       if (matched) return matched.role as AppUserRole;
-
-      // Todos os usuarios logados recebem permissao de GESTOR por padrao
       return 'GESTOR';
     }
     return 'GUEST';
   }, [user, isGuest, appUsers]);
+
+  const currentUserSchoolId = useMemo(() => {
+    if (!user?.email || isGuest) return null;
+    const matched = appUsers.find(u => u.email.toLowerCase() === user.email.toLowerCase());
+    return matched?.school_id ?? 'joaobatista';
+  }, [user, isGuest, appUsers]);
+
+  // Contexto de escola ativa — admin_global pode alternar entre escolas
+  const [activeSchoolContext, setActiveSchoolContext] = useState<string>('joaobatista');
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(() => {
@@ -1440,7 +1449,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       students, occurrences, accidents, praises, rules, summons, conductTerms, auditLogs, staffMembers, appUsers, isSupabaseConnected, isSyncing,
-      user, isGuest, currentUserRole, isAuthRestored, isDebugMode, setIsDebugMode, 
+      user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, isAuthRestored, isDebugMode, setIsDebugMode,
       geminiApiKey, setGeminiApiKey, groqApiKey, setGroqApiKey,
       setGuestMode, setMockUser, logout, uploadFile,
       logAction, refreshData,

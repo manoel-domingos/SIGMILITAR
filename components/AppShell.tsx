@@ -11,7 +11,7 @@ import {
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   PanelsTopLeft, PanelLeft, ChevronDown,
-  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, ShieldCheck,
+  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, ShieldCheck, Building2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -78,13 +78,37 @@ type LayoutMode = 'sidebar' | 'topbar';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isGuest, currentUserRole, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('topbar');
+
+  // Modal de seleção de contexto para admin_global
+  const [showContextModal, setShowContextModal] = useState(false);
+  const [schools, setSchools] = useState<{id: string; name: string}[]>([]);
+  useEffect(() => {
+    if (currentUserRole !== 'admin_global' || !user) return;
+    // Mostra o modal apenas uma vez por sessão
+    const key = 'dre_context_chosen_' + new Date().toDateString();
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
+      // Carrega escolas disponíveis
+      supabase?.from('schools').select('id, name').order('name').then(({ data }) => {
+        setSchools((data ?? []).filter((s: any) => s.id !== 'DRE'));
+        setShowContextModal(true);
+      });
+    }
+  }, [currentUserRole, user]);
+
+  const chooseContext = (schoolId: string) => {
+    setActiveSchoolContext(schoolId);
+    const key = 'dre_context_chosen_' + new Date().toDateString();
+    if (typeof window !== 'undefined') sessionStorage.setItem(key, schoolId);
+    setShowContextModal(false);
+    if (schoolId === 'DRE') router.push('/dre');
+  };
 
   // Popup alerta xerife (sexta e segunda)
   const [showXerifeAlert, setShowXerifeAlert] = useState(false);
@@ -270,12 +294,45 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           pathname={pathname}
           rightControls={rightControls}
           openMobileMenu={() => setIsMobileMenuOpen(true)}
+          onOpenContextModal={() => setShowContextModal(true)}
         >
           {children}
         </TopbarLayout>
       )}
 
       <AIChat />
+
+      {/* Modal de seleção de contexto — admin_global */}
+      {showContextModal && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto">
+              <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Qual painel deseja ver?</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Voce pode alternar a qualquer momento pelo menu lateral.</p>
+            </div>
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={() => chooseContext('DRE')}
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <Building2 className="w-4 h-4" /> Painel DRE — Visao Consolidada
+              </button>
+              {schools.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => chooseContext(s.id)}
+                  className="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4 text-amber-500" /> {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Xerife Alert Popup — sexta e segunda */}
       {showXerifeAlert && (
@@ -460,13 +517,16 @@ function TopbarLayout({
   rightControls,
   openMobileMenu,
   children,
+  onOpenContextModal,
 }: {
   pathname: string;
   rightControls: React.ReactNode;
   openMobileMenu: () => void;
   children: React.ReactNode;
+  onOpenContextModal?: () => void;
 }) {
   const currentInfo = findGroupForPath(pathname);
+  const { currentUserRole, activeSchoolContext } = useAppContext();
 
   return (
     <>
@@ -495,6 +555,18 @@ function TopbarLayout({
                 Disciplina e Monitoramento Escolar
               </p>
             </div>
+            {currentUserRole === 'admin_global' && onOpenContextModal && (
+              <button
+                onClick={onOpenContextModal}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ml-2
+                  bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400
+                  hover:bg-blue-100 dark:hover:bg-blue-500/20"
+                title="Trocar contexto de escola"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                {activeSchoolContext === 'DRE' ? 'DRE' : activeSchoolContext}
+              </button>
+            )}
           </div>
           {rightControls}
         </div>
@@ -1053,13 +1125,22 @@ function ProfileMenu({
           </div>
 
           <div className="py-2">
-            {currentUserRole === 'GESTOR' && (
+            {(currentUserRole === 'GESTOR' || currentUserRole === 'admin_global') && (
               <Link
                 href="/configuracoes"
                 className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
                 onClick={() => setIsOpen(false)}
               >
                 <Settings className="w-4 h-4" /> Configuração do Sistema
+              </Link>
+            )}
+            {currentUserRole === 'admin_global' && (
+              <Link
+                href="/dre"
+                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center gap-3"
+                onClick={() => setIsOpen(false)}
+              >
+                <LayoutDashboard className="w-4 h-4" /> Painel DRE
               </Link>
             )}
             <Link
