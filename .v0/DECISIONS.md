@@ -51,6 +51,22 @@
 - Trade-offs: menos benchmarks públicos, latência variável
 - Reversível?: sim (basta trocar baseURL e key)
 
+## 0006 — Arquitetura multi-tenant via school_id + RLS
+
+- Data: 2026-05-16
+- Domínio: infra
+- Contexto: sistema precisa suportar múltiplas escolas; DRE precisa de visão consolidada de todas
+- Opções:
+  - A) Banco separado por escola (schema isolation)
+  - B) Coluna school_id + RLS na mesma instância (row-level isolation)
+- Escolha: Opção B — coluna `school_id TEXT` em todas as 16 tabelas + FK para tabela `schools`
+- Razão: sem overhead de múltiplas conexões; RLS nativo do Postgres garante isolamento; DRE acessa tudo com uma credencial
+- Escolas iniciais: `joaobatista` (EECM Prof. João Batista), `DRE` (Diretoria Regional de Ensino)
+- Funções criadas: `user_can_access_school(row_school_id)` — TRUE se mesma escola ou role DRE/admin_global
+- Todos os registros existentes receberam `school_id = 'joaobatista'` como default
+- Trade-offs: queries que cruzam escolas precisam de service_role key (não anon)
+- Reversível?: sim, remover coluna e policies — mas com perda de isolamento
+
 ## 0005 — localStorage banido; toda persistência via Supabase
 
 - Data: 2026-05-16
