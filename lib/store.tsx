@@ -104,9 +104,9 @@ const INITIAL_STAFF: StaffMember[] = [
 ];
 
 const INITIAL_APP_USERS: AppUser[] = [
-  { id: 'U1', email: 'manoeldomingos2@gmail.com', name: 'Manoel', role: 'GESTOR' },
-  { id: 'U2', email: 'manoel', name: 'Manoel (Mock)', role: 'GESTOR' },
-  { id: 'U3', email: 'maykon', name: 'Maykon', role: 'GESTOR' }
+  { id: 'U1', email: 'manoeldomingos2@gmail.com', name: 'Manoel', role: 'admin_global', school_id: 'DRE' },
+  { id: 'U2', email: 'manoel', name: 'Manoel (Mock)', role: 'admin_global', school_id: 'DRE' },
+  { id: 'U3', email: 'maykon', name: 'Maykon', role: 'GESTOR', school_id: 'joaobatista' }
 ];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -121,17 +121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [conductTerms, setConductTerms] = useState<ConductTerm[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>(INITIAL_STAFF);
-  const [appUsers, setAppUsers] = useState<AppUser[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedUsers = localStorage.getItem('eecm_app_users');
-        if (storedUsers) return JSON.parse(storedUsers);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return INITIAL_APP_USERS;
-  });
+  const [appUsers, setAppUsers] = useState<AppUser[]>(INITIAL_APP_USERS);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
   const [user, setUser] = useState<any | null>(null);
   const [isGuest, setIsGuest] = useState(false);
@@ -142,14 +132,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user && user.email) {
       const emailLower = user.email.toLowerCase();
       const isConvidadoAccount = emailLower.includes('convidado') || emailLower === 'guest' || emailLower === 'convidado@eecm.local';
-      
-      if (isConvidadoAccount) {
-        return 'GUEST';
-      }
+      if (isConvidadoAccount) return 'GUEST';
 
       const matched = appUsers.find(u => u.email.toLowerCase() === emailLower);
       if (matched) return matched.role as AppUserRole;
-      
+
       // Todos os usuarios logados recebem permissao de GESTOR por padrao
       return 'GESTOR';
     }
@@ -187,11 +174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (groqApiKey) localStorage.setItem('eecm_groq_key', groqApiKey);
   }, [groqApiKey]);
-  useEffect(() => {
-    if (appUsers.length > 0) {
-      localStorage.setItem('eecm_app_users', JSON.stringify(appUsers));
-    }
-  }, [appUsers]);
+  // appUsers persistido no Supabase via app_users — sem localStorage
 
   useEffect(() => {
     async function initAuthAndData() {
