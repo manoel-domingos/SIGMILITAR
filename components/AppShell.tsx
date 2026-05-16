@@ -11,7 +11,7 @@ import {
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   PanelsTopLeft, PanelLeft, ChevronDown,
-  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen,
+  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -49,6 +49,7 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   { label: 'Relatórios', icon: BarChart, href: '/relatorios' },
+  { label: 'Implantação', icon: Rocket, href: '/implantacao' },
   {
     label: 'Sistema', icon: Cog,
     children: [
