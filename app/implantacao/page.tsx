@@ -736,7 +736,7 @@ export default function ImplantacaoPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => startAddItem(cat.id)}
+                      onClick={() => setAddingItemCat(cat.id)}
                       className="flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-slate-400 hover:text-blue-600 hover:bg-blue-50/60 transition-colors w-full"
                     >
                       <Plus className="w-3.5 h-3.5" />
