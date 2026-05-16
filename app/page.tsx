@@ -4,16 +4,34 @@ import React, { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import CustomSelect from '@/components/CustomSelect';
 import { useAppContext } from '@/lib/store';
-import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, TrendingUp, ChevronDown, ClipboardList, X } from 'lucide-react';
+import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, TrendingUp, ChevronDown, ClipboardList, X, Rocket } from 'lucide-react';
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function Dashboard() {
   const { students, occurrences, accidents, praises, rules, getStudentPoints, user } = useAppContext();
   const userId = (user as any)?.email ?? 'guest';
   const [pendingBanner, setPendingBanner] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [implantacaoProgress, setImplantacaoProgress] = useState<{ total: number; done: number } | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from('implantacao_items')
+      .select('done')
+      .then(({ data }) => {
+        if (data) {
+          setImplantacaoProgress({ total: data.length, done: data.filter(i => i.done).length });
+        }
+      });
+  }, []);
 
   useEffect(() => {
     const tasks = loadChecklists(userId);
@@ -181,7 +199,7 @@ export default function Dashboard() {
         </div>
 
         {/* Row 1: KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Link 
             href={'/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-blue-200/50 dark:border-blue-500/20 bg-blue-50/60 dark:bg-blue-500/5 hover:bg-blue-100/80 dark:hover:bg-blue-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
@@ -243,6 +261,42 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{averagePointsStr}</p>
               </div>
               <p className="text-emerald-600/50 dark:text-emerald-400/50 text-xs mt-1 font-medium">{percentAbove7}% com nota &gt; 7.0</p>
+            </div>
+          </Link>
+          {/* KPI Implantação */}
+          <Link
+            href="/implantacao"
+            className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-indigo-200/50 dark:border-indigo-500/20 bg-indigo-50/60 dark:bg-indigo-500/5 hover:bg-indigo-100/80 dark:hover:bg-indigo-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 bg-white dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center shadow-sm">
+                <Rocket className="w-4 h-4" />
+              </div>
+              {implantacaoProgress && (
+                <span className="text-[10px] font-bold text-indigo-600/70 dark:text-indigo-400/70 bg-indigo-100 dark:bg-indigo-500/20 px-2 py-0.5 rounded-full">
+                  {implantacaoProgress.done}/{implantacaoProgress.total}
+                </span>
+              )}
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-indigo-600/70 dark:text-indigo-400/70 uppercase tracking-wider mb-1">Implantação</p>
+              {implantacaoProgress ? (
+                <>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
+                      {implantacaoProgress.total > 0 ? Math.round((implantacaoProgress.done / implantacaoProgress.total) * 100) : 0}%
+                    </p>
+                  </div>
+                  <div className="mt-1.5 h-1.5 w-full bg-indigo-100 dark:bg-indigo-900/40 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                      style={{ width: implantacaoProgress.total > 0 ? (implantacaoProgress.done / implantacaoProgress.total) * 100 + '%' : '0%' }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">—</p>
+              )}
             </div>
           </Link>
         </div>
@@ -464,17 +518,17 @@ export default function Dashboard() {
           </div>
 
           <div className="glass-card p-5 flex flex-col">
-            <h3 className="text-slate-800 dark:text-white font-bold mb-6 text-center lg:text-left">Distribuição por Gravidade</h3>
-            <div className="flex-1 w-full flex items-center justify-center pb-2">
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
+            <h3 className="text-slate-800 dark:text-white font-bold mb-4 text-center lg:text-left">Distribuição por Gravidade</h3>
+            <div className="flex-1 w-full flex items-center justify-center">
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                   <Pie
                     data={severityData}
                     cx="50%"
-                    cy="45%"
-                    innerRadius={65}
-                    outerRadius={85}
-                    paddingAngle={5}
+                    cy="48%"
+                    innerRadius={60}
+                    outerRadius={78}
+                    paddingAngle={4}
                     dataKey="value"
                     stroke="none"
                   >
@@ -482,15 +536,15 @@ export default function Dashboard() {
                       <Cell key={'cell-' + index} fill={entry.color} />
                     ))}
                   </Pie>
-                  <RechartsTooltip 
+                  <RechartsTooltip
                     contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', borderColor: '#334155', borderRadius: '8px', color: '#fff' }}
                     itemStyle={{ color: '#fff' }}
                   />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36} 
+                  <Legend
+                    verticalAlign="bottom"
+                    height={32}
                     iconType="circle"
-                    wrapperStyle={{ fontSize: '12px', color: '#64748b', paddingTop: '10px' }}
+                    wrapperStyle={{ fontSize: '12px', color: '#64748b', paddingTop: '8px' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
