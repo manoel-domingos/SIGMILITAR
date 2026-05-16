@@ -1,63 +1,126 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/lib/store';
-import { AppUser, AppUserRole } from '@/lib/data';
-import { ShieldAlert, Plus, Trash2, Edit2, ShieldCheck, Info, ArrowLeft } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+import {
+  ShieldAlert, ShieldCheck, Edit2, Check, X,
+  ArrowLeft, Info, RefreshCw, Building2, User
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'admin_global';
+
+interface UserRow {
+  id: string;
+  name: string;
+  email: string;
+  role: AppRole;
+  school_id: string;
+  created_at: string;
+}
+
+interface School {
+  id: string;
+  name: string;
+}
+
+const ROLE_LABELS: Record<AppRole, string> = {
+  admin_global: 'Admin Global / DRE',
+  GESTOR: 'Gestor',
+  COORD: 'Coordenador',
+  MONITOR: 'Monitor',
+};
+
+const ROLE_COLORS: Record<AppRole, string> = {
+  admin_global: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  GESTOR: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  COORD: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  MONITOR: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+};
+
 export default function ConfiguracoesPage() {
-  const { appUsers, addAppUser, updateAppUser, deleteAppUser, currentUserRole } = useAppContext();
+  const { currentUserRole } = useAppContext();
   const router = useRouter();
 
-  const [isAdding, setIsAdding] = useState(false);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState<{name: string, email: string, role: AppUserRole}>({
-    name: '',
-    email: '',
-    role: 'COORD'
+  const [editValues, setEditValues] = useState<{ role: AppRole; school_id: string }>({
+    role: 'COORD',
+    school_id: 'joaobatista',
   });
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
-  if (currentUserRole !== 'GESTOR') {
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const [{ data: usersData }, { data: schoolsData }] = await Promise.all([
+      supabase.from('user_profiles').select('*').order('name'),
+      supabase.from('schools').select('id, name').order('id'),
+    ]);
+    if (usersData) setUsers(usersData as UserRow[]);
+    if (schoolsData) setSchools(schoolsData as School[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const startEdit = (user: UserRow) => {
+    setEditingId(user.id);
+    setEditValues({ role: user.role, school_id: user.school_id });
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = async (id: string) => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ role: editValues.role, school_id: editValues.school_id, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    setSaving(false);
+    if (error) { showToast('Erro ao salvar: ' + error.message); return; }
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...editValues } : u));
+    setEditingId(null);
+    showToast('Usuário atualizado.');
+  };
+
+  // Apenas admin_global pode acessar esta página
+  if (currentUserRole !== 'admin_global' && currentUserRole !== 'GESTOR') {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 min-h-[50vh]">
         <ShieldAlert className="w-16 h-16 text-rose-300 mb-4" />
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Acesso Negado</h2>
-        <p className="mt-2 text-sm max-w-md">Você não tem permissão para acessar as configurações do sistema. Esta área é restrita aos Gestores.</p>
+        <p className="mt-2 text-sm max-w-md">Esta área é restrita ao Admin Global.</p>
         <button onClick={() => router.back()} className="mt-6 text-blue-600 hover:underline">Voltar</button>
       </div>
     );
   }
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingId) {
-      await updateAppUser(editingId, formData);
-      setEditingId(null);
-    } else {
-      await addAppUser(formData);
-      setIsAdding(false);
-    }
-    setFormData({ name: '', email: '', role: 'COORD' });
-  };
-
-  const handleEdit = (user: AppUser) => {
-    setFormData({ name: user.name, email: user.email, role: user.role });
-    setEditingId(user.id);
-    setIsAdding(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir as permissões deste usuário? Ele passará a ser tratado como Convidado se tentar entrar.')) {
-      await deleteAppUser(id);
-    }
-  };
-
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-xl shadow-xl">
+          {toast}
+        </div>
+      )}
+
+      {/* Header */}
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => router.back()}
           className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-slate-500 transition shadow-sm"
           title="Voltar"
@@ -69,122 +132,150 @@ export default function ConfiguracoesPage() {
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-purple-600" /> Configuração do Sistema
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Gerenciamento de usuários e níveis de acesso ao sistema.</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Gerencie usuários, papéis e escolas do sistema multi-tenant.</p>
           </div>
           <button
-            onClick={() => {
-              setFormData({ name: '', email: '', role: 'COORD' });
-              setEditingId(null);
-              setIsAdding(!isAdding);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2"
+            onClick={fetchData}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-sm"
           >
-            {isAdding ? 'Cancelar' : <><Plus className="w-4 h-4" /> Novo Usuário</>}
+            <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} />
+            Atualizar
           </button>
         </div>
       </div>
 
+      {/* Info */}
       <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-4 rounded-xl flex gap-3 text-sm border border-blue-100 dark:border-blue-800/50">
-        <Info className="w-5 h-5 shrink-0 text-blue-500" />
-        <div>
-          <p><strong>Níveis de Acesso:</strong></p>
-          <ul className="list-disc ml-5 mt-1 space-y-1">
-            <li><strong>Gestor:</strong> Acesso total ao sistema, inclusive a esta tela de configuração.</li>
-            <li><strong>Coordenador / Monitor:</strong> Acesso de gravação (adicionar, editar dados), mas não pode mudar papéis.</li>
-            <li><strong>Qualquer outro e-mail:</strong> Terá permissão automática de &quot;Convidado&quot; (Somente Leitura).</li>
-          </ul>
+        <Info className="w-5 h-5 shrink-0 text-blue-500 mt-0.5" />
+        <div className="space-y-1">
+          <p><strong>Admin Global / DRE:</strong> acesso a todas as escolas, pode alterar papéis e escola de qualquer usuário.</p>
+          <p><strong>Gestor:</strong> acesso total à escola vinculada.</p>
+          <p><strong>Coordenador / Monitor:</strong> acesso de escrita sem gerenciar papéis.</p>
         </div>
       </div>
 
-      {isAdding && (
-        <form onSubmit={handleSave} className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
-          <h3 className="font-semibold text-slate-800 dark:text-slate-200">{editingId ? 'Editar Usuário' : 'Conceder Permissão a Usuário'}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome</label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200"
-                placeholder="Ex: Prof. Silva"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
-              <input
-                type="text"
-                required
-                value={formData.email}
-                onChange={e => setFormData({...formData, email: e.target.value})}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200"
-                placeholder="Ex: silva@gmail.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Papel</label>
-              <select
-                value={formData.role}
-                onChange={e => setFormData({...formData, role: e.target.value as AppUserRole})}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200"
-              >
-                <option value="GESTOR">Gestor</option>
-                <option value="COORD">Coordenador</option>
-                <option value="MONITOR">Monitor</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
-              Salvar Usuário
-            </button>
-          </div>
-        </form>
-      )}
+      {/* Escolas cadastradas */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+        <h2 className="font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-slate-400" /> Escolas Cadastradas
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {schools.map(s => (
+            <span key={s.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+              <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{s.id}</span>
+              <span>{s.name}</span>
+            </span>
+          ))}
+        </div>
+      </div>
 
+      {/* Tabela de usuários */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+          <User className="w-4 h-4 text-slate-400" />
+          <h2 className="font-semibold text-slate-700 dark:text-slate-300">Usuários do Sistema</h2>
+          <span className="ml-auto text-xs text-slate-400">{users.length} usuário{users.length !== 1 ? 's' : ''}</span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
               <tr>
-                <th className="px-6 py-4 font-medium">Nome</th>
-                <th className="px-6 py-4 font-medium">E-mail / Username</th>
-                <th className="px-6 py-4 font-medium">Papel</th>
-                <th className="px-6 py-4 font-medium text-right">Ações</th>
+                <th className="px-6 py-3 font-medium">Nome</th>
+                <th className="px-6 py-3 font-medium">E-mail / Usuário</th>
+                <th className="px-6 py-3 font-medium">Papel</th>
+                <th className="px-6 py-3 font-medium">Escola</th>
+                <th className="px-6 py-3 font-medium text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-slate-800 dark:text-slate-200">
-              {appUsers.map((user) => (
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-slate-800 dark:text-slate-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-400">
+                    <RefreshCw className="w-5 h-5 animate-spin inline mr-2" /> Carregando...
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-400">
+                    Nenhum usuário encontrado.
+                  </td>
+                </tr>
+              ) : users.map(user => (
                 <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                  <td className="px-6 py-4">
-                    <div className="font-semibold">{user.name}</div>
+                  <td className="px-6 py-4 font-medium whitespace-nowrap">{user.name || '—'}</td>
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{user.email}</td>
+
+                  {/* Papel — editável */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {editingId === user.id ? (
+                      <select
+                        value={editValues.role}
+                        onChange={e => setEditValues(v => ({ ...v, role: e.target.value as AppRole }))}
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="admin_global">Admin Global / DRE</option>
+                        <option value="GESTOR">Gestor</option>
+                        <option value="COORD">Coordenador</option>
+                        <option value="MONITOR">Monitor</option>
+                      </select>
+                    ) : (
+                      <span className={'px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wide ' + ROLE_COLORS[user.role]}>
+                        {ROLE_LABELS[user.role] ?? user.role}
+                      </span>
+                    )}
                   </td>
-                  <td className="px-6 py-4">
-                    {user.email}
+
+                  {/* Escola — editável */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {editingId === user.id ? (
+                      <select
+                        value={editValues.school_id}
+                        onChange={e => setEditValues(v => ({ ...v, school_id: e.target.value }))}
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {schools.map(s => (
+                          <option key={s.id} value={s.id}>{s.id} — {s.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+                        <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{user.school_id}</span>
+                      </span>
+                    )}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={'px-2 py-1 rounded-md text-xs font-medium uppercase tracking-wider ' + (user.role === 'GESTOR' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : user.role === 'COORD' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400')}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <button onClick={() => handleEdit(user)} className="p-2 text-slate-400 hover:text-blue-600 transition" title="Editar">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(user.id)} className="p-2 text-slate-400 hover:text-rose-600 transition" title="Excluir">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+
+                  {/* Ações */}
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    {editingId === user.id ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => saveEdit(user.id)}
+                          disabled={saving}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition disabled:opacity-50"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Salvar
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-medium transition"
+                        >
+                          <X className="w-3.5 h-3.5" /> Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startEdit(user)}
+                        className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
-              {appUsers.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
-                    Nenhum usuário configurado. (O padrão será Somente Leitura)
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>

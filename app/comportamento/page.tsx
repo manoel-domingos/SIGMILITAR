@@ -72,9 +72,9 @@ function ComportamentoContent() {
     };
   }).filter(s => s.matchClass);
 
-  const filteredStudents = enrichedStudents.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = enrichedStudents
+    .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   const stats = {
     bom: enrichedStudents.filter(s => s.points >= 7.5).length,

@@ -5,15 +5,22 @@
 ## Última atualização
 
 **Data:** 2026-05-16  
-**Sessão:** Painel de Implantação, KPI Dashboard, Configurador de Painéis com Supabase  
+**Sessão:** Arquitetura multi-tenant — schools, school_id, RLS  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
-Persistência 100% no Supabase — localStorage banido do projeto. Toda configuração de usuário é salva no banco.
+Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acessa tudo.
 
 ## Última ação concluída (2026-05-16)
-- **Protocolo de Erro adicionado:** criado `.v0/rules/debug.md` com sequência obrigatória de 4 etapas (Entender → Resolver → Check → Validar) para todo log/arquivo de erro recebido. Adicionado item **9** em `INSTRUCTIONS.md` e tabu de localStorage.
+- **Multi-tenant (DECISÃO 0006):**
+  - Tabela `schools` criada com `joaobatista` e `DRE`
+  - Coluna `school_id TEXT DEFAULT 'joaobatista'` adicionada nas 16 tabelas operacionais com FK para `schools`
+  - Todos os registros existentes atualizados para `school_id = 'joaobatista'`
+  - Funções PG criadas: `user_can_access_school()` e `current_school_id()` — DRE/admin_global retorna acesso total
+  - RLS habilitado + 4 policies (`select/insert/update/delete`) em todas as tabelas
+  - 10 índices de performance criados em `school_id`
+- **Protocolo de Erro adicionado:** criado `.v0/rules/debug.md` com sequência obrigatória de 4 etapas.
 
 ## Ação anterior concluída
 

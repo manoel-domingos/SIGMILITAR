@@ -116,13 +116,14 @@ export interface ConductTerm {
   archived?: boolean;
 }
 
-export type AppUserRole = 'GESTOR' | 'COORD' | 'MONITOR';
+export type AppUserRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'admin_global';
 
 export interface AppUser {
   id: string;
   email: string;
   name: string;
   role: AppUserRole;
+  school_id?: string;
 }
 
 export interface AuditLog {

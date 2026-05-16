@@ -1541,7 +1541,7 @@ function RegistroDisciplinarContent() {
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-slate-600 mb-1">Aluno(s) *</label>
                     <SearchableSelect
-                      options={students.filter(s => !selectedStudents.includes(s.id)).map(s => ({ value: s.id, label: s.name + ' - ' + s.class + ' (' + s.shift + ')' }))}
+                      options={students.filter(s => !selectedStudents.includes(s.id)).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')).map(s => ({ value: s.id, label: s.name + ' - ' + s.class + ' (' + s.shift + ')' }))}
                       value=""
                       onChange={(val) => {
                         if (val && !selectedStudents.includes(val)) {
