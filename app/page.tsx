@@ -27,17 +27,9 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'gravidade',   label: 'Gráfico Distribuição',       enabled: true },
 ];
 
-function loadPanels(): PanelConfig[] {
-  if (typeof window === 'undefined') return DEFAULT_PANELS;
-  try {
-    const saved = localStorage.getItem('dashboard_panels');
-    if (!saved) return DEFAULT_PANELS;
-    const parsed: PanelConfig[] = JSON.parse(saved);
-    // garante que novos painéis adicionados apareçam
-    const ids = parsed.map(p => p.id);
-    const merged = [...parsed, ...DEFAULT_PANELS.filter(d => !ids.includes(d.id))];
-    return merged;
-  } catch { return DEFAULT_PANELS; }
+function mergePanels(saved: PanelConfig[]): PanelConfig[] {
+  const ids = saved.map(p => p.id);
+  return [...saved, ...DEFAULT_PANELS.filter(d => !ids.includes(d.id))];
 }
 
 export default function Dashboard() {
@@ -50,11 +42,28 @@ export default function Dashboard() {
   const [panels, setPanels] = useState<PanelConfig[]>(DEFAULT_PANELS);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
-  useEffect(() => { setPanels(loadPanels()); }, []);
+  // Carrega painéis do Supabase ao montar
+  useEffect(() => {
+    if (!userId || userId === 'guest') return;
+    supabase
+      .from('dashboard_panels')
+      .select('panels')
+      .eq('user_id', userId)
+      .single()
+      .then(({ data }) => {
+        if (data?.panels && Array.isArray(data.panels)) {
+          setPanels(mergePanels(data.panels as PanelConfig[]));
+        }
+      });
+  }, [userId]);
 
   const savePanels = (next: PanelConfig[]) => {
     setPanels(next);
-    localStorage.setItem('dashboard_panels', JSON.stringify(next));
+    if (!userId || userId === 'guest') return;
+    supabase
+      .from('dashboard_panels')
+      .upsert({ user_id: userId, panels: next, updated_at: new Date().toISOString() })
+      .then(() => {});
   };
 
   const togglePanel = (id: string) => {
