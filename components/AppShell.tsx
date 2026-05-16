@@ -49,10 +49,10 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   { label: 'Relatórios', icon: BarChart, href: '/relatorios' },
-  { label: 'Implantação', icon: Rocket, href: '/implantacao' },
   {
     label: 'Sistema', icon: Cog,
     children: [
+      { href: '/implantacao', label: 'Implantação', icon: Rocket },
       { href: '/fechamento', label: 'Fechamento do Ano', icon: Award },
       { href: '/auditoria', label: 'Auditoria de Ações', icon: ShieldAlert },
       { href: '/configuracoes', label: 'Configurações', icon: Settings },
