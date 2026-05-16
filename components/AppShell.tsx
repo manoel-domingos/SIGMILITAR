@@ -11,7 +11,7 @@ import {
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   PanelsTopLeft, PanelLeft, ChevronDown,
-  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, Shield,
+  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, ShieldCheck,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -27,7 +27,7 @@ const MENU_GROUPS: MenuGroup[] = [
     children: [
       { href: '/alunos', label: 'Lista de Alunos', icon: Users },
       { href: '/ficha', label: 'Ficha Disciplinar', icon: FileBadge },
-      { href: '/xerife', label: 'Xerife', icon: Shield },
+      { href: '/xerife', label: 'Xerife', icon: ShieldCheck },
       { href: '/arquivados', label: 'Arquivados', icon: FileText },
     ],
   },
@@ -282,7 +282,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9998] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
-              <Shield className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+              <ShieldCheck className="w-8 h-8 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-slate-800 dark:text-white">

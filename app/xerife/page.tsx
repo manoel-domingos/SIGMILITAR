@@ -6,7 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { supabase as supabaseClient } from '@/lib/supabase';
 import type { LucideProps } from 'lucide-react';
 import {
-  Shield, Star, Sparkles, Search, ChevronDown, Plus, Trash2,
+  ShieldCheck, Star, Sparkles, Search, ChevronDown, Plus, Trash2,
   Check, X, MessageSquare, Calendar, RotateCcw, Loader2
 } from 'lucide-react';
 
@@ -30,7 +30,7 @@ interface XerifeEntry {
 
 type IconComp = React.ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & React.RefAttributes<SVGSVGElement>>;
 const ROLE_CONFIG: Record<XerifeRole, { label: string; icon: IconComp; color: string; bg: string; border: string }> = {
-  'Xerife':            { label: 'Xerife',              icon: Shield,    color: 'text-amber-700 dark:text-amber-400',  bg: 'bg-amber-50 dark:bg-amber-500/10',  border: 'border-amber-200 dark:border-amber-500/30' },
+  'Xerife':           { label: 'Xerife',            icon: ShieldCheck, color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/30' },
   'Sub-Xerife':        { label: 'Sub-Xerife',           icon: Star,      color: 'text-blue-700 dark:text-blue-400',    bg: 'bg-blue-50 dark:bg-blue-500/10',    border: 'border-blue-200 dark:border-blue-500/30'   },
   'Pelotao da Faxina': { label: 'Pelotão da Faxina',   icon: Sparkles,  color: 'text-green-700 dark:text-green-400',  bg: 'bg-green-50 dark:bg-green-500/10',  border: 'border-green-200 dark:border-green-500/30' },
 };
@@ -159,7 +159,7 @@ export default function XerifePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5" /> Gestao Semanal
+              <ShieldCheck className="w-3.5 h-3.5" /> Gestao Semanal
             </p>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Xerifes e Pelotao</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">

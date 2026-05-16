@@ -131,18 +131,13 @@ export default function Alunos() {
 
   const filteredStudents = students.filter(s => {
     if (s.archived) return false;
-    
-    // Check class filter
     if (classFilter && s.class !== classFilter) return false;
-    
-    // Check search term
     const term = searchTerm.toLowerCase();
     if (!term) return true;
-    
     if (s.name.toLowerCase().includes(term) || s.class.toLowerCase().includes(term)) return true;
     if (s.contacts && s.contacts.some(c => c.name.toLowerCase().includes(term))) return true;
     return false;
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   const openAddModal = () => {
     setEditingStudent(null);
