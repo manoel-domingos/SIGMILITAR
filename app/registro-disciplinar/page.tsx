@@ -88,7 +88,7 @@ function RegistroDisciplinarContent() {
   const [measurePanelOpen, setMeasurePanelOpen] = useState<Record<string, boolean>>({});
   const [selectedMeasures, setSelectedMeasures] = useState<string[]>([]);
 
-  // Efeito de rotação sutil ao rolar a tabela
+  // Efeito de rotacao sutil ao rolar a tabela
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const tableRotationRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
@@ -100,21 +100,13 @@ function RegistroDisciplinarContent() {
     const inner = tableRotationRef.current;
     if (!wrapper || !inner) return;
 
-    const onScroll = () => {
-      if (tiltFrame.current) cancelAnimationFrame(tiltFrame.current);
-      tiltFrame.current = requestAnimationFrame(() => {
-        const scrollY = wrapper.scrollTop;
-        const delta = scrollY - lastScrollY.current;
-        lastScrollY.current = scrollY;
-        // Inclina até ±2.5° proporcional à velocidade do scroll
-        const targetTilt = Math.max(-2.5, Math.min(2.5, delta * 0.25));
-        currentTilt.current = currentTilt.current * 0.6 + targetTilt * 0.4;
-        inner.style.transform = `perspective(1200px) rotateX(${currentTilt.current}deg)`;
-      });
+    let decayTimer: ReturnType<typeof setInterval>;
+    let fallbackTimeout: ReturnType<typeof setTimeout>;
+
+    const applyTilt = (val: number) => {
+      inner.style.transform = 'perspective(1200px) rotateX(' + val.toFixed(3) + 'deg)';
     };
 
-    // Retorna gradualmente ao neutro quando o scroll para
-    let decayTimer: ReturnType<typeof setInterval>;
     const startDecay = () => {
       clearInterval(decayTimer);
       decayTimer = setInterval(() => {
@@ -123,19 +115,30 @@ function RegistroDisciplinarContent() {
           currentTilt.current = 0;
           clearInterval(decayTimer);
         }
-        if (inner) inner.style.transform = `perspective(1200px) rotateX(${currentTilt.current}deg)`;
+        applyTilt(currentTilt.current);
       }, 16);
     };
 
+    const onScroll = () => {
+      if (tiltFrame.current) cancelAnimationFrame(tiltFrame.current);
+      clearTimeout(fallbackTimeout);
+      tiltFrame.current = requestAnimationFrame(() => {
+        const scrollY = wrapper.scrollTop;
+        const delta = scrollY - lastScrollY.current;
+        lastScrollY.current = scrollY;
+        const targetTilt = Math.max(-2.5, Math.min(2.5, delta * 0.25));
+        currentTilt.current = currentTilt.current * 0.6 + targetTilt * 0.4;
+        applyTilt(currentTilt.current);
+        fallbackTimeout = setTimeout(startDecay, 80);
+      });
+    };
+
     wrapper.addEventListener('scroll', onScroll, { passive: true });
-    wrapper.addEventListener('scrollend', startDecay, { passive: true });
-    // fallback para browsers sem scrollend
-    wrapper.addEventListener('scroll', () => { clearTimeout((window as any)._tiltTimeout); (window as any)._tiltTimeout = setTimeout(startDecay, 80); }, { passive: true });
 
     return () => {
       wrapper.removeEventListener('scroll', onScroll);
-      wrapper.removeEventListener('scrollend', startDecay);
       clearInterval(decayTimer);
+      clearTimeout(fallbackTimeout);
       if (tiltFrame.current) cancelAnimationFrame(tiltFrame.current);
     };
   }, []);
