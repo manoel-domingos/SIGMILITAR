@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Users, AlertTriangle, Star, Activity, Shield, Award,
   Zap, CheckCircle2, TrendingUp, TrendingDown, Minus,
-  AlertCircle, Trophy, FileWarning,
+  AlertCircle, Trophy, FileWarning, SlidersHorizontal, ChevronDown,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -158,27 +158,59 @@ function SecKpi({ label, value, sub, icon: Icon, iconBg, children, onClick, aria
 // ─────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────
+type Period = 'dia' | 'semana' | 'mes';
+
+const PERIOD_LABELS: Record<Period, string> = {
+  dia: 'Hoje',
+  semana: 'Esta semana',
+  mes: 'Este mes',
+};
+
 export default function DreDashboard({ stats, loading, isVisible, onSchoolClick, onNavigate }: Props) {
   const nav = (route: string) => onNavigate?.(route);
-  const totalStudents   = stats.reduce((s, x) => s + x.students, 0);
-  const totalOcc        = stats.reduce((s, x) => s + x.occurrences, 0);
-  const totalPraises    = stats.reduce((s, x) => s + x.praises, 0);
-  const totalAccidents  = stats.reduce((s, x) => s + x.accidents, 0);
-  const totalGraves     = stats.reduce((s, x) => s + x.graves, 0);
-  const totalLeves      = stats.reduce((s, x) => s + x.leves, 0);
-  const totalMedias     = stats.reduce((s, x) => s + x.medias, 0);
-  const avgDiscipline   = stats.length > 0 ? Math.round(stats.reduce((s, x) => s + x.disciplineIndex, 0) / stats.length) : 0;
+
+  // ─── Filtros locais ───────────────────────────
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('todas');
+  const [selectedPeriod, setSelectedPeriod]     = useState<Period>('mes');
+  const [schoolDropdownOpen, setSchoolDropdownOpen] = useState(false);
+  const schoolDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!schoolDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (schoolDropdownRef.current && !schoolDropdownRef.current.contains(e.target as Node)) {
+        setSchoolDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [schoolDropdownOpen]);
+
+  // Aplica filtro de escola (os dados de período viriam do backend num app real;
+  // aqui apenas filtramos por escola localmente)
+  const filteredStats = selectedSchoolId === 'todas'
+    ? stats
+    : stats.filter(s => s.id === selectedSchoolId);
+
+  const totalStudents   = filteredStats.reduce((s, x) => s + x.students, 0);
+  const totalOcc        = filteredStats.reduce((s, x) => s + x.occurrences, 0);
+  const totalPraises    = filteredStats.reduce((s, x) => s + x.praises, 0);
+  const totalAccidents  = filteredStats.reduce((s, x) => s + x.accidents, 0);
+  const totalGraves     = filteredStats.reduce((s, x) => s + x.graves, 0);
+  const totalLeves      = filteredStats.reduce((s, x) => s + x.leves, 0);
+  const totalMedias     = filteredStats.reduce((s, x) => s + x.medias, 0);
+  const avgDiscipline   = filteredStats.length > 0 ? Math.round(filteredStats.reduce((s, x) => s + x.disciplineIndex, 0) / filteredStats.length) : 0;
   const globalGravityRate = totalOcc > 0 ? Math.round((totalGraves / totalOcc) * 100) : 0;
   const globalPraiseRatio = totalStudents > 0 ? Math.round((totalPraises / totalStudents) * 100) : 0;
-  const alertSchools    = stats.filter(s => s.riskLevel === 'high' || s.riskLevel === 'critical').length;
-  const ranked          = [...stats].sort((a, b) => b.disciplineIndex - a.disciplineIndex);
+  const alertSchools    = filteredStats.filter(s => s.riskLevel === 'high' || s.riskLevel === 'critical').length;
+  const ranked          = [...filteredStats].sort((a, b) => b.disciplineIndex - a.disciplineIndex);
 
-  const totalImpl = stats.reduce((s, x) => s + x.implantacaoTotal, 0);
-  const doneImpl  = stats.reduce((s, x) => s + x.implantacaoDone, 0);
+  const totalImpl = filteredStats.reduce((s, x) => s + x.implantacaoTotal, 0);
+  const doneImpl  = filteredStats.reduce((s, x) => s + x.implantacaoDone, 0);
   const pctImpl   = totalImpl > 0 ? Math.round((doneImpl / totalImpl) * 100) : 0;
 
   // Dados para o gráfico de barras comparativo
-  const barData = stats.map(s => ({
+  const barData = filteredStats.map(s => ({
     name: s.name.replace('EECM Prof. ', '').substring(0, 10),
     fullName: s.name,
     Disciplina: s.disciplineIndex,
@@ -221,8 +253,87 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
     );
   }
 
+  // Nome da escola selecionada para exibição
+  const selectedSchoolName = selectedSchoolId === 'todas'
+    ? 'Todas as escolas'
+    : (stats.find(s => s.id === selectedSchoolId)?.name ?? 'Escola');
+
   return (
     <div className="space-y-5">
+
+      {/* ══════════════════════════════════════════
+          BARRA DE FILTROS — Ajustes + Escola + Periodo
+      ══════════════════════════════════════════ */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Label esquerda */}
+        <div>
+          <h2 className="text-white font-bold text-lg leading-tight">Visao Consolidada</h2>
+          <p className="text-blue-200/70 text-xs mt-0.5">
+            {selectedSchoolId === 'todas' ? `${stats.length} escolas · ` : ''}{PERIOD_LABELS[selectedPeriod]}
+          </p>
+        </div>
+
+        {/* Controles direita — igual à referência */}
+        <div className="flex items-center gap-2 flex-wrap">
+
+          {/* Ícone de ajustes */}
+          <button
+            aria-label="Ajustes de filtros"
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          >
+            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+          </button>
+
+          {/* Dropdown — Escola */}
+          <div className="relative" ref={schoolDropdownRef}>
+            <button
+              onClick={() => setSchoolDropdownOpen(o => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={schoolDropdownOpen}
+              aria-label="Selecionar escola"
+              className="flex items-center gap-2 h-9 px-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 min-w-[148px]"
+            >
+              <span className="truncate max-w-[120px]">
+                {selectedSchoolId === 'todas' ? 'Todas as escolas' : selectedSchoolName.replace(/EECM Prof\. /i, '')}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${schoolDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+            {schoolDropdownOpen && (
+              <div
+                role="listbox"
+                aria-label="Selecionar escola"
+                className="absolute right-0 top-full mt-1.5 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+              >
+                {[{ id: 'todas', name: 'Todas as escolas' }, ...stats.map(s => ({ id: s.id, name: s.name }))].map(opt => (
+                  <button
+                    key={opt.id}
+                    role="option"
+                    aria-selected={selectedSchoolId === opt.id}
+                    onClick={() => { setSelectedSchoolId(opt.id); setSchoolDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${selectedSchoolId === opt.id ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                  >
+                    {opt.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pills de período */}
+          <div className="flex items-center bg-white/10 border border-white/20 rounded-full p-0.5" role="group" aria-label="Selecionar periodo">
+            {(['dia', 'semana', 'mes'] as Period[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setSelectedPeriod(p)}
+                aria-pressed={selectedPeriod === p}
+                className={`px-3 h-7 rounded-full text-xs font-semibold transition-all ${selectedPeriod === p ? 'bg-white text-blue-700 shadow-sm' : 'text-white/80 hover:text-white'}`}
+              >
+                {p === 'dia' ? 'Hoje' : p === 'semana' ? 'Semana' : 'Mes'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* ══════════════════════════════════════════
           KPIs PRIMÁRIOS — Bento Grid Hero
