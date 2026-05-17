@@ -124,8 +124,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         setShowContextModal(true);
       });
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setOpenContextModal]);
 
   // Popup alerta xerife (sexta e segunda)
   const [showXerifeAlert, setShowXerifeAlert] = useState(false);
