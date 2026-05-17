@@ -148,11 +148,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const currentUserSchoolId = useMemo(() => {
     if (!user?.email || isGuest) return null;
     const matched = appUsers.find(u => u.email.toLowerCase() === user.email.toLowerCase());
-    return matched?.school_id ?? 'joaobatista';
+    return matched?.school_id ?? null;
   }, [user, isGuest, appUsers]);
 
-  // Contexto de escola ativa — admin_global pode alternar entre escolas
-  const [activeSchoolContext, setActiveSchoolContext] = useState<string>('joaobatista');
+  // Contexto de escola ativa — admin_global pode alternar; demais usuários seguem seu school_id
+  const [activeSchoolContext, setActiveSchoolContext] = useState<string>('');
+  useEffect(() => {
+    if (!activeSchoolContext && currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+      setActiveSchoolContext(currentUserSchoolId);
+    }
+  }, [currentUserSchoolId, activeSchoolContext]);
   // Callback injetado pelo AppShell para abrir o modal de seleção de contexto
   const [openContextModal, setOpenContextModalState] = useState<() => void>(() => () => {});
   const setOpenContextModal = (fn: () => void) => setOpenContextModalState(() => fn);
@@ -271,7 +276,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               name: u.name || '',
               email: u.email || '',
               role: u.role || 'GESTOR',
-              school_id: u.school_id || 'joaobatista',
+              school_id: u.school_id || '',
             })));
           }
 
@@ -476,7 +481,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: u.name, email: u.email, role: u.role, school_id: u.school_id
         }]).select().single();
         if (error) throw error;
-        if (data) setAppUsers(prev => [...prev, { id: data.id, name: data.name || '', email: data.email || '', role: data.role || 'GESTOR', school_id: data.school_id || 'joaobatista' }]);
+        if (data) setAppUsers(prev => [...prev, { id: data.id, name: data.name || '', email: data.email || '', role: data.role || 'GESTOR', school_id: data.school_id || '' }]);
       } catch (err: any) {
         console.error("Error adding user:", err);
         alert('Erro ao salvar usuário: ' + err.message);

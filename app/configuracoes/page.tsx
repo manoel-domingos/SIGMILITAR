@@ -56,12 +56,18 @@ const SELECT = INPUT + ' appearance-none cursor-pointer';
 function CreateUserDrawer({ open, onClose, schools, onCreated }: {
   open: boolean; onClose: () => void; schools: School[]; onCreated: (u: UserRow) => void;
 }) {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'GESTOR' as AppRole, school_id: 'joaobatista' });
+  const firstSchool = schools[0]?.id ?? '';
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'GESTOR' as AppRole, school_id: firstSchool });
   const [showPass, setShowPass] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reset = () => { setForm({ name: '', email: '', password: '', role: 'GESTOR', school_id: 'joaobatista' }); setError(null); setShowPass(false); };
+  // Sincroniza default quando schools carrega
+  useEffect(() => {
+    if (firstSchool && !form.school_id) setForm(v => ({ ...v, school_id: firstSchool }));
+  }, [firstSchool]);
+
+  const reset = () => { setForm({ name: '', email: '', password: '', role: 'GESTOR', school_id: firstSchool }); setError(null); setShowPass(false); };
   const handleClose = () => { reset(); onClose(); };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -411,7 +417,7 @@ export default function ConfiguracoesPage() {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ role: AppRole; school_id: string }>({ role: 'COORD', school_id: 'joaobatista' });
+  const [editValues, setEditValues] = useState<{ role: AppRole; school_id: string }>({ role: 'COORD', school_id: '' });
   const [saving, setSaving]     = useState(false);
   const [toast, setToast]       = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
