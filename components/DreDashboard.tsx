@@ -37,6 +37,7 @@ interface Props {
   loading: boolean;
   isVisible: (id: string) => boolean;
   onSchoolClick?: (schoolId: string) => void;
+  onNavigate?: (route: string) => void;
 }
 
 // ─────────────────────────────────────────────
@@ -98,15 +99,20 @@ function TrendBadge({ value, inverse = false }: { value: number; inverse?: boole
 }
 
 // ─────────────────────────────────────────────
-// Card de KPI primário (hero)
+// Card de KPI primário (hero) — clicável
 // ─────────────────────────────────────────────
-function HeroKpi({ label, value, sub, icon: Icon, accentClass, trend = 0, inverse = false }:
-  { label: string; value: string | number; sub?: string; icon: React.ElementType; accentClass: string; trend?: number; inverse?: boolean }) {
+function HeroKpi({ label, value, sub, icon: Icon, accentClass, trend = 0, inverse = false, onClick, ariaLabel }:
+  { label: string; value: string | number; sub?: string; icon: React.ElementType; accentClass: string; trend?: number; inverse?: boolean; onClick?: () => void; ariaLabel?: string }) {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between min-h-[130px] ${accentClass}`}>
+    <Tag
+      className={`relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between min-h-[130px] w-full text-left ${accentClass} ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent' : ''}`}
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
       <div className="flex items-start justify-between">
         <p className="text-xs font-semibold uppercase tracking-widest opacity-80">{label}</p>
-        <Icon className="w-5 h-5 opacity-50" />
+        <Icon className="w-5 h-5 opacity-50" aria-hidden="true" />
       </div>
       <div>
         <p className="text-5xl font-black tracking-tight leading-none mt-2">{value}</p>
@@ -115,23 +121,30 @@ function HeroKpi({ label, value, sub, icon: Icon, accentClass, trend = 0, invers
           <TrendBadge value={trend} inverse={inverse} />
         </div>
       </div>
-    </div>
+    </Tag>
   );
 }
 
 // ─────────────────────────────────────────────
-// Card de KPI secundário
+// Card de KPI secundário — clicável
 // ─────────────────────────────────────────────
-function SecKpi({ label, value, sub, icon: Icon, iconBg, children }: {
+function SecKpi({ label, value, sub, icon: Icon, iconBg, children, onClick, ariaLabel }: {
   label: string; value: string | number; sub?: string;
   icon: React.ElementType; iconBg: string; children?: React.ReactNode;
+  onClick?: () => void; ariaLabel?: string;
 }) {
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col gap-3">
+    <Tag
+      className={`bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col gap-3 w-full text-left ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2' : ''}`}
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
       <div className="flex items-center justify-between">
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
-          <Icon className="w-4 h-4" />
+          <Icon className="w-4 h-4" aria-hidden="true" />
         </div>
+        {onClick && <span className="text-slate-300 dark:text-slate-600 text-[10px] uppercase tracking-wider font-semibold">Ver detalhes</span>}
       </div>
       <div>
         <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{value}</p>
@@ -139,14 +152,15 @@ function SecKpi({ label, value, sub, icon: Icon, iconBg, children }: {
         {sub && <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{sub}</p>}
       </div>
       {children}
-    </div>
+    </Tag>
   );
 }
 
 // ─────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────
-export default function DreDashboard({ stats, loading, isVisible, onSchoolClick }: Props) {
+export default function DreDashboard({ stats, loading, isVisible, onSchoolClick, onNavigate }: Props) {
+  const nav = (route: string) => onNavigate?.(route);
   const totalStudents   = stats.reduce((s, x) => s + x.students, 0);
   const totalOcc        = stats.reduce((s, x) => s + x.occurrences, 0);
   const totalPraises    = stats.reduce((s, x) => s + x.praises, 0);
@@ -221,7 +235,11 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
             {/* Card herói — Índice de Disciplina (2 colunas mobile, 1 desktop) */}
-            <div className="col-span-2 md:col-span-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-5 text-white shadow-lg shadow-blue-500/25 flex flex-col justify-between min-h-[140px]">
+            <button
+              onClick={() => nav('/relatorios')}
+              aria-label={`Indice disciplinar medio da rede: ${avgDiscipline}. Clique para ver relatorios`}
+              className="col-span-2 md:col-span-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-5 text-white shadow-lg shadow-blue-500/25 flex flex-col justify-between min-h-[140px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-800"
+            >
               {/* Decorativo */}
               <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/5 rounded-full" />
               <div className="absolute -right-2 bottom-4 w-16 h-16 bg-white/5 rounded-full" />
@@ -246,19 +264,21 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
                   {avgDiscipline >= 75 ? 'Rede em boa situacao' : avgDiscipline >= 55 ? 'Atencao em algumas escolas' : 'Intervencao recomendada'}
                 </p>
               </div>
-            </div>
+            </button>
 
             {/* Alunos Ativos */}
             <SecKpi label="Alunos Ativos" value={totalStudents.toLocaleString('pt-BR')}
               sub={`${stats.length} escola${stats.length !== 1 ? 's' : ''} ativas`}
-              icon={Users} iconBg="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              icon={Users} iconBg="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
+              onClick={() => nav('/alunos')} ariaLabel={`${totalStudents} alunos ativos. Clique para ver lista de alunos`}>
               <Bar2 value={totalStudents} max={1000} color="bg-blue-400" />
             </SecKpi>
 
             {/* Ocorrências */}
             <SecKpi label="Ocorrencias" value={totalOcc}
               sub=""
-              icon={AlertTriangle} iconBg="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              icon={AlertTriangle} iconBg="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              onClick={() => nav('/registro-disciplinar')} ariaLabel={`${totalOcc} ocorrencias. Clique para ver registro disciplinar`}>
               <div className="flex gap-1.5 flex-wrap">
                 {totalLeves > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">L {totalLeves}</span>}
                 {totalMedias > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20">M {totalMedias}</span>}
@@ -270,7 +290,8 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
             {/* Elogios */}
             <SecKpi label="Elogios" value={totalPraises}
               sub={`${globalPraiseRatio} por 100 alunos`}
-              icon={Star} iconBg="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              icon={Star} iconBg="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              onClick={() => nav('/elogios')} ariaLabel={`${totalPraises} elogios. Clique para ver elogios e bonificacoes`}>
               <Bar2 value={totalPraises} max={Math.max(totalOcc, totalPraises, 1)} color="bg-emerald-400" />
             </SecKpi>
           </div>
@@ -286,7 +307,11 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
             {/* Taxa de gravidade */}
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <button
+              onClick={() => nav('/registro-disciplinar')}
+              aria-label={`Taxa de gravidade: ${globalGravityRate}%. Clique para ver registro disciplinar`}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-rose-300 dark:hover:border-rose-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Taxa Gravidade</p>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${globalGravityRate > 30 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : globalGravityRate > 15 ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
@@ -296,26 +321,34 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
               <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{globalGravityRate}<span className="text-xl font-medium text-slate-400 ml-0.5">%</span></p>
               <Bar2 value={globalGravityRate} max={100} color={globalGravityRate > 30 ? 'bg-rose-500' : globalGravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">graves / total</p>
-            </div>
+            </button>
 
             {/* Razão elogio/ocorrência */}
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <button
+              onClick={() => nav('/elogios')}
+              aria-label="Razao elogio sobre ocorrencia. Clique para ver elogios"
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Razao E/O</p>
-                <Award className="w-4 h-4 text-emerald-500" />
+                <Award className="w-4 h-4 text-emerald-500" aria-hidden="true" />
               </div>
               <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">
                 {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}<span className="text-xl font-medium text-slate-400 ml-1">x</span>
               </p>
               <Bar2 value={Math.min(totalPraises, totalOcc * 2)} max={totalOcc * 2 || 1} color="bg-emerald-400" />
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
-            </div>
+            </button>
 
             {/* Acidentes */}
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <button
+              onClick={() => nav('/acidentes')}
+              aria-label={`${totalAccidents} acidentes registrados. Clique para ver registro de acidentes`}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Acidentes</p>
-                <Activity className="w-4 h-4 text-violet-500" />
+                <Activity className="w-4 h-4 text-violet-500" aria-hidden="true" />
               </div>
               <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{totalAccidents}</p>
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
@@ -324,10 +357,14 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
               <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${totalAccidents === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
                 {totalAccidents === 0 ? 'Zero acidentes' : 'Requer atencao'}
               </div>
-            </div>
+            </button>
 
             {/* Alertas */}
-            <div className={`rounded-2xl p-5 shadow-sm border ${alertSchools > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/30' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+            <button
+              onClick={() => nav('/comportamento')}
+              aria-label={`${alertSchools} escolas em alerta. Clique para ver comportamento e rankings`}
+              className={`rounded-2xl p-5 shadow-sm border text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${alertSchools > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/30 hover:border-rose-400 dark:hover:border-rose-400/50' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/40'}`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Alertas</p>
                 <Zap className={`w-4 h-4 ${alertSchools > 0 ? 'text-rose-500' : 'text-slate-300 dark:text-slate-600'}`} />
@@ -351,7 +388,7 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">TUDO OK</span>
                 )}
               </div>
-            </div>
+            </button>
           </div>
         </section>
       )}

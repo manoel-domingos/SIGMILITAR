@@ -12,6 +12,14 @@
 
 Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acessa tudo.
 
+## Última ação concluída (2026-05-17) — sessão 2
+- **4 melhorias no /dre:**
+  1. `<AIChat />` adicionado ao DRE (flutuante IA com ARIA, mesmo componente do AppShell)
+  2. Fundo azul `from-blue-700 via-blue-800 to-blue-950` — mesmo gradiente do DRE login
+  3. Header substituído por pill glass igual ao TopbarLayout das escolas (logo, status ONLINE, ícones icon-pill, avatar)
+  4. Todos os KPIs clicáveis: `HeroKpi` e `SecKpi` viram `<button>` com hover scale, shadow, border colorida, ARIA labels e `onNavigate` para rotas corretas
+- Zero erros TypeScript
+
 ## Última ação concluída (2026-05-17)
 - **Dashboard DRE com KPIs atraentes:** Criado `DreDashboard.tsx` (603 linhas) com bento grid moderno — KPIs primários com card herói de índice disciplinar, badges de severidade L/M/G, gráfico de barras comparativo por escola (Recharts), gráfico de pizza de severidade, seção de implantação com `IndexRing`, ranking com medalhas, cards de escola clicáveis com barra stacked de gravidade.
 - **Redirecionamento ao clicar na escola:** `onSchoolClick` passa `setActiveSchoolContext(id)` + `router.push('/')`.

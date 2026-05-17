@@ -11,9 +11,10 @@ import {
   Shield, ShieldCheck, Award, Zap, AlertCircle, ChevronRight, ChevronDown,
   BarChart3, LayoutDashboard, GripVertical,
   ToggleLeft, ToggleRight, X, CheckCircle2, Trophy, FileWarning,
-  Moon, Sun, LogOut, Settings,
+  Moon, Sun, LogOut, Settings, CloudCheck, CloudOff,
 } from 'lucide-react';
 import DreDashboard from '@/components/DreDashboard';
+import AIChat from '@/components/AIChat';
 
 const supabase = supabaseClient!;
 
@@ -111,7 +112,7 @@ function DisciplineRing({ value }: { value: number }) {
 
 export default function DrePage() {
   const router = useRouter();
-  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, setMockUser } = useAppContext();
+  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, setMockUser, isSupabaseConnected, isSyncing, refreshData } = useAppContext();
 
   // Redirect para /dre ao entrar (admin_global já está cá, outros vão para /)
   useEffect(() => {
@@ -353,121 +354,159 @@ export default function DrePage() {
 
   return (
     <>
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+    {/* ── Fundo azul igual ao login DRE ── */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 relative">
+      {/* Blobs decorativos */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full" />
+      </div>
 
-      {/* ---- HEADER ---- */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="w-[5.5rem] h-[5.5rem] rounded-2xl flex items-center justify-center flex-shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo_dre_color.svg" alt="Logo DRE" className="w-full h-full object-contain" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Painel DRE</h1>
-              {alertSchools > 0 && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-semibold border border-rose-200 dark:border-rose-500/30">
-                  <AlertCircle className="w-3 h-3" /> {alertSchools} alerta{alertSchools > 1 ? 's' : ''}
-                </span>
-              )}
+      {/* ── Header pill — mesmo estilo das escolas ── */}
+      <header className="z-30 px-4 pt-3 pb-2 pointer-events-none sticky top-0" role="banner">
+        <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-3 px-4 md:px-6 py-1.5 max-w-7xl mx-auto">
+
+          {/* Esquerda: logo + título */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo_dre_color.svg" alt="Logo DRE" className="w-full h-full object-contain" />
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Gestao regional consolidada · {stats.length} escola{stats.length !== 1 ? 's' : ''}
-              {lastUpdated && (
-                <span className="ml-2 text-slate-400 dark:text-slate-500">
-                  · {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => openContextModal()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <SwitchCamera className="w-4 h-4" />
-            <span className="hidden sm:inline">Trocar Escola</span>
-          </button>
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            <span className="hidden sm:inline">Editar Painel</span>
-          </button>
-          <button
-            onClick={toggleTheme}
-            className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:bg-slate-100 dark:active:bg-slate-700 transition shadow-sm"
-            title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
-            aria-label={isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
-          >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={() => load()}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
-          >
-            <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} />
-            <span className="hidden sm:inline">Atualizar</span>
-          </button>
-
-          {/* Botão perfil — mesmo estilo do AppShell */}
-          <button
-            ref={profileTriggerRef}
-            onClick={() => setProfileOpen(o => !o)}
-            className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 transition shadow-sm ml-1"
-          >
-            {user?.user_metadata?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
-            ) : (
-              <span className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs font-bold flex items-center justify-center">
-                {userInitials}
+            <div className="hidden sm:block min-w-0">
+              <h1 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
+                <span className="font-extrabold">Painel</span>{' '}
+                <span className="text-slate-500 dark:text-slate-400 font-normal">DRE</span>
+              </h1>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Gestao Regional de Educacao
+              </p>
+            </div>
+            {/* Badge alerta */}
+            {alertSchools > 0 && (
+              <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold border border-rose-200 dark:border-rose-500/30 shrink-0">
+                <AlertCircle className="w-3 h-3" aria-hidden="true" /> {alertSchools} alerta{alertSchools > 1 ? 's' : ''}
               </span>
             )}
-            <div className="text-left hidden sm:block leading-tight pr-1">
-              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{userName}</p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400">admin global</p>
-            </div>
-          </button>
+          </div>
 
-          {/* Dropdown do perfil via portal */}
-          {mounted && profileOpen && profileMenuPos && ReactDOM.createPortal(
+          {/* Direita: controles */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" role="toolbar" aria-label="Controles do painel DRE">
+
+            {/* Status ONLINE */}
             <div
-              ref={profileMenuRef}
-              className="fixed w-64 glass-dropdown overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200"
-              style={{ top: profileMenuPos.top, right: profileMenuPos.right, zIndex: 99999 }}
+              className={'inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ' + (isSupabaseConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30')}
+              aria-label={isSupabaseConnected ? 'Conectado ao servidor' : 'Sem conexao'}
             >
-              <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
-                <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{userName}</p>
-                <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user?.email || 'admin@dre.local'}</p>
+              {isSupabaseConnected ? <CloudCheck className="w-3.5 h-3.5" aria-hidden="true" /> : <CloudOff className="w-3.5 h-3.5" aria-hidden="true" />}
+              <span className="hidden xs:inline">{isSupabaseConnected ? 'Online' : 'Offline'}</span>
+            </div>
+
+            {/* Trocar escola */}
+            <button
+              onClick={() => openContextModal()}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+              aria-label="Trocar escola"
+              title="Trocar Escola"
+            >
+              <SwitchCamera className="w-4 h-4" aria-hidden="true" />
+            </button>
+
+            {/* Editar painel */}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+              aria-label="Editar painel"
+              title="Editar Painel"
+            >
+              <LayoutDashboard className="w-4 h-4" aria-hidden="true" />
+            </button>
+
+            {/* Dark mode */}
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+              aria-label={isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+            </button>
+
+            {/* Atualizar */}
+            <button
+              onClick={() => load()}
+              disabled={loading}
+              className={'w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm disabled:opacity-50 ' + (loading ? 'animate-spin text-blue-500' : '')}
+              aria-label="Atualizar dados"
+              title="Atualizar"
+            >
+              <RefreshCw className="w-4 h-4" aria-hidden="true" />
+            </button>
+
+            {/* Perfil */}
+            <button
+              ref={profileTriggerRef}
+              onClick={() => setProfileOpen(o => !o)}
+              aria-haspopup="true"
+              aria-expanded={profileOpen}
+              aria-label={`Menu do usuario ${userName}`}
+              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+            >
+              {user?.user_metadata?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.user_metadata.avatar_url} alt="" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+              ) : (
+                <span className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs font-bold flex items-center justify-center" aria-hidden="true">
+                  {userInitials}
+                </span>
+              )}
+              <div className="text-left hidden sm:block leading-tight pr-1">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{userName}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">admin global</p>
               </div>
-              <div className="py-2">
-                <button
-                  onClick={() => { router.push('/configuracoes'); setProfileOpen(false); }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
-                >
-                  <Settings className="w-4 h-4" /> Configuracao do Sistema
-                </button>
-                <button
-                  onClick={() => { logout(); setProfileOpen(false); }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400 flex items-center gap-3"
-                >
-                  <LogOut className="w-4 h-4" /> Sair
-                </button>
-              </div>
-              <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 italic text-center">
-                  Versao: {new Date().toLocaleDateString('pt-BR').replace(/\//g, '.')}
-                </p>
-              </div>
-            </div>,
-            document.body
-          )}
+            </button>
+
+            {/* Dropdown perfil via portal */}
+            {mounted && profileOpen && profileMenuPos && ReactDOM.createPortal(
+              <div
+                ref={profileMenuRef}
+                role="menu"
+                aria-label="Menu de perfil"
+                className="fixed w-64 glass-dropdown overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200"
+                style={{ top: profileMenuPos.top, right: profileMenuPos.right, zIndex: 99999 }}
+              >
+                <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
+                  <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{userName}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user?.email || 'admin@dre.local'}</p>
+                </div>
+                <div className="py-2" role="none">
+                  <button
+                    role="menuitem"
+                    onClick={() => { router.push('/configuracoes'); setProfileOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3 transition-colors"
+                  >
+                    <Settings className="w-4 h-4" aria-hidden="true" /> Configuracao do Sistema
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => { logout(); setProfileOpen(false); }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400 flex items-center gap-3 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" aria-hidden="true" /> Sair
+                  </button>
+                </div>
+                <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 italic text-center">
+                    DRE · Gestao Regional
+                  </p>
+                </div>
+              </div>,
+              document.body
+            )}
+          </div>
         </div>
-      </div>
+      </header>
+
+    <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-24">
 
       {/* ---- DRAWER EDITAR PAINEL ---- */}
       {drawerOpen && (
@@ -522,6 +561,7 @@ export default function DrePage() {
           setActiveSchoolContext(schoolId);
           router.push('/');
         }}
+        onNavigate={(route) => router.push(route)}
       />
 
       {/* ---- KPIs PRIMÁRIOS (linha grande) — substituído por DreDashboard acima ---- */}
@@ -944,6 +984,11 @@ export default function DrePage() {
         </div>
       </div>
     )}
+
+      {/* ── Flutuante de IA — mesmo do AppShell ── */}
+      <AIChat />
+
+    </div>{/* fim fundo azul */}
     </>
   );
 }
