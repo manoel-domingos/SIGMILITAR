@@ -14,17 +14,26 @@ export function middleware(request: NextRequest) {
     host === 'www.dretga.vercel.app';
 
   if (isDreDomain) {
-    // Já está no login DRE — deixa passar
-    if (pathname === '/dre-login') {
+    // Já está no login DRE ou numa rota interna — deixa passar
+    if (pathname === '/dre-login' || pathname.startsWith('/dre')) {
       return NextResponse.next();
     }
-    // Raiz "/" ou "/login" → redireciona para /dre-login
-    if (pathname === '/' || pathname === '/login') {
+
+    // Verifica se há sessão ativa (cookie ou header de sessão)
+    const hasSession = request.cookies.has('sb-access-token') ||
+      request.cookies.has('sb-refresh-token') ||
+      request.cookies.has('eecm_session');
+
+    // Só redireciona para login DRE se não houver sessão
+    // Raiz "/" sem sessão → /dre-login
+    // "/login" sempre → /dre-login (sem exceção)
+    if (pathname === '/login' || (pathname === '/' && !hasSession)) {
       const url = request.nextUrl.clone();
       url.pathname = '/dre-login';
       return NextResponse.redirect(url);
     }
-    // /dre e qualquer rota autenticada — passa normalmente
+
+    // "/" com sessão ativa (usuário veio do modal de escolas) — deixa passar
   }
 
   return NextResponse.next();

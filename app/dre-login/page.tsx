@@ -95,6 +95,8 @@ export default function DreLogin() {
           },
         },
       }));
+      // Cookie leve para o middleware poder detectar sessão ativa no domínio DRE
+      document.cookie = 'eecm_session=1; path=/; SameSite=Lax';
       setMockUser(user_lower);
       return;
       // useEffect redireciona após currentUserRole resolver
