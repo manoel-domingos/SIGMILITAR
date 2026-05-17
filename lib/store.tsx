@@ -28,6 +28,9 @@ interface AppState {
   setActiveSchoolContext: (id: string) => void;
   openContextModal: () => void;
   setOpenContextModal: (fn: () => void) => void;
+  showContextModal: boolean;
+  setShowContextModal: (v: boolean) => void;
+  contextSchools: { id: string; name: string }[];
   isAuthRestored: boolean;
   isDebugMode: boolean;
   geminiApiKey: string;
@@ -178,11 +181,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isFirstContextLoad.current = false;
     }
   }, [currentUserSchoolId]);
-  // Callback injetado pelo AppShell para abrir o modal de seleção de contexto
-  const [openContextModal, setOpenContextModalState] = useState<() => void>(() => () => {});
-  const setOpenContextModal = React.useCallback((fn: () => void) => {
-    setOpenContextModalState(() => fn);
+  // Estado do modal de seleção de escola — controlado direto no store
+  const [showContextModal, setShowContextModal] = useState(false);
+  const [contextSchools, setContextSchools] = useState<{id: string; name: string}[]>([]);
+
+  const openContextModal = React.useCallback(() => {
+    // Abre o modal imediatamente com os dados já disponíveis
+    setShowContextModal(true);
+    // Busca escolas em background para garantir lista atualizada
+    if (supabase) {
+      supabase.from('schools').select('id, name').neq('id', 'DRE').order('name')
+        .then(({ data }: { data: {id: string; name: string}[] | null }) => {
+          if (data && data.length > 0) setContextSchools(data);
+        })
+        .catch(() => {});
+    }
   }, []);
+
+  // Mantido por compatibilidade — não faz mais nada
+  const setOpenContextModal = React.useCallback((_fn: () => void) => {}, []);
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(() => {
@@ -409,6 +426,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       await fetchData(bootSchoolId || undefined);
+
+      // Pré-carrega lista de escolas para o modal de seleção
+      supabase.from('schools').select('id, name').neq('id', 'DRE').order('name')
+        .then(({ data }: { data: {id: string; name: string}[] | null }) => {
+          if (data && data.length > 0) setContextSchools(data);
+        })
+        .catch(() => {});
 
       // Real-time Subscriptions
       const tables = ['students', 'occurrences', 'accidents', 'praises', 'summons', 'conduct_terms', 'audit_logs', 'rules'];
@@ -1510,6 +1534,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       students, occurrences, accidents, praises, rules, summons, conductTerms, auditLogs, staffMembers, appUsers, isSupabaseConnected, isSyncing,
       user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
+      showContextModal, setShowContextModal, contextSchools,
       geminiApiKey, setGeminiApiKey, groqApiKey, setGroqApiKey,
       setGuestMode, setMockUser, logout, uploadFile,
       logAction, refreshData,

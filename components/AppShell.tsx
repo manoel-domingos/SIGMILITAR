@@ -76,7 +76,7 @@ type LayoutMode = 'sidebar' | 'topbar';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, setOpenContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -84,19 +84,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('topbar');
 
-  // Modal de seleção de contexto para admin_global
-  const [showContextModal, setShowContextModal] = useState(false);
+  // Modal de seleção de contexto — estado vive no store
+  const { showContextModal, setShowContextModal, contextSchools } = useAppContext();
+  // Lista de escolas para o título dinâmico no header
   const [schools, setSchools] = useState<{id: string; name: string}[]>([]);
   useEffect(() => {
+    if (!user) return;
+    supabase?.from('schools').select('id, name').neq('id', 'DRE').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
+      if (data) setSchools(data);
+    });
+  }, [user]);
+
+  // Abre automaticamente o modal de contexto para admin_global uma vez por sessão
+  useEffect(() => {
     if (currentUserRole !== 'admin_global' || !user) return;
-    // Mostra o modal apenas uma vez por sessão
     const key = 'dre_context_chosen_' + new Date().toDateString();
     if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
-      // Carrega escolas disponíveis
-      supabase?.from('schools').select('id, name').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
-        setSchools((data ?? []).filter((s: any) => s.id !== 'DRE'));
-        setShowContextModal(true);
-      });
+      openContextModal();
     }
   }, [currentUserRole, user]);
 
@@ -107,25 +111,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setShowContextModal(false);
     if (schoolId === 'DRE') router.push('/dre');
   };
-
-  // Carrega lista de escolas para todos os usuários (necessário para o título dinâmico)
-  useEffect(() => {
-    if (!user) return;
-    supabase?.from('schools').select('id, name').neq('id', 'DRE').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
-      if (data) setSchools(data);
-    });
-  }, [user]);
-
-  // Registra o callback para abrir o modal a partir de qualquer página
-  useEffect(() => {
-    setOpenContextModal(() => {
-      supabase?.from('schools').select('id, name').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
-        setSchools((data ?? []).filter((s: any) => s.id !== 'DRE'));
-        setShowContextModal(true);
-      });
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Popup alerta xerife (sexta e segunda)
   const [showXerifeAlert, setShowXerifeAlert] = useState(false);
@@ -338,7 +323,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <Building2 className="w-4 h-4" /> Painel DRE — Visao Consolidada
               </button>
-              {schools.map(s => (
+              {contextSchools.map(s => (
                 <button
                   key={s.id}
                   onClick={() => chooseContext(s.id)}
