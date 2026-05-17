@@ -152,31 +152,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user, isGuest, appUsers]);
 
   // Contexto de escola ativa — admin_global pode alternar; demais usuários seguem seu school_id
-  const [activeSchoolContext, setActiveSchoolContext] = useState<string>('');
+  const [activeSchoolContext, setActiveSchoolContextState] = useState<string>('');
   // Ref para acesso sem closure stale dentro de fetchData/refreshData
   const activeSchoolContextRef = React.useRef(activeSchoolContext);
+  const isFirstContextLoad = React.useRef(true);
+  
   useEffect(() => { activeSchoolContextRef.current = activeSchoolContext; }, [activeSchoolContext]);
 
-  useEffect(() => {
-    if (!activeSchoolContext && currentUserSchoolId && currentUserSchoolId !== 'DRE') {
-      setActiveSchoolContext(currentUserSchoolId);
+  // Setter wrapper que seta o estado E recarrega dados (sem loop infinito)
+  const setActiveSchoolContext = (schoolId: string) => {
+    activeSchoolContextRef.current = schoolId;
+    setActiveSchoolContextState(schoolId);
+    if (isSupabaseConnected && !isFirstContextLoad.current) {
+      // Só recarrega se NÃO é a primeira vez e está conectado
+      refreshData();
     }
-  }, [currentUserSchoolId, activeSchoolContext]);
+    isFirstContextLoad.current = false;
+  };
 
-  // Recarrega dados filtrados sempre que a escola ativa muda (ex: DRE troca de escola)
-  const isFirstSchoolContextSet = React.useRef(true);
+  // Seta o contexto inicial a partir do school_id do usuário
   useEffect(() => {
-    if (!activeSchoolContext || !isSupabaseConnected) return;
-    if (isFirstSchoolContextSet.current) {
-      // Primeira definição: fetchData inicial já carregará com o sid correto via ref
-      isFirstSchoolContextSet.current = false;
-      return;
+    if (currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+      activeSchoolContextRef.current = currentUserSchoolId;
+      setActiveSchoolContextState(currentUserSchoolId);
+      isFirstContextLoad.current = false;
     }
-    // Troca subsequente: recarrega com o novo school_id
-    activeSchoolContextRef.current = activeSchoolContext;
-    refreshData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSchoolContext, isSupabaseConnected]);
+  }, [currentUserSchoolId]);
   // Callback injetado pelo AppShell para abrir o modal de seleção de contexto
   const [openContextModal, setOpenContextModalState] = useState<() => void>(() => () => {});
   const setOpenContextModal = (fn: () => void) => setOpenContextModalState(() => fn);
