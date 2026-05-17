@@ -56,8 +56,6 @@ const MENU_GROUPS: MenuGroup[] = [
       { href: '/implantacao', label: 'Implantação', icon: Rocket },
       { href: '/fechamento', label: 'Fechamento do Ano', icon: Award },
       { href: '/auditoria', label: 'Auditoria de Ações', icon: ShieldAlert },
-      { href: '/configuracoes', label: 'Configurações', icon: Settings },
-      { href: '/status', label: 'Status das Integrações', icon: ShieldAlert },
     ],
   },
 ];
@@ -1103,31 +1101,31 @@ function ProfileMenu({
           </div>
 
           <div className="py-2">
-            {(currentUserRole === 'GESTOR' || currentUserRole === 'admin_global') && (
-              <Link
-                href="/configuracoes"
-                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
-                onClick={() => setIsOpen(false)}
-              >
-                <Settings className="w-4 h-4" /> Configuração do Sistema
-              </Link>
-            )}
             {currentUserRole === 'admin_global' && (
-              <Link
-                href="/dre"
-                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center gap-3"
-                onClick={() => setIsOpen(false)}
-              >
-                <LayoutDashboard className="w-4 h-4" /> Painel DRE
-              </Link>
+              <>
+                <Link
+                  href="/dre"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <LayoutDashboard className="w-4 h-4" /> Painel DRE
+                </Link>
+                <Link
+                  href="/configuracoes"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Settings className="w-4 h-4" /> Configuração do Sistema
+                </Link>
+                <Link
+                  href="/status"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <ShieldAlert className="w-4 h-4 text-amber-500" /> Status das Integrações
+                </Link>
+              </>
             )}
-            <Link
-              href="/status"
-              className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center gap-3"
-              onClick={() => setIsOpen(false)}
-            >
-              <ShieldAlert className="w-4 h-4 text-amber-500" /> Status das Integrações
-            </Link>
             <button
               onClick={() => { setIsOpen(false); document.querySelector<HTMLButtonElement>('[aria-label="Abrir assistente ARIA"]')?.click(); }}
               className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
