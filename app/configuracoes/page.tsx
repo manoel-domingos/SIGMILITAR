@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/lib/store';
 import { createClient } from '@supabase/supabase-js';
@@ -11,11 +13,15 @@ import {
   BarChart2, Cpu, MessageSquare, User, KeyRound,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+let _supabase: any = null;
+function supabase(): any {
+  return (_supabase ??= createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ));
+}
 
 type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'admin_global';
 type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status';
@@ -74,7 +80,7 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) { setError('Nome e e-mail/usuário são obrigatórios.'); return; }
     setSaving(true); setError(null);
-    const { data, error: err } = await supabase.from('user_profiles')
+    const { data, error: err } = await supabase().from('user_profiles')
       .insert([{ name: form.name.trim(), email: form.email.trim(), password: form.password || null, role: form.role, school_id: form.school_id }])
       .select().single();
     setSaving(false);
@@ -159,7 +165,7 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
 
   const saveProfile = async () => {
     if (!user?.email) return;
-    await supabase.from('user_profiles').update({ name }).eq('email', user.email);
+    await supabase().from('user_profiles').update({ name }).eq('email', user.email);
     setSaved(true); setTimeout(() => setSaved(false), 2000);
   };
 
@@ -167,7 +173,7 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
     if (pwd.next !== pwd.confirm) { setPwdMsg({t:'err', m:'As senhas não coincidem.'}); return; }
     if (pwd.next.length < 4) { setPwdMsg({t:'err', m:'Senha deve ter ao menos 4 caracteres.'}); return; }
     if (!user?.email) return;
-    const { error } = await supabase.from('user_profiles').update({ password: pwd.next }).eq('email', user.email);
+    const { error } = await supabase().from('user_profiles').update({ password: pwd.next }).eq('email', user.email);
     if (error) { setPwdMsg({t:'err', m: error.message}); return; }
     setPwd({ current: '', next: '', confirm: '' });
     setPwdMsg({t:'ok', m:'Senha alterada com sucesso.'});
@@ -255,7 +261,7 @@ function TabStatus() {
     setPing('idle'); setPingMs(null);
     const t0 = Date.now();
     try {
-      const { error } = await supabase.from('schools').select('id').limit(1);
+      const { error } = await supabase().from('schools').select('id').limit(1);
       if (error) throw error;
       setPingMs(Date.now() - t0); setPing('ok');
     } catch { setPing('err'); }
@@ -408,6 +414,14 @@ function TabAria() {
 
 // ─── Página principal ────────────────────────────────────────────────────────
 export default function ConfiguracoesPage() {
+  return (
+    <Suspense>
+      <ConfiguracoesInner />
+    </Suspense>
+  );
+}
+
+function ConfiguracoesInner() {
   const { currentUserRole, user } = useAppContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -432,8 +446,8 @@ export default function ConfiguracoesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [{ data: ud }, { data: sd }] = await Promise.all([
-      supabase.from('user_profiles').select('*').order('name'),
-      supabase.from('schools').select('id, name').order('id'),
+      supabase().from('user_profiles').select('*').order('name'),
+      supabase().from('schools').select('id, name').order('id'),
     ]);
     if (ud) setUsers(ud as UserRow[]);
     if (sd) setSchools(sd as School[]);
@@ -453,7 +467,7 @@ export default function ConfiguracoesPage() {
 
   const saveEdit = async (id: string) => {
     setSaving(true);
-    const { error } = await supabase.from('user_profiles')
+    const { error } = await supabase().from('user_profiles')
       .update({ role: editValues.role, school_id: editValues.school_id, updated_at: new Date().toISOString() })
       .eq('id', id);
     setSaving(false);
@@ -463,7 +477,7 @@ export default function ConfiguracoesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('user_profiles').delete().eq('id', id);
+    const { error } = await supabase().from('user_profiles').delete().eq('id', id);
     if (error) { showToast('Erro ao remover: ' + error.message, 'err'); return; }
     setUsers(prev => prev.filter(u => u.id !== id));
     setDeleteId(null); showToast('Usuario removido.');

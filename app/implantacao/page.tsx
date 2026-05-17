@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AppShell from '@/components/AppShell';
 import { createClient } from '@supabase/supabase-js';
@@ -9,10 +11,13 @@ import {
   RotateCcw, Loader2,
 } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+let _supabase: any = null;
+function supabase(): any {
+  return (_supabase ??= createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ));
+}
 
 // ---------- tipos ----------
 type ItemNote = {
@@ -284,7 +289,7 @@ export default function ImplantacaoPage() {
   // ---------- Carregar do Supabase ----------
   const loadData = useCallback(async () => {
     setLoading(true);
-    const { data: cats } = await supabase
+    const { data: cats } = await supabase()
       .from('implantacao_categories')
       .select('*')
       .order('position');
@@ -296,7 +301,7 @@ export default function ImplantacaoPage() {
       return;
     }
 
-    const { data: items } = await supabase
+    const { data: items } = await supabase()
       .from('implantacao_items')
       .select('*')
       .order('position');
@@ -326,12 +331,12 @@ export default function ImplantacaoPage() {
 
   const seedInitialData = async () => {
     for (const cat of INITIAL_CATEGORIES) {
-      await supabase.from('implantacao_categories').upsert({
+      await supabase().from('implantacao_categories').upsert({
         id: cat.id, title: cat.title, position: cat.position,
       });
     }
     for (const item of INITIAL_ITEMS) {
-      await supabase.from('implantacao_items').upsert({
+      await supabase().from('implantacao_items').upsert({
         id: item.id, category_id: item.catId, text: item.text,
         done: false, position: item.position,
       });
@@ -370,7 +375,7 @@ export default function ImplantacaoPage() {
       setCategories(prev => prev.map(c =>
         c.id !== catId ? c : { ...c, items: c.items.map(i => i.id !== item.id ? i : { ...i, done: false }) }
       ));
-      supabase.from('implantacao_items').update({ done: false, note_question: null, note_answer: null, note_done_at: null, updated_at: new Date().toISOString() }).eq('id', item.id).then(() => {});
+      supabase().from('implantacao_items').update({ done: false, note_question: null, note_answer: null, note_done_at: null, updated_at: new Date().toISOString() }).eq('id', item.id).then(() => {});
       pushUndo({ type: 'toggle_item', catId, itemId: item.id, prevDone, prevNote }, 'Item desmarcado.');
     } else {
       setCompletionModal({ catId, itemId: item.id, itemText: item.text, existingNote: item.note });
@@ -389,7 +394,7 @@ export default function ImplantacaoPage() {
       c.id !== catId ? c : { ...c, items: c.items.map(i => i.id !== itemId ? i : { ...i, done: true, note }) }
     ));
 
-    await supabase.from('implantacao_items').update({
+    await supabase().from('implantacao_items').update({
       done: true,
       note_question: question,
       note_answer: answer,
@@ -417,7 +422,7 @@ export default function ImplantacaoPage() {
     setCategories(prev => prev.map(c =>
       c.id !== editingItem.catId ? c : { ...c, items: c.items.map(i => i.id !== editingItem.itemId ? i : { ...i, text: editText.trim() }) }
     ));
-    await supabase.from('implantacao_items').update({ text: editText.trim(), updated_at: new Date().toISOString() }).eq('id', editingItem.itemId);
+    await supabase().from('implantacao_items').update({ text: editText.trim(), updated_at: new Date().toISOString() }).eq('id', editingItem.itemId);
     setEditingItem(null);
   };
 
@@ -427,7 +432,7 @@ export default function ImplantacaoPage() {
     setCategories(prev => prev.map(c =>
       c.id !== catId ? c : { ...c, items: c.items.filter(i => i.id !== item.id) }
     ));
-    await supabase.from('implantacao_items').delete().eq('id', item.id);
+    await supabase().from('implantacao_items').delete().eq('id', item.id);
   };
 
   // ---------- adicionar item ----------
@@ -439,7 +444,7 @@ export default function ImplantacaoPage() {
     setCategories(prev => prev.map(c =>
       c.id !== addingItemCat ? c : { ...c, items: [...c.items, newItem] }
     ));
-    await supabase.from('implantacao_items').insert({ id: newItem.id, category_id: addingItemCat, text: newItem.text, done: false, position });
+    await supabase().from('implantacao_items').insert({ id: newItem.id, category_id: addingItemCat, text: newItem.text, done: false, position });
     pushUndo({ type: 'add_item', catId: addingItemCat, itemId: newItem.id }, 'Item adicionado.');
     setAddingItemCat(null);
     setAddingItemText('');
@@ -453,7 +458,7 @@ export default function ImplantacaoPage() {
     const prev = categories.find(c => c.id === editingCat);
     pushUndo({ type: 'edit_cat', catId: editingCat, prevTitle: prev?.title ?? '' }, 'Categoria renomeada.');
     setCategories(prev => prev.map(c => c.id !== editingCat ? c : { ...c, title: editText.trim() }));
-    await supabase.from('implantacao_categories').update({ title: editText.trim(), updated_at: new Date().toISOString() }).eq('id', editingCat);
+    await supabase().from('implantacao_categories').update({ title: editText.trim(), updated_at: new Date().toISOString() }).eq('id', editingCat);
     setEditingCat(null);
   };
 
@@ -462,7 +467,7 @@ export default function ImplantacaoPage() {
     if (!confirm('Remover esta categoria e todos os itens?')) return;
     pushUndo({ type: 'delete_cat', cat, position: cat.position }, 'Categoria excluída.');
     setCategories(prev => prev.filter(c => c.id !== cat.id));
-    await supabase.from('implantacao_categories').delete().eq('id', cat.id);
+    await supabase().from('implantacao_categories').delete().eq('id', cat.id);
   };
 
   // ---------- adicionar categoria ----------
@@ -471,7 +476,7 @@ export default function ImplantacaoPage() {
     const position = categories.length;
     const newCat: Category = { id: uid(), title: newCatText.trim(), position, items: [] };
     setCategories(prev => [...prev, newCat]);
-    await supabase.from('implantacao_categories').insert({ id: newCat.id, title: newCat.title, position });
+    await supabase().from('implantacao_categories').insert({ id: newCat.id, title: newCat.title, position });
     pushUndo({ type: 'add_cat', catId: newCat.id }, 'Categoria adicionada.');
     setAddingCat(false);
     setNewCatText('');
@@ -489,7 +494,7 @@ export default function ImplantacaoPage() {
         setCategories(prev => prev.map(c =>
           c.id !== catId ? c : { ...c, items: [...c.items, item].sort((a, b) => a.position - b.position) }
         ));
-        await supabase.from('implantacao_items').insert({
+        await supabase().from('implantacao_items').insert({
           id: item.id, category_id: catId, text: item.text, done: item.done, position: item.position,
           note_question: item.note?.question ?? null,
           note_answer: item.note?.answer ?? null,
@@ -500,9 +505,9 @@ export default function ImplantacaoPage() {
       case 'delete_cat': {
         const { cat } = action;
         setCategories(prev => [...prev, cat].sort((a, b) => a.position - b.position));
-        await supabase.from('implantacao_categories').insert({ id: cat.id, title: cat.title, position: cat.position });
+        await supabase().from('implantacao_categories').insert({ id: cat.id, title: cat.title, position: cat.position });
         for (const item of cat.items) {
-          await supabase.from('implantacao_items').insert({
+          await supabase().from('implantacao_items').insert({
             id: item.id, category_id: cat.id, text: item.text, done: item.done, position: item.position,
             note_question: item.note?.question ?? null,
             note_answer: item.note?.answer ?? null,
@@ -516,13 +521,13 @@ export default function ImplantacaoPage() {
         setCategories(prev => prev.map(c =>
           c.id !== catId ? c : { ...c, items: c.items.map(i => i.id !== itemId ? i : { ...i, text: prevText }) }
         ));
-        await supabase.from('implantacao_items').update({ text: prevText, updated_at: new Date().toISOString() }).eq('id', itemId);
+        await supabase().from('implantacao_items').update({ text: prevText, updated_at: new Date().toISOString() }).eq('id', itemId);
         break;
       }
       case 'edit_cat': {
         const { catId, prevTitle } = action;
         setCategories(prev => prev.map(c => c.id !== catId ? c : { ...c, title: prevTitle }));
-        await supabase.from('implantacao_categories').update({ title: prevTitle, updated_at: new Date().toISOString() }).eq('id', catId);
+        await supabase().from('implantacao_categories').update({ title: prevTitle, updated_at: new Date().toISOString() }).eq('id', catId);
         break;
       }
       case 'toggle_item': {
@@ -530,7 +535,7 @@ export default function ImplantacaoPage() {
         setCategories(prev => prev.map(c =>
           c.id !== catId ? c : { ...c, items: c.items.map(i => i.id !== itemId ? i : { ...i, done: prevDone, note: prevNote }) }
         ));
-        await supabase.from('implantacao_items').update({
+        await supabase().from('implantacao_items').update({
           done: prevDone,
           note_question: prevNote?.question ?? null,
           note_answer: prevNote?.answer ?? null,
@@ -544,13 +549,13 @@ export default function ImplantacaoPage() {
         setCategories(prev => prev.map(c =>
           c.id !== catId ? c : { ...c, items: c.items.filter(i => i.id !== itemId) }
         ));
-        await supabase.from('implantacao_items').delete().eq('id', itemId);
+        await supabase().from('implantacao_items').delete().eq('id', itemId);
         break;
       }
       case 'add_cat': {
         const { catId } = action;
         setCategories(prev => prev.filter(c => c.id !== catId));
-        await supabase.from('implantacao_categories').delete().eq('id', catId);
+        await supabase().from('implantacao_categories').delete().eq('id', catId);
         break;
       }
     }

@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import CustomSelect from '@/components/CustomSelect';
@@ -10,10 +12,13 @@ import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+let _supabase: any = null;
+function supabase(): any {
+  return (_supabase ??= createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ));
+}
 
 type PanelConfig = { id: string; label: string; enabled: boolean };
 
@@ -45,14 +50,14 @@ export default function Dashboard() {
   // Carrega painéis do Supabase ao montar
   useEffect(() => {
     if (!userId || userId === 'guest') return;
-    supabase
+    supabase()
       .from('dashboard_panels')
       .select('panels')
       .eq('user_id', userId)
       .single()
-      .then(({ data }) => {
+      .then(({ data }: { data: { panels: PanelConfig[] } | null }) => {
         if (data?.panels && Array.isArray(data.panels)) {
-          setPanels(mergePanels(data.panels as PanelConfig[]));
+          setPanels(mergePanels(data.panels));
         }
       });
   }, [userId]);
@@ -60,7 +65,7 @@ export default function Dashboard() {
   const savePanels = (next: PanelConfig[]) => {
     setPanels(next);
     if (!userId || userId === 'guest') return;
-    supabase
+    supabase()
       .from('dashboard_panels')
       .upsert({ user_id: userId, panels: next, updated_at: new Date().toISOString() })
       .then(() => {});
@@ -80,10 +85,10 @@ export default function Dashboard() {
   const isVisible = (id: string) => panels.find(p => p.id === id)?.enabled ?? true;
 
   useEffect(() => {
-    supabase
+    supabase()
       .from('implantacao_items')
       .select('done')
-      .then(({ data }) => {
+      .then(({ data }: { data: { done: boolean }[] | null }) => {
         if (data) {
           setImplantacaoProgress({ total: data.length, done: data.filter(i => i.done).length });
         }
