@@ -120,39 +120,24 @@ export default function DrePage() {
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const [
-        { data: schoolsData },
-        { data: allStudents },
-        { data: allOcc },
-        { data: allPraises },
-        { data: allAccidents },
-      ] = await Promise.all([
-        supabase.from('schools').select('id, name').order('name'),
-        supabase.from('students').select('school_id').eq('archived', false),
-        supabase.from('occurrences').select('school_id, severity'),
-        supabase.from('praises').select('school_id'),
-        supabase.from('accidents').select('school_id'),
-      ]);
+      const { data, error } = await supabase.rpc('get_dre_school_stats');
+      if (error) throw error;
 
-      const list = (schoolsData ?? []).filter((s: any) => s.id !== 'DRE');
-
-      const statsArr: SchoolStats[] = list.map((school: { id: string; name: string }) => {
-        const sid = school.id;
-        const occ = (allOcc ?? []).filter((o: any) => o.school_id === sid);
-        const partial: Omit<SchoolStats, 'disciplineIndex' | 'gravityRate' | 'praiseRatio' | 'riskLevel'> = {
-          id: sid,
-          name: school.name,
-          students:    (allStudents  ?? []).filter((s: any) => s.school_id === sid).length,
-          occurrences: occ.length,
-          praises:     (allPraises   ?? []).filter((p: any) => p.school_id === sid).length,
-          accidents:   (allAccidents ?? []).filter((a: any) => a.school_id === sid).length,
-          leves:  occ.filter((o: any) => o.severity === 'Leve').length,
-          medias: occ.filter((o: any) => o.severity === 'Media').length,
-          graves: occ.filter((o: any) => o.severity === 'Grave').length,
+      const statsArr: SchoolStats[] = (data ?? []).map((row: any) => {
+        const partial = {
+          id:          row.school_id,
+          name:        row.school_name,
+          students:    Number(row.students)    || 0,
+          occurrences: Number(row.occurrences) || 0,
+          leves:       Number(row.leves)       || 0,
+          medias:      Number(row.medias)      || 0,
+          graves:      Number(row.graves)      || 0,
+          praises:     Number(row.praises)     || 0,
+          accidents:   Number(row.accidents)   || 0,
         };
         const disciplineIndex = calcDisciplineIndex(partial as SchoolStats);
-        const gravityRate = occ.length > 0 ? Math.round((partial.graves / occ.length) * 100) : 0;
-        const praiseRatio = partial.students > 0 ? Math.round((partial.praises / partial.students) * 100) : 0;
+        const gravityRate     = partial.occurrences > 0 ? Math.round((partial.graves / partial.occurrences) * 100) : 0;
+        const praiseRatio     = partial.students    > 0 ? Math.round((partial.praises / partial.students)    * 100) : 0;
         const full = { ...partial, disciplineIndex, gravityRate, praiseRatio, riskLevel: 'low' as const };
         return { ...full, riskLevel: calcRisk(full) };
       });
