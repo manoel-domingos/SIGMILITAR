@@ -312,6 +312,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           rightControls={rightControls}
           openMobileMenu={() => setIsMobileMenuOpen(true)}
           onOpenContextModal={() => setShowContextModal(true)}
+          schools={schools}
         >
           {children}
         </TopbarLayout>
@@ -535,12 +536,14 @@ function TopbarLayout({
   openMobileMenu,
   children,
   onOpenContextModal,
+  schools,
 }: {
   pathname: string;
   rightControls: React.ReactNode;
   openMobileMenu: () => void;
   children: React.ReactNode;
   onOpenContextModal?: () => void;
+  schools: { id: string; name: string }[];
 }) {
   const currentInfo = findGroupForPath(pathname);
   const { currentUserRole, activeSchoolContext } = useAppContext();
