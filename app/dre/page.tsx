@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactDOM from 'react-dom';
 import { useAppContext } from '@/lib/store';
 import { supabase as supabaseClient } from '@/lib/supabase';
 import {
@@ -10,7 +11,7 @@ import {
   TrendingDown, Minus, Shield, Award, Zap, AlertCircle,
   ChevronRight, ChevronDown, BarChart3, LayoutDashboard, GripVertical,
   ToggleLeft, ToggleRight, X, CheckCircle2, Trophy, FileWarning,
-  Moon, Sun,
+  Moon, Sun, LogOut, Settings, KeyRound,
 } from 'lucide-react';
 
 const supabase = supabaseClient!;
@@ -109,7 +110,7 @@ function DisciplineRing({ value }: { value: number }) {
 
 export default function DrePage() {
   const router = useRouter();
-  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools } = useAppContext();
+  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, setMockUser } = useAppContext();
 
   // Redirect para /dre ao entrar (admin_global já está cá, outros vão para /)
   useEffect(() => {
@@ -123,6 +124,34 @@ export default function DrePage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  // Perfil dropdown
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileMenuPos, setProfileMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const el = profileTriggerRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setProfileMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
+    }
+    const close = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node) &&
+          profileTriggerRef.current && !profileTriggerRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [profileOpen]);
+
+  const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Gestor';
+  const userInitials = userName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase();
 
   // Dark mode — mesmo padrão do AppShell
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -382,6 +411,60 @@ export default function DrePage() {
             <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} />
             <span className="hidden sm:inline">Atualizar</span>
           </button>
+
+          {/* Botão perfil — mesmo estilo do AppShell */}
+          <button
+            ref={profileTriggerRef}
+            onClick={() => setProfileOpen(o => !o)}
+            className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 transition shadow-sm ml-1"
+          >
+            {user?.user_metadata?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.user_metadata.avatar_url} alt="Avatar" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs font-bold flex items-center justify-center">
+                {userInitials}
+              </span>
+            )}
+            <div className="text-left hidden sm:block leading-tight pr-1">
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{userName}</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">admin global</p>
+            </div>
+          </button>
+
+          {/* Dropdown do perfil via portal */}
+          {mounted && profileOpen && profileMenuPos && ReactDOM.createPortal(
+            <div
+              ref={profileMenuRef}
+              className="fixed w-64 glass-dropdown overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200"
+              style={{ top: profileMenuPos.top, right: profileMenuPos.right, zIndex: 99999 }}
+            >
+              <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
+                <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{userName}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user?.email || 'admin@dre.local'}</p>
+              </div>
+              <div className="py-2">
+                <button
+                  onClick={() => { router.push('/configuracoes'); setProfileOpen(false); }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
+                >
+                  <Settings className="w-4 h-4" /> Configuracao do Sistema
+                </button>
+                <button
+                  onClick={() => { logout(); setProfileOpen(false); }}
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400 flex items-center gap-3"
+                >
+                  <LogOut className="w-4 h-4" /> Sair
+                </button>
+              </div>
+              <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 italic text-center">
+                  Versao: {new Date().toLocaleDateString('pt-BR').replace(/\//g, '.')}
+                </p>
+              </div>
+            </div>,
+            document.body
+          )}
         </div>
       </div>
 
