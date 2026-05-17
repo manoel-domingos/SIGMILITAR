@@ -382,14 +382,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      await fetchData();
+      // Resolve o school_id do usuário ANTES de buscar dados para garantir filtro correto
+      let bootSchoolId = '';
+      if (!usingMockSession) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.email) {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('school_id, role')
+              .eq('email', session.user.email.toLowerCase())
+              .single();
+            if (profile?.school_id && profile.school_id !== 'DRE') {
+              bootSchoolId = profile.school_id;
+              // Sincroniza o ref imediatamente para fetchData e refreshData usarem
+              activeSchoolContextRef.current = bootSchoolId;
+              setActiveSchoolContext(bootSchoolId);
+              isFirstSchoolContextSet.current = false;
+            }
+          }
+        } catch (e) {
+          // sem perfil ainda — continua sem filtro (admin_global)
+        }
+      }
+
+      await fetchData(bootSchoolId || undefined);
 
       // Real-time Subscriptions
       const tables = ['students', 'occurrences', 'accidents', 'praises', 'summons', 'conduct_terms', 'audit_logs', 'rules'];
       const channel = supabase.channel('schema-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public' }, () => {
           console.log('Change detected, refreshing data...');
-          fetchData();
+          fetchData(activeSchoolContextRef.current || undefined);
         })
         .subscribe();
 
