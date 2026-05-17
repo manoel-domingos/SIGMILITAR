@@ -186,12 +186,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [contextSchools, setContextSchools] = useState<{id: string; name: string}[]>([]);
 
   const openContextModal = React.useCallback(() => {
-    if (!supabase) return;
-    supabase.from('schools').select('id, name').neq('id', 'DRE').order('name')
-      .then(({ data }: { data: {id: string; name: string}[] | null }) => {
-        setContextSchools(data ?? []);
-        setShowContextModal(true);
-      });
+    // Abre o modal imediatamente com os dados já disponíveis
+    setShowContextModal(true);
+    // Busca escolas em background para garantir lista atualizada
+    if (supabase) {
+      supabase.from('schools').select('id, name').neq('id', 'DRE').order('name')
+        .then(({ data }: { data: {id: string; name: string}[] | null }) => {
+          if (data && data.length > 0) setContextSchools(data);
+        })
+        .catch(() => {});
+    }
   }, []);
 
   // Mantido por compatibilidade — não faz mais nada
@@ -422,6 +426,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       await fetchData(bootSchoolId || undefined);
+
+      // Pré-carrega lista de escolas para o modal de seleção
+      supabase.from('schools').select('id, name').neq('id', 'DRE').order('name')
+        .then(({ data }: { data: {id: string; name: string}[] | null }) => {
+          if (data && data.length > 0) setContextSchools(data);
+        })
+        .catch(() => {});
 
       // Real-time Subscriptions
       const tables = ['students', 'occurrences', 'accidents', 'praises', 'summons', 'conduct_terms', 'audit_logs', 'rules'];
