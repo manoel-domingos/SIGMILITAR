@@ -83,10 +83,7 @@ export default function DreLogin() {
   if (isAuthRestored && user && currentUserRole === 'admin_global') return null;
 
   return (
-    <div
-      className="min-h-[100dvh] w-full flex flex-col items-center justify-center relative overflow-hidden"
-      style={{ backgroundColor: '#2d3184' }}
-    >
+    <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 relative overflow-hidden">
       {/* Luz decorativa sutil */}
       <div className="absolute top-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -95,7 +92,7 @@ export default function DreLogin() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-5 sm:mb-6">
-          <div className="w-[6.5rem] h-[6.5rem] sm:w-[9rem] sm:h-[9rem] flex items-center justify-center mb-3">
+          <div className="w-[8.5rem] h-[8.5rem] sm:w-[11.5rem] sm:h-[11.5rem] flex items-center justify-center mb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo_dre_color.svg"
