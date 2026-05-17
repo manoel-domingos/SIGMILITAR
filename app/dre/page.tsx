@@ -141,22 +141,64 @@ export default function DrePage() {
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_dre_school_stats');
-      if (error) throw error;
+      // 5 queries leves e independentes em paralelo — sem JOIN pesado ou RPC
+      const [
+        { data: schoolsData },
+        { data: allStudents },
+        { data: allOcc },
+        { data: allPraises },
+        { data: allAccidents },
+        { data: allImpl },
+        { data: allRules },
+      ] = await Promise.all([
+        supabase.from('schools').select('id, name').neq('id', 'DRE').order('name'),
+        supabase.from('students').select('school_id').eq('archived', false),
+        supabase.from('occurrences').select('school_id, rule_code'),
+        supabase.from('praises').select('school_id'),
+        supabase.from('accidents').select('school_id'),
+        supabase.from('implantacao_items').select('school_id, done'),
+        supabase.from('rules').select('code, severity, school_id'),
+      ]);
 
-      const statsArr: SchoolStats[] = (data ?? []).map((row: any) => {
+      const schools = schoolsData ?? [];
+      const allOccRows = allOcc ?? [];
+      const allRulesRows = allRules ?? [];
+
+      // Mapa code -> severity para lookup rápido
+      const ruleSeverityMap: Record<string, string> = {};
+      for (const r of allRulesRows) {
+        ruleSeverityMap[String(r.code)] = r.severity ?? 'Leve';
+      }
+
+      // Classifica gravidade de uma ocorrência pelo pior rule_code
+      function occSeverity(ruleCode: any): string {
+        const codes: string[] = Array.isArray(ruleCode) ? ruleCode.map(String) : [];
+        const sevs = codes.map(c => ruleSeverityMap[c] ?? 'Leve');
+        if (sevs.includes('Grave')) return 'Grave';
+        if (sevs.includes('Media')) return 'Media';
+        return 'Leve';
+      }
+
+      const statsArr: SchoolStats[] = schools.map((school: { id: string; name: string }) => {
+        const sid = school.id;
+        const occ = allOccRows.filter((o: any) => o.school_id === sid);
+        const leves  = occ.filter((o: any) => occSeverity(o.rule_code) === 'Leve').length;
+        const medias = occ.filter((o: any) => occSeverity(o.rule_code) === 'Media').length;
+        const graves = occ.filter((o: any) => occSeverity(o.rule_code) === 'Grave').length;
+
+        const implRows = (allImpl ?? []).filter((i: any) => i.school_id === sid);
         const partial = {
-          id:               row.school_id,
-          name:             row.school_name,
-          students:         Number(row.students)          || 0,
-          occurrences:      Number(row.occurrences)       || 0,
-          leves:            Number(row.leves)             || 0,
-          medias:           Number(row.medias)            || 0,
-          graves:           Number(row.graves)            || 0,
-          praises:          Number(row.praises)           || 0,
-          accidents:        Number(row.accidents)         || 0,
-          implantacaoTotal: Number(row.implantacao_total) || 0,
-          implantacaoDone:  Number(row.implantacao_done)  || 0,
+          id:               sid,
+          name:             school.name,
+          students:         (allStudents  ?? []).filter((s: any) => s.school_id === sid).length,
+          occurrences:      occ.length,
+          leves,
+          medias,
+          graves,
+          praises:          (allPraises   ?? []).filter((p: any) => p.school_id === sid).length,
+          accidents:        (allAccidents ?? []).filter((a: any) => a.school_id === sid).length,
+          implantacaoTotal: implRows.length,
+          implantacaoDone:  implRows.filter((i: any) => i.done === true).length,
         };
         const disciplineIndex = calcDisciplineIndex(partial as SchoolStats);
         const gravityRate     = partial.occurrences > 0 ? Math.round((partial.graves / partial.occurrences) * 100) : 0;
@@ -167,6 +209,8 @@ export default function DrePage() {
 
       setStats(statsArr);
       setLastUpdated(new Date());
+    } catch (err) {
+      console.error('[DRE] load error:', err);
     } finally {
       setLoading(false);
     }
