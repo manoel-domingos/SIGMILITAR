@@ -254,7 +254,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           console.error("Failed to get supabase session", e);
         }
 
-        supabase.auth.onAuthStateChange((_event, session) => {
+        supabase.auth.onAuthStateChange((_event: string, session: any) => {
           setUser(session?.user || null);
         });
       }
@@ -311,7 +311,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           
           if (rulesData) {
             // Normaliza dados legados do banco: corrige medida e pontos por severidade
-            const normalized = rulesData.map(r => {
+            const normalized = rulesData.map((r: any) => {
               const sev: string = r.severity ?? '';
               let measure = r.measure ?? '';
               let points = typeof r.points === 'number' ? r.points : parseFloat(r.points);
@@ -334,11 +334,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setRules(normalized);
 
             // Persiste correções de volta ao Supabase (somente linhas que mudaram)
-            const toFix = normalized.filter((r, i) =>
+            const toFix = normalized.filter((r: any, i: number) =>
               r.measure !== rulesData[i].measure || r.points !== rulesData[i].points
             );
             if (toFix.length > 0 && supabase) {
-              toFix.forEach(r => {
+              toFix.forEach((r: any) => {
                 supabase!.from('rules').update({ measure: r.measure, points: r.points }).eq('code', r.code);
               });
             }
@@ -399,7 +399,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
               // Sincroniza o ref imediatamente para fetchData e refreshData usarem
               activeSchoolContextRef.current = bootSchoolId;
               setActiveSchoolContext(bootSchoolId);
-              isFirstSchoolContextSet.current = false;
             }
           }
         } catch (e) {
@@ -618,7 +617,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const studentsToUpsert = newStudents.map(ns => {
           // Try to find a match by exact name and class if matched in DB
           if (existingStudents) {
-             const match = existingStudents.find(es => 
+             const match = existingStudents.find((es: any) => 
                es.name.toLowerCase().trim() === ns.name.toLowerCase().trim() && 
                es.class.toLowerCase().trim() === ns.class.toLowerCase().trim()
              );

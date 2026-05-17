@@ -111,7 +111,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Carrega lista de escolas para todos os usuários (necessário para o título dinâmico)
   useEffect(() => {
     if (!user) return;
-    supabase?.from('schools').select('id, name').neq('id', 'DRE').order('name').then(({ data }) => {
+    supabase?.from('schools').select('id, name').neq('id', 'DRE').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
       if (data) setSchools(data);
     });
   }, [user]);
@@ -119,7 +119,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Registra o callback para abrir o modal a partir de qualquer página
   useEffect(() => {
     setOpenContextModal(() => {
-      supabase?.from('schools').select('id, name').order('name').then(({ data }) => {
+      supabase?.from('schools').select('id, name').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
         setSchools((data ?? []).filter((s: any) => s.id !== 'DRE'));
         setShowContextModal(true);
       });

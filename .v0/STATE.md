@@ -4,8 +4,8 @@
 
 ## Última atualização
 
-**Data:** 2026-05-16  
-**Sessão:** Arquitetura multi-tenant — schools, school_id, RLS  
+**Data:** 2026-05-17  
+**Sessão:** Correções de build — erros de tipo implícito any e referências obsoletas  
 **Operador:** Manoel Domingos
 
 ## Foco atual
