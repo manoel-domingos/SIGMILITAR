@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase as supabaseClient } from '@/lib/supabase';
 import {
-  Building2, Users, AlertTriangle, Star, TrendingUp,
-  ArrowRight, RefreshCw, ShieldCheck, Activity,
+  Building2, Users, AlertTriangle, Star,
+  ArrowRight, RefreshCw, ShieldCheck, Activity, SwitchCamera,
 } from 'lucide-react';
 
 const supabase = supabaseClient!;
@@ -48,11 +48,12 @@ function KPICard({ label, value, icon, color, sub }: KPICardProps) {
 
 export default function DrePage() {
   const router = useRouter();
-  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, students, occurrences, praises, accidents } = useAppContext();
+  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal } = useAppContext();
 
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const [stats, setStats] = useState<SchoolStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Guard — só DRE/admin_global acessa
   useEffect(() => {
@@ -61,50 +62,49 @@ export default function DrePage() {
     }
   }, [currentUserRole, currentUserSchoolId, router]);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const { data: schoolsData } = await supabase.from('schools').select('id, name').order('name');
-        const list = (schoolsData ?? []).filter((s: any) => s.id !== 'DRE');
-        setSchools(list);
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: schoolsData } = await supabase.from('schools').select('id, name').order('name');
+      const list = (schoolsData ?? []).filter((s: any) => s.id !== 'DRE');
+      setSchools(list);
 
-        // Para cada escola, busca contagens
-        const statsArr: SchoolStats[] = await Promise.all(
-          list.map(async (school: { id: string; name: string }) => {
-            const [
-              { count: stCount },
-              { data: occData },
-              { count: prCount },
-              { count: acCount },
-            ] = await Promise.all([
-              supabase.from('students').select('*', { count: 'exact', head: true }).eq('school_id', school.id).eq('archived', false),
-              supabase.from('occurrences').select('severity').eq('school_id', school.id),
-              supabase.from('praises').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
-              supabase.from('accidents').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
-            ]);
+      const statsArr: SchoolStats[] = await Promise.all(
+        list.map(async (school: { id: string; name: string }) => {
+          const [
+            { count: stCount },
+            { data: occData },
+            { count: prCount },
+            { count: acCount },
+          ] = await Promise.all([
+            supabase.from('students').select('*', { count: 'exact', head: true }).eq('school_id', school.id).eq('archived', false),
+            supabase.from('occurrences').select('severity').eq('school_id', school.id),
+            supabase.from('praises').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
+            supabase.from('accidents').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
+          ]);
 
-            const occ = occData ?? [];
-            return {
-              id: school.id,
-              name: school.name,
-              students: stCount ?? 0,
-              occurrences: occ.length,
-              praises: prCount ?? 0,
-              accidents: acCount ?? 0,
-              leves:  occ.filter((o: any) => o.severity === 'Leve').length,
-              medias: occ.filter((o: any) => o.severity === 'Media').length,
-              graves: occ.filter((o: any) => o.severity === 'Grave').length,
-            };
-          })
-        );
-        setStats(statsArr);
-      } finally {
-        setLoading(false);
-      }
+          const occ = occData ?? [];
+          return {
+            id: school.id,
+            name: school.name,
+            students: stCount ?? 0,
+            occurrences: occ.length,
+            praises: prCount ?? 0,
+            accidents: acCount ?? 0,
+            leves:  occ.filter((o: any) => o.severity === 'Leve').length,
+            medias: occ.filter((o: any) => o.severity === 'Media').length,
+            graves: occ.filter((o: any) => o.severity === 'Grave').length,
+          };
+        })
+      );
+      setStats(statsArr);
+      setLastUpdated(new Date());
+    } finally {
+      setLoading(false);
     }
-    load();
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   // KPIs consolidados
   const totalStudents    = stats.reduce((s, x) => s + x.students, 0);
@@ -125,14 +125,39 @@ export default function DrePage() {
 
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+        <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
           <Building2 className="w-6 h-6 text-white" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Painel DRE</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Visao consolidada de todas as escolas da rede</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Visao consolidada de todas as escolas da rede
+            {lastUpdated && (
+              <span className="ml-2 text-slate-400 dark:text-slate-500">
+                · atualizado {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </p>
         </div>
-        {loading && <RefreshCw className="w-5 h-5 text-blue-500 animate-spin ml-auto" />}
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => openContextModal()}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            title="Trocar escola"
+          >
+            <SwitchCamera className="w-4 h-4" />
+            <span className="hidden sm:inline">Trocar Escola</span>
+          </button>
+          <button
+            onClick={() => load()}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+            title="Recarregar dados"
+          >
+            <RefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </button>
+        </div>
       </div>
 
       {/* KPIs consolidados */}

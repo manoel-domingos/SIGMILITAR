@@ -76,7 +76,7 @@ type LayoutMode = 'sidebar' | 'topbar';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, setOpenContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -107,6 +107,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setShowContextModal(false);
     if (schoolId === 'DRE') router.push('/dre');
   };
+
+  // Registra o callback para abrir o modal a partir de qualquer página
+  useEffect(() => {
+    setOpenContextModal(() => {
+      supabase?.from('schools').select('id, name').order('name').then(({ data }) => {
+        setSchools((data ?? []).filter((s: any) => s.id !== 'DRE'));
+        setShowContextModal(true);
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Popup alerta xerife (sexta e segunda)
   const [showXerifeAlert, setShowXerifeAlert] = useState(false);

@@ -26,6 +26,8 @@ interface AppState {
   currentUserSchoolId: string | null;
   activeSchoolContext: string;
   setActiveSchoolContext: (id: string) => void;
+  openContextModal: () => void;
+  setOpenContextModal: (fn: () => void) => void;
   isAuthRestored: boolean;
   isDebugMode: boolean;
   geminiApiKey: string;
@@ -151,6 +153,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Contexto de escola ativa — admin_global pode alternar entre escolas
   const [activeSchoolContext, setActiveSchoolContext] = useState<string>('joaobatista');
+  // Callback injetado pelo AppShell para abrir o modal de seleção de contexto
+  const [openContextModal, setOpenContextModalState] = useState<() => void>(() => () => {});
+  const setOpenContextModal = (fn: () => void) => setOpenContextModalState(() => fn);
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(() => {
@@ -1449,7 +1454,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       students, occurrences, accidents, praises, rules, summons, conductTerms, auditLogs, staffMembers, appUsers, isSupabaseConnected, isSyncing,
-      user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, isAuthRestored, isDebugMode, setIsDebugMode,
+      user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
       geminiApiKey, setGeminiApiKey, groqApiKey, setGroqApiKey,
       setGuestMode, setMockUser, logout, uploadFile,
       logAction, refreshData,
