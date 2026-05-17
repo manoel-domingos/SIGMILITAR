@@ -115,7 +115,7 @@ export default function DreLogin() {
       <img
         src="/logo_dre_color.svg"
         alt=""
-        className="absolute -right-32 md:-right-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain"
+        className="absolute -right-8 md:right-0 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain"
       />
       <div className="absolute top-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -124,7 +124,7 @@ export default function DreLogin() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-5 sm:mb-6">
-          <div className="w-[8.5rem] h-[8.5rem] sm:w-[11.5rem] sm:h-[11.5rem] flex items-center justify-center mb-3">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo_dre_color.svg"
