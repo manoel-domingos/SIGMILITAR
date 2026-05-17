@@ -93,7 +93,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const key = 'dre_context_chosen_' + new Date().toDateString();
     if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
       // Carrega escolas disponíveis
-      supabase?.from('schools').select('id, name').order('name').then(({ data }) => {
+      supabase?.from('schools').select('id, name').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
         setSchools((data ?? []).filter((s: any) => s.id !== 'DRE'));
         setShowContextModal(true);
       });
