@@ -5,8 +5,8 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const pathname = request.nextUrl.pathname;
 
-  // Detecta subdomínio DRE: dre.*.vercel.app ou dre.*.com.br etc.
-  const isDreDomain = host.startsWith('dre.');
+  // Detecta domínio DRE: subdomínio dre.* ou domínio dedicado dretga.vercel.app
+  const isDreDomain = host.startsWith('dre.') || host === 'dretga.vercel.app';
 
   if (isDreDomain) {
     // Raiz "/" → login DRE

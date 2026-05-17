@@ -1282,7 +1282,7 @@ function RegistroDisciplinarContent() {
     let isEscalated = sameRuleCount > 1;
     let measure = rule?.measure || '';
     if (isEscalated) {
-         measure = rule?.severity === 'Leve' ? 'Advert��ncia Escrita (Agravada)' : 'Suspensão (Agravada)';
+         measure = rule?.severity === 'Leve' ? 'Advert����ncia Escrita (Agravada)' : 'Suspensão (Agravada)';
     } else if (rule?.severity === 'Leve' && studentOccurrences.filter(oc => rules.find(r => r.code === oc.ruleCode)?.severity === 'Leve').length >= 3) {
          isEscalated = true;
          measure = 'Advertência Escrita (Agravada por acúmulo)';
@@ -2275,7 +2275,7 @@ function RegistroDisciplinarContent() {
       )}
 
       {isStudentModalOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsStudentModalOpen(false); }}>
           <div className="glass-modal max-w-md w-full flex flex-col animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between p-5 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-800">
@@ -2420,7 +2420,7 @@ function RegistroDisciplinarContent() {
 
       {/* Modal Quick Add Staff */}
       {isStaffModalOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsStaffModalOpen(false); }}>
           <div className="glass-modal max-w-sm w-full p-5 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-800">Cadastrar Membro da Equipe</h3>
@@ -2467,7 +2467,7 @@ function RegistroDisciplinarContent() {
 
       {/* Modal Visualização de Ocorrência */}
       {_vo && (
-          <div className="fixed inset-0 glass-overlay z-[9990] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="fixed inset-0 glass-overlay z-[9990] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setViewOccurrence(null); }}>
             <div className="glass-modal max-w-md w-full max-h-[85vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
               {/* Header compacto */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
@@ -2677,7 +2677,7 @@ function RegistroDisciplinarContent() {
 
       {/* Modal Add Quick Guardian */}
       {isAddGuardianModalOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9992] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 glass-overlay z-[9992] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsAddGuardianModalOpen(false); }}>
           <div className="glass-modal max-w-sm w-full p-5 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-800">Adicionar Responsável</h3>
@@ -2719,7 +2719,7 @@ function RegistroDisciplinarContent() {
       )}
       {/* Modal de alerta pós-salvar */}
       {postSaveAlert && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150" onMouseDown={(e) => { if (e.target === e.currentTarget) setPostSaveAlert(null); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
             {/* Header */}
             <div className={'px-5 py-4 ' + (postSaveAlert.isViolence ? 'bg-red-600' : 'bg-blue-600')}>
