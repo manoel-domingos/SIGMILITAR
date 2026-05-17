@@ -91,7 +91,7 @@ export default function DreLogin() {
       <div className="absolute top-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Card principal */}
-      <div className="w-full max-w-md p-6 sm:p-7 bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl relative z-10 mx-4 mb-6">
+      <div className="w-full max-w-md p-6 sm:p-7 bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl relative z-10 mx-4">
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-5 sm:mb-6">
@@ -193,16 +193,6 @@ export default function DreLogin() {
         </div>
       </div>
 
-      {/* Rodapé institucional — alinhado à direita, canto inferior */}
-      <div className="w-full relative z-10 overflow-hidden" style={{ maxHeight: '120px' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/base_dre.png"
-          alt="Diretoria Regional de Educação — Tangará da Serra"
-          className="w-full h-full object-cover object-right opacity-95 pointer-events-none select-none"
-          style={{ maxHeight: '120px' }}
-        />
-      </div>
     </div>
   );
 }
