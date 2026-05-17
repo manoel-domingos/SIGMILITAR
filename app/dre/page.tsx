@@ -817,8 +817,8 @@ export default function DrePage() {
 
     {/* Modal de seleção de escola — renderizado direto na DRE pois não usa AppShell */}
     {showContextModal && (
-      <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
+      <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onClick={() => setShowContextModal(false)}>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5" onClick={e => e.stopPropagation()}>
           <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto">
             <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
