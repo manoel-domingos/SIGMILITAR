@@ -10,6 +10,7 @@ import {
   TrendingDown, Minus, Shield, Award, Zap, AlertCircle,
   ChevronRight, ChevronDown, BarChart3, LayoutDashboard, GripVertical,
   ToggleLeft, ToggleRight, X, CheckCircle2, Trophy, FileWarning,
+  Moon, Sun,
 } from 'lucide-react';
 
 const supabase = supabaseClient!;
@@ -122,6 +123,28 @@ export default function DrePage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  // Dark mode — mesmo padrão do AppShell
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (stored === 'dark' || (!stored && prefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+  const toggleTheme = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDarkMode(true);
+    }
+  };
 
   // Expansão de KPIs por escola
   const [expandedSchool, setExpandedSchool] = useState<string | null>(null);
@@ -341,6 +364,14 @@ export default function DrePage() {
           >
             <LayoutDashboard className="w-4 h-4" />
             <span className="hidden sm:inline">Editar Painel</span>
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:bg-slate-100 dark:active:bg-slate-700 transition shadow-sm"
+            title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
+            aria-label={isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <button
             onClick={() => load()}
