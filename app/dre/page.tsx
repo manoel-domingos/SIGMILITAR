@@ -65,38 +65,40 @@ export default function DrePage() {
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const { data: schoolsData } = await supabase.from('schools').select('id, name').order('name');
+      // Busca escolas e todos os dados em paralelo
+      const [
+        { data: schoolsData },
+        { data: allStudents },
+        { data: allOcc },
+        { data: allPraises },
+        { data: allAccidents },
+      ] = await Promise.all([
+        supabase.from('schools').select('id, name').order('name'),
+        supabase.from('students').select('school_id').eq('archived', false),
+        supabase.from('occurrences').select('school_id, severity'),
+        supabase.from('praises').select('school_id'),
+        supabase.from('accidents').select('school_id'),
+      ]);
+
       const list = (schoolsData ?? []).filter((s: any) => s.id !== 'DRE');
       setSchools(list);
 
-      const statsArr: SchoolStats[] = await Promise.all(
-        list.map(async (school: { id: string; name: string }) => {
-          const [
-            { count: stCount },
-            { data: occData },
-            { count: prCount },
-            { count: acCount },
-          ] = await Promise.all([
-            supabase.from('students').select('*', { count: 'exact', head: true }).eq('school_id', school.id).eq('archived', false),
-            supabase.from('occurrences').select('severity').eq('school_id', school.id),
-            supabase.from('praises').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
-            supabase.from('accidents').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
-          ]);
+      const statsArr: SchoolStats[] = list.map((school: { id: string; name: string }) => {
+        const sid = school.id;
+        const occ = (allOcc ?? []).filter((o: any) => o.school_id === sid);
+        return {
+          id: sid,
+          name: school.name,
+          students:    (allStudents  ?? []).filter((s: any) => s.school_id === sid).length,
+          occurrences: occ.length,
+          praises:     (allPraises   ?? []).filter((p: any) => p.school_id === sid).length,
+          accidents:   (allAccidents ?? []).filter((a: any) => a.school_id === sid).length,
+          leves:  occ.filter((o: any) => o.severity === 'Leve').length,
+          medias: occ.filter((o: any) => o.severity === 'Media').length,
+          graves: occ.filter((o: any) => o.severity === 'Grave').length,
+        };
+      });
 
-          const occ = occData ?? [];
-          return {
-            id: school.id,
-            name: school.name,
-            students: stCount ?? 0,
-            occurrences: occ.length,
-            praises: prCount ?? 0,
-            accidents: acCount ?? 0,
-            leves:  occ.filter((o: any) => o.severity === 'Leve').length,
-            medias: occ.filter((o: any) => o.severity === 'Media').length,
-            graves: occ.filter((o: any) => o.severity === 'Grave').length,
-          };
-        })
-      );
       setStats(statsArr);
       setLastUpdated(new Date());
     } finally {
