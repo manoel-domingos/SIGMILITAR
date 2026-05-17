@@ -363,7 +363,7 @@ export default function DrePage() {
       </div>
 
       {/* ── Header pill — mesmo estilo das escolas ── */}
-      <header className="z-30 px-4 pt-3 pb-2 pointer-events-none sticky top-0" role="banner">
+      <header className="z-30 px-4 pt-3 pb-2 pointer-events-none" role="banner">
         <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-3 px-4 md:px-6 py-1.5 max-w-7xl mx-auto">
 
           {/* Esquerda: logo + título */}
