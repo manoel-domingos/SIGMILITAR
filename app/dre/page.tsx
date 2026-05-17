@@ -7,12 +7,13 @@ import { useAppContext } from '@/lib/store';
 import { supabase as supabaseClient } from '@/lib/supabase';
 import {
   Building2, Users, AlertTriangle, Star, Activity,
-  RefreshCw, ShieldCheck, SwitchCamera, TrendingUp,
-  TrendingDown, Minus, Shield, Award, Zap, AlertCircle,
-  ChevronRight, ChevronDown, BarChart3, LayoutDashboard, GripVertical,
+  RefreshCw, SwitchCamera, TrendingUp, TrendingDown, Minus,
+  Shield, ShieldCheck, Award, Zap, AlertCircle, ChevronRight, ChevronDown,
+  BarChart3, LayoutDashboard, GripVertical,
   ToggleLeft, ToggleRight, X, CheckCircle2, Trophy, FileWarning,
-  Moon, Sun, LogOut, Settings, KeyRound,
+  Moon, Sun, LogOut, Settings,
 } from 'lucide-react';
+import DreDashboard from '@/components/DreDashboard';
 
 const supabase = supabaseClient!;
 
@@ -512,8 +513,19 @@ export default function DrePage() {
         </>
       )}
 
-      {/* ---- KPIs PRIMÁRIOS (linha grande) ---- */}
-      {isVisible('kpis_primarios') && <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* ---- DASHBOARD KPIs ---- */}
+      <DreDashboard
+        stats={stats}
+        loading={loading}
+        isVisible={isVisible}
+        onSchoolClick={(schoolId) => {
+          setActiveSchoolContext(schoolId);
+          router.push('/');
+        }}
+      />
+
+      {/* ---- KPIs PRIMÁRIOS (linha grande) — substituído por DreDashboard acima ---- */}
+      {false && <section className="hidden">
 
         {/* Indice Global de Disciplina — destaque */}
         <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 shadow-lg shadow-blue-500/20 text-white">
@@ -575,8 +587,8 @@ export default function DrePage() {
         </div>
       </section>}
 
-      {/* ---- KPIs SECUNDÁRIOS (indices calculados) ---- */}
-      {isVisible('kpis_secundarios') && <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* ---- KPIs SECUNDÁRIOS — substituído por DreDashboard ---- */}
+      {false && <section className="hidden">
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
@@ -642,8 +654,8 @@ export default function DrePage() {
         </div>
       </section>}
 
-      {/* ---- KPI IMPLANTACAO ---- */}
-      {isVisible('implantacao') && (() => {
+      {/* ---- KPI IMPLANTACAO — substituído por DreDashboard ---- */}
+      {false && (() => {
         const totalImpl = stats.reduce((s, x) => s + x.implantacaoTotal, 0);
         const doneImpl  = stats.reduce((s, x) => s + x.implantacaoDone, 0);
         const pctImpl   = totalImpl > 0 ? Math.round((doneImpl / totalImpl) * 100) : 0;
@@ -684,8 +696,8 @@ export default function DrePage() {
         );
       })()}
 
-      {/* ---- RANKING + CARDS DE ESCOLAS ---- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ display: (!isVisible('ranking') && !isVisible('escolas')) ? 'none' : undefined }}>
+      {/* ---- RANKING + CARDS DE ESCOLAS — substituído por DreDashboard ---- */}
+      {false && <div className="hidden">
 
         {/* Ranking de disciplina */}
         {isVisible('ranking') && <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
@@ -895,7 +907,7 @@ export default function DrePage() {
             })
           )}
         </div>}
-      </div>
+      </div>}
     </div>
 
     {/* Modal de seleção de escola — renderizado direto na DRE pois não usa AppShell */}

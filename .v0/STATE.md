@@ -12,6 +12,11 @@
 
 Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acessa tudo.
 
+## Última ação concluída (2026-05-17)
+- **Dashboard DRE com KPIs atraentes:** Criado `DreDashboard.tsx` (603 linhas) com bento grid moderno — KPIs primários com card herói de índice disciplinar, badges de severidade L/M/G, gráfico de barras comparativo por escola (Recharts), gráfico de pizza de severidade, seção de implantação com `IndexRing`, ranking com medalhas, cards de escola clicáveis com barra stacked de gravidade.
+- **Redirecionamento ao clicar na escola:** `onSchoolClick` passa `setActiveSchoolContext(id)` + `router.push('/')`.
+- **Seções legadas desativadas:** Blocos `kpis_primarios`, `kpis_secundarios`, `implantacao`, `ranking/escolas` substituídos por `{false &&}`.
+
 ## Última ação concluída (2026-05-16)
 - **Multi-tenant (DECISÃO 0006):**
   - Tabela `schools` criada com `joaobatista` e `DRE`
