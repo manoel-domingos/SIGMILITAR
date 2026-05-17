@@ -108,6 +108,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (schoolId === 'DRE') router.push('/dre');
   };
 
+  // Carrega lista de escolas para todos os usuários (necessário para o título dinâmico)
+  useEffect(() => {
+    if (!user) return;
+    supabase?.from('schools').select('id, name').neq('id', 'DRE').order('name').then(({ data }) => {
+      if (data) setSchools(data);
+    });
+  }, [user]);
+
   // Registra o callback para abrir o modal a partir de qualquer página
   useEffect(() => {
     setOpenContextModal(() => {
@@ -558,7 +566,19 @@ function TopbarLayout({
             <div className="hidden sm:block min-w-0">
               <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
                 <span className="font-extrabold">EECM</span>{' '}
-                <span className="text-slate-500 dark:text-slate-400 font-normal">PROF. JOÃO BATISTA</span>
+                <span className="text-slate-500 dark:text-slate-400 font-normal">
+                  {(() => {
+                    const active = schools.find(s => s.id === activeSchoolContext);
+                    if (active) {
+                      // Remove prefixos comuns para exibir só o nome sem "EECM Prof." redundante
+                      return active.name
+                        .replace(/^EECM\s*/i, '')
+                        .replace(/^Prof\.?\s*/i, '')
+                        .toUpperCase();
+                    }
+                    return 'PROF. JOÃO BATISTA';
+                  })()}
+                </span>
               </h1>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-0.5">
                 Disciplina e Monitoramento Escolar
