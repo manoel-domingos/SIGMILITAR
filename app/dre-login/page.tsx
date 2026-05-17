@@ -115,7 +115,7 @@ export default function DreLogin() {
       <img
         src="/logo_dre_color.svg"
         alt=""
-        className="absolute -right-8 md:right-0 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain"
+        className="absolute -right-8 md:right-0 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-30 pointer-events-none object-contain"
       />
       <div className="absolute top-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
