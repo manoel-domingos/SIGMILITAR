@@ -11,7 +11,7 @@ import {
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   ChevronDown,
-  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, ShieldCheck, Building2,
+  GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -1128,36 +1128,8 @@ function ProfileMenu({
                 >
                   <Settings className="w-4 h-4" /> Configuração do Sistema
                 </Link>
-                <Link
-                  href="/configuracoes?tab=status"
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center gap-3"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <ShieldAlert className="w-4 h-4 text-amber-500" /> Status das Integrações
-                </Link>
-                <Link
-                  href="/configuracoes?tab=aria"
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Brain className="w-4 h-4 text-violet-500" /> Assistente ARIA
-                </Link>
-                <Link
-                  href="/configuracoes?tab=profile"
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <UserPlus className="w-4 h-4 text-emerald-500" /> Meu Perfil
-                </Link>
               </>
             )}
-            <Link
-              href="/configuracoes?tab=profile"
-              className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
-              onClick={() => setIsOpen(false)}
-            >
-              <UserPlus className="w-4 h-4 text-emerald-500" /> Meu Perfil
-            </Link>
             <button
               onClick={() => { setShowPasswordModal(true); setIsOpen(false); }}
               className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
