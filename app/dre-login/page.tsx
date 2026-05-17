@@ -68,27 +68,20 @@ export default function DreLogin() {
   if (user && currentUserRole === 'admin_global') return null;
 
   return (
-    <div className="h-[100dvh] w-full flex items-center justify-center bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 relative overflow-hidden">
+    <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 relative overflow-hidden">
 
-      {/* Fundo decorativo — logo DRE como marca d'água */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/logo_dre.png"
-        alt=""
-        className="absolute -right-24 md:-right-16 top-[40%] md:top-[45%] -translate-y-1/2 w-[95vw] md:w-[55vw] max-w-[720px] opacity-10 pointer-events-none object-contain"
-      />
+      {/* Decorativo blur */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Card principal */}
-      <div className="w-full max-w-md p-6 sm:p-7 bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl relative z-10 mx-4">
+      <div className="w-full max-w-md p-6 sm:p-7 bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl relative z-10 mx-4 mb-4">
 
-        {/* Logo e título */}
+        {/* Logo colorida — sem fundo azul pois a logo já tem */}
         <div className="flex flex-col items-center mb-5 sm:mb-6">
-          <div className="w-[6.5rem] h-[6.5rem] sm:w-[9rem] sm:h-[9rem] flex items-center justify-center mb-3 bg-blue-700 rounded-2xl shadow-lg shadow-blue-800/40 p-3">
+          <div className="w-[6.5rem] h-[6.5rem] sm:w-[9rem] sm:h-[9rem] flex items-center justify-center mb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo_dre.png"
+              src="/logo_dre_color.svg"
               alt="Logo DRE"
               className="w-full h-full object-contain"
             />
@@ -173,6 +166,14 @@ export default function DreLogin() {
           </p>
         </div>
       </div>
+
+      {/* Rodapé institucional */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/base_dre.png"
+        alt="Diretoria Regional de Educação — Tangará da Serra"
+        className="w-full max-w-3xl mx-auto opacity-90 relative z-10 pointer-events-none select-none mt-2"
+      />
     </div>
   );
 }
