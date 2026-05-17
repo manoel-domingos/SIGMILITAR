@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase as supabaseClient } from '@/lib/supabase';
@@ -8,8 +8,8 @@ import {
   Building2, Users, AlertTriangle, Star, Activity,
   RefreshCw, ShieldCheck, SwitchCamera, TrendingUp,
   TrendingDown, Minus, Shield, Award, Zap, AlertCircle,
-  ChevronRight, BarChart3, LayoutDashboard, GripVertical,
-  ToggleLeft, ToggleRight, X, CheckCircle2,
+  ChevronRight, ChevronDown, BarChart3, LayoutDashboard, GripVertical,
+  ToggleLeft, ToggleRight, X, CheckCircle2, Trophy, FileWarning,
 } from 'lucide-react';
 
 const supabase = supabaseClient!;
@@ -122,6 +122,53 @@ export default function DrePage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  // Expansão de KPIs por escola
+  const [expandedSchool, setExpandedSchool] = useState<string | null>(null);
+  type SchoolDetail = {
+    topStudents: { name: string; class_name: string; praiseCount: number }[];
+    topInfractions: { student_name: string; class_name: string; severity: string; count: number }[];
+  };
+  const [schoolDetails, setSchoolDetails] = useState<Record<string, SchoolDetail>>({});
+  const [loadingDetail, setLoadingDetail] = useState<string | null>(null);
+
+  const fetchSchoolDetail = useCallback(async (schoolId: string) => {
+    if (schoolDetails[schoolId]) return;
+    setLoadingDetail(schoolId);
+    try {
+      const [{ data: praisesData }, { data: occData }] = await Promise.all([
+        supabase.from('praises').select('student_id, students(name, class_name)').eq('school_id', schoolId).limit(200),
+        supabase.from('occurrences').select('student_id, students(name, class_name)').eq('school_id', schoolId).limit(500),
+      ]);
+      // Top alunos com mais elogios
+      const praiseMap: Record<string, { name: string; class_name: string; praiseCount: number }> = {};
+      for (const p of (praisesData ?? []) as any[]) {
+        const sid = p.student_id;
+        if (!praiseMap[sid]) praiseMap[sid] = { name: p.students?.name ?? '—', class_name: p.students?.class_name ?? '—', praiseCount: 0 };
+        praiseMap[sid].praiseCount++;
+      }
+      const topStudents = Object.values(praiseMap).sort((a, b) => b.praiseCount - a.praiseCount).slice(0, 5);
+      // Top alunos com mais ocorrências (infrações)
+      const infraMap: Record<string, { student_name: string; class_name: string; count: number }> = {};
+      for (const o of (occData ?? []) as any[]) {
+        const sid = o.student_id;
+        if (!infraMap[sid]) infraMap[sid] = { student_name: o.students?.name ?? '—', class_name: o.students?.class_name ?? '—', count: 0 };
+        infraMap[sid].count++;
+      }
+      const topInfractions = Object.values(infraMap).sort((a, b) => b.count - a.count).slice(0, 5);
+      setSchoolDetails(prev => ({ ...prev, [schoolId]: { topStudents, topInfractions } } as Record<string, SchoolDetail>));
+    } finally {
+      setLoadingDetail(null);
+    }
+  }, [schoolDetails]);
+
+  const toggleSchool = useCallback((schoolId: string) => {
+    setExpandedSchool(prev => {
+      if (prev === schoolId) return null;
+      fetchSchoolDetail(schoolId);
+      return schoolId;
+    });
+  }, [fetchSchoolDetail]);
 
   type DREPanel = { id: string; label: string; enabled: boolean };
   const DRE_DEFAULT_PANELS: DREPanel[] = [
@@ -573,79 +620,161 @@ export default function DrePage() {
           ) : (
             stats.map(school => {
               const risk = RISK_META[school.riskLevel];
+              const isExpanded = expandedSchool === school.id;
+              const detail = schoolDetails[school.id];
+              const isLoadingThis = loadingDetail === school.id;
+              const kpis = [
+                { label: 'Alunos',    value: school.students,    color: 'text-slate-700 dark:text-white',          bg: 'bg-slate-50 dark:bg-slate-700/50',        activeBg: 'bg-slate-100 dark:bg-slate-700' },
+                { label: 'Ocorr.',    value: school.occurrences, color: 'text-amber-600 dark:text-amber-400',      bg: 'bg-amber-50/60 dark:bg-amber-500/10',     activeBg: 'bg-amber-100 dark:bg-amber-500/20' },
+                { label: 'Graves',    value: school.graves,      color: 'text-rose-600 dark:text-rose-400',        bg: 'bg-rose-50/60 dark:bg-rose-500/10',       activeBg: 'bg-rose-100 dark:bg-rose-500/20' },
+                { label: 'Elogios',   value: school.praises,     color: 'text-emerald-600 dark:text-emerald-400',  bg: 'bg-emerald-50/60 dark:bg-emerald-500/10', activeBg: 'bg-emerald-100 dark:bg-emerald-500/20' },
+                { label: 'Acidentes', value: school.accidents,   color: 'text-violet-600 dark:text-violet-400',    bg: 'bg-violet-50/60 dark:bg-violet-500/10',   activeBg: 'bg-violet-100 dark:bg-violet-500/20' },
+              ];
               return (
-                <div key={school.id} className={`bg-white dark:bg-slate-800 border rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group ${school.riskLevel === 'critical' ? 'border-rose-300 dark:border-rose-500/40' : school.riskLevel === 'high' ? 'border-orange-200 dark:border-orange-500/30' : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50'}`}>
-
-                  {/* Cabecalho do card */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-                        <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div
+                  key={school.id}
+                  className={`bg-white dark:bg-slate-800 border rounded-2xl shadow-sm transition-all duration-300
+                    ${isExpanded
+                      ? 'border-blue-400 dark:border-blue-500/60 shadow-blue-100 dark:shadow-blue-900/20 shadow-md ring-2 ring-blue-200 dark:ring-blue-500/20'
+                      : school.riskLevel === 'critical' ? 'border-rose-300 dark:border-rose-500/40 hover:shadow-md'
+                      : school.riskLevel === 'high' ? 'border-orange-200 dark:border-orange-500/30 hover:shadow-md'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-md'
+                    }`}
+                >
+                  {/* Cabecalho clicavel */}
+                  <button
+                    onClick={() => toggleSchool(school.id)}
+                    className="w-full p-5 text-left"
+                    aria-expanded={isExpanded}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isExpanded ? 'bg-blue-100 dark:bg-blue-500/20' : 'bg-blue-50 dark:bg-blue-500/10'}`}>
+                          <ShieldCheck className={`w-5 h-5 transition-colors ${isExpanded ? 'text-blue-700 dark:text-blue-300' : 'text-blue-600 dark:text-blue-400'}`} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-slate-800 dark:text-white text-sm">{school.name}</h3>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${risk.dot}`} />
+                            <span className={`text-[10px] font-semibold ${risk.color}`}>Risco {risk.label}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-800 dark:text-white text-sm">{school.name}</h3>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${risk.dot}`} />
-                          <span className={`text-[10px] font-semibold ${risk.color}`}>Risco {risk.label}</span>
+                      <div className="flex items-center gap-2">
+                        <DisciplineRing value={school.disciplineIndex} />
+                        <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${isExpanded ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <DisciplineRing value={school.disciplineIndex} />
+
+                    {/* Grid de KPIs — clicável */}
+                    <div className="grid grid-cols-5 gap-2 mb-3">
+                      {kpis.map(m => (
+                        <div
+                          key={m.label}
+                          className={`text-center rounded-lg py-2 transition-all duration-200 ${isExpanded ? m.activeBg + ' scale-[1.03] shadow-sm' : m.bg}`}
+                        >
+                          <p className={`text-base font-black ${m.color}`}>{m.value}</p>
+                          <p className="text-[9px] text-slate-400 mt-0.5">{m.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Indices calculados */}
+                    <div className="grid grid-cols-2 gap-3 text-xs mt-2">
+                      <div>
+                        <div className="flex justify-between mb-0.5">
+                          <span className="text-slate-500 dark:text-slate-400">Taxa graves</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">{school.gravityRate}%</span>
+                        </div>
+                        <ProgressBar value={school.gravityRate} max={100} color={school.gravityRate > 30 ? 'bg-rose-400' : school.gravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-0.5">
+                          <span className="text-slate-500 dark:text-slate-400">Elogios/100 alunos</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">{school.praiseRatio}</span>
+                        </div>
+                        <ProgressBar value={school.praiseRatio} max={100} color="bg-emerald-400" />
+                      </div>
+                    </div>
+
+                    {/* Barra de distribuicao */}
+                    {school.occurrences > 0 && (
+                      <div className="mt-3">
+                        <p className="text-[9px] text-slate-400 mb-1 uppercase tracking-wide">Distribuicao de ocorrencias</p>
+                        <div className="flex h-2 rounded-full overflow-hidden gap-px">
+                          {school.leves  > 0 && <div className="bg-amber-300 dark:bg-amber-500 rounded-l-full" style={{ width: `${(school.leves/school.occurrences)*100}%` }} />}
+                          {school.medias > 0 && <div className="bg-orange-400 dark:bg-orange-500" style={{ width: `${(school.medias/school.occurrences)*100}%` }} />}
+                          {school.graves > 0 && <div className="bg-rose-500 dark:bg-rose-600 rounded-r-full" style={{ width: `${(school.graves/school.occurrences)*100}%` }} />}
+                        </div>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Painel expandido */}
+                  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className="px-5 pb-5 border-t border-slate-100 dark:border-slate-700/60 pt-4 space-y-5">
+
+                      {isLoadingThis ? (
+                        <div className="flex items-center justify-center py-6 gap-2 text-slate-400 text-sm">
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Carregando detalhes...
+                        </div>
+                      ) : detail ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                          {/* Rankings dos alunos */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5 mb-3">
+                              <Trophy className="w-4 h-4 text-amber-500" />
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Ranking de Elogios</span>
+                            </div>
+                            {detail.topStudents.length === 0 ? (
+                              <p className="text-xs text-slate-400 py-2">Nenhum elogio registrado.</p>
+                            ) : detail.topStudents.map((s, i) => (
+                              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors">
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-slate-300 text-slate-700' : i === 2 ? 'bg-orange-300 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>{i+1}</span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{s.name}</p>
+                                  <p className="text-[10px] text-slate-400">{s.class_name}</p>
+                                </div>
+                                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0">{s.praiseCount}x</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Top infrações */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5 mb-3">
+                              <FileWarning className="w-4 h-4 text-rose-500" />
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Top Infrações</span>
+                            </div>
+                            {detail.topInfractions.length === 0 ? (
+                              <p className="text-xs text-slate-400 py-2">Nenhuma infração registrada.</p>
+                            ) : detail.topInfractions.map((inf, i) => (
+                              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors">
+                                <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-[10px] font-black text-rose-600 dark:text-rose-400 shrink-0">{i+1}</span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{inf.student_name}</p>
+                                  <p className="text-[10px] text-slate-400">{inf.class_name}</p>
+                                </div>
+                                <span className="text-xs font-black text-rose-600 dark:text-rose-400 shrink-0">{inf.count}x</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {/* Botão acessar escola */}
                       <button
-                        onClick={() => { setActiveSchoolContext(school.id); router.push('/'); }}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition opacity-0 group-hover:opacity-100"
+                        onClick={(e) => { e.stopPropagation(); setActiveSchoolContext(school.id); router.push('/'); }}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold transition-all"
                       >
-                        Ver <ChevronRight className="w-3.5 h-3.5" />
+                        Acessar painel da escola <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-
-                  {/* Grid de métricas */}
-                  <div className="grid grid-cols-5 gap-2 mb-3">
-                    {[
-                      { label: 'Alunos',    value: school.students,    color: 'text-slate-700 dark:text-white' },
-                      { label: 'Ocorr.',    value: school.occurrences, color: 'text-amber-600 dark:text-amber-400' },
-                      { label: 'Graves',    value: school.graves,      color: 'text-rose-600 dark:text-rose-400' },
-                      { label: 'Elogios',   value: school.praises,     color: 'text-emerald-600 dark:text-emerald-400' },
-                      { label: 'Acidentes', value: school.accidents,   color: 'text-violet-600 dark:text-violet-400' },
-                    ].map(m => (
-                      <div key={m.label} className="text-center bg-slate-50 dark:bg-slate-700/50 rounded-lg py-2">
-                        <p className={`text-base font-black ${m.color}`}>{m.value}</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">{m.label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Indices calculados */}
-                  <div className="grid grid-cols-2 gap-3 text-xs mt-2">
-                    <div>
-                      <div className="flex justify-between mb-0.5">
-                        <span className="text-slate-500 dark:text-slate-400">Taxa graves</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-200">{school.gravityRate}%</span>
-                      </div>
-                      <ProgressBar value={school.gravityRate} max={100} color={school.gravityRate > 30 ? 'bg-rose-400' : school.gravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-0.5">
-                        <span className="text-slate-500 dark:text-slate-400">Elogios/100 alunos</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-200">{school.praiseRatio}</span>
-                      </div>
-                      <ProgressBar value={school.praiseRatio} max={100} color="bg-emerald-400" />
-                    </div>
-                  </div>
-
-                  {/* Barra de severidade de ocorrências */}
-                  {school.occurrences > 0 && (
-                    <div className="mt-3">
-                      <p className="text-[9px] text-slate-400 mb-1 uppercase tracking-wide">Distribuicao de ocorrencias</p>
-                      <div className="flex h-2 rounded-full overflow-hidden gap-px">
-                        {school.leves  > 0 && <div className="bg-amber-300 dark:bg-amber-500 rounded-l-full" style={{ width: `${(school.leves/school.occurrences)*100}%` }} title={`Leves: ${school.leves}`} />}
-                        {school.medias > 0 && <div className="bg-orange-400 dark:bg-orange-500" style={{ width: `${(school.medias/school.occurrences)*100}%` }} title={`Medias: ${school.medias}`} />}
-                        {school.graves > 0 && <div className="bg-rose-500 dark:bg-rose-600 rounded-r-full" style={{ width: `${(school.graves/school.occurrences)*100}%` }} title={`Graves: ${school.graves}`} />}
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })
