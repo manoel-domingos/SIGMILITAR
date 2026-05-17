@@ -10,7 +10,7 @@ import {
   BarChart, AlertTriangle, Star, CheckSquare, FileBadge,
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
-  PanelsTopLeft, PanelLeft, ChevronDown,
+  ChevronDown,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, Brain, FolderOpen, Rocket, ShieldCheck, Building2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -56,8 +56,6 @@ const MENU_GROUPS: MenuGroup[] = [
       { href: '/implantacao', label: 'Implantação', icon: Rocket },
       { href: '/fechamento', label: 'Fechamento do Ano', icon: Award },
       { href: '/auditoria', label: 'Auditoria de Ações', icon: ShieldAlert },
-      { href: '/configuracoes', label: 'Configurações', icon: Settings },
-      { href: '/status', label: 'Status das Integrações', icon: ShieldAlert },
     ],
   },
 ];
@@ -78,7 +76,7 @@ type LayoutMode = 'sidebar' | 'topbar';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, setOpenContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -109,6 +107,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setShowContextModal(false);
     if (schoolId === 'DRE') router.push('/dre');
   };
+
+  // Registra o callback para abrir o modal a partir de qualquer página
+  useEffect(() => {
+    setOpenContextModal(() => {
+      supabase?.from('schools').select('id, name').order('name').then(({ data }) => {
+        setSchools((data ?? []).filter((s: any) => s.id !== 'DRE'));
+        setShowContextModal(true);
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Popup alerta xerife (sexta e segunda)
   const [showXerifeAlert, setShowXerifeAlert] = useState(false);
@@ -1102,66 +1111,53 @@ function ProfileMenu({
             <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user?.email || 'Sem e-mail'}</p>
           </div>
 
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-2">
-              Aparência do menu
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={layoutMode !== 'topbar' ? toggleLayout : undefined}
-                className={'flex flex-col items-center gap-1 py-2 rounded-lg border transition ' + (layoutMode === 'topbar' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700')}
-              >
-                <PanelsTopLeft className="w-4 h-4" />
-                <span className="text-[11px] font-medium">Horizontal</span>
-              </button>
-              <button
-                onClick={layoutMode !== 'sidebar' ? toggleLayout : undefined}
-                className={'flex flex-col items-center gap-1 py-2 rounded-lg border transition ' + (layoutMode === 'sidebar' ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700')}
-              >
-                <PanelLeft className="w-4 h-4" />
-                <span className="text-[11px] font-medium">Lateral</span>
-              </button>
-            </div>
-          </div>
-
           <div className="py-2">
-            {(currentUserRole === 'GESTOR' || currentUserRole === 'admin_global') && (
-              <Link
-                href="/configuracoes"
-                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
-                onClick={() => setIsOpen(false)}
-              >
-                <Settings className="w-4 h-4" /> Configuração do Sistema
-              </Link>
-            )}
             {currentUserRole === 'admin_global' && (
-              <Link
-                href="/dre"
-                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center gap-3"
-                onClick={() => setIsOpen(false)}
-              >
-                <LayoutDashboard className="w-4 h-4" /> Painel DRE
-              </Link>
+              <>
+                <Link
+                  href="/dre"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <LayoutDashboard className="w-4 h-4" /> Painel DRE
+                </Link>
+                <Link
+                  href="/configuracoes"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Settings className="w-4 h-4" /> Configuração do Sistema
+                </Link>
+                <Link
+                  href="/configuracoes?tab=status"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <ShieldAlert className="w-4 h-4 text-amber-500" /> Status das Integrações
+                </Link>
+                <Link
+                  href="/configuracoes?tab=aria"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Brain className="w-4 h-4 text-violet-500" /> Assistente ARIA
+                </Link>
+                <Link
+                  href="/configuracoes?tab=profile"
+                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <UserPlus className="w-4 h-4 text-emerald-500" /> Meu Perfil
+                </Link>
+              </>
             )}
             <Link
-              href="/status"
-              className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center gap-3"
+              href="/configuracoes?tab=profile"
+              className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
               onClick={() => setIsOpen(false)}
             >
-              <ShieldAlert className="w-4 h-4 text-amber-500" /> Status das Integrações
-            </Link>
-            <button
-              onClick={() => { setIsOpen(false); document.querySelector<HTMLButtonElement>('[aria-label="Abrir assistente ARIA"]')?.click(); }}
-              className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
-            >
-              <Brain className="w-4 h-4 text-violet-500" /> Assistente ARIA
-            </button>
-            <button
-              onClick={() => { setShowProfileModal(true); setIsOpen(false); }}
-              className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
-            >
               <UserPlus className="w-4 h-4 text-emerald-500" /> Meu Perfil
-            </button>
+            </Link>
             <button
               onClick={() => { setShowPasswordModal(true); setIsOpen(false); }}
               className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center gap-3"
