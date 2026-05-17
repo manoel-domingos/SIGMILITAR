@@ -143,13 +143,13 @@ export default function DrePage() {
     try {
       // 5 queries leves e independentes em paralelo — sem JOIN pesado ou RPC
       const [
-        { data: schoolsData },
-        { data: allStudents },
-        { data: allOcc },
-        { data: allPraises },
-        { data: allAccidents },
-        { data: allImpl },
-        { data: allRules },
+        { data: schoolsData, error: schoolsErr },
+        { data: allStudents, error: studentsErr },
+        { data: allOcc, error: occErr },
+        { data: allPraises, error: praisesErr },
+        { data: allAccidents, error: accidentsErr },
+        { data: allImpl, error: implErr },
+        { data: allRules, error: rulesErr },
       ] = await Promise.all([
         supabase.from('schools').select('id, name').neq('id', 'DRE').order('name'),
         supabase.from('students').select('school_id').eq('archived', false),
@@ -159,6 +159,15 @@ export default function DrePage() {
         supabase.from('implantacao_items').select('school_id, done'),
         supabase.from('rules').select('code, severity, school_id'),
       ]);
+
+      // Verificar erros nas queries
+      if (schoolsErr) throw new Error(`schools: ${schoolsErr.message}`);
+      if (studentsErr) throw new Error(`students: ${studentsErr.message}`);
+      if (occErr) throw new Error(`occurrences: ${occErr.message}`);
+      if (praisesErr) throw new Error(`praises: ${praisesErr.message}`);
+      if (accidentsErr) throw new Error(`accidents: ${accidentsErr.message}`);
+      if (implErr) throw new Error(`implantacao_items: ${implErr.message}`);
+      if (rulesErr) throw new Error(`rules: ${rulesErr.message}`);
 
       const schools = schoolsData ?? [];
       const allOccRows = allOcc ?? [];
@@ -211,6 +220,7 @@ export default function DrePage() {
       setLastUpdated(new Date());
     } catch (err) {
       console.error('[DRE] load error:', err);
+      alert(`Erro ao carregar dados: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
@@ -264,10 +274,7 @@ export default function DrePage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              console.log('[v0] Trocar Escola clicked, openContextModal:', typeof openContextModal);
-              openContextModal();
-            }}
+            onClick={() => openContextModal()}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             <SwitchCamera className="w-4 h-4" />
