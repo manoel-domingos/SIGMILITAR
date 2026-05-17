@@ -393,7 +393,7 @@ function RegistroDisciplinarContent() {
       .select('name, role')
       .eq('email', user.email)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data }: { data: { name: string; role: string } | null }) => {
         if (data?.name) {
           setRegisteredBy(buildUserLabel(data.name, data.role));
         } else if (user.email) {
