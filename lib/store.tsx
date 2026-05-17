@@ -155,13 +155,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeSchoolContext, setActiveSchoolContext] = useState<string>('');
   // Ref para acesso sem closure stale dentro de fetchData/refreshData
   const activeSchoolContextRef = React.useRef(activeSchoolContext);
+  const isFirstContextLoad = React.useRef(true);
+  
   useEffect(() => { activeSchoolContextRef.current = activeSchoolContext; }, [activeSchoolContext]);
 
   useEffect(() => {
-    if (!activeSchoolContext && currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+    // Só seta o contexto inicial UMA VEZ quando currentUserSchoolId é resolvido
+    if (isFirstContextLoad.current && currentUserSchoolId && currentUserSchoolId !== 'DRE') {
       setActiveSchoolContext(currentUserSchoolId);
+      isFirstContextLoad.current = false;
     }
-  }, [currentUserSchoolId, activeSchoolContext]);
+  }, [currentUserSchoolId]);
 
   // Recarrega dados filtrados sempre que a escola ativa muda (ex: DRE troca de escola)
   const isFirstSchoolContextSet = React.useRef(true);
