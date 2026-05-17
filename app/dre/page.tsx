@@ -328,7 +328,7 @@ export default function DrePage() {
       {/* ---- HEADER ---- */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="w-[4.2rem] h-[4.2rem] rounded-2xl flex items-center justify-center flex-shrink-0">
+          <div className="w-[5.5rem] h-[5.5rem] rounded-2xl flex items-center justify-center flex-shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo_dre_color.svg" alt="Logo DRE" className="w-full h-full object-contain" />
           </div>
