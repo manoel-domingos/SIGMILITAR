@@ -110,12 +110,12 @@ export default function DreLogin() {
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 relative overflow-hidden">
-      {/* Marca d'água — logo DRE à esquerda, espelhando o padrão do login da escola */}
+      {/* Marca d'água — logo DRE à direita */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/logo_dre_color.svg"
         alt=""
-        className="absolute -left-32 md:-left-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain"
+        className="absolute -right-32 md:-right-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain"
       />
       <div className="absolute top-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
