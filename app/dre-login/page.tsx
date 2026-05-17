@@ -124,7 +124,7 @@ export default function DreLogin() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-5 sm:mb-6">
-          <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-3">
+          <div className="w-36 h-36 sm:w-44 sm:h-44 -mb-2 -mt-2 flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo_dre_color.svg"
