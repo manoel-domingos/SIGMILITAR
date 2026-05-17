@@ -9,7 +9,7 @@ import versionData from '@/lib/version.json';
 
 export default function DreLogin() {
   const router = useRouter();
-  const { user, currentUserRole, isAuthRestored } = useAppContext();
+  const { user, currentUserRole, isAuthRestored, setMockUser } = useAppContext();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -38,45 +38,71 @@ export default function DreLogin() {
     setChecking(true);
     setError('');
 
-    if (!supabase) {
-      setError('Serviço indisponível. Tente novamente.');
-      setLoading(false);
-      setChecking(false);
-      return;
+    const user_lower = username.toLowerCase().trim();
+    const pass_lower = password.toLowerCase().trim();
+
+    // 1. Tentar Supabase Auth (caso esteja configurado com usuários reais)
+    if (supabase) {
+      try {
+        const emailToUse = user_lower.includes('@')
+          ? user_lower
+          : `${user_lower}@eecm.local`;
+
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
+          email: emailToUse,
+          password,
+        });
+
+        if (!authError && data.user) {
+          localStorage.setItem('eecm_session', JSON.stringify({
+            type: 'real',
+            user: { id: data.user.id, email: data.user.email, user_metadata: data.user.user_metadata },
+          }));
+          // useEffect aguarda isAuthRestored e redireciona
+          return;
+        }
+      } catch {
+        // continua para autenticação mock
+      }
     }
 
-    try {
-      // Aceita email direto ou username → converte para email
-      const emailToUse = username.includes('@')
-        ? username
-        : `${username.toLowerCase().trim()}@eecm.local`;
+    // 2. Autenticação mock — mesmo mecanismo do login da escola
+    // Aceita: username === password (ou variações sem acento)
+    const normalizedUser = user_lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normalizedPass = pass_lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const passwordMatch = normalizedPass === normalizedUser || pass_lower === user_lower;
 
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: emailToUse,
-        password,
-      });
+    const validUsers = ['gestor', 'maykon', 'manoel', 'djeovani', 'joana', 'edma', 'murillo', 'george', 'proença', 'proenca'];
 
-      if (authError || !data.user) {
-        setError('Credenciais inválidas. Verifique e tente novamente.');
+    if (validUsers.includes(user_lower) && passwordMatch) {
+      // Verifica se esse mock user tem role admin_global
+      const adminUsers = ['manoel']; // apenas estes têm acesso DRE
+      if (!adminUsers.includes(user_lower)) {
+        setError('Acesso negado. Este portal é restrito a gestores da DRE.');
         setLoading(false);
         setChecking(false);
         return;
       }
 
-      // Sucesso — o useEffect acima vai tratar o redirect após isAuthRestored
       localStorage.setItem('eecm_session', JSON.stringify({
-        type: 'real',
+        type: 'mock',
         user: {
-          id: data.user.id,
-          email: data.user.email,
-          user_metadata: data.user.user_metadata,
+          id: `mock-${user_lower}`,
+          email: `${user_lower}@eecm.local`,
+          user_metadata: {
+            name: username.charAt(0).toUpperCase() + username.slice(1).toLowerCase(),
+            role: 'admin_global',
+          },
         },
       }));
-    } catch {
-      setError('Erro de conexão. Tente novamente.');
-      setLoading(false);
-      setChecking(false);
+      setMockUser(user_lower);
+      return;
+      // useEffect redireciona após currentUserRole resolver
     }
+
+    setError('Credenciais inválidas. Verifique e tente novamente.');
+    setLoading(false);
+    setChecking(false);
   };
 
   // Se já autenticado como admin_global, não renderiza o login
