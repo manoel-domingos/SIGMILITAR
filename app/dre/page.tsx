@@ -8,7 +8,8 @@ import {
   Building2, Users, AlertTriangle, Star, Activity,
   RefreshCw, ShieldCheck, SwitchCamera, TrendingUp,
   TrendingDown, Minus, Shield, Award, Zap, AlertCircle,
-  ChevronRight, BarChart3,
+  ChevronRight, BarChart3, LayoutDashboard, GripVertical,
+  ToggleLeft, ToggleRight, X, CheckCircle2,
 } from 'lucide-react';
 
 const supabase = supabaseClient!;
@@ -23,6 +24,8 @@ interface SchoolStats {
   leves: number;
   medias: number;
   graves: number;
+  implantacaoTotal: number;
+  implantacaoDone: number;
   // Indices calculados
   disciplineIndex: number;   // 0-100: 100 = perfeito
   gravityRate: number;       // % de ocorrencias graves
@@ -110,6 +113,24 @@ export default function DrePage() {
   const [stats, setStats] = useState<SchoolStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  type DREPanel = { id: string; label: string; enabled: boolean };
+  const DRE_DEFAULT_PANELS: DREPanel[] = [
+    { id: 'kpis_primarios',   label: 'KPIs Primarios',        enabled: true },
+    { id: 'kpis_secundarios', label: 'KPIs Secundarios',      enabled: true },
+    { id: 'implantacao',      label: 'KPI Implantacao',        enabled: true },
+    { id: 'ranking',          label: 'Ranking Disciplinar',    enabled: true },
+    { id: 'escolas',          label: 'Cards de Escolas',       enabled: true },
+  ];
+  const [panels, setPanels] = React.useState<DREPanel[]>(DRE_DEFAULT_PANELS);
+
+  const togglePanel = (id: string) => setPanels(prev => prev.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p));
+  const movePanel = (from: number, to: number) => {
+    const next = [...panels]; const [item] = next.splice(from, 1); next.splice(to, 0, item); setPanels(next);
+  };
+  const isVisible = (id: string) => panels.find(p => p.id === id)?.enabled ?? true;
 
   useEffect(() => {
     if (currentUserRole !== 'admin_global' && currentUserSchoolId !== 'DRE') {
@@ -125,15 +146,17 @@ export default function DrePage() {
 
       const statsArr: SchoolStats[] = (data ?? []).map((row: any) => {
         const partial = {
-          id:          row.school_id,
-          name:        row.school_name,
-          students:    Number(row.students)    || 0,
-          occurrences: Number(row.occurrences) || 0,
-          leves:       Number(row.leves)       || 0,
-          medias:      Number(row.medias)      || 0,
-          graves:      Number(row.graves)      || 0,
-          praises:     Number(row.praises)     || 0,
-          accidents:   Number(row.accidents)   || 0,
+          id:               row.school_id,
+          name:             row.school_name,
+          students:         Number(row.students)          || 0,
+          occurrences:      Number(row.occurrences)       || 0,
+          leves:            Number(row.leves)             || 0,
+          medias:           Number(row.medias)            || 0,
+          graves:           Number(row.graves)            || 0,
+          praises:          Number(row.praises)           || 0,
+          accidents:        Number(row.accidents)         || 0,
+          implantacaoTotal: Number(row.implantacao_total) || 0,
+          implantacaoDone:  Number(row.implantacao_done)  || 0,
         };
         const disciplineIndex = calcDisciplineIndex(partial as SchoolStats);
         const gravityRate     = partial.occurrences > 0 ? Math.round((partial.graves / partial.occurrences) * 100) : 0;
@@ -204,6 +227,13 @@ export default function DrePage() {
             <span className="hidden sm:inline">Trocar Escola</span>
           </button>
           <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span className="hidden sm:inline">Editar Painel</span>
+          </button>
+          <button
             onClick={() => load()}
             disabled={loading}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
@@ -214,8 +244,52 @@ export default function DrePage() {
         </div>
       </div>
 
+      {/* ---- DRAWER EDITAR PAINEL ---- */}
+      {drawerOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setDrawerOpen(false)} />
+          <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h2 className="font-bold text-slate-800 dark:text-white text-base">Configurar Painel DRE</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Ative, desative e reordene</p>
+              </div>
+              <button onClick={() => setDrawerOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+              {panels.map((panel, idx) => (
+                <div
+                  key={panel.id}
+                  draggable
+                  onDragStart={() => setDragIdx(idx)}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={() => { if (dragIdx !== null && dragIdx !== idx) movePanel(dragIdx, idx); setDragIdx(null); }}
+                  onDragEnd={() => setDragIdx(null)}
+                  className={'flex items-center gap-3 px-3 py-3 rounded-xl border transition-all cursor-grab active:cursor-grabbing ' + (dragIdx === idx ? 'opacity-40 scale-95' : '') + ' ' + (panel.enabled ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50')}
+                >
+                  <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                  <span className={'flex-1 text-sm font-medium ' + (panel.enabled ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500 line-through')}>{panel.label}</span>
+                  <button onClick={() => togglePanel(panel.id)} className="shrink-0 transition-colors" title={panel.enabled ? 'Desativar' : 'Ativar'}>
+                    {panel.enabled
+                      ? <ToggleRight className="w-7 h-7 text-blue-500" />
+                      : <ToggleLeft  className="w-7 h-7 text-slate-300 dark:text-slate-600" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="px-4 py-4 border-t border-slate-100 dark:border-slate-800">
+              <button onClick={() => setPanels(DRE_DEFAULT_PANELS)} className="w-full text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+                Restaurar padrao
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ---- KPIs PRIMÁRIOS (linha grande) ---- */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {isVisible('kpis_primarios') && <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
         {/* Indice Global de Disciplina — destaque */}
         <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 shadow-lg shadow-blue-500/20 text-white">
@@ -275,10 +349,10 @@ export default function DrePage() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium uppercase tracking-wide">Elogios</p>
           <p className="text-[11px] text-slate-400 mt-1">{globalPraiseRatio} por 100 alunos</p>
         </div>
-      </section>
+      </section>}
 
       {/* ---- KPIs SECUNDÁRIOS (indices calculados) ---- */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {isVisible('kpis_secundarios') && <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
@@ -342,13 +416,55 @@ export default function DrePage() {
             )}
           </div>
         </div>
-      </section>
+      </section>}
+
+      {/* ---- KPI IMPLANTACAO ---- */}
+      {isVisible('implantacao') && (() => {
+        const totalImpl = stats.reduce((s, x) => s + x.implantacaoTotal, 0);
+        const doneImpl  = stats.reduce((s, x) => s + x.implantacaoDone, 0);
+        const pctImpl   = totalImpl > 0 ? Math.round((doneImpl / totalImpl) * 100) : 0;
+        return (
+          <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Implantacao da Rede</h2>
+              </div>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${pctImpl >= 80 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : pctImpl >= 50 ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+                {pctImpl}% concluido
+              </span>
+            </div>
+            <div className="flex items-center gap-4 mb-3">
+              <p className="text-4xl font-black text-slate-800 dark:text-white tracking-tight">{doneImpl}<span className="text-base font-medium text-slate-400 ml-1">/ {totalImpl}</span></p>
+              <div className="flex-1">
+                <ProgressBar value={doneImpl} max={totalImpl || 1} color={pctImpl >= 80 ? 'bg-emerald-500' : pctImpl >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
+                <p className="text-[10px] text-slate-400 mt-1">itens concluidos de {totalImpl} no total da rede</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+              {stats.map(school => {
+                const pct = school.implantacaoTotal > 0 ? Math.round((school.implantacaoDone / school.implantacaoTotal) * 100) : 0;
+                return (
+                  <div key={school.id} className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate">{school.name.replace('EECM Prof. ', '')}</p>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pct}%</span>
+                    </div>
+                    <ProgressBar value={school.implantacaoDone} max={school.implantacaoTotal || 1} color={pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
+                    <p className="text-[10px] text-slate-400">{school.implantacaoDone}/{school.implantacaoTotal} itens</p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ---- RANKING + CARDS DE ESCOLAS ---- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ display: (!isVisible('ranking') && !isVisible('escolas')) ? 'none' : undefined }}>
 
         {/* Ranking de disciplina */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+        {isVisible('ranking') && <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Shield className="w-4 h-4 text-blue-600" />
             <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Ranking Disciplinar</h2>
@@ -383,10 +499,10 @@ export default function DrePage() {
               })}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Cards de escolas */}
-        <div className="lg:col-span-2 space-y-4">
+        {isVisible('escolas') && <div className="lg:col-span-2 space-y-4">
           <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Escolas da Rede</h2>
           {loading ? (
             <div className="space-y-3">{[1,2].map(i=><div key={i} className="h-44 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse"/>)}</div>
@@ -472,7 +588,7 @@ export default function DrePage() {
               );
             })
           )}
-        </div>
+        </div>}
       </div>
     </div>
   );
