@@ -160,15 +160,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { activeSchoolContextRef.current = activeSchoolContext; }, [activeSchoolContext]);
 
   // Setter wrapper que seta o estado E recarrega dados (sem loop infinito)
-  const setActiveSchoolContext = (schoolId: string) => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const setActiveSchoolContext = React.useCallback((schoolId: string) => {
     activeSchoolContextRef.current = schoolId;
     setActiveSchoolContextState(schoolId);
     if (isSupabaseConnected && !isFirstContextLoad.current) {
-      // Só recarrega se NÃO é a primeira vez e está conectado
       refreshData();
     }
     isFirstContextLoad.current = false;
-  };
+  }, [isSupabaseConnected]);
 
   // Seta o contexto inicial a partir do school_id do usuário
   useEffect(() => {
@@ -180,7 +180,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [currentUserSchoolId]);
   // Callback injetado pelo AppShell para abrir o modal de seleção de contexto
   const [openContextModal, setOpenContextModalState] = useState<() => void>(() => () => {});
-  const setOpenContextModal = (fn: () => void) => setOpenContextModalState(() => fn);
+  const setOpenContextModal = React.useCallback((fn: () => void) => {
+    setOpenContextModalState(() => fn);
+  }, []);
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(() => {
