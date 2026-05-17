@@ -307,7 +307,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Modal de seleção de contexto — admin_global */}
       {showContextModal && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowContextModal(false); }}>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
             <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto">
               <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -339,7 +339,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Xerife Alert Popup — sexta e segunda */}
       {showXerifeAlert && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9998] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9998] flex items-center justify-center p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) dismissXerifeAlert(false); }}>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
               <ShieldCheck className="w-8 h-8 text-amber-600 dark:text-amber-400" />
@@ -1162,11 +1162,8 @@ function ProfileMenu({
 
       {/* Modal de Alteracao de Senha */}
       {mounted && showPasswordModal && ReactDOM.createPortal(
-        <div className="fixed inset-0 glass-overlay flex items-center justify-center p-4 animate-in fade-in duration-200" style={{ zIndex: 100000 }}>
-          <div 
-            className="glass-modal w-full max-w-sm p-6 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 glass-overlay flex items-center justify-center p-4 animate-in fade-in duration-200" style={{ zIndex: 100000 }} onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowPasswordModal(false); resetPasswordForm(); } }}>
+          <div className="glass-modal w-full max-w-sm p-6 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <KeyRound className="w-5 h-5 text-amber-500" />
@@ -1262,7 +1259,7 @@ function ProfileMenu({
 
       {/* Modal Meu Perfil / Primeiro Acesso */}
       {mounted && (showProfileModal || showFirstAccessModal) && ReactDOM.createPortal(
-        <div className="fixed inset-0 glass-overlay flex items-center justify-center p-4 animate-in fade-in duration-200" style={{ zIndex: 100000 }}>
+        <div className="fixed inset-0 glass-overlay flex items-center justify-center p-4 animate-in fade-in duration-200" style={{ zIndex: 100000 }} onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowProfileModal(false); setShowFirstAccessModal(false); } }}>
           <div className="glass-modal w-full max-w-sm p-6 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between mb-5">
               <div>

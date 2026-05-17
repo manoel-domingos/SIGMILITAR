@@ -1197,7 +1197,7 @@ export default function Alunos() {
 
       {/* Modal Confirmação de Arquivamento */}
       {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsDeleteConfirmOpen(false); }}>
           <div className="glass-modal max-w-sm w-full p-6 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-500 mb-4">
               <Archive className="w-6 h-6" />
@@ -1238,7 +1238,7 @@ export default function Alunos() {
 
       {/* Modal Confirmação Apagar Todos */}
       {isDeleteAllConfirmOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsDeleteAllConfirmOpen(false); }}>
           <div className="glass-modal max-w-sm w-full p-6 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-500 mb-4">
               <Trash2 className="w-6 h-6" />
@@ -1279,7 +1279,7 @@ export default function Alunos() {
 
       {/* Import Review Modal */}
       {isReviewOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9992] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 glass-overlay z-[9992] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsReviewOpen(false); }}>
           <div className="glass-modal w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <div>
@@ -1448,7 +1448,7 @@ export default function Alunos() {
         </div>
       )}
       {reviewEditContactsIndex !== null && (
-        <div className="fixed inset-0 glass-overlay z-[9993] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 glass-overlay z-[9993] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setReviewEditContactsIndex(null); }}>
           <div className="glass-modal w-full max-w-lg p-6 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-slate-800">
