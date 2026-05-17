@@ -5,7 +5,7 @@
 ## Última atualização
 
 **Data:** 2026-05-17  
-**Sessão:** DRE — redirect pós-login para /dre e modal de seleção de escola funcional no botão Trocar Escola  
+**Sessão:** DRE login — auth corrigido (aguarda isAuthRestored), cor #2d3184, base_dre no canto direito  
 **Operador:** Manoel Domingos
 
 ## Foco atual
