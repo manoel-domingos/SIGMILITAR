@@ -108,7 +108,14 @@ function DisciplineRing({ value }: { value: number }) {
 
 export default function DrePage() {
   const router = useRouter();
-  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal } = useAppContext();
+  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools } = useAppContext();
+
+  // Redirect para /dre ao entrar (admin_global já está cá, outros vão para /)
+  useEffect(() => {
+    if (currentUserRole && currentUserRole !== 'admin_global') {
+      router.replace('/');
+    }
+  }, [currentUserRole, router]);
 
   const [stats, setStats] = useState<SchoolStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -245,6 +252,7 @@ export default function DrePage() {
   if (currentUserRole !== 'admin_global') return null;
 
   return (
+    <>
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
 
       {/* ---- HEADER ---- */}
@@ -645,5 +653,38 @@ export default function DrePage() {
         </div>}
       </div>
     </div>
+
+    {/* Modal de seleção de escola — renderizado direto na DRE pois não usa AppShell */}
+    {showContextModal && (
+      <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto">
+            <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Qual painel deseja ver?</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Voce pode alternar a qualquer momento pelo botao Trocar Escola.</p>
+          </div>
+          <div className="flex flex-col gap-2 pt-1">
+            <button
+              onClick={() => { setActiveSchoolContext('DRE'); setShowContextModal(false); }}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            >
+              <Building2 className="w-4 h-4" /> Painel DRE — Visao Consolidada
+            </button>
+            {contextSchools.map(s => (
+              <button
+                key={s.id}
+                onClick={() => { setActiveSchoolContext(s.id); setShowContextModal(false); router.push('/'); }}
+                className="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-500" /> {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

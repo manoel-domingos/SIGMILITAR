@@ -9,19 +9,19 @@ import versionData from '@/lib/version.json';
 
 export default function Login() {
   const router = useRouter();
-  const { user, isGuest, setGuestMode, setMockUser, isSupabaseConnected } = useAppContext();
+  const { user, isGuest, setGuestMode, setMockUser, isSupabaseConnected, currentUserRole } = useAppContext();
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auto redirect if already logged in
+  // Auto redirect: admin_global vai para /dre, demais para /
   useEffect(() => {
     if (user || isGuest) {
-      router.push('/');
+      router.push(currentUserRole === 'admin_global' ? '/dre' : '/');
     }
-  }, [user, isGuest, router]);
+  }, [user, isGuest, currentUserRole, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +48,8 @@ export default function Login() {
               user_metadata: data.user.user_metadata
             }
           }));
-          router.push('/');
+          // O useEffect de auto-redirect acima vai cuidar do destino correto
+          // após currentUserRole ser resolvido pelo store
           return;
         }
       } catch (err) {

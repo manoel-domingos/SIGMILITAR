@@ -5,7 +5,7 @@
 ## Última atualização
 
 **Data:** 2026-05-17  
-**Sessão:** Correções de build — erros de tipo implícito any e referências obsoletas  
+**Sessão:** DRE — redirect pós-login para /dre e modal de seleção de escola funcional no botão Trocar Escola  
 **Operador:** Manoel Domingos
 
 ## Foco atual
