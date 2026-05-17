@@ -148,11 +148,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const currentUserSchoolId = useMemo(() => {
     if (!user?.email || isGuest) return null;
     const matched = appUsers.find(u => u.email.toLowerCase() === user.email.toLowerCase());
-    return matched?.school_id ?? 'joaobatista';
+    return matched?.school_id ?? null;
   }, [user, isGuest, appUsers]);
 
-  // Contexto de escola ativa — admin_global pode alternar entre escolas
-  const [activeSchoolContext, setActiveSchoolContext] = useState<string>('joaobatista');
+  // Contexto de escola ativa — admin_global pode alternar; demais usuários seguem seu school_id
+  const [activeSchoolContext, setActiveSchoolContext] = useState<string>('');
+  // Ref para acesso sem closure stale dentro de fetchData/refreshData
+  const activeSchoolContextRef = React.useRef(activeSchoolContext);
+  useEffect(() => { activeSchoolContextRef.current = activeSchoolContext; }, [activeSchoolContext]);
+
+  useEffect(() => {
+    if (!activeSchoolContext && currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+      setActiveSchoolContext(currentUserSchoolId);
+    }
+  }, [currentUserSchoolId, activeSchoolContext]);
+
+  // Recarrega dados filtrados sempre que a escola ativa muda (ex: DRE troca de escola)
+  const isFirstSchoolContextSet = React.useRef(true);
+  useEffect(() => {
+    if (!activeSchoolContext || !isSupabaseConnected) return;
+    if (isFirstSchoolContextSet.current) {
+      // Primeira definição: fetchData inicial já carregará com o sid correto via ref
+      isFirstSchoolContextSet.current = false;
+      return;
+    }
+    // Troca subsequente: recarrega com o novo school_id
+    activeSchoolContextRef.current = activeSchoolContext;
+    refreshData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSchoolContext, isSupabaseConnected]);
   // Callback injetado pelo AppShell para abrir o modal de seleção de contexto
   const [openContextModal, setOpenContextModalState] = useState<() => void>(() => () => {});
   const setOpenContextModal = (fn: () => void) => setOpenContextModalState(() => fn);
@@ -236,18 +260,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setIsAuthRestored(true);
 
-      const fetchData = async () => {
+      const fetchData = async (schoolId?: string) => {
         if (!supabase) return;
+        // Resolve o school_id a filtrar: prioridade schoolId param > state atual
+        const sid = schoolId ?? activeSchoolContextRef.current;
+        const bySchool = (q: any) => sid && sid !== 'DRE' ? q.eq('school_id', sid) : q;
         setIsSyncing(true);
         try {
           const responses = await Promise.all([
-            supabase!.from('students').select('*'),
+            bySchool(supabase!.from('students').select('*')),
             supabase!.from('rules').select('*'),
-            supabase!.from('occurrences').select('*').order('date', { ascending: false }),
-            supabase!.from('accidents').select('*').order('date', { ascending: false }),
-            supabase!.from('praises').select('*').order('date', { ascending: false }),
-            supabase!.from('summons').select('*').order('date', { ascending: false }),
-            supabase!.from('conduct_terms').select('*').order('date', { ascending: false }),
+            bySchool(supabase!.from('occurrences').select('*').order('date', { ascending: false })),
+            bySchool(supabase!.from('accidents').select('*').order('date', { ascending: false })),
+            bySchool(supabase!.from('praises').select('*').order('date', { ascending: false })),
+            bySchool(supabase!.from('summons').select('*').order('date', { ascending: false })),
+            bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
             supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
             supabase!.from('user_profiles').select('*')
           ]);
@@ -271,7 +298,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               name: u.name || '',
               email: u.email || '',
               role: u.role || 'GESTOR',
-              school_id: u.school_id || 'joaobatista',
+              school_id: u.school_id || '',
             })));
           }
 
@@ -338,12 +365,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
               };
             }));
           }
-          if (accidentsData) setAccidents(accidentsData.map(a => ({...a, studentId: a.student_id, registeredBy: a.registered_by, bodyPart: a.body_part, parentsNotified: a.parents_notified, medicForwarded: a.medic_forwarded})));
-          if (praisesData) setPraises(praisesData.map(p => ({
-            ...p, 
-            studentId: p.student_id, 
+          if (accidentsData) setAccidents(accidentsData.map((a: any) => ({...a, studentId: a.student_id, registeredBy: a.registered_by, bodyPart: a.body_part, parentsNotified: a.parents_notified, medicForwarded: a.medic_forwarded})));
+          if (praisesData) setPraises(praisesData.map((p: any) => ({
+            ...p,
+            studentId: p.student_id,
             registeredBy: p.registered_by,
-            type: p.article || p.type 
+            type: p.article || p.type
           })));
           if (summonsData) setSummons(summonsData.map((s: any) => ({...s, studentId: s.student_id, registeredBy: s.registered_by})));
           if (conductTermsData) setConductTerms(conductTermsData.map((t: any) => ({...t, studentId: t.student_id, registeredBy: t.registered_by, guardianName: t.guardian_name})));
@@ -476,7 +503,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: u.name, email: u.email, role: u.role, school_id: u.school_id
         }]).select().single();
         if (error) throw error;
-        if (data) setAppUsers(prev => [...prev, { id: data.id, name: data.name || '', email: data.email || '', role: data.role || 'GESTOR', school_id: data.school_id || 'joaobatista' }]);
+        if (data) setAppUsers(prev => [...prev, { id: data.id, name: data.name || '', email: data.email || '', role: data.role || 'GESTOR', school_id: data.school_id || '' }]);
       } catch (err: any) {
         console.error("Error adding user:", err);
         alert('Erro ao salvar usuário: ' + err.message);
@@ -677,15 +704,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshData = async () => {
     if (!supabase || !isSupabaseConnected) return;
+    const sid = activeSchoolContextRef.current;
+    const bySchool = (q: any) => sid && sid !== 'DRE' ? q.eq('school_id', sid) : q;
     setIsSyncing(true);
     try {
       const responses = await Promise.all([
-        supabase!.from('students').select('*'),
-        supabase!.from('occurrences').select('*').order('date', { ascending: false }),
-        supabase!.from('accidents').select('*').order('date', { ascending: false }),
-        supabase!.from('praises').select('*').order('date', { ascending: false }),
-        supabase!.from('summons').select('*').order('date', { ascending: false }),
-        supabase!.from('conduct_terms').select('*').order('date', { ascending: false }),
+        bySchool(supabase!.from('students').select('*')),
+        bySchool(supabase!.from('occurrences').select('*').order('date', { ascending: false })),
+        bySchool(supabase!.from('accidents').select('*').order('date', { ascending: false })),
+        bySchool(supabase!.from('praises').select('*').order('date', { ascending: false })),
+        bySchool(supabase!.from('summons').select('*').order('date', { ascending: false })),
+        bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
         supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
         supabase!.from('staff_members').select('*').order('name', { ascending: true })
       ]);
@@ -701,7 +730,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { data: staffData }
       ] = responses;
 
-      if (studentsData) setStudents(studentsData.map(s => ({ ...s, points: 8 })));
+      if (studentsData) setStudents(studentsData.map((s: any) => ({ ...s, points: 8 })));
       if (occurrencesData) setOccurrences(occurrencesData.map((o: any) => {
         const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
         return {
@@ -722,10 +751,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           createdAt: o.created_at
         };
       }));
-      if (accidentsData) setAccidents(accidentsData.map(a => ({...a, studentId: a.student_id, registeredBy: a.registered_by, bodyPart: a.body_part, parentsNotified: a.parents_notified, medicForwarded: a.medic_forwarded})));
-      if (praisesData) setPraises(praisesData.map(p => ({
-        ...p, 
-        studentId: p.student_id, 
+      if (accidentsData) setAccidents(accidentsData.map((a: any) => ({...a, studentId: a.student_id, registeredBy: a.registered_by, bodyPart: a.body_part, parentsNotified: a.parents_notified, medicForwarded: a.medic_forwarded})));
+      if (praisesData) setPraises(praisesData.map((p: any) => ({
+        ...p,
+        studentId: p.student_id,
         registeredBy: p.registered_by,
         type: p.article || p.type
       })));
