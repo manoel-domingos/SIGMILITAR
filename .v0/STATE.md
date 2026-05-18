@@ -5,12 +5,21 @@
 ## Última atualização
 
 **Data:** 2026-05-17  
-**Sessão:** Ficha do aluno com 4 abas replicada para escolas  
+**Sessão:** Novo layout do painel DRE — sidebar + lista de ocorrências  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
 Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acessa tudo.
+
+## Última ação concluída (2026-05-17) — sessão 4
+
+- **Novo layout do painel DRE (`DreDashboard.tsx`):**
+  1. Layout `grid 1fr 300px` — painel central + sidebar fixa (xl)
+  2. **Sidebar:** card KPI "% Implantação do Sistema na Rede" com gauge semicircular, ranking de escolas por índice disciplinar, ranking de alunos (elogios/100) com barra de progresso
+  3. **Painel central:** estrutura analytics (hero card Índice Disciplinar + 3 cards KPI em linha), KPIs secundários (Taxa Gravidade, Razão E/O, Acidentes, Alertas), gráficos comparativos
+  4. **Lista de Ocorrências** ao final — tabela com colunas Escola, Descrição, Qtd, Progresso, Severidade + filtros pills (Todas/Graves/Medias/Leves) + select por escola + link para registro completo
+- Zero erros TypeScript
 
 ## Última ação concluída (2026-05-17) — sessão 3
 - **Ficha do aluno com 4 abas + replicação para escolas:**
