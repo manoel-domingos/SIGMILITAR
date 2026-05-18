@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS, markdownBoldToHtml } from '@/lib/print-header';
@@ -58,7 +58,9 @@ function RegistroDisciplinarContent() {
   const [guardianIgnoredWarning, setGuardianIgnoredWarning] = useState(false);
   const guardianPhoneRef = useRef<HTMLInputElement>(null);
   const [viewOccurrence, setViewOccurrence] = useState<Occurrence | null>(null);
-  const [voTab, setVoTab] = useState<'detalhes' | 'evidencias' | 'documentos'>('detalhes');
+  const [voTab, setVoTab] = useState<'detalhes' | 'documentos'>('detalhes');
+  const [voUploadingDoc, setVoUploadingDoc] = useState(false);
+  const [voUploadingEv, setVoUploadingEv] = useState(false);
   const [editingOccurrence, setEditingOccurrence] = useState<string | null>(null);
 
   // Modal form state
@@ -2477,11 +2479,10 @@ function RegistroDisciplinarContent() {
         const videoList = (_vo.videoUrls || [(_vo as any).videoUrl]).filter(Boolean) as string[];
         const docList   = (_vo.signedDocUrls || [(_vo as any).signedDocUrl]).filter(Boolean) as string[];
 
-        type TabDef = { id: 'detalhes' | 'evidencias' | 'documentos'; label: string; count?: number };
+        type TabDef = { id: 'detalhes' | 'documentos'; label: string; count?: number };
         const tabs: TabDef[] = [
           { id: 'detalhes',   label: 'Detalhes' },
-          { id: 'evidencias', label: 'Evidencias', count: videoList.length || undefined },
-          { id: 'documentos', label: 'Documentos', count: docList.length   || undefined },
+          { id: 'documentos', label: 'Documentos', count: (docList.length + videoList.length) || undefined },
         ];
 
         return (
@@ -2640,54 +2641,122 @@ function RegistroDisciplinarContent() {
                   </div>
                 )}
 
-                {/* Tab: Evidencias */}
-                {voTab === 'evidencias' && (
-                  <div className="p-6">
-                    {!hasVideos ? (
-                      <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-600">
-                        <Video className="w-10 h-10 mb-3 opacity-40" />
-                        <p className="text-sm font-medium">Nenhuma evidencia anexada</p>
-                        <p className="text-xs mt-1">Fotos e videos sao adicionados ao registrar a ocorrencia</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {videoList.map((url, index) => {
-                          const isImage = /\.(jpg|jpeg|png|webp|gif|avif)($|\?)/i.test(url);
-                          return (
-                            <div key={index} className="aspect-square bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition">
-                              {isImage ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={url} className="w-full h-full object-cover" onClick={() => window.open(url, '_blank')} alt={`Evidencia ${index + 1}`} />
-                              ) : (
-                                <video src={url} className="w-full h-full object-cover" controls />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tab: Documentos */}
+                {/* Tab: Documentos (evidencias + docs assinados unificados) */}
                 {voTab === 'documentos' && (
-                  <div className="p-6">
-                    {!hasDocs ? (
-                      <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-600">
-                        <FileText className="w-10 h-10 mb-3 opacity-40" />
-                        <p className="text-sm font-medium">Nenhum documento assinado</p>
-                        <p className="text-xs mt-1">Documentos assinados aparecem aqui quando anexados</p>
+                  <div className="p-6 space-y-6">
+
+                    {/* ── Evidencias (fotos/videos) ── */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Evidencias</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">Fotos e videos da ocorrencia</p>
+                        </div>
+                        <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold transition cursor-pointer ${voUploadingEv ? 'opacity-60 pointer-events-none' : ''}`}>
+                          {voUploadingEv ? (
+                            <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Camera className="w-3.5 h-3.5" />
+                          )}
+                          {voUploadingEv ? 'Enviando...' : 'Adicionar'}
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            className="hidden"
+                            disabled={voUploadingEv}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setVoUploadingEv(true);
+                              const studentId = _vo.studentIds?.[0] ?? _vo.studentId ?? '';
+                              const url = await uploadFile(file, studentId);
+                              if (url) {
+                                updateOccurrence(_vo.id, { videoUrls: [...videoList, url] });
+                                setViewOccurrence({ ..._vo, videoUrls: [...videoList, url] });
+                              }
+                              setVoUploadingEv(false);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {docList.map((url, index) => (
-                          <div key={index} className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={url} className="w-full h-full object-cover" onClick={() => window.open(url, '_blank')} alt={`Documento ${index + 1}`} />
-                          </div>
-                        ))}
+                      {videoList.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600">
+                          <Camera className="w-7 h-7 mb-2 opacity-40" />
+                          <p className="text-xs font-medium">Nenhuma evidencia anexada</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {videoList.map((url, index) => {
+                            const isImage = /\.(jpg|jpeg|png|webp|gif|avif)($|\?)/i.test(url);
+                            return (
+                              <div key={index} className="aspect-square bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition">
+                                {isImage ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={url} className="w-full h-full object-cover" onClick={() => window.open(url, '_blank')} alt={`Evidencia ${index + 1}`} />
+                                ) : (
+                                  <video src={url} className="w-full h-full object-cover" controls />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="h-px bg-slate-100 dark:bg-slate-700" />
+
+                    {/* ── Documentos Assinados ── */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Documentos Assinados</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">Termos, protocolos e registros</p>
+                        </div>
+                        <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold transition cursor-pointer ${voUploadingDoc ? 'opacity-60 pointer-events-none' : ''}`}>
+                          {voUploadingDoc ? (
+                            <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Paperclip className="w-3.5 h-3.5" />
+                          )}
+                          {voUploadingDoc ? 'Enviando...' : 'Adicionar'}
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            className="hidden"
+                            disabled={voUploadingDoc}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setVoUploadingDoc(true);
+                              const studentId = _vo.studentIds?.[0] ?? _vo.studentId ?? '';
+                              const url = await uploadFile(file, studentId);
+                              if (url) {
+                                updateOccurrence(_vo.id, { signedDocUrls: [...docList, url] });
+                                setViewOccurrence({ ..._vo, signedDocUrls: [...docList, url] });
+                              }
+                              setVoUploadingDoc(false);
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
                       </div>
-                    )}
+                      {docList.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600">
+                          <FileText className="w-7 h-7 mb-2 opacity-40" />
+                          <p className="text-xs font-medium">Nenhum documento assinado</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {docList.map((url, index) => (
+                            <div key={index} className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={url} className="w-full h-full object-cover" onClick={() => window.open(url, '_blank')} alt={`Documento ${index + 1}`} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
