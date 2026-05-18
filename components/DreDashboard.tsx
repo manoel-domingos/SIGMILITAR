@@ -77,12 +77,21 @@ function IndexRing({ value, size = 64, stroke = 6 }: { value: number; size?: num
   );
 }
 
-// Barra de progresso
+// Barra de progresso com bolinha marcadora na posição atual
 function Bar2({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700/60 rounded-full overflow-hidden">
-      <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
+    <div className="relative w-full mt-3">
+      {/* trilho */}
+      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700/60 rounded-full">
+        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      {/* bolinha marcadora */}
+      <div
+        className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-slate-800 shadow-sm transition-all duration-700 ${color}`}
+        style={{ left: `${pct}%` }}
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -105,24 +114,27 @@ function HeroKpi({ label, value, sub, icon: Icon, accentClass, iconPillClass, tr
   { label: string; value: string | number; sub?: string; icon: React.ElementType; accentClass: string; iconPillClass?: string; trend?: number; inverse?: boolean; onClick?: () => void; ariaLabel?: string }) {
   const Tag = onClick ? 'button' : 'div';
   return (
-    <Tag
-      className={`relative overflow-visible rounded-2xl p-5 pt-7 flex flex-col justify-between min-h-[130px] w-full text-left ${accentClass} ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent' : ''}`}
-      onClick={onClick}
-      aria-label={ariaLabel}
-    >
-      {/* Ícone na borda superior — metade fora do card */}
-      <div className={`absolute -top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/30 ${iconPillClass ?? 'bg-white/20'}`}>
+    /* wrapper: cria espaço para o ícone acima da borda */
+    <div className="relative pt-4">
+      {/* ícone irmão do card — sobrepõe a borda superior */}
+      <div className={`absolute top-0 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/40 ${iconPillClass ?? 'bg-white/20'}`}>
         <Icon className="w-4 h-4" aria-hidden="true" />
       </div>
-      <div className="pr-4">
-        <p className="text-xs font-semibold uppercase tracking-widest opacity-80">{label}</p>
-        <p className="text-5xl font-black tracking-tight leading-none mt-3">{value}</p>
-        {sub && <p className="text-xs mt-1 opacity-70">{sub}</p>}
-        <div className="mt-2">
-          <TrendBadge value={trend} inverse={inverse} />
+      <Tag
+        className={`relative rounded-2xl p-5 flex flex-col justify-between min-h-[130px] w-full text-left ${accentClass} ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent' : ''}`}
+        onClick={onClick}
+        aria-label={ariaLabel}
+      >
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest opacity-80">{label}</p>
+          <p className="text-5xl font-black tracking-tight leading-none mt-3">{value}</p>
+          {sub && <p className="text-xs mt-1 opacity-70">{sub}</p>}
+          <div className="mt-2">
+            <TrendBadge value={trend} inverse={inverse} />
+          </div>
         </div>
-      </div>
-    </Tag>
+      </Tag>
+    </div>
   );
 }
 
@@ -136,22 +148,23 @@ function SecKpi({ label, value, sub, icon: Icon, iconBg, children, onClick, aria
 }) {
   const Tag = onClick ? 'button' : 'div';
   return (
-    <Tag
-      className={`relative overflow-visible bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 pt-7 shadow-sm flex flex-col gap-3 w-full text-left ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2' : ''}`}
-      onClick={onClick}
-      aria-label={ariaLabel}
-    >
-      {/* Ícone na borda superior — metade fora do card */}
-      <div className={`absolute -top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900 ${iconBg}`}>
+    /* wrapper: espaço para o ícone acima da borda */
+    <div className="relative pt-4">
+      {/* ícone irmão — sobrepõe a borda superior do card */}
+      <div className={`absolute top-0 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900 ${iconBg}`}>
         <Icon className="w-4 h-4" aria-hidden="true" />
       </div>
-      <div className="pr-4">
+      <Tag
+        className={`bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col gap-2 w-full text-left ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2' : ''}`}
+        onClick={onClick}
+        aria-label={ariaLabel}
+      >
         <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{value}</p>
-        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wide">{label}</p>
-        {sub && <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{sub}</p>}
-      </div>
-      {children}
-    </Tag>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</p>
+        {sub && <p className="text-[11px] text-slate-400 dark:text-slate-500">{sub}</p>}
+        {children}
+      </Tag>
+    </div>
   );
 }
 
@@ -345,37 +358,47 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
 
             {/* Card herói — Índice de Disciplina (2 colunas mobile, 1 desktop) */}
-            <button
-              onClick={() => nav('/relatorios')}
-              aria-label={`Indice disciplinar medio da rede: ${avgDiscipline}. Clique para ver relatorios`}
-              className="col-span-2 md:col-span-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-5 text-white shadow-lg shadow-blue-500/25 flex flex-col justify-between min-h-[140px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-800"
-            >
-              {/* Decorativo */}
-              <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/5 rounded-full" />
-              <div className="absolute -right-2 bottom-4 w-16 h-16 bg-white/5 rounded-full" />
-              {/* Ícone na borda superior — metade fora do card */}
-              <div className="absolute -top-4 right-4 w-9 h-9 rounded-full bg-white/30 ring-2 ring-white/20 flex items-center justify-center shadow-md">
+            <div className="relative pt-4 col-span-2 md:col-span-1">
+              {/* ícone irmão — sobrepõe a borda superior */}
+              <div className="absolute top-0 right-4 z-10 w-9 h-9 rounded-full bg-white/30 ring-2 ring-white/40 flex items-center justify-center shadow-md">
                 <Shield className="w-4 h-4 text-white" aria-hidden="true" />
               </div>
-              <div className="relative pr-4">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">Indice Disciplinar</p>
-                <div className="flex items-end gap-3 mt-2">
-                  <p className="text-6xl font-black tracking-tighter leading-none">{avgDiscipline}</p>
-                  <div className="pb-1">
-                    <p className="text-xs text-blue-200">/ 100</p>
-                    <p className="text-[10px] text-blue-300 mt-0.5">media da rede</p>
+              <button
+                onClick={() => nav('/relatorios')}
+                aria-label={`Indice disciplinar medio da rede: ${avgDiscipline}. Clique para ver relatorios`}
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-5 text-white shadow-lg shadow-blue-500/25 flex flex-col justify-between min-h-[140px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-800"
+              >
+                {/* Decorativo */}
+                <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/5 rounded-full" />
+                <div className="absolute -right-2 bottom-4 w-16 h-16 bg-white/5 rounded-full" />
+                <div className="relative">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">Indice Disciplinar</p>
+                  <div className="flex items-end gap-3 mt-2">
+                    <p className="text-6xl font-black tracking-tighter leading-none">{avgDiscipline}</p>
+                    <div className="pb-1">
+                      <p className="text-xs text-blue-200">/ 100</p>
+                      <p className="text-[10px] text-blue-300 mt-0.5">media da rede</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="relative mt-3">
-                <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-white/70 rounded-full transition-all duration-1000" style={{ width: `${avgDiscipline}%` }} />
+                <div className="relative mt-3">
+                  {/* barra com bolinha branca */}
+                  <div className="relative w-full">
+                    <div className="w-full h-1.5 bg-white/20 rounded-full">
+                      <div className="h-full bg-white/70 rounded-full transition-all duration-1000" style={{ width: `${avgDiscipline}%` }} />
+                    </div>
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-sm ring-2 ring-white/40 transition-all duration-1000"
+                      style={{ left: `${avgDiscipline}%` }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <p className="text-[10px] text-blue-200 mt-2">
+                    {avgDiscipline >= 75 ? 'Rede em boa situacao' : avgDiscipline >= 55 ? 'Atencao em algumas escolas' : 'Intervencao recomendada'}
+                  </p>
                 </div>
-                <p className="text-[10px] text-blue-200 mt-1.5">
-                  {avgDiscipline >= 75 ? 'Rede em boa situacao' : avgDiscipline >= 55 ? 'Atencao em algumas escolas' : 'Intervencao recomendada'}
-                </p>
-              </div>
-            </button>
+              </button>
+            </div>
 
             {/* Alunos Ativos */}
             <SecKpi label="Alunos Ativos" value={totalStudents.toLocaleString('pt-BR')}
@@ -418,93 +441,101 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
 
             {/* Taxa de gravidade */}
-            <button
-              onClick={() => nav('/registro-disciplinar')}
-              aria-label={`Taxa de gravidade: ${globalGravityRate}%. Clique para ver registro disciplinar`}
-              className="relative overflow-visible bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 pt-7 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-rose-300 dark:hover:border-rose-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              <div className={`absolute -top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900 ${globalGravityRate > 30 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : globalGravityRate > 15 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+            <div className="relative pt-4">
+              <div className={`absolute top-0 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900 ${globalGravityRate > 30 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : globalGravityRate > 15 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
                 <Zap className="w-4 h-4" aria-hidden="true" />
               </div>
-              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Taxa Gravidade</p>
-              <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{globalGravityRate}<span className="text-xl font-medium text-slate-400 ml-0.5">%</span></p>
-              <Bar2 value={globalGravityRate} max={100} color={globalGravityRate > 30 ? 'bg-rose-500' : globalGravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">graves / total</p>
-            </button>
+              <button
+                onClick={() => nav('/registro-disciplinar')}
+                aria-label={`Taxa de gravidade: ${globalGravityRate}%. Clique para ver registro disciplinar`}
+                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-rose-300 dark:hover:border-rose-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Taxa Gravidade</p>
+                <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{globalGravityRate}<span className="text-xl font-medium text-slate-400 ml-0.5">%</span></p>
+                <Bar2 value={globalGravityRate} max={100} color={globalGravityRate > 30 ? 'bg-rose-500' : globalGravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3">graves / total</p>
+              </button>
+            </div>
 
             {/* Razão elogio/ocorrência */}
-            <button
-              onClick={() => nav('/elogios')}
-              aria-label="Razao elogio sobre ocorrencia. Clique para ver elogios"
-              className="relative overflow-visible bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 pt-7 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              <div className="absolute -top-4 right-4 w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900">
+            <div className="relative pt-4">
+              <div className="absolute top-0 right-4 z-10 w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900">
                 <Award className="w-4 h-4" aria-hidden="true" />
               </div>
-              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Razao E/O</p>
-              <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">
-                {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}<span className="text-xl font-medium text-slate-400 ml-1">x</span>
-              </p>
-              <Bar2 value={Math.min(totalPraises, totalOcc * 2)} max={totalOcc * 2 || 1} color="bg-emerald-400" />
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
-            </button>
+              <button
+                onClick={() => nav('/elogios')}
+                aria-label="Razao elogio sobre ocorrencia. Clique para ver elogios"
+                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Razao E/O</p>
+                <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">
+                  {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}<span className="text-xl font-medium text-slate-400 ml-1">x</span>
+                </p>
+                <Bar2 value={Math.min(totalPraises, totalOcc * 2)} max={totalOcc * 2 || 1} color="bg-emerald-400" />
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
+              </button>
+            </div>
 
             {/* Acidentes */}
-            <button
-              onClick={() => nav('/acidentes')}
-              aria-label={`${totalAccidents} acidentes registrados. Clique para ver registro de acidentes`}
-              className="relative overflow-visible bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 pt-7 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              <div className="absolute -top-4 right-4 w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900">
+            <div className="relative pt-4">
+              <div className="absolute top-0 right-4 z-10 w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900">
                 <Activity className="w-4 h-4" aria-hidden="true" />
               </div>
-              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Acidentes</p>
-              <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{totalAccidents}</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                {totalStudents > 0 ? ((totalAccidents / totalStudents) * 1000).toFixed(1) : '0'} por mil alunos
-              </p>
-              <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${totalAccidents === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
-                {totalAccidents === 0 ? 'Zero acidentes' : 'Requer atencao'}
-              </div>
-            </button>
+              <button
+                onClick={() => nav('/acidentes')}
+                aria-label={`${totalAccidents} acidentes registrados. Clique para ver registro de acidentes`}
+                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Acidentes</p>
+                <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{totalAccidents}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                  {totalStudents > 0 ? ((totalAccidents / totalStudents) * 1000).toFixed(1) : '0'} por mil alunos
+                </p>
+                <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${totalAccidents === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                  {totalAccidents === 0 ? 'Zero acidentes' : 'Requer atencao'}
+                </div>
+              </button>
+            </div>
 
             {/* Alertas */}
-            <button
-              onClick={() => nav('/comportamento')}
-              aria-label={`${alertSchools} escolas em alerta. Clique para ver comportamento e rankings`}
-              className={`relative overflow-visible rounded-2xl p-5 pt-7 shadow-sm border text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${alertSchools > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/30 hover:border-rose-400 dark:hover:border-rose-400/50' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/40'}`}
-            >
-              <div className={`absolute -top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900 ${alertSchools > 0 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'}`}>
+            <div className="relative pt-4">
+              <div className={`absolute top-0 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center shadow-md ring-2 ring-white dark:ring-slate-900 ${alertSchools > 0 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'}`}>
                 <Zap className="w-4 h-4" aria-hidden="true" />
               </div>
-              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Alertas</p>
-              <p className={`text-4xl font-black leading-none ${alertSchools > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>{alertSchools}</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                {alertSchools === 0 ? 'Nenhuma escola em alerta' : `escola${alertSchools > 1 ? 's' : ''} acima do limiar`}
-              </p>
-              <div className="flex gap-1 flex-wrap mt-2">
-                {stats.filter(s => s.riskLevel === 'critical').length > 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
-                    {stats.filter(s => s.riskLevel === 'critical').length} CRITICO
-                  </span>
-                )}
-                {stats.filter(s => s.riskLevel === 'high').length > 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
-                    {stats.filter(s => s.riskLevel === 'high').length} ALTO
-                  </span>
-                )}
-                {alertSchools === 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">TUDO OK</span>
-                )}
-              </div>
-            </button>
+              <button
+                onClick={() => nav('/comportamento')}
+                aria-label={`${alertSchools} escolas em alerta. Clique para ver comportamento e rankings`}
+                className={`rounded-2xl p-5 shadow-sm border text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${alertSchools > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/30 hover:border-rose-400 dark:hover:border-rose-400/50' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/40'}`}
+              >
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Alertas</p>
+                <p className={`text-4xl font-black leading-none ${alertSchools > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>{alertSchools}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                  {alertSchools === 0 ? 'Nenhuma escola em alerta' : `escola${alertSchools > 1 ? 's' : ''} acima do limiar`}
+                </p>
+                <div className="flex gap-1 flex-wrap mt-2">
+                  {filteredStats.filter(s => s.riskLevel === 'critical').length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
+                      {filteredStats.filter(s => s.riskLevel === 'critical').length} CRITICO
+                    </span>
+                  )}
+                  {filteredStats.filter(s => s.riskLevel === 'high').length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
+                      {filteredStats.filter(s => s.riskLevel === 'high').length} ALTO
+                    </span>
+                  )}
+                  {alertSchools === 0 && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">TUDO OK</span>
+                  )}
+                </div>
+              </button>
+            </div>
           </div>
         </section>
       )}
 
       {/* ═══════════════════════════════════���══════
           GRÁFICOS — Comparativo + Severidade
-      ══════════════════════════════════════════ */}
+      ═════���════════════════════════════════════ */}
       {isVisible('kpis_primarios') && stats.length > 0 && (
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
