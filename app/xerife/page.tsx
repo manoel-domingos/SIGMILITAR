@@ -237,22 +237,13 @@ export default function XerifePage() {
                               </p>
                               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{entry.class}</p>
                             </button>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                onClick={() => { setFeedbackId(entry.id); setFeedbackText(entry.feedback ?? ''); }}
-                                title="Registrar feedback"
-                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-500 transition-colors"
-                              >
-                                <MessageSquare className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setConfirmRemove(entry)}
-                                title="Remover"
-                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => { setFeedbackId(entry.id); setFeedbackText(entry.feedback ?? ''); }}
+                              title="Registrar feedback"
+                              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-500 transition-colors shrink-0"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                           {entry.feedback && (
                             <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 rounded-lg px-2.5 py-2 italic">
