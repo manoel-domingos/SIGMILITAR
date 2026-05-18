@@ -262,7 +262,7 @@ export default function DrePage() {
       ] = await Promise.all([
         supabase.from('schools').select('id, name').neq('id', 'DRE').order('name'),
         supabase.from('students').select('school_id').eq('archived', false),
-        supabase.from('occurrences').select('school_id, rule_code'),
+        supabase.from('occurrences').select('school_id, rule_code, date'),
         supabase.from('praises').select('school_id'),
         supabase.from('accidents').select('school_id'),
         supabase.from('implantacao_items').select('school_id, done'),
@@ -365,7 +365,6 @@ export default function DrePage() {
       setLastUpdated(new Date());
     } catch (err) {
       console.error('[DRE] load error:', err);
-      alert(`Erro ao carregar dados: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
