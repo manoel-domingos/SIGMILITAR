@@ -11,6 +11,7 @@ import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
 import { createClient } from '@supabase/supabase-js';
+import StudentSheet from '@/components/StudentSheet';
 
 let _supabase: any = null;
 function supabase(): any {
@@ -46,6 +47,7 @@ export default function Dashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [panels, setPanels] = useState<PanelConfig[]>(DEFAULT_PANELS);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   // Carrega painéis do Supabase ao montar
   useEffect(() => {
@@ -172,6 +174,7 @@ export default function Dashboard() {
   });
 
   return (
+    <>
     <AppShell>
       <div className="space-y-6 max-w-[1400px] mx-auto">
 
@@ -426,10 +429,17 @@ export default function Dashboard() {
                       {implantacaoProgress.total > 0 ? Math.round((implantacaoProgress.done / implantacaoProgress.total) * 100) : 0}%
                     </p>
                   </div>
-                  <div className="mt-1.5 h-1.5 w-full bg-indigo-100 dark:bg-indigo-900/40 rounded-full overflow-hidden">
+                  <div className="relative w-full mt-1.5">
+                    <div className="w-full h-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-full">
+                      <div
+                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                        style={{ width: implantacaoProgress.total > 0 ? (implantacaoProgress.done / implantacaoProgress.total) * 100 + '%' : '0%' }}
+                      />
+                    </div>
                     <div
-                      className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-                      style={{ width: implantacaoProgress.total > 0 ? (implantacaoProgress.done / implantacaoProgress.total) * 100 + '%' : '0%' }}
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-indigo-500 border-2 border-white dark:border-indigo-900 shadow-sm transition-all duration-500"
+                      style={{ left: implantacaoProgress.total > 0 ? (implantacaoProgress.done / implantacaoProgress.total) * 100 + '%' : '0%' }}
+                      aria-hidden="true"
                     />
                   </div>
                 </>
@@ -452,7 +462,8 @@ export default function Dashboard() {
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {criticalStudents.slice(0, 8).map(s => (
-                  <div key={s.id} className="bg-white dark:bg-[#1a1f2e] p-3 rounded-xl border border-red-100 dark:border-red-900/30 shadow-sm flex justify-between items-center hover:-translate-y-0.5 transition-all duration-300">
+                  <button key={s.id} onClick={() => setSelectedStudentId(s.id)}
+                    className="bg-white dark:bg-[#1a1f2e] p-3 rounded-xl border border-red-100 dark:border-red-900/30 shadow-sm flex justify-between items-center hover:-translate-y-0.5 transition-all duration-300 w-full text-left cursor-pointer hover:border-red-300 dark:hover:border-red-700">
                     <div className="truncate pr-2">
                       <p className="font-bold text-slate-800 dark:text-white text-sm truncate">{s.name}</p>
                       <p className="text-xs text-slate-500">{s.class}</p>
@@ -460,7 +471,7 @@ export default function Dashboard() {
                     <span className="font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded text-xs shrink-0">
                       {s.currentPoints.toFixed(1)} pts
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -692,6 +703,15 @@ export default function Dashboard() {
         </div>
       </div>
     </AppShell>
+
+    {/* Ficha do aluno — abre ao clicar em card de aluno crítico */}
+    {selectedStudentId && (
+      <StudentSheet
+        studentId={selectedStudentId}
+        onClose={() => setSelectedStudentId(null)}
+      />
+    )}
+    </>
   );
 }
 

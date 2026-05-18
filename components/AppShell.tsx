@@ -537,7 +537,7 @@ function TopbarLayout({
     <>
       <header className="z-30 px-4 pt-2 pb-1 space-y-2 pointer-events-none">
         {/* top row: logo + right controls */}
-        <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-4 px-4 md:px-6 py-1">
+        <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-4 px-4 md:px-6 py-1 max-w-[1600px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               className="w-11 h-11 -ml-1 flex items-center justify-center text-slate-500 dark:text-slate-400 md:hidden rounded-xl active:bg-slate-100 dark:active:bg-slate-800 transition-colors"

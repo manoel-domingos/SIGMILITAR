@@ -3,7 +3,8 @@
 import React, { useState, useRef } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera } from 'lucide-react';
+import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User, PanelRight, Rows3 } from 'lucide-react';
+import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -82,7 +83,7 @@ Se não houver coluna para alguma dessas chaves internas, não inclua a chave no
 };
 
 export default function Alunos() {
-  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile } = useAppContext();
+  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile, getStudentOccurrences, occurrences } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -102,6 +103,9 @@ export default function Alunos() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'atividades' | 'dados' | 'responsaveis' | 'documentos'>('atividades');
+  const [viewMode, setViewMode] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [panelStudentId, setPanelStudentId] = useState<string | null>(null);
   
   // Import review state
   const [pendingImports, setPendingImports] = useState<any[]>([]);
@@ -168,6 +172,7 @@ export default function Alunos() {
     setBirthDate(s.birthDate || '');
     setPhotoUrl(s.photoUrl || '');
     setIgnoredWarning(false);
+    setActiveTab('atividades');
     setIsModalOpen(true);
   };
 
@@ -789,411 +794,682 @@ export default function Alunos() {
           </div>
         </div>
 
-        {/* List Card */}
-        <div className="glass-card overflow-hidden mt-6 flex flex-col h-[600px]">
-          <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="relative w-full max-w-sm flex items-center gap-3">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="Buscar por nome ou..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="glass-input w-full pl-10 pr-4 py-2 text-sm text-slate-800"
-                />
-                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
-              </div>
-              <div className="relative w-48 shrink-0">
-                <select
-                  value={classFilter}
-                  onChange={(e) => setClassFilter(e.target.value)}
-                  className="glass-input w-full px-4 py-2 text-sm text-slate-800 appearance-none"
-                >
-                  <option value="">Todas as turmas</option>
-                  {uniqueClasses.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center px-2 text-slate-500">
-                  <ChevronDown className="w-4 h-4" />
-                </div>
-              </div>
+        {/* Barra de filtros */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-2">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72">
+              <input
+                type="text"
+                placeholder="Buscar por nome ou turma..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="glass-input w-full pl-10 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 rounded-full"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-500 font-medium whitespace-nowrap">
-                Total de alunos: <span className="font-bold text-slate-800">{filteredStudents.length}</span>
-              </span>
-              <button
-                onClick={handleExport}
-                className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 shadow-sm"
+            <div className="relative shrink-0">
+              <select
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+                className="glass-input pl-4 pr-8 py-2 text-sm text-slate-800 dark:text-slate-200 appearance-none rounded-full"
               >
-                <Download className="w-4 h-4" /> Exportar Dados
-              </button>
-
+                <option value="">Todas as turmas</option>
+                {uniqueClasses.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>
           </div>
-          
-          <div className="overflow-auto flex-1 -mx-4 sm:mx-0 px-4 sm:px-0 scroll-smooth-mobile">
-            <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
-              <thead className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold z-10">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Nome</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Turma</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium hidden sm:table-cell">Turno</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium hidden md:table-cell">Contatos</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Comportamento</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium text-center">Nota</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-600">
-                {filteredStudents.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                      Nenhum aluno encontrado.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredStudents.map((s) => (
-                    <tr key={s.id} onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)} className={'transition border-b border-slate-100 last:border-0 text-slate-600 active:bg-slate-100 ' + (currentUserRole !== 'GUEST' ? 'hover:bg-slate-50 cursor-pointer' : '')}>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-slate-800">
-                         <div className="flex items-center gap-2 sm:gap-3">
-                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shrink-0 text-sm overflow-hidden">
-                             {s.photoUrl ? (
-                               <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" />
-                             ) : (
-                               s.name.charAt(0)
-                             )}
-                           </div>
-                           <div className="min-w-0">
-                             <span className="truncate block text-sm sm:text-base">{s.name}</span>
-                             <span className="text-xs text-slate-400 sm:hidden">{s.shift}</span>
-                           </div>
-                         </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">{s.class}</td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">{s.shift}</td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-slate-500 hidden md:table-cell">
-                        {s.contacts && s.contacts.length > 0 ? (
-                           <div className="flex flex-col gap-1.5">
-                             {s.contacts.slice(0, 2).map((c, i) => {
-                               const waLink = formatPhoneForWhatsApp(c.phone, s.name);
-                               return (
-                                 <div key={i} className="text-xs flex items-center gap-1.5">
-                                   <span className="text-slate-400 capitalize">{c.name || 'Resp.'}:</span> 
-                                   {waLink ? (
-                                      <a 
-                                        href={waLink} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="text-emerald-600 hover:text-emerald-700 hover:underline font-medium flex items-center transition"
-                                      >
-                                        {c.phone}
-                                      </a>
-                                   ) : (
-                                      <span>{c.phone}</span>
-                                   )}
-                                 </div>
-                               );
-                             })}
-                             {s.contacts.length > 2 && <span className="text-[10px] text-slate-400">+{s.contacts.length - 2} mais</span>}
-                           </div>
-                        ) : (
-                           <span className="text-xs italic text-slate-400">---</span>
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4">
-                        <span className={'inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ' + (getStudentBehavior(getStudentPoints(s.id)) === 'Excepcional' ? 'bg-emerald-500/10 text-emerald-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Ótimo' ? 'bg-blue-500/10 text-blue-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Bom' ? 'bg-slate-500/10 text-slate-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Regular' ? 'bg-yellow-500/10 text-yellow-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Insuficiente' ? 'bg-rose-500/10 text-rose-600' : 'bg-red-500/10 text-red-600')}>
-                          {getStudentBehavior(getStudentPoints(s.id))}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4">
-                         <div className="flex flex-col items-center gap-1">
-                            <span className={'text-sm font-black ' + (getStudentPoints(s.id) >= 7 ? 'text-blue-600' : 'text-red-500')}>
-                               {getStudentPoints(s.id).toFixed(1)}
-                            </span>
-                            <div className="w-12 sm:w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-                               <div 
-                                 className={'h-full transition-all duration-500 ' + (getStudentPoints(s.id) >= 7 ? 'bg-blue-500' : 'bg-red-500')} 
-                                 style={{ width: `${getStudentPoints(s.id) * 10}%` }}
-                               />
-                            </div>
-                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500 font-medium whitespace-nowrap">
+              <span className="font-bold text-slate-800 dark:text-slate-200">{filteredStudents.length}</span> alunos
+            </span>
+            {/* Toggle de modo de visualizacao */}
+            <div className="flex items-center bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-full p-0.5 gap-0.5 shadow-sm">
+              <button
+                onClick={() => { setViewMode('horizontal'); setPanelStudentId(null); }}
+                title="Horizontal — modal centralizado"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === 'horizontal' ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                <Rows3 className="w-3.5 h-3.5" />
+                Horizontal
+              </button>
+              <button
+                onClick={() => setViewMode('vertical')}
+                title="Vertical — painel lateral"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === 'vertical' ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                <PanelRight className="w-3.5 h-3.5" />
+                Vertical
+              </button>
+            </div>
+            <button
+              onClick={handleExport}
+              className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 shadow-sm"
+            >
+              <Download className="w-4 h-4" /> Exportar
+            </button>
           </div>
         </div>
+
+        {/* Grid de cards */}
+        {filteredStudents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-600">
+            <Users className="w-10 h-10 mb-3 opacity-30" />
+            <p className="text-sm font-medium">Nenhum aluno encontrado</p>
+            <p className="text-xs mt-1">Tente ajustar os filtros ou cadastrar um novo aluno</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredStudents.map((s) => {
+              const pts = getStudentPoints(s.id);
+              const beh = getStudentBehavior(pts);
+              const occs = getStudentOccurrences(s.id);
+              const graveCount = occs.filter(o => o.ruleCode >= 300).length;
+              const mediaCount = occs.filter(o => o.ruleCode >= 200 && o.ruleCode < 300).length;
+              const leveCount  = occs.filter(o => o.ruleCode < 200).length;
+
+              const behColor =
+                beh === 'Excepcional' ? { dot: 'bg-emerald-500', badge: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20' } :
+                beh === 'Otimo'       ? { dot: 'bg-blue-500',    badge: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/20' } :
+                beh === 'Bom'         ? { dot: 'bg-slate-400',   badge: 'bg-slate-50 dark:bg-slate-700/30 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600' } :
+                beh === 'Regular'     ? { dot: 'bg-amber-500',   badge: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/20' } :
+                                        { dot: 'bg-rose-500',    badge: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/20' };
+
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    if (currentUserRole === 'GUEST') return;
+                    if (viewMode === 'vertical') {
+                      setPanelStudentId(s.id);
+                    } else {
+                      openEditModal(s);
+                    }
+                  }}
+                  disabled={currentUserRole === 'GUEST'}
+                  className={`group text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:cursor-default disabled:hover:translate-y-0 disabled:hover:shadow-none ${panelStudentId === s.id ? 'ring-2 ring-blue-500 border-blue-300 dark:border-blue-600' : ''}`}
+                >
+                  {/* Badge de comportamento */}
+                  <div className="flex items-center justify-between">
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${behColor.badge}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${behColor.dot}`} />
+                      {beh}
+                    </span>
+                    <span className={`text-sm font-black ${pts >= 7 ? 'text-blue-600 dark:text-blue-400' : pts >= 5 ? 'text-amber-500' : 'text-rose-500'}`}>
+                      {pts.toFixed(1)}
+                    </span>
+                  </div>
+
+                  {/* Avatar + nome */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 overflow-hidden flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-sm">
+                      {s.photoUrl
+                        ? <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" />
+                        : s.name.charAt(0).toUpperCase()
+                      }
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate">{s.name}</p>
+                      {s.observation && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{s.observation}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divisor */}
+                  <div className="h-px bg-slate-100 dark:bg-slate-700/50" />
+
+                  {/* Rodape: turma, turno, ocorrencias */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${behColor.badge}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${behColor.dot}`} />
+                      {s.class}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                      {s.shift === 'Matutino' ? 'Manha' : s.shift === 'Vespertino' ? 'Tarde' : 'Noite'}
+                    </span>
+                    {occs.length > 0 && (
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                        <AlertCircle className="w-3 h-3" />
+                        {occs.length}
+                        {graveCount > 0 && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" title="Grave" />}
+                        {mediaCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" title="Media" />}
+                        {leveCount  > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" title="Leve" />}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Modal Novo/Editar Aluno */}
-      {isModalOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="glass-modal w-full sm:max-w-md flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 rounded-t-3xl sm:rounded-2xl">
-            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 safe-area-top">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-800">
-                {editingStudent ? 'Editar Aluno' : 'Cadastrar Aluno'}
-              </h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-500 hover:text-slate-800 transition rounded-lg hover:bg-white p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto overflow-x-hidden">
-
-              {/* Upload de Foto */}
-              <div className="flex flex-col items-center gap-2">
-                <label className="cursor-pointer group relative">
-                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 group-hover:border-blue-400 bg-slate-50 group-hover:bg-blue-50 transition-all flex items-center justify-center overflow-hidden">
-                    {photoUrl ? (
-                      <img src={photoUrl} alt="Foto do aluno" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 text-slate-400 group-hover:text-blue-500">
-                        <Camera className="w-6 h-6" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-center">Foto</span>
-                      </div>
-                    )}
-                    {isUploadingPhoto && (
-                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full">
-                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setIsUploadingPhoto(true);
-                      const url = await uploadFile(file, editingStudent || 'new-student-' + Date.now());
-                      if (url) setPhotoUrl(url);
-                      setIsUploadingPhoto(false);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-                {photoUrl && (
-                  <button type="button" onClick={() => setPhotoUrl('')} className="text-xs text-rose-500 hover:text-rose-700">
-                    Remover foto
-                  </button>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Nome Completo *</label>
-                <input 
-                  type="text" 
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: João da Silva..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Turma *</label>
-                  <div className="flex gap-2">
-                    <select 
-                      required
-                      value={className.replace(/ [A-Z]$/i, '') || '6º Ano'}
-                      onChange={(e) => {
-                        const letter = className.match(/ ([A-Z])$/i)?.[1] || 'A';
-                        setClassName(`${e.target.value} ${letter}`);
-                      }}
-                      className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="6º Ano">6º Ano</option>
-                      <option value="7º Ano">7º Ano</option>
-                      <option value="8º Ano">8º Ano</option>
-                      <option value="9º Ano">9º Ano</option>
-                      <option value="1º Ano">1º Ano</option>
-                      <option value="2º Ano">2º Ano</option>
-                      <option value="3º Ano">3º Ano</option>
-                    </select>
-                    <select 
-                      required
-                      value={className.match(/ ([A-Z])$/i)?.[1] || 'A'}
-                      onChange={(e) => {
-                        const prefix = className.replace(/ [A-Z]$/i, '') || '6º Ano';
-                        setClassName(`${prefix} ${e.target.value}`);
-                      }}
-                      className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Turno *</label>
-                  <select 
-                    required
-                    value={shift}
-                    onChange={(e) => setShift(e.target.value as any)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Matutino">Matutino</option>
-                    <option value="Vespertino">Vespertino</option>
-                    <option value="Noturno">Noturno</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Matrícula</label>
-                  <input 
-                    type="text" 
-                    value={registrationNumber}
-                    onChange={(e) => setRegistrationNumber(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ex: 12345"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Data de Nascimento</label>
-                  <input 
-                    type="date" 
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Endereço</label>
-                  <input 
-                    type="text" 
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Rua, Número, Bairro"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">CPF</label>
-                  <input 
-                    type="text" 
-                    value={cpf}
-                    onChange={(e) => setCpf(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Observações</label>
-                <textarea 
-                  value={observation}
-                  onChange={(e) => setObservation(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"
-                  placeholder="Laudos, condições de saúde, etc..."
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-slate-600">Contatos dos Responsáveis</label>
-                {contacts.map((contact, index) => {
-                  const waLink = formatPhoneForWhatsApp(contact.phone, name);
-                  return (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={contact.name}
-                      onChange={(e) => updateContact(index, 'name', e.target.value)}
-                      placeholder="Responsável"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      ref={(el) => { phoneRefs.current[index] = el; }}
-                      type="tel"
-                      value={contact.phone}
-                      onChange={(e) => updateContact(index, 'phone', e.target.value)}
-                      placeholder="Telefone"
-                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {waLink && (
-                      <a 
-                        href={waLink} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition shrink-0 flex items-center justify-center" 
-                        title="Falar com responsável"
-                      >
-                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-                      </a>
-                    )}
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={handleAddContact}
-                        className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition shrink-0 flex items-center justify-center"
-                        title="Adicionar mais um contato"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveContact(index)}
-                        className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition shrink-0 flex items-center justify-center"
-                        title="Remover contato"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    )}
-                  </div>
-                )})}
-              </div>
-
-              <div className="pt-4 flex justify-between gap-3 border-t border-slate-200 mt-5 pt-5">
-                {editingStudent ? (
-                  <button 
-                    type="button" 
-                    onClick={() => { setIsDeleteConfirmOpen(true); setDeleteConfirmText(''); }}
-                    className="px-4 py-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition font-medium flex items-center gap-2"
-                  >
-                    <Archive className="w-4 h-4"/>
-                    Arquivar
-                  </button>
-                ) : <div />}
-                <div className="flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white transition font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={!name || !className}
-                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {editingStudent ? 'Salvar Alterações' : 'Confirmar Cadastro'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Painel lateral (modo vertical) */}
+      {viewMode === 'vertical' && panelStudentId && (
+        <StudentSheet
+          studentId={panelStudentId}
+          onClose={() => setPanelStudentId(null)}
+          mode="panel"
+        />
       )}
+
+      {/* Modal Novo/Editar Aluno */}
+      {isModalOpen && (() => {
+        const studentOccs = editingStudent ? getStudentOccurrences(editingStudent) : [];
+        const allDocs = studentOccs.flatMap(o => [
+          ...(o.videoUrls || []).map(url => ({ url, type: 'video' as const, date: o.date, label: `Vídeo — Ocorrência ${o.id}` })),
+          ...(o.signedDocUrls || []).map(url => ({ url, type: 'doc' as const, date: o.date, label: `Documento — Ocorrência ${o.id}` })),
+        ]);
+        const sevColor = (code: number) => {
+          if (code >= 300) return { bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-500/30', badge: 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300', label: 'Grave' };
+          if (code >= 200) return { bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-500/30', badge: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300', label: 'Media' };
+          return { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-500/30', badge: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300', label: 'Leve' };
+        };
+
+        /* ── MODAL LARGO: edição com abas ── */
+        if (editingStudent) {
+          const pts = getStudentPoints(editingStudent);
+          const beh = getStudentBehavior(pts);
+          return (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9990] flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white dark:bg-slate-900 w-full max-w-4xl flex flex-col max-h-[92vh] rounded-2xl shadow-2xl animate-in zoom-in-95 fade-in duration-300 overflow-hidden">
+
+                {/* Cabeçalho com avatar e info */}
+                <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  <div className="flex items-center gap-4">
+                    {/* Avatar */}
+                    <label className="cursor-pointer group relative shrink-0">
+                      <div className="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-blue-400 bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden transition-all">
+                        {photoUrl ? (
+                          <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                        {isUploadingPhoto && (
+                          <div className="absolute inset-0 bg-white/80 dark:bg-black/60 flex items-center justify-center rounded-full">
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/20 hidden group-hover:flex items-center justify-center rounded-full">
+                          <Camera className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setIsUploadingPhoto(true);
+                        const url = await uploadFile(file, editingStudent || 'new-' + Date.now());
+                        if (url) setPhotoUrl(url);
+                        setIsUploadingPhoto(false);
+                        e.target.value = '';
+                      }} />
+                    </label>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">Ficha do Aluno</p>
+                      <h2 className="text-xl font-bold text-slate-800 dark:text-white leading-tight">{name}</h2>
+                      <div className="flex items-center flex-wrap gap-2 mt-1">
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{className} · {shift}</span>
+                        {registrationNumber && <span className="text-xs text-slate-400 dark:text-slate-500">Mat. {registrationNumber}</span>}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pts >= 7 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : pts >= 5 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300'}`}>
+                          {pts.toFixed(1)} pts · {beh}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsModalOpen(false)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Abas */}
+                <div className="flex items-center gap-1 px-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                  {([
+                    { id: 'atividades', label: 'Atividades', icon: BookOpen, count: studentOccs.length },
+                    { id: 'dados', label: 'Dados', icon: User, count: null },
+                    { id: 'responsaveis', label: 'Responsaveis', icon: Phone, count: contacts.filter(c => c.phone).length },
+                    { id: 'documentos', label: 'Documentos', icon: Paperclip, count: allDocs.length },
+                  ] as const).map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.id ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                      {tab.count !== null && tab.count > 0 && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Conteúdo das abas */}
+                <div className="flex-1 overflow-y-auto">
+
+                  {/* ABA: Atividades */}
+                  {activeTab === 'atividades' && (
+                    <div className="p-6">
+                      {studentOccs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-600">
+                          <CheckCircle2 className="w-10 h-10 mb-3 opacity-40" />
+                          <p className="text-sm font-medium">Nenhuma ocorrencia registrada</p>
+                          <p className="text-xs mt-1">Este aluno nao possui historico disciplinar</p>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          {/* Linha vertical da timeline */}
+                          <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-slate-100 dark:bg-slate-800" />
+                          <div className="space-y-4">
+                            {studentOccs.map((occ, idx) => {
+                              const sc = sevColor(occ.ruleCode);
+                              return (
+                                <div key={occ.id} className="relative flex gap-4">
+                                  {/* Bolinha da timeline */}
+                                  <div className={`relative z-10 w-9 h-9 shrink-0 rounded-full border-2 ${sc.border} ${sc.bg} flex items-center justify-center`}>
+                                    <AlertCircle className={`w-4 h-4 ${sc.text}`} />
+                                  </div>
+                                  {/* Card da ocorrencia */}
+                                  <div className={`flex-1 rounded-xl border p-4 ${sc.bg} ${sc.border} mb-1`}>
+                                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                                      <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sc.badge}`}>{sc.label}</span>
+                                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Art. {occ.ruleCode}</span>
+                                          {occ.resolved && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">Cumprida</span>}
+                                        </div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-white mt-1">{occ.observations || 'Sem descricao'}</p>
+                                      </div>
+                                      <div className="text-right shrink-0">
+                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(occ.date).toLocaleDateString('pt-BR')}</p>
+                                        {occ.hour && <p className="text-[10px] text-slate-400 mt-0.5">{occ.hour}</p>}
+                                      </div>
+                                    </div>
+                                    {occ.location && (
+                                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1"><MapPin className="w-3 h-3" />{occ.location}</p>
+                                    )}
+                                    {(occ.measures || [occ.measure]).filter(Boolean).length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-2">
+                                        {(occ.measures || (occ.measure ? [occ.measure] : [])).map((m, mi) => (
+                                          <span key={mi} className="text-[10px] bg-white/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md">{m}</span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">Registrado por: {occ.registeredBy}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ABA: Dados */}
+                  {activeTab === 'dados' && (
+                    <form onSubmit={handleSubmit} id="form-dados" className="p-6 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nome Completo *</label>
+                        <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turma *</label>
+                          <div className="flex gap-2">
+                            <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
+                              className="w-2/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                              {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                            </select>
+                            <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                              className="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                              {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turno *</label>
+                          <select required value={shift} onChange={(e) => setShift(e.target.value as any)}
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option>Matutino</option><option>Vespertino</option><option>Noturno</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Matricula</label>
+                          <input type="text" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Ex: 12345"
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nascimento</label>
+                          <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Endereco</label>
+                        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, Numero, Bairro"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">CPF</label>
+                        <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Observacoes</label>
+                        <textarea value={observation} onChange={(e) => setObservation(e.target.value)} placeholder="Laudos, condicoes de saude, etc..."
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[72px] text-sm" />
+                      </div>
+                    </form>
+                  )}
+
+                  {/* ABA: Responsáveis */}
+                  {activeTab === 'responsaveis' && (
+                    <form onSubmit={handleSubmit} id="form-responsaveis" className="p-6 space-y-4">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Telefones e nomes dos responsaveis pelo aluno.</p>
+                      {contacts.map((contact, index) => {
+                        const waLink = formatPhoneForWhatsApp(contact.phone, name);
+                        return (
+                          <div key={index} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Responsavel {index + 1}</span>
+                              {index > 0 && (
+                                <button type="button" onClick={() => handleRemoveContact(index)} className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1">
+                                  <X className="w-3 h-3" /> Remover
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome</label>
+                                <input type="text" value={contact.name} onChange={(e) => updateContact(index, 'name', e.target.value)} placeholder="Nome do responsavel"
+                                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefone</label>
+                                <div className="flex gap-2">
+                                  <input ref={(el) => { phoneRefs.current[index] = el; }} type="tel" value={contact.phone} onChange={(e) => updateContact(index, 'phone', e.target.value)} placeholder="(65) 99999-9999"
+                                    className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                                  {waLink && (
+                                    <a href={waLink} target="_blank" rel="noopener noreferrer"
+                                      className="shrink-0 p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-lg transition" title="WhatsApp">
+                                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button type="button" onClick={handleAddContact}
+                        className="w-full py-2 border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-500 dark:hover:text-blue-400 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" /> Adicionar responsavel
+                      </button>
+                    </form>
+                  )}
+
+                  {/* ABA: Documentos */}
+                  {activeTab === 'documentos' && (() => {
+                    const docsOwed = studentOccs.length;
+                    const docsAttached = allDocs.length;
+                    const docsMissing = Math.max(0, docsOwed - docsAttached);
+                    const occsWithDocs = studentOccs.filter(o => (o.videoUrls?.length || 0) + (o.signedDocUrls?.length || 0) > 0);
+                    return (
+                      <div className="p-6 space-y-5">
+                        {/* Mini-dash */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Docs Devidos</p>
+                              <p className="text-2xl font-black text-slate-800 dark:text-white leading-none mt-0.5">{docsOwed}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">1 por ocorrencia</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                              <Paperclip className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Anexados</p>
+                              <p className="text-2xl font-black text-slate-800 dark:text-white leading-none mt-0.5">
+                                {docsAttached}<span className="text-sm font-medium text-slate-400 ml-1">/{docsOwed}</span>
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{occsWithDocs.length} ocorr. com doc</p>
+                            </div>
+                          </div>
+                          <div className={`flex items-center gap-3 p-4 rounded-xl border ${docsMissing > 0 ? 'border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/5' : 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/5'}`}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${docsMissing > 0 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+                              {docsMissing > 0 ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Faltando</p>
+                              <p className={`text-2xl font-black leading-none mt-0.5 ${docsMissing > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>{docsMissing}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{docsMissing === 0 ? 'Tudo em dia' : 'pendente(s)'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Lista por ocorrência */}
+                        {studentOccs.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-slate-600">
+                            <FileText className="w-10 h-10 mb-3 opacity-40" />
+                            <p className="text-sm font-medium">Nenhuma ocorrencia registrada</p>
+                            <p className="text-xs mt-1">Documentos sao vinculados a ocorrencias</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {studentOccs.map(occ => {
+                              const occDocs = [
+                                ...(occ.videoUrls || []).map(url => ({ url, type: 'video' as const })),
+                                ...(occ.signedDocUrls || []).map(url => ({ url, type: 'doc' as const })),
+                              ];
+                              const hasDocs = occDocs.length > 0;
+                              return (
+                                <div key={occ.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+                                  <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                        {new Date(occ.date).toLocaleDateString('pt-BR')} — Art. {occ.ruleCode}
+                                      </span>
+                                      {occ.observations && (
+                                        <span className="text-[10px] text-slate-400 truncate max-w-[160px]">{occ.observations}</span>
+                                      )}
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${hasDocs ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'}`}>
+                                      {hasDocs ? `${occDocs.length} doc` : 'sem doc'}
+                                    </span>
+                                  </div>
+                                  {hasDocs ? (
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                      {occDocs.map((doc, di) => (
+                                        <a key={di} href={doc.url} target="_blank" rel="noopener noreferrer"
+                                          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+                                          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${doc.type === 'video' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
+                                            {doc.type === 'video' ? <FileText className="w-3.5 h-3.5" /> : <Paperclip className="w-3.5 h-3.5" />}
+                                          </div>
+                                          <span className="text-sm text-slate-600 dark:text-slate-300 flex-1 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                            {doc.type === 'video' ? 'Video' : 'Documento'} {di + 1}
+                                          </span>
+                                          <span className="text-xs text-blue-500 dark:text-blue-400 font-medium shrink-0">Abrir</span>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 italic">
+                                      Nenhum documento anexado a esta ocorrencia
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Rodape com acoes */}
+                <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                  <button type="button" onClick={() => { setIsDeleteConfirmOpen(true); setDeleteConfirmText(''); }}
+                    className="px-4 py-2 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition font-medium text-sm flex items-center gap-2">
+                    <Archive className="w-4 h-4" /> Arquivar
+                  </button>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setIsModalOpen(false)}
+                      className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition font-medium text-sm">
+                      Fechar
+                    </button>
+                    {(activeTab === 'dados' || activeTab === 'responsaveis') && (
+                      <button type="submit" form={activeTab === 'dados' ? 'form-dados' : 'form-responsaveis'}
+                        disabled={!name || !className}
+                        className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                        Salvar Alteracoes
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        /* ── MODAL SIMPLES: novo cadastro ── */
+        return (
+          <div className="fixed inset-0 glass-overlay z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="glass-modal w-full sm:max-w-md flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 rounded-t-3xl sm:rounded-2xl">
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 safe-area-top">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-800">Cadastrar Aluno</h2>
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-500 hover:text-slate-800 transition rounded-lg hover:bg-white p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto overflow-x-hidden">
+                <div className="flex flex-col items-center gap-2">
+                  <label className="cursor-pointer group relative">
+                    <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 group-hover:border-blue-400 bg-slate-50 group-hover:bg-blue-50 transition-all flex items-center justify-center overflow-hidden">
+                      {photoUrl ? <img src={photoUrl} alt="Foto do aluno" className="w-full h-full object-cover" /> : (
+                        <div className="flex flex-col items-center gap-1 text-slate-400 group-hover:text-blue-500">
+                          <Camera className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-wider text-center">Foto</span>
+                        </div>
+                      )}
+                      {isUploadingPhoto && <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full"><div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]; if (!file) return;
+                      setIsUploadingPhoto(true);
+                      const url = await uploadFile(file, 'new-' + Date.now());
+                      if (url) setPhotoUrl(url); setIsUploadingPhoto(false); e.target.value = '';
+                    }} />
+                  </label>
+                  {photoUrl && <button type="button" onClick={() => setPhotoUrl('')} className="text-xs text-rose-500 hover:text-rose-700">Remover foto</button>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Nome Completo *</label>
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Joao da Silva..." />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Turma *</label>
+                    <div className="flex gap-2">
+                      <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
+                        className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                      </select>
+                      <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                        className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Turno *</label>
+                    <select required value={shift} onChange={(e) => setShift(e.target.value as any)}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>Matutino</option><option>Vespertino</option><option>Noturno</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Matricula</label>
+                    <input type="text" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Ex: 12345"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Data de Nascimento</label>
+                    <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Endereco</label>
+                    <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, Numero, Bairro"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">CPF</label>
+                    <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Observacoes</label>
+                  <textarea value={observation} onChange={(e) => setObservation(e.target.value)} placeholder="Laudos, condicoes de saude, etc..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]" />
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-600">Contatos dos Responsaveis</label>
+                  {contacts.map((contact, index) => {
+                    const waLink = formatPhoneForWhatsApp(contact.phone, name);
+                    return (
+                      <div key={index} className="flex gap-2">
+                        <input type="text" value={contact.name} onChange={(e) => updateContact(index, 'name', e.target.value)} placeholder="Responsavel"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <input ref={(el) => { phoneRefs.current[index] = el; }} type="tel" value={contact.phone} onChange={(e) => updateContact(index, 'phone', e.target.value)} placeholder="Telefone"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        {waLink && (
+                          <a href={waLink} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition shrink-0 flex items-center justify-center" title="Falar com responsavel">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                          </a>
+                        )}
+                        {index === 0 ? (
+                          <button type="button" onClick={handleAddContact} className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition shrink-0 flex items-center justify-center" title="Adicionar mais um contato">
+                            <Plus className="w-5 h-5" />
+                          </button>
+                        ) : (
+                          <button type="button" onClick={() => handleRemoveContact(index)} className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition shrink-0 flex items-center justify-center" title="Remover contato">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="pt-4 flex justify-end gap-3 border-t border-slate-200 mt-5 pt-5">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white transition font-medium">Cancelar</button>
+                  <button type="submit" disabled={!name || !className} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                    Confirmar Cadastro
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal Confirmação de Arquivamento */}
       {isDeleteConfirmOpen && (

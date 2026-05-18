@@ -5,12 +5,36 @@
 ## Última atualização
 
 **Data:** 2026-05-17  
-**Sessão:** DRE login — auth corrigido (aguarda isAuthRestored), cor #2d3184, base_dre no canto direito  
+**Sessão:** Novo layout do painel DRE — sidebar + lista de ocorrências  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
 Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acessa tudo.
+
+## Última ação concluída (2026-05-17) — sessão 4
+
+- **Novo layout do painel DRE (`DreDashboard.tsx`):**
+  1. Layout `grid 1fr 300px` — painel central + sidebar fixa (xl)
+  2. **Sidebar:** card KPI "% Implantação do Sistema na Rede" com gauge semicircular, ranking de escolas por índice disciplinar, ranking de alunos (elogios/100) com barra de progresso
+  3. **Painel central:** estrutura analytics (hero card Índice Disciplinar + 3 cards KPI em linha), KPIs secundários (Taxa Gravidade, Razão E/O, Acidentes, Alertas), gráficos comparativos
+  4. **Lista de Ocorrências** ao final — tabela com colunas Escola, Descrição, Qtd, Progresso, Severidade + filtros pills (Todas/Graves/Medias/Leves) + select por escola + link para registro completo
+- Zero erros TypeScript
+
+## Última ação concluída (2026-05-17) — sessão 3
+- **Ficha do aluno com 4 abas + replicação para escolas:**
+  1. `app/alunos/page.tsx`: modal de edição reformulado com layout largo (max-w-4xl) e 4 abas: Atividades (timeline de ocorrências), Dados (formulário), Responsaveis, Documentos
+  2. `components/StudentSheet.tsx`: componente reutilizável extraído (aceita `studentId`, `onClose`, `readOnly`)
+  3. `app/page.tsx`: cards de alunos críticos tornados clicáveis — abre `StudentSheet` diretamente no dashboard da escola
+- Zero erros TypeScript
+
+## Última ação concluída (2026-05-17) — sessão 2
+- **4 melhorias no /dre:**
+  1. `<AIChat />` adicionado ao DRE (flutuante IA com ARIA, mesmo componente do AppShell)
+  2. Fundo azul `from-blue-700 via-blue-800 to-blue-950` — mesmo gradiente do DRE login
+  3. Header substituído por pill glass igual ao TopbarLayout das escolas (logo, status ONLINE, ícones icon-pill, avatar)
+  4. Todos os KPIs clicáveis: `HeroKpi` e `SecKpi` viram `<button>` com hover scale, shadow, border colorida, ARIA labels e `onNavigate` para rotas corretas
+- Zero erros TypeScript
 
 ## Última ação concluída (2026-05-17)
 - **Dashboard DRE com KPIs atraentes:** Criado `DreDashboard.tsx` (603 linhas) com bento grid moderno — KPIs primários com card herói de índice disciplinar, badges de severidade L/M/G, gráfico de barras comparativo por escola (Recharts), gráfico de pizza de severidade, seção de implantação com `IndexRing`, ranking com medalhas, cards de escola clicáveis com barra stacked de gravidade.

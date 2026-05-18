@@ -1,14 +1,15 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Users, AlertTriangle, Star, Activity, Shield, Award,
   Zap, CheckCircle2, TrendingUp, TrendingDown, Minus,
-  AlertCircle, Trophy, FileWarning,
+  AlertCircle, Trophy, FileWarning, SlidersHorizontal, ChevronDown,
+  Building2, BookOpen, GraduationCap, Filter,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  RadialBarChart, RadialBar, Cell, PieChart, Pie,
+  PieChart, Pie, Cell,
 } from 'recharts';
 
 // ─────────────────────────────────────────────
@@ -37,10 +38,11 @@ interface Props {
   loading: boolean;
   isVisible: (id: string) => boolean;
   onSchoolClick?: (schoolId: string) => void;
+  onNavigate?: (route: string) => void;
 }
 
 // ─────────────────────────────────────────────
-// Helpers
+// Helpers visuais
 // ─────────────────────────────────────────────
 const RISK_META = {
   low:      { label: 'Baixo',   color: '#10b981', bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/30' },
@@ -48,6 +50,15 @@ const RISK_META = {
   high:     { label: 'Alto',    color: '#f97316', bg: 'bg-orange-50 dark:bg-orange-500/10',   text: 'text-orange-600 dark:text-orange-400',   border: 'border-orange-200 dark:border-orange-500/30' },
   critical: { label: 'Critico', color: '#f43f5e', bg: 'bg-rose-50 dark:bg-rose-500/10',       text: 'text-rose-600 dark:text-rose-400',       border: 'border-rose-200 dark:border-rose-500/30' },
 };
+
+// Labels de severidade para filtros de ocorrências
+const SEV_FILTERS = [
+  { id: 'todas',  label: 'Todas'  },
+  { id: 'Grave',  label: 'Graves' },
+  { id: 'Media',  label: 'Medias' },
+  { id: 'Leve',   label: 'Leves'  },
+] as const;
+type SevFilter = typeof SEV_FILTERS[number]['id'];
 
 function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse bg-slate-100 dark:bg-slate-700 rounded-xl ${className}`} />;
@@ -76,12 +87,69 @@ function IndexRing({ value, size = 64, stroke = 6 }: { value: number; size?: num
   );
 }
 
+// Gauge semicircular para o KPI de implantação na sidebar
+function SemiGauge({ value }: { value: number }) {
+  const color = value >= 80 ? '#10b981' : value >= 50 ? '#f59e0b' : '#f43f5e';
+  const r = 52;
+  const cx = 70;
+  const cy = 70;
+  const startAngle = Math.PI;
+  const endAngle = 2 * Math.PI;
+  const range = endAngle - startAngle;
+  const filled = startAngle + (value / 100) * range;
+
+  const toXY = (angle: number, radius: number) => ({
+    x: cx + radius * Math.cos(angle),
+    y: cy + radius * Math.sin(angle),
+  });
+
+  // Track arc (completo)
+  const trackStart = toXY(startAngle, r);
+  const trackEnd   = toXY(endAngle, r);
+  const trackD = `M ${trackStart.x} ${trackStart.y} A ${r} ${r} 0 1 1 ${trackEnd.x} ${trackEnd.y}`;
+
+  // Fill arc
+  const fillStart = toXY(startAngle, r);
+  const fillEnd   = toXY(filled, r);
+  const largeArc  = filled - startAngle > Math.PI ? 1 : 0;
+  const fillD = `M ${fillStart.x} ${fillStart.y} A ${r} ${r} 0 ${largeArc} 1 ${fillEnd.x} ${fillEnd.y}`;
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg width="140" height="80" viewBox="0 0 140 80" className="overflow-visible">
+        {/* Trilho */}
+        <path d={trackD} fill="none" stroke="currentColor" strokeWidth="10" className="text-slate-100 dark:text-slate-700" strokeLinecap="round" />
+        {/* Preenchimento */}
+        {value > 0 && (
+          <path d={fillD} fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
+            style={{ transition: 'stroke-dasharray 0.8s ease' }}
+          />
+        )}
+        {/* Valor central */}
+        <text x={cx} y={cy - 4} textAnchor="middle" className="fill-slate-800 dark:fill-white" fontSize="20" fontWeight="900">
+          {value}%
+        </text>
+        <text x={cx} y={cy + 12} textAnchor="middle" className="fill-slate-400 dark:fill-slate-500" fontSize="9" fontWeight="600">
+          da rede
+        </text>
+      </svg>
+    </div>
+  );
+}
+
 // Barra de progresso
-function Bar2({ value, max, color }: { value: number; max: number; color: string }) {
+function BarPill({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700/60 rounded-full overflow-hidden">
-      <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
+    <div className="relative w-full mt-2">
+      <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700/60 rounded-full">
+        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <div
+        className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 shadow-sm transition-all duration-700 ${color}`}
+        style={{ left: `${pct}%` }}
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -98,74 +166,151 @@ function TrendBadge({ value, inverse = false }: { value: number; inverse?: boole
 }
 
 // ─────────────────────────────────────────────
-// Card de KPI primário (hero)
+// Tipo auxiliar para "ocorrência simulada" na lista
 // ─────────────────────────────────────────────
-function HeroKpi({ label, value, sub, icon: Icon, accentClass, trend = 0, inverse = false }:
-  { label: string; value: string | number; sub?: string; icon: React.ElementType; accentClass: string; trend?: number; inverse?: boolean }) {
-  return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 flex flex-col justify-between min-h-[130px] ${accentClass}`}>
-      <div className="flex items-start justify-between">
-        <p className="text-xs font-semibold uppercase tracking-widest opacity-80">{label}</p>
-        <Icon className="w-5 h-5 opacity-50" />
-      </div>
-      <div>
-        <p className="text-5xl font-black tracking-tight leading-none mt-2">{value}</p>
-        {sub && <p className="text-xs mt-1 opacity-70">{sub}</p>}
-        <div className="mt-2">
-          <TrendBadge value={trend} inverse={inverse} />
-        </div>
-      </div>
-    </div>
-  );
+interface OccRow {
+  id: string;
+  schoolName: string;
+  schoolId: string;
+  studentName: string;
+  severity: 'Grave' | 'Media' | 'Leve';
+  description: string;
+  count: number;
 }
 
 // ─────────────────────────────────────────────
-// Card de KPI secundário
+// Gera lista de ocorrências a partir dos stats
 // ─────────────────────────────────────────────
-function SecKpi({ label, value, sub, icon: Icon, iconBg, children }: {
-  label: string; value: string | number; sub?: string;
-  icon: React.ElementType; iconBg: string; children?: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-      </div>
-      <div>
-        <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none">{value}</p>
-        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wide">{label}</p>
-        {sub && <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{sub}</p>}
-      </div>
-      {children}
-    </div>
-  );
+function buildOccRows(stats: SchoolStats[]): OccRow[] {
+  const rows: OccRow[] = [];
+  stats.forEach(school => {
+    if (school.graves > 0) {
+      rows.push({
+        id: `${school.id}-grave`,
+        schoolId: school.id,
+        schoolName: school.name.replace('EECM Prof. ', ''),
+        studentName: 'Multiplos alunos',
+        severity: 'Grave',
+        description: `${school.graves} ocorrencia${school.graves > 1 ? 's' : ''} grave${school.graves > 1 ? 's' : ''} registrada${school.graves > 1 ? 's' : ''}`,
+        count: school.graves,
+      });
+    }
+    if (school.medias > 0) {
+      rows.push({
+        id: `${school.id}-media`,
+        schoolId: school.id,
+        schoolName: school.name.replace('EECM Prof. ', ''),
+        studentName: 'Multiplos alunos',
+        severity: 'Media',
+        description: `${school.medias} ocorrencia${school.medias > 1 ? 's' : ''} de severidade media`,
+        count: school.medias,
+      });
+    }
+    if (school.leves > 0) {
+      rows.push({
+        id: `${school.id}-leve`,
+        schoolId: school.id,
+        schoolName: school.name.replace('EECM Prof. ', ''),
+        studentName: 'Multiplos alunos',
+        severity: 'Leve',
+        description: `${school.leves} ocorrencia${school.leves > 1 ? 's' : ''} de severidade leve`,
+        count: school.leves,
+      });
+    }
+  });
+  return rows.sort((a, b) => {
+    const sOrder = { Grave: 0, Media: 1, Leve: 2 };
+    return sOrder[a.severity] - sOrder[b.severity] || b.count - a.count;
+  });
 }
+
+const SEV_STYLE: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  Grave: { bg: 'bg-rose-50 dark:bg-rose-500/10',   text: 'text-rose-600 dark:text-rose-400',     border: 'border-rose-200 dark:border-rose-500/30',   dot: 'bg-rose-500' },
+  Media: { bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400',    border: 'border-amber-200 dark:border-amber-500/30',  dot: 'bg-amber-400' },
+  Leve:  { bg: 'bg-blue-50 dark:bg-blue-500/10',   text: 'text-blue-600 dark:text-blue-400',      border: 'border-blue-200 dark:border-blue-500/30',    dot: 'bg-blue-400' },
+};
 
 // ─────────────────────────────────────────────
 // Componente principal
 // ─────────────────────────────────────────────
-export default function DreDashboard({ stats, loading, isVisible, onSchoolClick }: Props) {
-  const totalStudents   = stats.reduce((s, x) => s + x.students, 0);
-  const totalOcc        = stats.reduce((s, x) => s + x.occurrences, 0);
-  const totalPraises    = stats.reduce((s, x) => s + x.praises, 0);
-  const totalAccidents  = stats.reduce((s, x) => s + x.accidents, 0);
-  const totalGraves     = stats.reduce((s, x) => s + x.graves, 0);
-  const totalLeves      = stats.reduce((s, x) => s + x.leves, 0);
-  const totalMedias     = stats.reduce((s, x) => s + x.medias, 0);
-  const avgDiscipline   = stats.length > 0 ? Math.round(stats.reduce((s, x) => s + x.disciplineIndex, 0) / stats.length) : 0;
+type Period = 'dia' | 'semana' | 'mes';
+
+const PERIOD_LABELS: Record<Period, string> = {
+  dia: 'Hoje',
+  semana: 'Esta semana',
+  mes: 'Este mes',
+};
+
+export default function DreDashboard({ stats, loading, isVisible, onSchoolClick, onNavigate }: Props) {
+  const nav = (route: string) => onNavigate?.(route);
+
+  // ─── Filtros locais ───────────────────────────
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('todas');
+  const [selectedPeriod, setSelectedPeriod]     = useState<Period>('mes');
+  const [schoolDropdownOpen, setSchoolDropdownOpen] = useState(false);
+  const schoolDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Filtro de ocorrências
+  const [occSevFilter, setOccSevFilter] = useState<SevFilter>('todas');
+  const [occSchoolFilter, setOccSchoolFilter] = useState<string>('todas');
+
+  // Filtros de período dos gráficos
+  const [barPeriod,  setBarPeriod]  = useState<Period>('mes');
+  const [piePeriod,  setPiePeriod]  = useState<Period>('mes');
+  const [barDropOpen, setBarDropOpen] = useState(false);
+  const [pieDropOpen, setPieDropOpen] = useState(false);
+  const barDropRef = useRef<HTMLDivElement>(null);
+  const pieDropRef = useRef<HTMLDivElement>(null);
+
+  // Fecha dropdowns ao clicar fora
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (barDropRef.current && !barDropRef.current.contains(e.target as Node)) setBarDropOpen(false);
+      if (pieDropRef.current && !pieDropRef.current.contains(e.target as Node)) setPieDropOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!schoolDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (schoolDropdownRef.current && !schoolDropdownRef.current.contains(e.target as Node)) {
+        setSchoolDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [schoolDropdownOpen]);
+
+  // Aplica filtro de escola
+  const filteredStats = selectedSchoolId === 'todas'
+    ? stats
+    : stats.filter(s => s.id === selectedSchoolId);
+
+  // ─── KPIs calculados ───────────────────────────
+  const totalStudents   = filteredStats.reduce((s, x) => s + x.students, 0);
+  const totalOcc        = filteredStats.reduce((s, x) => s + x.occurrences, 0);
+  const totalPraises    = filteredStats.reduce((s, x) => s + x.praises, 0);
+  const totalAccidents  = filteredStats.reduce((s, x) => s + x.accidents, 0);
+  const totalGraves     = filteredStats.reduce((s, x) => s + x.graves, 0);
+  const totalLeves      = filteredStats.reduce((s, x) => s + x.leves, 0);
+  const totalMedias     = filteredStats.reduce((s, x) => s + x.medias, 0);
+  const avgDiscipline   = filteredStats.length > 0 ? Math.round(filteredStats.reduce((s, x) => s + x.disciplineIndex, 0) / filteredStats.length) : 0;
   const globalGravityRate = totalOcc > 0 ? Math.round((totalGraves / totalOcc) * 100) : 0;
   const globalPraiseRatio = totalStudents > 0 ? Math.round((totalPraises / totalStudents) * 100) : 0;
-  const alertSchools    = stats.filter(s => s.riskLevel === 'high' || s.riskLevel === 'critical').length;
-  const ranked          = [...stats].sort((a, b) => b.disciplineIndex - a.disciplineIndex);
+  const alertSchools    = filteredStats.filter(s => s.riskLevel === 'high' || s.riskLevel === 'critical').length;
+  const ranked          = [...filteredStats].sort((a, b) => b.disciplineIndex - a.disciplineIndex);
 
-  const totalImpl = stats.reduce((s, x) => s + x.implantacaoTotal, 0);
-  const doneImpl  = stats.reduce((s, x) => s + x.implantacaoDone, 0);
+  const totalImpl = filteredStats.reduce((s, x) => s + x.implantacaoTotal, 0);
+  const doneImpl  = filteredStats.reduce((s, x) => s + x.implantacaoDone, 0);
   const pctImpl   = totalImpl > 0 ? Math.round((doneImpl / totalImpl) * 100) : 0;
 
-  // Dados para o gráfico de barras comparativo
-  const barData = stats.map(s => ({
+  // Ranking de alunos por elogios (por escola, aproximado via praiseRatio)
+  const rankedStudentSchools = [...filteredStats].sort((a, b) => b.praiseRatio - a.praiseRatio);
+
+  // Dados para gráfico comparativo
+  const barData = filteredStats.map(s => ({
     name: s.name.replace('EECM Prof. ', '').substring(0, 10),
     fullName: s.name,
     Disciplina: s.disciplineIndex,
@@ -173,12 +318,20 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
     Elogios: s.praises,
   }));
 
-  // Dados para o gráfico de severidade (pizza)
+  // Dados para pizza de severidade
   const severityData = [
     { name: 'Leves',  value: totalLeves,  fill: '#f59e0b' },
     { name: 'Medias', value: totalMedias, fill: '#f97316' },
     { name: 'Graves', value: totalGraves, fill: '#f43f5e' },
   ].filter(d => d.value > 0);
+
+  // Ocorrências para a lista
+  const allOccRows = buildOccRows(filteredStats);
+  const filteredOccRows = allOccRows.filter(r => {
+    const sevOk    = occSevFilter === 'todas' || r.severity === occSevFilter;
+    const schoolOk = occSchoolFilter === 'todas' || r.schoolId === occSchoolFilter;
+    return sevOk && schoolOk;
+  });
 
   // ─── Loading skeleton ───────────────────────
   if (loading) {
@@ -187,12 +340,9 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-32" />)}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28" />)}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Skeleton className="h-60" />
-          <Skeleton className="h-60" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <Skeleton className="lg:col-span-2 h-80" />
+          <Skeleton className="h-80" />
         </div>
       </div>
     );
@@ -208,332 +358,487 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
     );
   }
 
+  const selectedSchoolName = selectedSchoolId === 'todas'
+    ? 'Todas as escolas'
+    : (stats.find(s => s.id === selectedSchoolId)?.name ?? 'Escola');
+
+  // ── Dropdown reutilizável de período para gráficos ──
+  const PeriodBtn = ({
+    period, open, setOpen, dropRef, onSelect,
+  }: {
+    period: Period;
+    open: boolean;
+    setOpen: (v: boolean) => void;
+    dropRef: React.RefObject<HTMLDivElement | null>;
+    onSelect: (p: Period) => void;
+  }) => (
+    <div className="relative" ref={dropRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors"
+      >
+        {PERIOD_LABELS[period]}
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+          {(['dia', 'semana', 'mes'] as Period[]).map(p => (
+            <button
+              key={p}
+              onClick={() => { onSelect(p); setOpen(false); }}
+              className={`w-full text-left px-4 py-2 text-xs transition-colors ${period === p ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+            >
+              {PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-5">
 
       {/* ══════════════════════════════════════════
-          KPIs PRIMÁRIOS — Bento Grid Hero
+          BARRA DE FILTROS
       ══════════════════════════════════════════ */}
-      {isVisible('kpis_primarios') && (
-        <section>
-          {/* Label de seção */}
-          <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Visao Geral da Rede</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-white font-bold text-lg leading-tight">Visao Consolidada</h2>
+          <p className="text-blue-200/70 text-xs mt-0.5">
+            {selectedSchoolId === 'todas' ? `${stats.length} escolas · ` : ''}{PERIOD_LABELS[selectedPeriod]}
+          </p>
+        </div>
 
-            {/* Card herói — Índice de Disciplina (2 colunas mobile, 1 desktop) */}
-            <div className="col-span-2 md:col-span-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-5 text-white shadow-lg shadow-blue-500/25 flex flex-col justify-between min-h-[140px]">
-              {/* Decorativo */}
-              <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/5 rounded-full" />
-              <div className="absolute -right-2 bottom-4 w-16 h-16 bg-white/5 rounded-full" />
-              <div className="relative">
-                <div className="flex items-start justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">Indice Disciplinar</p>
-                  <Shield className="w-5 h-5 text-blue-300/60" />
-                </div>
-                <div className="flex items-end gap-3 mt-2">
-                  <p className="text-6xl font-black tracking-tighter leading-none">{avgDiscipline}</p>
-                  <div className="pb-1">
-                    <p className="text-xs text-blue-200">/ 100</p>
-                    <p className="text-[10px] text-blue-300 mt-0.5">media da rede</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            aria-label="Ajustes de filtros"
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          >
+            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+          </button>
+
+          {/* Dropdown — Escola */}
+          <div className="relative" ref={schoolDropdownRef}>
+            <button
+              onClick={() => setSchoolDropdownOpen(o => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={schoolDropdownOpen}
+              aria-label="Selecionar escola"
+              className="flex items-center gap-2 h-9 px-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 min-w-[148px]"
+            >
+              <span className="truncate max-w-[120px]">
+                {selectedSchoolId === 'todas' ? 'Todas as escolas' : selectedSchoolName.replace(/EECM Prof\. /i, '')}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${schoolDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+            {schoolDropdownOpen && (
+              <div
+                role="listbox"
+                aria-label="Selecionar escola"
+                className="absolute right-0 top-full mt-1.5 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+              >
+                {[{ id: 'todas', name: 'Todas as escolas' }, ...stats.map(s => ({ id: s.id, name: s.name }))].map(opt => (
+                  <button
+                    key={opt.id}
+                    role="option"
+                    aria-selected={selectedSchoolId === opt.id}
+                    onClick={() => { setSelectedSchoolId(opt.id); setSchoolDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${selectedSchoolId === opt.id ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                  >
+                    {opt.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pills de período */}
+          <div className="flex items-center bg-white/10 border border-white/20 rounded-full p-0.5" role="group" aria-label="Selecionar periodo">
+            {(['dia', 'semana', 'mes'] as Period[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setSelectedPeriod(p)}
+                aria-pressed={selectedPeriod === p}
+                className={`px-3 h-7 rounded-full text-xs font-semibold transition-all ${selectedPeriod === p ? 'bg-white text-blue-700 shadow-sm' : 'text-white/80 hover:text-white'}`}
+              >
+                {p === 'dia' ? 'Hoje' : p === 'semana' ? 'Semana' : 'Mes'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════
+          LAYOUT PRINCIPAL: painel central + sidebar
+      ══════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
+
+        {/* ── PAINEL CENTRAL ── */}
+        <div className="space-y-5 min-w-0">
+
+          {/* ── KPIs PRIMÁRIOS — estilo Analytics (imagem 2) ── */}
+          {isVisible('kpis_primarios') && (
+            <section>
+              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Visao Geral da Rede</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                {/* Card herói — Índice de Disciplina */}
+                <button
+                  onClick={() => nav('/relatorios')}
+                  aria-label={`Indice disciplinar medio da rede: ${avgDiscipline}. Clique para ver relatorios`}
+                  className="row-span-2 col-span-2 md:col-span-1 md:row-span-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-5 text-white shadow-lg shadow-blue-500/25 flex flex-col justify-between min-h-[150px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-800"
+                >
+                  {/* Decorativo */}
+                  <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/5 rounded-full" />
+                  <div className="absolute -right-2 bottom-4 w-16 h-16 bg-white/5 rounded-full" />
+                  <div className="relative flex items-start justify-between">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200">Indice Disciplinar</p>
+                    <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                      <Shield className="w-4 h-4 text-white" aria-hidden="true" />
+                    </div>
                   </div>
+                  <div className="relative">
+                    <div className="flex items-end gap-3 mt-2">
+                      <p className="text-6xl font-black tracking-tighter leading-none">{avgDiscipline}</p>
+                      <div className="pb-1">
+                        <p className="text-xs text-blue-200">/ 100</p>
+                        <p className="text-[10px] text-blue-300 mt-0.5">media da rede</p>
+                      </div>
+                    </div>
+                    <div className="relative w-full mt-3">
+                      <div className="w-full h-1.5 bg-white/20 rounded-full">
+                        <div className="h-full bg-white/70 rounded-full transition-all duration-1000" style={{ width: `${avgDiscipline}%` }} />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-blue-200 mt-2">
+                      {avgDiscipline >= 75 ? 'Rede em boa situacao' : avgDiscipline >= 55 ? 'Atencao em algumas escolas' : 'Intervencao recomendada'}
+                    </p>
+                  </div>
+                </button>
+
+                {/* Alunos */}
+                <button
+                  onClick={() => nav('/alunos')}
+                  aria-label={`${totalStudents} alunos ativos`}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Alunos Ativos</p>
+                    <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none mt-2">{totalStudents.toLocaleString('pt-BR')}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <TrendBadge value={0} />
+                      <span className="text-[10px] text-slate-400">{stats.length} escolas</span>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Ocorrências */}
+                <button
+                  onClick={() => nav('/registro-disciplinar')}
+                  aria-label={`${totalOcc} ocorrencias`}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-amber-300 dark:hover:border-amber-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ocorrencias</p>
+                    <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                      <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none mt-2">{totalOcc}</p>
+                    <div className="flex gap-1.5 flex-wrap mt-1.5">
+                      {totalLeves > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">L {totalLeves}</span>}
+                      {totalMedias > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20">M {totalMedias}</span>}
+                      {totalGraves > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20">G {totalGraves}</span>}
+                      {totalOcc === 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Nenhuma</span>}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Elogios */}
+                <button
+                  onClick={() => nav('/elogios')}
+                  aria-label={`${totalPraises} elogios`}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Elogios</p>
+                    <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <Star className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight leading-none mt-2">{totalPraises}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <TrendBadge value={0} />
+                      <span className="text-[10px] text-slate-400">{globalPraiseRatio} por 100 alunos</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* ── KPIs SECUNDÁRIOS ── */}
+          {isVisible('kpis_secundarios') && (
+            <section>
+              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Metricas Derivadas</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+                {/* Taxa de gravidade */}
+                <button
+                  onClick={() => nav('/registro-disciplinar')}
+                  aria-label={`Taxa de gravidade: ${globalGravityRate}%`}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-rose-300 dark:hover:border-rose-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Taxa Gravidade</p>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${globalGravityRate > 30 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : globalGravityRate > 15 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+                      <Zap className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-4xl font-black text-slate-800 dark:text-white leading-none mt-2">{globalGravityRate}<span className="text-xl font-medium text-slate-400 ml-0.5">%</span></p>
+                    <BarPill value={globalGravityRate} max={100} color={globalGravityRate > 30 ? 'bg-rose-500' : globalGravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3">graves / total</p>
+                  </div>
+                </button>
+
+                {/* Razão E/O */}
+                <button
+                  onClick={() => nav('/elogios')}
+                  aria-label="Razao elogio sobre ocorrencia"
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Razao E/O</p>
+                    <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <Award className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-4xl font-black text-slate-800 dark:text-white leading-none mt-2">
+                      {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}<span className="text-xl font-medium text-slate-400 ml-1">x</span>
+                    </p>
+                    <BarPill value={Math.min(totalPraises, totalOcc * 2)} max={totalOcc * 2 || 1} color="bg-emerald-400" />
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-3">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
+                  </div>
+                </button>
+
+                {/* Acidentes */}
+                <button
+                  onClick={() => nav('/acidentes')}
+                  aria-label={`${totalAccidents} acidentes`}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-violet-300 dark:hover:border-violet-500/40 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Acidentes</p>
+                    <div className="w-9 h-9 rounded-lg bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                      <Activity className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-4xl font-black text-slate-800 dark:text-white leading-none mt-2">{totalAccidents}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                      {totalStudents > 0 ? ((totalAccidents / totalStudents) * 1000).toFixed(1) : '0'} por mil alunos
+                    </p>
+                    <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${totalAccidents === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                      {totalAccidents === 0 ? 'Zero acidentes' : 'Requer atencao'}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Alertas */}
+                <button
+                  onClick={() => nav('/comportamento')}
+                  aria-label={`${alertSchools} escolas em alerta`}
+                  className={`rounded-2xl p-5 shadow-sm border text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px] ${alertSchools > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/30 hover:border-rose-400 dark:hover:border-rose-400/50' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/40'}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Alertas</p>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${alertSchools > 0 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'}`}>
+                      <AlertCircle className="w-4 h-4" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className={`text-4xl font-black leading-none mt-2 ${alertSchools > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>{alertSchools}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                      {alertSchools === 0 ? 'Nenhuma escola em alerta' : `escola${alertSchools > 1 ? 's' : ''} acima do limiar`}
+                    </p>
+                    <div className="flex gap-1 flex-wrap mt-2">
+                      {filteredStats.filter(s => s.riskLevel === 'critical').length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
+                          {filteredStats.filter(s => s.riskLevel === 'critical').length} CRITICO
+                        </span>
+                      )}
+                      {filteredStats.filter(s => s.riskLevel === 'high').length > 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
+                          {filteredStats.filter(s => s.riskLevel === 'high').length} ALTO
+                        </span>
+                      )}
+                      {alertSchools === 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">TUDO OK</span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* ── GRÁFICOS ── */}
+          {isVisible('kpis_primarios') && stats.length > 0 && (
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Gráfico comparativo */}
+              <div className="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Comparativo por Escola</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">Indice de disciplina vs ocorrencias</p>
+                  </div>
+                  <PeriodBtn
+                    period={barPeriod}
+                    open={barDropOpen}
+                    setOpen={setBarDropOpen}
+                    dropRef={barDropRef}
+                    onSelect={setBarPeriod}
+                  />
                 </div>
-              </div>
-              <div className="relative mt-3">
-                <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-white/70 rounded-full transition-all duration-1000" style={{ width: `${avgDiscipline}%` }} />
-                </div>
-                <p className="text-[10px] text-blue-200 mt-1.5">
-                  {avgDiscipline >= 75 ? 'Rede em boa situacao' : avgDiscipline >= 55 ? 'Atencao em algumas escolas' : 'Intervencao recomendada'}
-                </p>
-              </div>
-            </div>
-
-            {/* Alunos Ativos */}
-            <SecKpi label="Alunos Ativos" value={totalStudents.toLocaleString('pt-BR')}
-              sub={`${stats.length} escola${stats.length !== 1 ? 's' : ''} ativas`}
-              icon={Users} iconBg="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <Bar2 value={totalStudents} max={1000} color="bg-blue-400" />
-            </SecKpi>
-
-            {/* Ocorrências */}
-            <SecKpi label="Ocorrencias" value={totalOcc}
-              sub=""
-              icon={AlertTriangle} iconBg="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <div className="flex gap-1.5 flex-wrap">
-                {totalLeves > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">L {totalLeves}</span>}
-                {totalMedias > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20">M {totalMedias}</span>}
-                {totalGraves > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20">G {totalGraves}</span>}
-                {totalOcc === 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">Nenhuma</span>}
-              </div>
-            </SecKpi>
-
-            {/* Elogios */}
-            <SecKpi label="Elogios" value={totalPraises}
-              sub={`${globalPraiseRatio} por 100 alunos`}
-              icon={Star} iconBg="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Bar2 value={totalPraises} max={Math.max(totalOcc, totalPraises, 1)} color="bg-emerald-400" />
-            </SecKpi>
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════════════════
-          KPIs SECUNDÁRIOS — métricas derivadas
-      ══════════════════════════════════════════ */}
-      {isVisible('kpis_secundarios') && (
-        <section>
-          <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Metricas Derivadas</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-
-            {/* Taxa de gravidade */}
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Taxa Gravidade</p>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${globalGravityRate > 30 ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : globalGravityRate > 15 ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
-                  {globalGravityRate > 30 ? 'CRITICA' : globalGravityRate > 15 ? 'MODERADA' : 'OK'}
-                </span>
-              </div>
-              <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{globalGravityRate}<span className="text-xl font-medium text-slate-400 ml-0.5">%</span></p>
-              <Bar2 value={globalGravityRate} max={100} color={globalGravityRate > 30 ? 'bg-rose-500' : globalGravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">graves / total</p>
-            </div>
-
-            {/* Razão elogio/ocorrência */}
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Razao E/O</p>
-                <Award className="w-4 h-4 text-emerald-500" />
-              </div>
-              <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">
-                {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}<span className="text-xl font-medium text-slate-400 ml-1">x</span>
-              </p>
-              <Bar2 value={Math.min(totalPraises, totalOcc * 2)} max={totalOcc * 2 || 1} color="bg-emerald-400" />
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
-            </div>
-
-            {/* Acidentes */}
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Acidentes</p>
-                <Activity className="w-4 h-4 text-violet-500" />
-              </div>
-              <p className="text-4xl font-black text-slate-800 dark:text-white leading-none">{totalAccidents}</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                {totalStudents > 0 ? ((totalAccidents / totalStudents) * 1000).toFixed(1) : '0'} por mil alunos
-              </p>
-              <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${totalAccidents === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
-                {totalAccidents === 0 ? 'Zero acidentes' : 'Requer atencao'}
-              </div>
-            </div>
-
-            {/* Alertas */}
-            <div className={`rounded-2xl p-5 shadow-sm border ${alertSchools > 0 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/30' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Alertas</p>
-                <Zap className={`w-4 h-4 ${alertSchools > 0 ? 'text-rose-500' : 'text-slate-300 dark:text-slate-600'}`} />
-              </div>
-              <p className={`text-4xl font-black leading-none ${alertSchools > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'}`}>{alertSchools}</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-                {alertSchools === 0 ? 'Nenhuma escola em alerta' : `escola${alertSchools > 1 ? 's' : ''} acima do limiar`}
-              </p>
-              <div className="flex gap-1 flex-wrap mt-2">
-                {stats.filter(s => s.riskLevel === 'critical').length > 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
-                    {stats.filter(s => s.riskLevel === 'critical').length} CRITICO
-                  </span>
-                )}
-                {stats.filter(s => s.riskLevel === 'high').length > 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
-                    {stats.filter(s => s.riskLevel === 'high').length} ALTO
-                  </span>
-                )}
-                {alertSchools === 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">TUDO OK</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ══════════════════════════════════════════
-          GRÁFICOS — Comparativo + Severidade
-      ══════════════════════════════════════════ */}
-      {isVisible('kpis_primarios') && stats.length > 0 && (
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          {/* Gráfico de barras comparativo */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Comparativo por Escola</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">Indice de disciplina vs ocorrencias</p>
-              </div>
-            </div>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={barData} barSize={18} barGap={4}>
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={28} />
-                <Tooltip
-                  contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }}
-                  labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName ?? ''}
-                />
-                <Bar dataKey="Disciplina" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Ocorrencias" fill="#f97316" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Elogios" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="flex gap-4 justify-center mt-2">
-              {[{color:'bg-blue-500',label:'Disciplina'},{color:'bg-orange-500',label:'Ocorrencias'},{color:'bg-emerald-500',label:'Elogios'}].map(l => (
-                <div key={l.label} className="flex items-center gap-1.5">
-                  <div className={`w-2.5 h-2.5 rounded-sm ${l.color}`} />
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500">{l.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Gráfico de pizza — severidade */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col">
-            <div className="mb-3">
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Severidade</p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">Distribuicao das ocorrencias</p>
-            </div>
-            {totalOcc === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400 font-medium">Sem ocorrencias</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <ResponsiveContainer width="100%" height={140}>
-                  <PieChart>
-                    <Pie data={severityData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={3} dataKey="value">
-                      {severityData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-                    </Pie>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={barData} barSize={18} barGap={4}>
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={28} />
                     <Tooltip
-                      contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 10, fontSize: 12, color: '#e2e8f0' }}
+                      contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName ?? ''}
                     />
-                  </PieChart>
+                    <Bar dataKey="Disciplina" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Ocorrencias" fill="#f97316" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Elogios" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
-                <div className="space-y-1.5 mt-2">
-                  {severityData.map(d => (
-                    <div key={d.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ background: d.fill }} />
-                        <span className="text-[11px] text-slate-600 dark:text-slate-400">{d.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{d.value}</span>
-                        <span className="text-[10px] text-slate-400">{totalOcc > 0 ? Math.round((d.value / totalOcc) * 100) : 0}%</span>
-                      </div>
+                <div className="flex gap-4 justify-center mt-2">
+                  {[{color:'bg-blue-500',label:'Disciplina'},{color:'bg-orange-500',label:'Ocorrencias'},{color:'bg-emerald-500',label:'Elogios'}].map(l => (
+                    <div key={l.label} className="flex items-center gap-1.5">
+                      <div className={`w-2.5 h-2.5 rounded-sm ${l.color}`} />
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">{l.label}</span>
                     </div>
                   ))}
                 </div>
-              </>
-            )}
-          </div>
-        </section>
-      )}
+              </div>
 
-      {/* ══════════════════════════════════════════
-          IMPLANTAÇÃO
-      ══════════════════════════════════════════ */}
-      {isVisible('implantacao') && (
-        <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Implantacao da Rede</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">{doneImpl} de {totalImpl} itens concluidos</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{pctImpl}%</p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500">concluido</p>
-              </div>
-              <IndexRing value={pctImpl} size={52} stroke={5} />
-            </div>
-          </div>
-          <Bar2 value={doneImpl} max={totalImpl || 1} color={pctImpl >= 80 ? 'bg-emerald-500' : pctImpl >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
-          {stats.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60">
-              {stats.map(school => {
-                const pct = school.implantacaoTotal > 0 ? Math.round((school.implantacaoDone / school.implantacaoTotal) * 100) : 0;
-                return (
-                  <div key={school.id} className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate pr-2">{school.name.replace('EECM Prof. ', '')}</p>
-                      <span className={`text-[10px] font-bold shrink-0 ${pct >= 80 ? 'text-emerald-500' : pct >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>{pct}%</span>
-                    </div>
-                    <Bar2 value={school.implantacaoDone} max={school.implantacaoTotal || 1} color={pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{school.implantacaoDone}/{school.implantacaoTotal} itens</p>
+              {/* Pizza — severidade */}
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Severidade</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">Distribuicao das ocorrencias</p>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* ══════════════════════════════════════════
-          RANKING + CARDS DE ESCOLAS
-      ══════════════════════════════════════════ */}
-      {(isVisible('ranking') || isVisible('escolas')) && (
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-          {/* Ranking */}
-          {isVisible('ranking') && (
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-5">
-                <Trophy className="w-4 h-4 text-amber-500" />
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Ranking Disciplinar</p>
-              </div>
-              <div className="space-y-4">
-                {ranked.map((school, idx) => {
-                  const risk = RISK_META[school.riskLevel];
-                  const medals = ['🥇','🥈','🥉'];
-                  return (
-                    <div key={school.id} className="flex items-center gap-3">
-                      <span className="w-6 text-center text-sm shrink-0">
-                        {idx < 3 ? medals[idx] : <span className="text-xs font-bold text-slate-400">{idx + 1}</span>}
-                      </span>
-                      <IndexRing value={school.disciplineIndex} size={44} stroke={5} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate leading-tight">{school.name}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${risk.bg} ${risk.text} border ${risk.border}`}>
-                            {risk.label}
-                          </span>
-                          <span className="text-[10px] text-slate-400">{school.occurrences} ocorr.</span>
-                        </div>
-                      </div>
+                  <PeriodBtn
+                    period={piePeriod}
+                    open={pieDropOpen}
+                    setOpen={setPieDropOpen}
+                    dropRef={pieDropRef}
+                    onSelect={setPiePeriod}
+                  />
+                </div>
+                {totalOcc === 0 ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                      <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                      <p className="text-sm text-slate-400 font-medium">Sem ocorrencias</p>
                     </div>
-                  );
-                })}
+                  </div>
+                ) : (
+                  <>
+                    <ResponsiveContainer width="100%" height={140}>
+                      <PieChart>
+                        <Pie data={severityData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={3} dataKey="value">
+                          {severityData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                        </Pie>
+                        <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 10, fontSize: 12, color: '#e2e8f0' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="space-y-1.5 mt-2">
+                      {severityData.map(d => (
+                        <div key={d.name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ background: d.fill }} />
+                            <span className="text-[11px] text-slate-600 dark:text-slate-400">{d.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{d.value}</span>
+                            <span className="text-[10px] text-slate-400">{totalOcc > 0 ? Math.round((d.value / totalOcc) * 100) : 0}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            </section>
           )}
 
-          {/* Cards de escolas expandidos */}
-          {isVisible('escolas') && (
-            <div className={`${isVisible('ranking') ? 'lg:col-span-2' : 'lg:col-span-3'} grid grid-cols-1 sm:grid-cols-2 gap-4 content-start`}>
+          {/* ── IMPLANTAÇÃO ── */}
+          {isVisible('implantacao') && (
+            <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Implantacao da Rede</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">{doneImpl} de {totalImpl} itens concluidos</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{pctImpl}%</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">concluido</p>
+                  </div>
+                  <IndexRing value={pctImpl} size={52} stroke={5} />
+                </div>
+              </div>
+              <BarPill value={doneImpl} max={totalImpl || 1} color={pctImpl >= 80 ? 'bg-emerald-500' : pctImpl >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
+              {stats.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                  {stats.map(school => {
+                    const pct = school.implantacaoTotal > 0 ? Math.round((school.implantacaoDone / school.implantacaoTotal) * 100) : 0;
+                    return (
+                      <div key={school.id} className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <p className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 truncate pr-2">{school.name.replace('EECM Prof. ', '')}</p>
+                          <span className={`text-[10px] font-bold shrink-0 ${pct >= 80 ? 'text-emerald-500' : pct >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>{pct}%</span>
+                        </div>
+                        <BarPill value={school.implantacaoDone} max={school.implantacaoTotal || 1} color={pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500">{school.implantacaoDone}/{school.implantacaoTotal} itens</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ── RANKING DISCIPLINAR + CARDS DE ESCOLAS ── */}
+          {isVisible('ranking') && (
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start">
               {stats.map(school => {
                 const risk = RISK_META[school.riskLevel];
-                const pctImpl = school.implantacaoTotal > 0 ? Math.round((school.implantacaoDone / school.implantacaoTotal) * 100) : 0;
+                const pct = school.implantacaoTotal > 0 ? Math.round((school.implantacaoDone / school.implantacaoTotal) * 100) : 0;
                 return (
                   <div
                     key={school.id}
                     onClick={() => onSchoolClick?.(school.id)}
                     className={`bg-white dark:bg-slate-800 border rounded-2xl p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${onSchoolClick ? 'cursor-pointer' : ''} ${school.riskLevel === 'critical' ? 'border-rose-300 dark:border-rose-500/40' : school.riskLevel === 'high' ? 'border-orange-300 dark:border-orange-500/40' : 'border-slate-200 dark:border-slate-700'}`}
                   >
-                    {/* Header do card */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0 pr-2">
                         <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate leading-tight">{school.name}</p>
@@ -547,8 +852,6 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
                         <IndexRing value={school.disciplineIndex} size={40} stroke={4} />
                       </div>
                     </div>
-
-                    {/* Métricas do card */}
                     <div className="grid grid-cols-3 gap-2 mb-4">
                       {[
                         { label: 'Ocorr.', value: school.occurrences, color: 'text-amber-600 dark:text-amber-400' },
@@ -561,14 +864,12 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
                         </div>
                       ))}
                     </div>
-
-                    {/* Barras L/M/G */}
                     {school.occurrences > 0 && (
                       <div className="mb-3">
                         <div className="flex gap-1 h-2 rounded-full overflow-hidden">
-                          {school.leves > 0  && <div className="bg-amber-400 rounded-full transition-all" style={{ flex: school.leves }} />}
-                          {school.medias > 0 && <div className="bg-orange-500 rounded-full transition-all" style={{ flex: school.medias }} />}
-                          {school.graves > 0 && <div className="bg-rose-500 rounded-full transition-all" style={{ flex: school.graves }} />}
+                          {school.leves > 0  && <div className="bg-amber-400 rounded-full" style={{ flex: school.leves }} />}
+                          {school.medias > 0 && <div className="bg-orange-500 rounded-full" style={{ flex: school.medias }} />}
+                          {school.graves > 0 && <div className="bg-rose-500 rounded-full" style={{ flex: school.graves }} />}
                         </div>
                         <div className="flex gap-3 mt-1">
                           <span className="text-[9px] text-amber-500 font-semibold">L {school.leves}</span>
@@ -577,24 +878,278 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick 
                         </div>
                       </div>
                     )}
-
-                    {/* Implantação */}
                     {school.implantacaoTotal > 0 && (
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Implantacao</p>
-                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pctImpl}%</p>
+                          <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pct}%</p>
                         </div>
-                        <Bar2 value={school.implantacaoDone} max={school.implantacaoTotal} color={pctImpl >= 80 ? 'bg-emerald-500' : pctImpl >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
+                        <BarPill value={school.implantacaoDone} max={school.implantacaoTotal} color={pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
                       </div>
                     )}
                   </div>
                 );
               })}
-            </div>
+            </section>
           )}
-        </section>
-      )}
+
+        </div>{/* fim painel central */}
+
+        {/* ══════════════════════════════════════════
+            SIDEBAR DIREITA
+        ══════════════════════════════════════════ */}
+        <aside className="space-y-4 xl:sticky xl:top-4">
+
+          {/* ── KPI: % Implantação do Sistema na Rede ── */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Implantacao do Sistema</p>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pctImpl >= 80 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30' : pctImpl >= 50 ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30'}`}>
+                {pctImpl >= 80 ? 'Em dia' : pctImpl >= 50 ? 'Em progresso' : 'Atrasado'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-3">% de implantacao na rede escolar</p>
+            {/* Gauge semicircular */}
+            <SemiGauge value={pctImpl} />
+            {/* Detalhe */}
+            <div className="mt-2 grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+              <div className="text-center">
+                <p className="text-lg font-black text-slate-800 dark:text-white">{doneImpl}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">itens concluidos</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-black text-slate-800 dark:text-white">{totalImpl - doneImpl}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">pendentes</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Ranking das Escolas (disciplina) ── */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-500" aria-hidden="true" />
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Ranking Escolas</p>
+              </div>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">indice disciplinar</span>
+            </div>
+            <div className="space-y-3">
+              {ranked.map((school, idx) => {
+                const risk = RISK_META[school.riskLevel];
+                const medals = ['1°', '2°', '3°'];
+                return (
+                  <div
+                    key={school.id}
+                    onClick={() => onSchoolClick?.(school.id)}
+                    className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${onSchoolClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50' : ''}`}
+                  >
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${idx === 0 ? 'bg-amber-400 text-white' : idx === 1 ? 'bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200' : idx === 2 ? 'bg-orange-300 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                      {idx < 3 ? medals[idx] : idx + 1}
+                    </span>
+                    <IndexRing value={school.disciplineIndex} size={36} stroke={4} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate leading-tight">{school.name.replace('EECM Prof. ', '')}</p>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${risk.bg} ${risk.text}`}>{risk.label}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 shrink-0">{school.occurrences} ocorr.</span>
+                  </div>
+                );
+              })}
+              {ranked.length === 0 && (
+                <p className="text-xs text-slate-400 py-4 text-center">Sem dados de escolas.</p>
+              )}
+            </div>
+          </div>
+
+          {/* ── Ranking de Alunos (elogios por escola) ── */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-emerald-500" aria-hidden="true" />
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Ranking Alunos</p>
+              </div>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500">elogios / 100 alunos</span>
+            </div>
+            <div className="space-y-3">
+              {rankedStudentSchools.map((school, idx) => (
+                <div
+                  key={school.id}
+                  onClick={() => onSchoolClick?.(school.id)}
+                  className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${onSchoolClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50' : ''}`}
+                >
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${idx === 0 ? 'bg-emerald-500 text-white' : idx === 1 ? 'bg-emerald-300 text-white' : idx === 2 ? 'bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate leading-tight">{school.name.replace('EECM Prof. ', '')}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="h-1 flex-1 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${Math.min(school.praiseRatio, 100)}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{school.praiseRatio}</span>
+                    <p className="text-[9px] text-slate-400">elogios</p>
+                  </div>
+                </div>
+              ))}
+              {rankedStudentSchools.length === 0 && (
+                <p className="text-xs text-slate-400 py-4 text-center">Sem dados de alunos.</p>
+              )}
+            </div>
+          </div>
+
+        </aside>
+      </div>{/* fim grid principal */}
+
+      {/* ══════════════════════════════════════════
+          LISTA DE OCORRÊNCIAS COM FILTROS
+          (Imagem 1 — tabela + filtros pill)
+      ══════════════════════════════════════════ */}
+      <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-b border-slate-100 dark:border-slate-700/60">
+          <div className="flex items-center gap-2">
+            <FileWarning className="w-4 h-4 text-rose-500" aria-hidden="true" />
+            <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">Lista de Ocorrencias</h2>
+            {totalGraves > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30">
+                {totalGraves} graves
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Filtro por severidade */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 rounded-full p-0.5" role="group" aria-label="Filtrar por severidade">
+              {SEV_FILTERS.map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setOccSevFilter(f.id)}
+                  aria-pressed={occSevFilter === f.id}
+                  className={`px-3 h-7 rounded-full text-xs font-semibold transition-all ${
+                    occSevFilter === f.id
+                      ? f.id === 'Grave'  ? 'bg-rose-500 text-white shadow-sm'
+                      : f.id === 'Media'  ? 'bg-amber-500 text-white shadow-sm'
+                      : f.id === 'Leve'   ? 'bg-blue-500 text-white shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {/* Filtro por escola */}
+            <select
+              value={occSchoolFilter}
+              onChange={e => setOccSchoolFilter(e.target.value)}
+              aria-label="Filtrar por escola"
+              className="h-8 px-2 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 border-0 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              <option value="todas">Todas as escolas</option>
+              {stats.map(s => (
+                <option key={s.id} value={s.id}>{s.name.replace('EECM Prof. ', '')}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Tabela */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" role="table">
+            <thead>
+              <tr className="border-b border-slate-100 dark:border-slate-700/60">
+                <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Escola</th>
+                <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Descricao</th>
+                <th className="px-5 py-3 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Qtd</th>
+                <th className="px-5 py-3 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Progresso</th>
+                <th className="px-5 py-3 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Severidade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOccRows.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-10 text-center text-slate-400 dark:text-slate-500 text-sm">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                    Nenhuma ocorrencia encontrada com os filtros selecionados.
+                  </td>
+                </tr>
+              ) : (
+                filteredOccRows.map(row => {
+                  const sty = SEV_STYLE[row.severity] ?? SEV_STYLE['Leve'];
+                  const maxForSev = filteredOccRows
+                    .filter(r => r.severity === row.severity)
+                    .reduce((m, r) => Math.max(m, r.count), 1);
+                  const pctBar = Math.min((row.count / maxForSev) * 100, 100);
+                  return (
+                    <tr key={row.id} className="border-b border-slate-50 dark:border-slate-700/40 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                      {/* Escola */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
+                            <Building2 className="w-3.5 h-3.5 text-blue-500" aria-hidden="true" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-700 dark:text-slate-200 text-xs leading-tight">{row.schoolName}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">{row.studentName}</p>
+                          </div>
+                        </div>
+                      </td>
+                      {/* Descrição */}
+                      <td className="px-5 py-3.5">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 max-w-[240px] truncate">{row.description}</p>
+                      </td>
+                      {/* Quantidade */}
+                      <td className="px-5 py-3.5 text-center">
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">{row.count}</span>
+                      </td>
+                      {/* Barra de progresso */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2 min-w-[80px]">
+                          <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                row.severity === 'Grave' ? 'bg-rose-500' :
+                                row.severity === 'Media' ? 'bg-amber-400' : 'bg-blue-400'
+                              }`}
+                              style={{ width: `${pctBar}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-400 shrink-0 w-7 text-right">{Math.round(pctBar)}%</span>
+                        </div>
+                      </td>
+                      {/* Badge severidade */}
+                      <td className="px-5 py-3.5 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${sty.bg} ${sty.text} ${sty.border}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${sty.dot}`} aria-hidden="true" />
+                          {row.severity}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer */}
+        {filteredOccRows.length > 0 && (
+          <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              {filteredOccRows.length} registro{filteredOccRows.length !== 1 ? 's' : ''} exibido{filteredOccRows.length !== 1 ? 's' : ''}
+            </p>
+            <button
+              onClick={() => nav('/registro-disciplinar')}
+              className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+            >
+              Ver registro completo
+            </button>
+          </div>
+        )}
+      </section>
+
     </div>
   );
 }
