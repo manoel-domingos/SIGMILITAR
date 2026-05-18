@@ -254,6 +254,24 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
   const [occSevFilter, setOccSevFilter] = useState<SevFilter>('todas');
   const [occSchoolFilter, setOccSchoolFilter] = useState<string>('todas');
 
+  // Filtros de período dos gráficos
+  const [barPeriod,  setBarPeriod]  = useState<Period>('mes');
+  const [piePeriod,  setPiePeriod]  = useState<Period>('mes');
+  const [barDropOpen, setBarDropOpen] = useState(false);
+  const [pieDropOpen, setPieDropOpen] = useState(false);
+  const barDropRef = useRef<HTMLDivElement>(null);
+  const pieDropRef = useRef<HTMLDivElement>(null);
+
+  // Fecha dropdowns ao clicar fora
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (barDropRef.current && !barDropRef.current.contains(e.target as Node)) setBarDropOpen(false);
+      if (pieDropRef.current && !pieDropRef.current.contains(e.target as Node)) setPieDropOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   useEffect(() => {
     if (!schoolDropdownOpen) return;
     const handler = (e: MouseEvent) => {
@@ -343,6 +361,40 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
   const selectedSchoolName = selectedSchoolId === 'todas'
     ? 'Todas as escolas'
     : (stats.find(s => s.id === selectedSchoolId)?.name ?? 'Escola');
+
+  // ── Dropdown reutilizável de período para gráficos ──
+  const PeriodBtn = ({
+    period, open, setOpen, dropRef, onSelect,
+  }: {
+    period: Period;
+    open: boolean;
+    setOpen: (v: boolean) => void;
+    dropRef: React.RefObject<HTMLDivElement | null>;
+    onSelect: (p: Period) => void;
+  }) => (
+    <div className="relative" ref={dropRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors"
+      >
+        {PERIOD_LABELS[period]}
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+          {(['dia', 'semana', 'mes'] as Period[]).map(p => (
+            <button
+              key={p}
+              onClick={() => { onSelect(p); setOpen(false); }}
+              className={`w-full text-left px-4 py-2 text-xs transition-colors ${period === p ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+            >
+              {PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-5">
@@ -650,6 +702,13 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Comparativo por Escola</p>
                     <p className="text-[11px] text-slate-400 dark:text-slate-500">Indice de disciplina vs ocorrencias</p>
                   </div>
+                  <PeriodBtn
+                    period={barPeriod}
+                    open={barDropOpen}
+                    setOpen={setBarDropOpen}
+                    dropRef={barDropRef}
+                    onSelect={setBarPeriod}
+                  />
                 </div>
                 <ResponsiveContainer width="100%" height={180}>
                   <BarChart data={barData} barSize={18} barGap={4}>
@@ -676,9 +735,18 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
 
               {/* Pizza — severidade */}
               <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex flex-col">
-                <div className="mb-3">
-                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Severidade</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Distribuicao das ocorrencias</p>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Severidade</p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">Distribuicao das ocorrencias</p>
+                  </div>
+                  <PeriodBtn
+                    period={piePeriod}
+                    open={pieDropOpen}
+                    setOpen={setPieDropOpen}
+                    dropRef={pieDropRef}
+                    onSelect={setPiePeriod}
+                  />
                 </div>
                 {totalOcc === 0 ? (
                   <div className="flex-1 flex items-center justify-center">
