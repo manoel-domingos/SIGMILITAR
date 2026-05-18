@@ -590,8 +590,9 @@ function RegistroDisciplinarContent() {
   const handlePrint = (o: any) => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
-    // Usa o número fixo da ATA armazenado no banco
-    const occurrenceNum = o.ataNumber ?? filteredOccurrences.length - filteredOccurrences.indexOf(o);
+    // Usa o número fixo da ATA armazenado no banco; fallback pela posição na lista total
+    const _pIdx = occurrences.findIndex((x: any) => x.id === o.id);
+    const occurrenceNum = o.ataNumber ?? (_pIdx >= 0 ? _pIdx + 1 : '—');
 
     const rule = rules.find(r => r.code === o.ruleCode);
 
@@ -1177,8 +1178,9 @@ function RegistroDisciplinarContent() {
   };
 
   const handleExport = (o: Occurrence) => {
-    // Usa o número fixo da ATA armazenado no banco
-    const occurrenceNum = o.ataNumber ?? filteredOccurrences.length - filteredOccurrences.indexOf(o);
+    // Usa o número fixo da ATA armazenado no banco; fallback pela posição na lista total
+    const _eIdx = occurrences.findIndex((x: any) => x.id === o.id);
+    const occurrenceNum = o.ataNumber ?? (_eIdx >= 0 ? _eIdx + 1 : '—');
 
     const relatedStudents = o.studentIds && o.studentIds.length > 0
       ? students.filter(s => o.studentIds?.includes(s.id))
@@ -1474,7 +1476,7 @@ function RegistroDisciplinarContent() {
                           >
                             <td className="px-4 py-4 text-center">
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
-                                {o.ataNumber || '—'}
+                                {(() => { const i = occurrences.findIndex((x: any) => x.id === o.id); return o.ataNumber ?? (i >= 0 ? i + 1 : '—'); })()}
                               </span>
                             </td>
                             <td className="px-6 py-4">
