@@ -983,6 +983,7 @@ export default function Alunos() {
                       }} />
                     </label>
                     <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-0.5">Ficha do Aluno</p>
                       <h2 className="text-xl font-bold text-slate-800 dark:text-white leading-tight">{name}</h2>
                       <div className="flex items-center flex-wrap gap-2 mt-1">
                         <span className="text-sm text-slate-500 dark:text-slate-400">{className} · {shift}</span>
@@ -1191,33 +1192,107 @@ export default function Alunos() {
                   )}
 
                   {/* ABA: Documentos */}
-                  {activeTab === 'documentos' && (
-                    <div className="p-6">
-                      {allDocs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-600">
-                          <FileText className="w-10 h-10 mb-3 opacity-40" />
-                          <p className="text-sm font-medium">Nenhum documento anexado</p>
-                          <p className="text-xs mt-1">Documentos sao adicionados nas ocorrencias</p>
+                  {activeTab === 'documentos' && (() => {
+                    const docsOwed = studentOccs.length;
+                    const docsAttached = allDocs.length;
+                    const docsMissing = Math.max(0, docsOwed - docsAttached);
+                    const occsWithDocs = studentOccs.filter(o => (o.videoUrls?.length || 0) + (o.signedDocUrls?.length || 0) > 0);
+                    return (
+                      <div className="p-6 space-y-5">
+                        {/* Mini-dash */}
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center shrink-0">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Docs Devidos</p>
+                              <p className="text-2xl font-black text-slate-800 dark:text-white leading-none mt-0.5">{docsOwed}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">1 por ocorrencia</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                              <Paperclip className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Anexados</p>
+                              <p className="text-2xl font-black text-slate-800 dark:text-white leading-none mt-0.5">
+                                {docsAttached}<span className="text-sm font-medium text-slate-400 ml-1">/{docsOwed}</span>
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{occsWithDocs.length} ocorr. com doc</p>
+                            </div>
+                          </div>
+                          <div className={`flex items-center gap-3 p-4 rounded-xl border ${docsMissing > 0 ? 'border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/5' : 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/5'}`}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${docsMissing > 0 ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'}`}>
+                              {docsMissing > 0 ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Faltando</p>
+                              <p className={`text-2xl font-black leading-none mt-0.5 ${docsMissing > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>{docsMissing}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{docsMissing === 0 ? 'Tudo em dia' : 'pendente(s)'}</p>
+                            </div>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {allDocs.map((doc, i) => (
-                            <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-sm transition-all group">
-                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${doc.type === 'video' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
-                                {doc.type === 'video' ? <FileText className="w-4 h-4" /> : <Paperclip className="w-4 h-4" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">{doc.label}</p>
-                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{new Date(doc.date).toLocaleDateString('pt-BR')}</p>
-                              </div>
-                              <span className="text-xs text-blue-500 dark:text-blue-400 shrink-0 font-medium">Abrir</span>
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+
+                        {/* Lista por ocorrência */}
+                        {studentOccs.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-slate-600">
+                            <FileText className="w-10 h-10 mb-3 opacity-40" />
+                            <p className="text-sm font-medium">Nenhuma ocorrencia registrada</p>
+                            <p className="text-xs mt-1">Documentos sao vinculados a ocorrencias</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {studentOccs.map(occ => {
+                              const occDocs = [
+                                ...(occ.videoUrls || []).map(url => ({ url, type: 'video' as const })),
+                                ...(occ.signedDocUrls || []).map(url => ({ url, type: 'doc' as const })),
+                              ];
+                              const hasDocs = occDocs.length > 0;
+                              return (
+                                <div key={occ.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+                                  <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                        {new Date(occ.date).toLocaleDateString('pt-BR')} — Art. {occ.ruleCode}
+                                      </span>
+                                      {occ.observations && (
+                                        <span className="text-[10px] text-slate-400 truncate max-w-[160px]">{occ.observations}</span>
+                                      )}
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${hasDocs ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'}`}>
+                                      {hasDocs ? `${occDocs.length} doc` : 'sem doc'}
+                                    </span>
+                                  </div>
+                                  {hasDocs ? (
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                      {occDocs.map((doc, di) => (
+                                        <a key={di} href={doc.url} target="_blank" rel="noopener noreferrer"
+                                          className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
+                                          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${doc.type === 'video' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
+                                            {doc.type === 'video' ? <FileText className="w-3.5 h-3.5" /> : <Paperclip className="w-3.5 h-3.5" />}
+                                          </div>
+                                          <span className="text-sm text-slate-600 dark:text-slate-300 flex-1 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                            {doc.type === 'video' ? 'Video' : 'Documento'} {di + 1}
+                                          </span>
+                                          <span className="text-xs text-blue-500 dark:text-blue-400 font-medium shrink-0">Abrir</span>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 italic">
+                                      Nenhum documento anexado a esta ocorrencia
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Rodape com acoes */}
