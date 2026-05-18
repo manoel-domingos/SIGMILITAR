@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera } from 'lucide-react';
+import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -82,7 +82,7 @@ Se não houver coluna para alguma dessas chaves internas, não inclua a chave no
 };
 
 export default function Alunos() {
-  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile } = useAppContext();
+  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile, getStudentOccurrences, occurrences } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -102,6 +102,7 @@ export default function Alunos() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'atividades' | 'dados' | 'responsaveis' | 'documentos'>('atividades');
   
   // Import review state
   const [pendingImports, setPendingImports] = useState<any[]>([]);
@@ -168,6 +169,7 @@ export default function Alunos() {
     setBirthDate(s.birthDate || '');
     setPhotoUrl(s.photoUrl || '');
     setIgnoredWarning(false);
+    setActiveTab('atividades');
     setIsModalOpen(true);
   };
 
@@ -930,270 +932,444 @@ export default function Alunos() {
       </div>
 
       {/* Modal Novo/Editar Aluno */}
-      {isModalOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="glass-modal w-full sm:max-w-md flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 rounded-t-3xl sm:rounded-2xl">
-            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 safe-area-top">
-              <h2 className="text-lg sm:text-xl font-bold text-slate-800">
-                {editingStudent ? 'Editar Aluno' : 'Cadastrar Aluno'}
-              </h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-500 hover:text-slate-800 transition rounded-lg hover:bg-white p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {isModalOpen && (() => {
+        const studentOccs = editingStudent ? getStudentOccurrences(editingStudent) : [];
+        const allDocs = studentOccs.flatMap(o => [
+          ...(o.videoUrls || []).map(url => ({ url, type: 'video' as const, date: o.date, label: `Vídeo — Ocorrência ${o.id}` })),
+          ...(o.signedDocUrls || []).map(url => ({ url, type: 'doc' as const, date: o.date, label: `Documento — Ocorrência ${o.id}` })),
+        ]);
+        const sevColor = (code: number) => {
+          if (code >= 300) return { bg: 'bg-rose-50 dark:bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-500/30', badge: 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300', label: 'Grave' };
+          if (code >= 200) return { bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-500/30', badge: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300', label: 'Media' };
+          return { bg: 'bg-blue-50 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-500/30', badge: 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300', label: 'Leve' };
+        };
+
+        /* ── MODAL LARGO: edição com abas ── */
+        if (editingStudent) {
+          const pts = getStudentPoints(editingStudent);
+          const beh = getStudentBehavior(pts);
+          return (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9990] flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white dark:bg-slate-900 w-full max-w-4xl flex flex-col max-h-[92vh] rounded-2xl shadow-2xl animate-in zoom-in-95 fade-in duration-300 overflow-hidden">
+
+                {/* Cabeçalho com avatar e info */}
+                <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  <div className="flex items-center gap-4">
+                    {/* Avatar */}
+                    <label className="cursor-pointer group relative shrink-0">
+                      <div className="w-14 h-14 rounded-full border-2 border-slate-200 dark:border-slate-700 group-hover:border-blue-400 bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden transition-all">
+                        {photoUrl ? (
+                          <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                        {isUploadingPhoto && (
+                          <div className="absolute inset-0 bg-white/80 dark:bg-black/60 flex items-center justify-center rounded-full">
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/20 hidden group-hover:flex items-center justify-center rounded-full">
+                          <Camera className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setIsUploadingPhoto(true);
+                        const url = await uploadFile(file, editingStudent || 'new-' + Date.now());
+                        if (url) setPhotoUrl(url);
+                        setIsUploadingPhoto(false);
+                        e.target.value = '';
+                      }} />
+                    </label>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800 dark:text-white leading-tight">{name}</h2>
+                      <div className="flex items-center flex-wrap gap-2 mt-1">
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{className} · {shift}</span>
+                        {registrationNumber && <span className="text-xs text-slate-400 dark:text-slate-500">Mat. {registrationNumber}</span>}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pts >= 7 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : pts >= 5 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300'}`}>
+                          {pts.toFixed(1)} pts · {beh}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsModalOpen(false)} className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Abas */}
+                <div className="flex items-center gap-1 px-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                  {([
+                    { id: 'atividades', label: 'Atividades', icon: BookOpen, count: studentOccs.length },
+                    { id: 'dados', label: 'Dados', icon: User, count: null },
+                    { id: 'responsaveis', label: 'Responsaveis', icon: Phone, count: contacts.filter(c => c.phone).length },
+                    { id: 'documentos', label: 'Documentos', icon: Paperclip, count: allDocs.length },
+                  ] as const).map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.id ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    >
+                      <tab.icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                      {tab.count !== null && tab.count > 0 && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Conteúdo das abas */}
+                <div className="flex-1 overflow-y-auto">
+
+                  {/* ABA: Atividades */}
+                  {activeTab === 'atividades' && (
+                    <div className="p-6">
+                      {studentOccs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-600">
+                          <CheckCircle2 className="w-10 h-10 mb-3 opacity-40" />
+                          <p className="text-sm font-medium">Nenhuma ocorrencia registrada</p>
+                          <p className="text-xs mt-1">Este aluno nao possui historico disciplinar</p>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          {/* Linha vertical da timeline */}
+                          <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-slate-100 dark:bg-slate-800" />
+                          <div className="space-y-4">
+                            {studentOccs.map((occ, idx) => {
+                              const sc = sevColor(occ.ruleCode);
+                              return (
+                                <div key={occ.id} className="relative flex gap-4">
+                                  {/* Bolinha da timeline */}
+                                  <div className={`relative z-10 w-9 h-9 shrink-0 rounded-full border-2 ${sc.border} ${sc.bg} flex items-center justify-center`}>
+                                    <AlertCircle className={`w-4 h-4 ${sc.text}`} />
+                                  </div>
+                                  {/* Card da ocorrencia */}
+                                  <div className={`flex-1 rounded-xl border p-4 ${sc.bg} ${sc.border} mb-1`}>
+                                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                                      <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sc.badge}`}>{sc.label}</span>
+                                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Art. {occ.ruleCode}</span>
+                                          {occ.resolved && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">Cumprida</span>}
+                                        </div>
+                                        <p className="text-sm font-semibold text-slate-800 dark:text-white mt-1">{occ.observations || 'Sem descricao'}</p>
+                                      </div>
+                                      <div className="text-right shrink-0">
+                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(occ.date).toLocaleDateString('pt-BR')}</p>
+                                        {occ.hour && <p className="text-[10px] text-slate-400 mt-0.5">{occ.hour}</p>}
+                                      </div>
+                                    </div>
+                                    {occ.location && (
+                                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1"><MapPin className="w-3 h-3" />{occ.location}</p>
+                                    )}
+                                    {(occ.measures || [occ.measure]).filter(Boolean).length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-2">
+                                        {(occ.measures || (occ.measure ? [occ.measure] : [])).map((m, mi) => (
+                                          <span key={mi} className="text-[10px] bg-white/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md">{m}</span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">Registrado por: {occ.registeredBy}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ABA: Dados */}
+                  {activeTab === 'dados' && (
+                    <form onSubmit={handleSubmit} id="form-dados" className="p-6 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nome Completo *</label>
+                        <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                          className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turma *</label>
+                          <div className="flex gap-2">
+                            <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
+                              className="w-2/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                              {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                            </select>
+                            <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                              className="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                              {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turno *</label>
+                          <select required value={shift} onChange={(e) => setShift(e.target.value as any)}
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option>Matutino</option><option>Vespertino</option><option>Noturno</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Matricula</label>
+                          <input type="text" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Ex: 12345"
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Nascimento</label>
+                          <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Endereco</label>
+                        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, Numero, Bairro"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">CPF</label>
+                        <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Observacoes</label>
+                        <textarea value={observation} onChange={(e) => setObservation(e.target.value)} placeholder="Laudos, condicoes de saude, etc..."
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[72px] text-sm" />
+                      </div>
+                    </form>
+                  )}
+
+                  {/* ABA: Responsáveis */}
+                  {activeTab === 'responsaveis' && (
+                    <form onSubmit={handleSubmit} id="form-responsaveis" className="p-6 space-y-4">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Telefones e nomes dos responsaveis pelo aluno.</p>
+                      {contacts.map((contact, index) => {
+                        const waLink = formatPhoneForWhatsApp(contact.phone, name);
+                        return (
+                          <div key={index} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Responsavel {index + 1}</span>
+                              {index > 0 && (
+                                <button type="button" onClick={() => handleRemoveContact(index)} className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1">
+                                  <X className="w-3 h-3" /> Remover
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nome</label>
+                                <input type="text" value={contact.name} onChange={(e) => updateContact(index, 'name', e.target.value)} placeholder="Nome do responsavel"
+                                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Telefone</label>
+                                <div className="flex gap-2">
+                                  <input ref={(el) => { phoneRefs.current[index] = el; }} type="tel" value={contact.phone} onChange={(e) => updateContact(index, 'phone', e.target.value)} placeholder="(65) 99999-9999"
+                                    className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                                  {waLink && (
+                                    <a href={waLink} target="_blank" rel="noopener noreferrer"
+                                      className="shrink-0 p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-lg transition" title="WhatsApp">
+                                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button type="button" onClick={handleAddContact}
+                        className="w-full py-2 border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-500 dark:hover:text-blue-400 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                        <Plus className="w-4 h-4" /> Adicionar responsavel
+                      </button>
+                    </form>
+                  )}
+
+                  {/* ABA: Documentos */}
+                  {activeTab === 'documentos' && (
+                    <div className="p-6">
+                      {allDocs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-600">
+                          <FileText className="w-10 h-10 mb-3 opacity-40" />
+                          <p className="text-sm font-medium">Nenhum documento anexado</p>
+                          <p className="text-xs mt-1">Documentos sao adicionados nas ocorrencias</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {allDocs.map((doc, i) => (
+                            <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-sm transition-all group">
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${doc.type === 'video' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
+                                {doc.type === 'video' ? <FileText className="w-4 h-4" /> : <Paperclip className="w-4 h-4" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">{doc.label}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{new Date(doc.date).toLocaleDateString('pt-BR')}</p>
+                              </div>
+                              <span className="text-xs text-blue-500 dark:text-blue-400 shrink-0 font-medium">Abrir</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Rodape com acoes */}
+                <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                  <button type="button" onClick={() => { setIsDeleteConfirmOpen(true); setDeleteConfirmText(''); }}
+                    className="px-4 py-2 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition font-medium text-sm flex items-center gap-2">
+                    <Archive className="w-4 h-4" /> Arquivar
+                  </button>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setIsModalOpen(false)}
+                      className="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition font-medium text-sm">
+                      Fechar
+                    </button>
+                    {(activeTab === 'dados' || activeTab === 'responsaveis') && (
+                      <button type="submit" form={activeTab === 'dados' ? 'form-dados' : 'form-responsaveis'}
+                        disabled={!name || !className}
+                        className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                        Salvar Alteracoes
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto overflow-x-hidden">
+          );
+        }
 
-              {/* Upload de Foto */}
-              <div className="flex flex-col items-center gap-2">
-                <label className="cursor-pointer group relative">
-                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 group-hover:border-blue-400 bg-slate-50 group-hover:bg-blue-50 transition-all flex items-center justify-center overflow-hidden">
-                    {photoUrl ? (
-                      <img src={photoUrl} alt="Foto do aluno" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 text-slate-400 group-hover:text-blue-500">
-                        <Camera className="w-6 h-6" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-center">Foto</span>
-                      </div>
-                    )}
-                    {isUploadingPhoto && (
-                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full">
-                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
+        /* ── MODAL SIMPLES: novo cadastro ── */
+        return (
+          <div className="fixed inset-0 glass-overlay z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="glass-modal w-full sm:max-w-md flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 rounded-t-3xl sm:rounded-2xl">
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 safe-area-top">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-800">Cadastrar Aluno</h2>
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-500 hover:text-slate-800 transition rounded-lg hover:bg-white p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-5 space-y-5 overflow-y-auto overflow-x-hidden">
+                <div className="flex flex-col items-center gap-2">
+                  <label className="cursor-pointer group relative">
+                    <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 group-hover:border-blue-400 bg-slate-50 group-hover:bg-blue-50 transition-all flex items-center justify-center overflow-hidden">
+                      {photoUrl ? <img src={photoUrl} alt="Foto do aluno" className="w-full h-full object-cover" /> : (
+                        <div className="flex flex-col items-center gap-1 text-slate-400 group-hover:text-blue-500">
+                          <Camera className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-wider text-center">Foto</span>
+                        </div>
+                      )}
+                      {isUploadingPhoto && <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full"><div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]; if (!file) return;
                       setIsUploadingPhoto(true);
-                      const url = await uploadFile(file, editingStudent || 'new-student-' + Date.now());
-                      if (url) setPhotoUrl(url);
-                      setIsUploadingPhoto(false);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-                {photoUrl && (
-                  <button type="button" onClick={() => setPhotoUrl('')} className="text-xs text-rose-500 hover:text-rose-700">
-                    Remover foto
-                  </button>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Nome Completo *</label>
-                <input 
-                  type="text" 
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: João da Silva..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+                      const url = await uploadFile(file, 'new-' + Date.now());
+                      if (url) setPhotoUrl(url); setIsUploadingPhoto(false); e.target.value = '';
+                    }} />
+                  </label>
+                  {photoUrl && <button type="button" onClick={() => setPhotoUrl('')} className="text-xs text-rose-500 hover:text-rose-700">Remover foto</button>}
+                </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Turma *</label>
-                  <div className="flex gap-2">
-                    <select 
-                      required
-                      value={className.replace(/ [A-Z]$/i, '') || '6º Ano'}
-                      onChange={(e) => {
-                        const letter = className.match(/ ([A-Z])$/i)?.[1] || 'A';
-                        setClassName(`${e.target.value} ${letter}`);
-                      }}
-                      className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="6º Ano">6º Ano</option>
-                      <option value="7º Ano">7º Ano</option>
-                      <option value="8º Ano">8º Ano</option>
-                      <option value="9º Ano">9º Ano</option>
-                      <option value="1º Ano">1º Ano</option>
-                      <option value="2º Ano">2º Ano</option>
-                      <option value="3º Ano">3º Ano</option>
-                    </select>
-                    <select 
-                      required
-                      value={className.match(/ ([A-Z])$/i)?.[1] || 'A'}
-                      onChange={(e) => {
-                        const prefix = className.replace(/ [A-Z]$/i, '') || '6º Ano';
-                        setClassName(`${prefix} ${e.target.value}`);
-                      }}
-                      className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E</option>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Nome Completo *</label>
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ex: Joao da Silva..." />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Turma *</label>
+                    <div className="flex gap-2">
+                      <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
+                        className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                      </select>
+                      <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                        className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Turno *</label>
+                    <select required value={shift} onChange={(e) => setShift(e.target.value as any)}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>Matutino</option><option>Vespertino</option><option>Noturno</option>
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Turno *</label>
-                  <select 
-                    required
-                    value={shift}
-                    onChange={(e) => setShift(e.target.value as any)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Matutino">Matutino</option>
-                    <option value="Vespertino">Vespertino</option>
-                    <option value="Noturno">Noturno</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Matrícula</label>
-                  <input 
-                    type="text" 
-                    value={registrationNumber}
-                    onChange={(e) => setRegistrationNumber(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ex: 12345"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Data de Nascimento</label>
-                  <input 
-                    type="date" 
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Endereço</label>
-                  <input 
-                    type="text" 
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Rua, Número, Bairro"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">CPF</label>
-                  <input 
-                    type="text" 
-                    value={cpf}
-                    onChange={(e) => setCpf(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Observações</label>
-                <textarea 
-                  value={observation}
-                  onChange={(e) => setObservation(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"
-                  placeholder="Laudos, condições de saúde, etc..."
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-slate-600">Contatos dos Responsáveis</label>
-                {contacts.map((contact, index) => {
-                  const waLink = formatPhoneForWhatsApp(contact.phone, name);
-                  return (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={contact.name}
-                      onChange={(e) => updateContact(index, 'name', e.target.value)}
-                      placeholder="Responsável"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      ref={(el) => { phoneRefs.current[index] = el; }}
-                      type="tel"
-                      value={contact.phone}
-                      onChange={(e) => updateContact(index, 'phone', e.target.value)}
-                      placeholder="Telefone"
-                      className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {waLink && (
-                      <a 
-                        href={waLink} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition shrink-0 flex items-center justify-center" 
-                        title="Falar com responsável"
-                      >
-                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-                      </a>
-                    )}
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={handleAddContact}
-                        className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition shrink-0 flex items-center justify-center"
-                        title="Adicionar mais um contato"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveContact(index)}
-                        className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition shrink-0 flex items-center justify-center"
-                        title="Remover contato"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Matricula</label>
+                    <input type="text" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Ex: 12345"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
-                )})}
-              </div>
-
-              <div className="pt-4 flex justify-between gap-3 border-t border-slate-200 mt-5 pt-5">
-                {editingStudent ? (
-                  <button 
-                    type="button" 
-                    onClick={() => { setIsDeleteConfirmOpen(true); setDeleteConfirmText(''); }}
-                    className="px-4 py-2 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition font-medium flex items-center gap-2"
-                  >
-                    <Archive className="w-4 h-4"/>
-                    Arquivar
-                  </button>
-                ) : <div />}
-                <div className="flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white transition font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={!name || !className}
-                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {editingStudent ? 'Salvar Alterações' : 'Confirmar Cadastro'}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Data de Nascimento</label>
+                    <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Endereco</label>
+                    <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Rua, Numero, Bairro"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">CPF</label>
+                    <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Observacoes</label>
+                  <textarea value={observation} onChange={(e) => setObservation(e.target.value)} placeholder="Laudos, condicoes de saude, etc..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]" />
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-600">Contatos dos Responsaveis</label>
+                  {contacts.map((contact, index) => {
+                    const waLink = formatPhoneForWhatsApp(contact.phone, name);
+                    return (
+                      <div key={index} className="flex gap-2">
+                        <input type="text" value={contact.name} onChange={(e) => updateContact(index, 'name', e.target.value)} placeholder="Responsavel"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <input ref={(el) => { phoneRefs.current[index] = el; }} type="tel" value={contact.phone} onChange={(e) => updateContact(index, 'phone', e.target.value)} placeholder="Telefone"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        {waLink && (
+                          <a href={waLink} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition shrink-0 flex items-center justify-center" title="Falar com responsavel">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                          </a>
+                        )}
+                        {index === 0 ? (
+                          <button type="button" onClick={handleAddContact} className="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition shrink-0 flex items-center justify-center" title="Adicionar mais um contato">
+                            <Plus className="w-5 h-5" />
+                          </button>
+                        ) : (
+                          <button type="button" onClick={() => handleRemoveContact(index)} className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition shrink-0 flex items-center justify-center" title="Remover contato">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="pt-4 flex justify-end gap-3 border-t border-slate-200 mt-5 pt-5">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg text-slate-600 hover:bg-white transition font-medium">Cancelar</button>
+                  <button type="submit" disabled={!name || !className} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                    Confirmar Cadastro
                   </button>
                 </div>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal Confirmação de Arquivamento */}
       {isDeleteConfirmOpen && (

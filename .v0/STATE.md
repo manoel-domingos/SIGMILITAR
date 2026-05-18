@@ -5,12 +5,19 @@
 ## Última atualização
 
 **Data:** 2026-05-17  
-**Sessão:** DRE login — auth corrigido (aguarda isAuthRestored), cor #2d3184, base_dre no canto direito  
+**Sessão:** Ficha do aluno com 4 abas replicada para escolas  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
 Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acessa tudo.
+
+## Última ação concluída (2026-05-17) — sessão 3
+- **Ficha do aluno com 4 abas + replicação para escolas:**
+  1. `app/alunos/page.tsx`: modal de edição reformulado com layout largo (max-w-4xl) e 4 abas: Atividades (timeline de ocorrências), Dados (formulário), Responsaveis, Documentos
+  2. `components/StudentSheet.tsx`: componente reutilizável extraído (aceita `studentId`, `onClose`, `readOnly`)
+  3. `app/page.tsx`: cards de alunos críticos tornados clicáveis — abre `StudentSheet` diretamente no dashboard da escola
+- Zero erros TypeScript
 
 ## Última ação concluída (2026-05-17) — sessão 2
 - **4 melhorias no /dre:**
