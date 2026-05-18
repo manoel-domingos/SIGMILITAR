@@ -692,7 +692,7 @@ function RegistroDisciplinarContent() {
 
       <div class="sid-item">
         <span class="sid-label">Nº ATA</span>
-        <span class="sid-valor">${o.ataNumber || '---'}</span>
+        <span class="sid-valor">${occurrenceNum || '---'}</span>
       </div>
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
@@ -1243,7 +1243,7 @@ function RegistroDisciplinarContent() {
 
     const mainColHTML =
       '<div class="main-col">' +
-        '<div class="ata-titulo-grande">ATA N\u00ba ' + o.ataNumber + '</div>' +
+        '<div class="ata-titulo-grande">ATA N\u00ba ' + occurrenceNum + '</div>' +
         '<div class="ata-subtitulo">Relato do Ocorrido</div>' +
         '<div class="ata-corpo">' + markdownBoldToHtml(o.observations || 'Nenhum relato registrado.') + '</div>' +
         signaturesHTML() +
@@ -1476,7 +1476,7 @@ function RegistroDisciplinarContent() {
                           >
                             <td className="px-4 py-4 text-center">
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
-                                {(() => { const i = occurrences.findIndex((x: any) => x.id === o.id); return o.ataNumber ?? (i >= 0 ? i + 1 : '—'); })()}
+                                {o.ataNumber ?? '—'}
                               </span>
                             </td>
                             <td className="px-6 py-4">
