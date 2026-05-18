@@ -10,11 +10,15 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
+  LineChart, Line, CartesianGrid, ReferenceLine,
 } from 'recharts';
 
 // ─────────────────────────────────────────────
 // Tipos
 // ─────────────────────────────────────────────
+export interface SleepBucket { label: string; value: number; date: string; }
+export interface SleepData { byWeek: SleepBucket[]; byMonth: SleepBucket[]; }
+
 export interface SchoolStats {
   id: string;
   name: string;
@@ -37,6 +41,7 @@ interface Props {
   stats: SchoolStats[];
   loading: boolean;
   isVisible: (id: string) => boolean;
+  sleepData?: SleepData;
   onSchoolClick?: (schoolId: string) => void;
   onNavigate?: (route: string) => void;
 }
@@ -167,7 +172,7 @@ function TrendBadge({ value, inverse = false }: { value: number; inverse?: boole
 
 // ─────────────────────────────────────────────
 // Tipo auxiliar para "ocorrência simulada" na lista
-// ─────────────────────────────────────────────
+// ────────────────────────────────────��────────
 interface OccRow {
   id: string;
   schoolName: string;
@@ -241,7 +246,7 @@ const PERIOD_LABELS: Record<Period, string> = {
   mes: 'Este mes',
 };
 
-export default function DreDashboard({ stats, loading, isVisible, onSchoolClick, onNavigate }: Props) {
+export default function DreDashboard({ stats, loading, isVisible, sleepData, onSchoolClick, onNavigate }: Props) {
   const nav = (route: string) => onNavigate?.(route);
 
   // ─── Filtros locais ───────────────────────────
@@ -257,6 +262,9 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
   // Filtros de período dos gráficos
   const [barPeriod,  setBarPeriod]  = useState<Period>('mes');
   const [piePeriod,  setPiePeriod]  = useState<Period>('mes');
+  const [sleepPeriod, setSleepPeriod] = useState<'semana' | 'mes'>('semana');
+  const [sleepDropOpen, setSleepDropOpen] = useState(false);
+  const sleepDropRef = useRef<HTMLDivElement>(null);
   const [barDropOpen, setBarDropOpen] = useState(false);
   const [pieDropOpen, setPieDropOpen] = useState(false);
   const barDropRef = useRef<HTMLDivElement>(null);
@@ -265,8 +273,9 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
   // Fecha dropdowns ao clicar fora
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (barDropRef.current && !barDropRef.current.contains(e.target as Node)) setBarDropOpen(false);
-      if (pieDropRef.current && !pieDropRef.current.contains(e.target as Node)) setPieDropOpen(false);
+      if (barDropRef.current  && !barDropRef.current.contains(e.target as Node))   setBarDropOpen(false);
+      if (pieDropRef.current  && !pieDropRef.current.contains(e.target as Node))   setPieDropOpen(false);
+      if (sleepDropRef.current && !sleepDropRef.current.contains(e.target as Node)) setSleepDropOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -784,6 +793,121 @@ export default function DreDashboard({ stats, loading, isVisible, onSchoolClick,
               </div>
             </section>
           )}
+
+          {/* ── KPI: DORMIR EM SALA ── */}
+          {sleepData && (sleepData.byWeek.length > 0 || sleepData.byMonth.length > 0) && (() => {
+            const chartData = sleepPeriod === 'semana' ? sleepData.byWeek : sleepData.byMonth;
+            const buckets = chartData.length;
+            const current = chartData[buckets - 1]?.value ?? 0;
+            const previous = chartData[buckets - 2]?.value ?? 0;
+            const delta = previous > 0 ? Math.round(((current - previous) / previous) * 100) : 0;
+            const totalPeriod = chartData.reduce((s, b) => s + b.value, 0);
+            const isReduction = delta < 0;
+            const deltaColor = isReduction ? 'text-emerald-500' : delta > 0 ? 'text-rose-500' : 'text-slate-400';
+            const deltaBg    = isReduction ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30' : delta > 0 ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
+
+            return (
+              <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+                {/* Cabeçalho */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-tight">Dormir em Sala de Aula</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500">Reg. 14 — Debrucar-se / dormir (comparativo)</p>
+                    </div>
+                  </div>
+                  {/* Seletor semana / mês */}
+                  <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold ${deltaBg} ${deltaColor}`}>
+                      {isReduction
+                        ? <TrendingDown className="w-3 h-3" />
+                        : delta > 0
+                          ? <TrendingUp className="w-3 h-3" />
+                          : <Minus className="w-3 h-3" />}
+                      {delta === 0 ? 'Estavel' : `${Math.abs(delta)}% ${isReduction ? 'reducao' : 'aumento'}`}
+                    </div>
+                    <div className="relative" ref={sleepDropRef}>
+                      <button
+                        onClick={() => setSleepDropOpen(o => !o)}
+                        className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-semibold transition-colors"
+                      >
+                        {sleepPeriod === 'semana' ? 'Por Semana' : 'Por Mes'}
+                        <ChevronDown className={`w-3 h-3 transition-transform ${sleepDropOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {sleepDropOpen && (
+                        <div className="absolute right-0 top-full mt-1.5 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg overflow-hidden z-50">
+                          {(['semana', 'mes'] as const).map(p => (
+                            <button
+                              key={p}
+                              onClick={() => { setSleepPeriod(p); setSleepDropOpen(false); }}
+                              className={`w-full text-left px-4 py-2 text-xs transition-colors ${sleepPeriod === p ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                            >
+                              {p === 'semana' ? 'Por Semana' : 'Por Mes'}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metricas rápidas */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-slate-50 dark:bg-slate-700/40 rounded-xl px-3 py-2.5 text-center">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wide mb-1">
+                      {sleepPeriod === 'semana' ? 'Esta Semana' : 'Este Mes'}
+                    </p>
+                    <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{current}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-700/40 rounded-xl px-3 py-2.5 text-center">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wide mb-1">
+                      {sleepPeriod === 'semana' ? 'Semana Anterior' : 'Mes Anterior'}
+                    </p>
+                    <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{previous}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-700/40 rounded-xl px-3 py-2.5 text-center">
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wide mb-1">
+                      Total no Periodo
+                    </p>
+                    <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">{totalPeriod}</p>
+                  </div>
+                </div>
+
+                {/* Gráfico de linha */}
+                <ResponsiveContainer width="100%" height={140}>
+                  <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.5} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 10, fontSize: 12, color: '#e2e8f0' }}
+                      formatter={(val: any) => [val, 'Ocorrencias']}
+                    />
+                    {previous > 0 && (
+                      <ReferenceLine y={previous} stroke="#94a3b8" strokeDasharray="4 4" strokeOpacity={0.6}
+                        label={{ value: 'anterior', position: 'insideTopRight', fontSize: 9, fill: '#94a3b8' }}
+                      />
+                    )}
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#6366f1"
+                      strokeWidth={2.5}
+                      dot={{ fill: '#6366f1', r: 4, strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: '#4f46e5' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2">
+                  Linha tracejada = valor do periodo anterior · Tendencia positiva indica reducao das ocorrencias
+                </p>
+              </section>
+            );
+          })()}
 
           {/* ── IMPLANTAÇÃO ── */}
           {isVisible('implantacao') && (

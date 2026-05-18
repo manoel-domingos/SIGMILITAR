@@ -13,7 +13,7 @@ import {
   ToggleLeft, ToggleRight, X, CheckCircle2, Trophy, FileWarning,
   Moon, Sun, LogOut, Settings, CloudCheck, CloudOff,
 } from 'lucide-react';
-import DreDashboard from '@/components/DreDashboard';
+import DreDashboard, { type SleepData } from '@/components/DreDashboard';
 import AIChat from '@/components/AIChat';
 
 const supabase = supabaseClient!;
@@ -124,6 +124,7 @@ export default function DrePage() {
   const [stats, setStats] = useState<SchoolStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [sleepData, setSleepData] = useState<SleepData>({ byWeek: [], byMonth: [] });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
@@ -325,6 +326,42 @@ export default function DrePage() {
       });
 
       setStats(statsArr);
+
+      // ── Calcula dados de "dormir em sala" (rule_code contém 14) por semana e mês ──
+      const sleepRows = (allOcc ?? []).filter((o: any) => {
+        const codes: any[] = Array.isArray(o.rule_code) ? o.rule_code : [];
+        return codes.map(String).includes('14');
+      });
+      const weekMap: Record<string, number> = {};
+      const monthMap: Record<string, number> = {};
+      const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const nowD = new Date();
+      sleepRows.forEach((o: any) => {
+        if (!o.date) return;
+        const d = new Date(o.date);
+        const dow = d.getDay();
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - dow);
+        const wKey = weekStart.toISOString().split('T')[0];
+        weekMap[wKey] = (weekMap[wKey] ?? 0) + 1;
+        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthMap[mKey] = (monthMap[mKey] ?? 0) + 1;
+      });
+      const byWeek: { label: string; value: number; date: string }[] = [];
+      for (let w = 7; w >= 0; w--) {
+        const d = new Date(nowD);
+        d.setDate(nowD.getDate() - nowD.getDay() - w * 7);
+        const key = d.toISOString().split('T')[0];
+        byWeek.push({ label: `${d.getDate()}/${MONTHS_PT[d.getMonth()]}`, value: weekMap[key] ?? 0, date: key });
+      }
+      const byMonth: { label: string; value: number; date: string }[] = [];
+      for (let m = 5; m >= 0; m--) {
+        const d = new Date(nowD.getFullYear(), nowD.getMonth() - m, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        byMonth.push({ label: MONTHS_PT[d.getMonth()], value: monthMap[key] ?? 0, date: key });
+      }
+      setSleepData({ byWeek, byMonth });
+
       setLastUpdated(new Date());
     } catch (err) {
       console.error('[DRE] load error:', err);
@@ -557,6 +594,7 @@ export default function DrePage() {
         stats={stats}
         loading={loading}
         isVisible={isVisible}
+        sleepData={sleepData}
         onSchoolClick={(schoolId) => {
           setActiveSchoolContext(schoolId);
           router.push('/');
