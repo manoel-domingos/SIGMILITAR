@@ -112,23 +112,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (schoolId === 'DRE') router.push('/dre');
   };
 
-  // Popup alerta xerife (sexta e segunda)
+  // Popup alerta xerife — aparece uma vez por sessao de login (sexta e segunda)
+  const XERIFE_SESSION_KEY = 'xerife_alert_seen';
   const [showXerifeAlert, setShowXerifeAlert] = useState(false);
   useEffect(() => {
     if (!user || isGuest) return;
-    const today = new Date();
-    const dow = today.getDay(); // 1=seg, 5=sex
+    const dow = new Date().getDay(); // 1=seg, 5=sex
     if (dow !== 1 && dow !== 5) return;
-    const key = 'xerife_alert_dismissed_' + today.toISOString().split('T')[0];
-    if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
+    if (typeof window !== 'undefined' && !sessionStorage.getItem(XERIFE_SESSION_KEY)) {
       setShowXerifeAlert(true);
     }
   }, [user, isGuest]);
 
-  const dismissXerifeAlert = (noMore: boolean) => {
-    if (noMore && typeof window !== 'undefined') {
-      const key = 'xerife_alert_dismissed_' + new Date().toISOString().split('T')[0];
-      sessionStorage.setItem(key, '1');
+  const dismissXerifeAlert = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(XERIFE_SESSION_KEY, '1');
     }
     setShowXerifeAlert(false);
   };
@@ -339,7 +337,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Xerife Alert Popup — sexta e segunda */}
       {showXerifeAlert && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9998] flex items-center justify-center p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) dismissXerifeAlert(false); }}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9998] flex items-center justify-center p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) dismissXerifeAlert(); }}>
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
               <ShieldCheck className="w-8 h-8 text-amber-600 dark:text-amber-400" />
@@ -357,22 +355,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col gap-2 pt-1">
               <a
                 href="/xerife"
-                onClick={() => setShowXerifeAlert(false)}
+                onClick={dismissXerifeAlert}
                 className="block w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
               >
                 {new Date().getDay() === 5 ? 'Registrar Feedback' : 'Designar Xerifes'}
               </a>
               <button
-                onClick={() => dismissXerifeAlert(false)}
+                onClick={dismissXerifeAlert}
                 className="w-full py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
-                Lembrar mais tarde
-              </button>
-              <button
-                onClick={() => dismissXerifeAlert(true)}
-                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors py-1"
-              >
-                Nao aparecer novamente hoje
+                Agora nao
               </button>
             </div>
           </div>
