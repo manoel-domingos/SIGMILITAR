@@ -280,36 +280,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setIsAuthRestored(true);
 
+      // Controle de abort para evitar requisições concorrentes (AbortError no Safari/iOS)
+      let currentFetchAbort: AbortController | null = null;
+      let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
       const fetchData = async (schoolId?: string) => {
         if (!supabase) return;
+
+        // Cancela qualquer fetch em andamento antes de iniciar um novo
+        if (currentFetchAbort) {
+          currentFetchAbort.abort();
+        }
+        currentFetchAbort = new AbortController();
+        const abortSignal = currentFetchAbort;
+
         // Resolve o school_id a filtrar: prioridade schoolId param > state atual
         const sid = schoolId ?? activeSchoolContextRef.current;
         const bySchool = (q: any) => sid && sid !== 'DRE' ? q.eq('school_id', sid) : q;
         setIsSyncing(true);
         try {
-          const responses = await Promise.all([
+          // Busca tabelas sequencialmente em grupos para evitar sobrecarga de locks no Safari
+          const [
+            { data: studentsData },
+            { data: rulesData },
+            { data: occurrencesData },
+          ] = await Promise.all([
             bySchool(supabase!.from('students').select('*')),
             supabase!.from('rules').select('*'),
             bySchool(supabase!.from('occurrences').select('*').order('date', { ascending: false })),
+          ]);
+
+          // Verifica se foi abortado entre os dois grupos
+          if (abortSignal.signal.aborted) return;
+
+          const [
+            { data: accidentsData },
+            { data: praisesData },
+            { data: summonsData },
+          ] = await Promise.all([
             bySchool(supabase!.from('accidents').select('*').order('date', { ascending: false })),
             bySchool(supabase!.from('praises').select('*').order('date', { ascending: false })),
             bySchool(supabase!.from('summons').select('*').order('date', { ascending: false })),
+          ]);
+
+          if (abortSignal.signal.aborted) return;
+
+          const [
+            { data: conductTermsData },
+            { data: auditLogsData },
+            { data: appUsersData },
+          ] = await Promise.all([
             bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
             supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
             supabase!.from('user_profiles').select('*')
           ]);
 
-          const [
-            { data: studentsData },
-            { data: rulesData },
-            { data: occurrencesData },
-            { data: accidentsData },
-            { data: praisesData },
-            { data: summonsData },
-            { data: conductTermsData },
-            { data: auditLogsData },
-            { data: appUsersData }
-          ] = responses;
+          if (abortSignal.signal.aborted) return;
 
           if (appUsersData && appUsersData.length > 0) {
             // user_profiles usa UUID como id — mapear para AppUser
@@ -434,16 +460,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => {});
 
-      // Real-time Subscriptions
-      const tables = ['students', 'occurrences', 'accidents', 'praises', 'summons', 'conduct_terms', 'audit_logs', 'rules'];
-      const channel = supabase.channel('schema-db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+      // Real-time Subscriptions com debounce para evitar múltiplos fetches simultâneos
+      const debouncedFetch = () => {
+        if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer);
+        fetchDebounceTimer = setTimeout(() => {
           console.log('Change detected, refreshing data...');
           fetchData(activeSchoolContextRef.current || undefined);
-        })
+        }, 300);
+      };
+
+      const tables = ['students', 'occurrences', 'accidents', 'praises', 'summons', 'conduct_terms', 'audit_logs', 'rules'];
+      const channel = supabase.channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, debouncedFetch)
         .subscribe();
 
       return () => {
+        if (fetchDebounceTimer) clearTimeout(fetchDebounceTimer);
+        if (currentFetchAbort) currentFetchAbort.abort();
         if (supabase) supabase.removeChannel(channel);
       };
     }
