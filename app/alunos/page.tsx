@@ -791,144 +791,131 @@ export default function Alunos() {
           </div>
         </div>
 
-        {/* List Card */}
-        <div className="glass-card overflow-hidden mt-6 flex flex-col h-[600px]">
-          <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="relative w-full max-w-sm flex items-center gap-3">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  placeholder="Buscar por nome ou..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="glass-input w-full pl-10 pr-4 py-2 text-sm text-slate-800"
-                />
-                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
-              </div>
-              <div className="relative w-48 shrink-0">
-                <select
-                  value={classFilter}
-                  onChange={(e) => setClassFilter(e.target.value)}
-                  className="glass-input w-full px-4 py-2 text-sm text-slate-800 appearance-none"
-                >
-                  <option value="">Todas as turmas</option>
-                  {uniqueClasses.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center px-2 text-slate-500">
-                  <ChevronDown className="w-4 h-4" />
-                </div>
-              </div>
+        {/* Barra de filtros */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-2">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72">
+              <input
+                type="text"
+                placeholder="Buscar por nome ou turma..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="glass-input w-full pl-10 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 rounded-full"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-500 font-medium whitespace-nowrap">
-                Total de alunos: <span className="font-bold text-slate-800">{filteredStudents.length}</span>
-              </span>
-              <button
-                onClick={handleExport}
-                className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 shadow-sm"
+            <div className="relative shrink-0">
+              <select
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+                className="glass-input pl-4 pr-8 py-2 text-sm text-slate-800 dark:text-slate-200 appearance-none rounded-full"
               >
-                <Download className="w-4 h-4" /> Exportar Dados
-              </button>
-
+                <option value="">Todas as turmas</option>
+                {uniqueClasses.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>
           </div>
-          
-          <div className="overflow-auto flex-1 -mx-4 sm:mx-0 px-4 sm:px-0 scroll-smooth-mobile">
-            <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
-              <thead className="sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold z-10">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Nome</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Turma</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium hidden sm:table-cell">Turno</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium hidden md:table-cell">Contatos</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium">Comportamento</th>
-                  <th className="px-4 sm:px-6 py-3 font-medium text-center">Nota</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-600">
-                {filteredStudents.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                      Nenhum aluno encontrado.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredStudents.map((s) => (
-                    <tr key={s.id} onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)} className={'transition border-b border-slate-100 last:border-0 text-slate-600 active:bg-slate-100 ' + (currentUserRole !== 'GUEST' ? 'hover:bg-slate-50 cursor-pointer' : '')}>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-slate-800">
-                         <div className="flex items-center gap-2 sm:gap-3">
-                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shrink-0 text-sm overflow-hidden">
-                             {s.photoUrl ? (
-                               <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" />
-                             ) : (
-                               s.name.charAt(0)
-                             )}
-                           </div>
-                           <div className="min-w-0">
-                             <span className="truncate block text-sm sm:text-base">{s.name}</span>
-                             <span className="text-xs text-slate-400 sm:hidden">{s.shift}</span>
-                           </div>
-                         </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm">{s.class}</td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">{s.shift}</td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-slate-500 hidden md:table-cell">
-                        {s.contacts && s.contacts.length > 0 ? (
-                           <div className="flex flex-col gap-1.5">
-                             {s.contacts.slice(0, 2).map((c, i) => {
-                               const waLink = formatPhoneForWhatsApp(c.phone, s.name);
-                               return (
-                                 <div key={i} className="text-xs flex items-center gap-1.5">
-                                   <span className="text-slate-400 capitalize">{c.name || 'Resp.'}:</span> 
-                                   {waLink ? (
-                                      <a 
-                                        href={waLink} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="text-emerald-600 hover:text-emerald-700 hover:underline font-medium flex items-center transition"
-                                      >
-                                        {c.phone}
-                                      </a>
-                                   ) : (
-                                      <span>{c.phone}</span>
-                                   )}
-                                 </div>
-                               );
-                             })}
-                             {s.contacts.length > 2 && <span className="text-[10px] text-slate-400">+{s.contacts.length - 2} mais</span>}
-                           </div>
-                        ) : (
-                           <span className="text-xs italic text-slate-400">---</span>
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4">
-                        <span className={'inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ' + (getStudentBehavior(getStudentPoints(s.id)) === 'Excepcional' ? 'bg-emerald-500/10 text-emerald-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Ótimo' ? 'bg-blue-500/10 text-blue-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Bom' ? 'bg-slate-500/10 text-slate-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Regular' ? 'bg-yellow-500/10 text-yellow-600' : getStudentBehavior(getStudentPoints(s.id)) === 'Insuficiente' ? 'bg-rose-500/10 text-rose-600' : 'bg-red-500/10 text-red-600')}>
-                          {getStudentBehavior(getStudentPoints(s.id))}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 sm:py-4">
-                         <div className="flex flex-col items-center gap-1">
-                            <span className={'text-sm font-black ' + (getStudentPoints(s.id) >= 7 ? 'text-blue-600' : 'text-red-500')}>
-                               {getStudentPoints(s.id).toFixed(1)}
-                            </span>
-                            <div className="w-12 sm:w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-                               <div 
-                                 className={'h-full transition-all duration-500 ' + (getStudentPoints(s.id) >= 7 ? 'bg-blue-500' : 'bg-red-500')} 
-                                 style={{ width: `${getStudentPoints(s.id) * 10}%` }}
-                               />
-                            </div>
-                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500 font-medium whitespace-nowrap">
+              <span className="font-bold text-slate-800 dark:text-slate-200">{filteredStudents.length}</span> alunos
+            </span>
+            <button
+              onClick={handleExport}
+              className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 shadow-sm"
+            >
+              <Download className="w-4 h-4" /> Exportar
+            </button>
           </div>
         </div>
+
+        {/* Grid de cards */}
+        {filteredStudents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-600">
+            <Users className="w-10 h-10 mb-3 opacity-30" />
+            <p className="text-sm font-medium">Nenhum aluno encontrado</p>
+            <p className="text-xs mt-1">Tente ajustar os filtros ou cadastrar um novo aluno</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredStudents.map((s) => {
+              const pts = getStudentPoints(s.id);
+              const beh = getStudentBehavior(pts);
+              const occs = getStudentOccurrences(s.id);
+              const graveCount = occs.filter(o => o.ruleCode >= 300).length;
+              const mediaCount = occs.filter(o => o.ruleCode >= 200 && o.ruleCode < 300).length;
+              const leveCount  = occs.filter(o => o.ruleCode < 200).length;
+
+              const behColor =
+                beh === 'Excepcional' ? { dot: 'bg-emerald-500', badge: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20' } :
+                beh === 'Otimo'       ? { dot: 'bg-blue-500',    badge: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/20' } :
+                beh === 'Bom'         ? { dot: 'bg-slate-400',   badge: 'bg-slate-50 dark:bg-slate-700/30 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600' } :
+                beh === 'Regular'     ? { dot: 'bg-amber-500',   badge: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/20' } :
+                                        { dot: 'bg-rose-500',    badge: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/20' };
+
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)}
+                  disabled={currentUserRole === 'GUEST'}
+                  className="group text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:cursor-default disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                >
+                  {/* Badge de comportamento */}
+                  <div className="flex items-center justify-between">
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${behColor.badge}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${behColor.dot}`} />
+                      {beh}
+                    </span>
+                    <span className={`text-sm font-black ${pts >= 7 ? 'text-blue-600 dark:text-blue-400' : pts >= 5 ? 'text-amber-500' : 'text-rose-500'}`}>
+                      {pts.toFixed(1)}
+                    </span>
+                  </div>
+
+                  {/* Avatar + nome */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 overflow-hidden flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-sm">
+                      {s.photoUrl
+                        ? <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" />
+                        : s.name.charAt(0).toUpperCase()
+                      }
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate">{s.name}</p>
+                      {s.observation && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{s.observation}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Divisor */}
+                  <div className="h-px bg-slate-100 dark:bg-slate-700/50" />
+
+                  {/* Rodape: turma, turno, ocorrencias */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${behColor.badge}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${behColor.dot}`} />
+                      {s.class}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                      {s.shift === 'Matutino' ? 'Manha' : s.shift === 'Vespertino' ? 'Tarde' : 'Noite'}
+                    </span>
+                    {occs.length > 0 && (
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                        <AlertCircle className="w-3 h-3" />
+                        {occs.length}
+                        {graveCount > 0 && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" title="Grave" />}
+                        {mediaCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" title="Media" />}
+                        {leveCount  > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" title="Leve" />}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Modal Novo/Editar Aluno */}
