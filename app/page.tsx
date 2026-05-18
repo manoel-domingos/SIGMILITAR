@@ -426,10 +426,17 @@ export default function Dashboard() {
                       {implantacaoProgress.total > 0 ? Math.round((implantacaoProgress.done / implantacaoProgress.total) * 100) : 0}%
                     </p>
                   </div>
-                  <div className="mt-1.5 h-1.5 w-full bg-indigo-100 dark:bg-indigo-900/40 rounded-full overflow-hidden">
+                  <div className="relative w-full mt-1.5">
+                    <div className="w-full h-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-full">
+                      <div
+                        className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                        style={{ width: implantacaoProgress.total > 0 ? (implantacaoProgress.done / implantacaoProgress.total) * 100 + '%' : '0%' }}
+                      />
+                    </div>
                     <div
-                      className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-                      style={{ width: implantacaoProgress.total > 0 ? (implantacaoProgress.done / implantacaoProgress.total) * 100 + '%' : '0%' }}
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-indigo-500 border-2 border-white dark:border-indigo-900 shadow-sm transition-all duration-500"
+                      style={{ left: implantacaoProgress.total > 0 ? (implantacaoProgress.done / implantacaoProgress.total) * 100 + '%' : '0%' }}
+                      aria-hidden="true"
                     />
                   </div>
                 </>
