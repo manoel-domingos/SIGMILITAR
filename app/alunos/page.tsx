@@ -3,7 +3,8 @@
 import React, { useState, useRef } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User } from 'lucide-react';
+import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User, PanelRight, Rows3 } from 'lucide-react';
+import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -103,6 +104,8 @@ export default function Alunos() {
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [activeTab, setActiveTab] = useState<'atividades' | 'dados' | 'responsaveis' | 'documentos'>('atividades');
+  const [viewMode, setViewMode] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [panelStudentId, setPanelStudentId] = useState<string | null>(null);
   
   // Import review state
   const [pendingImports, setPendingImports] = useState<any[]>([]);
@@ -822,6 +825,25 @@ export default function Alunos() {
             <span className="text-sm text-slate-500 font-medium whitespace-nowrap">
               <span className="font-bold text-slate-800 dark:text-slate-200">{filteredStudents.length}</span> alunos
             </span>
+            {/* Toggle de modo de visualizacao */}
+            <div className="flex items-center bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-full p-0.5 gap-0.5 shadow-sm">
+              <button
+                onClick={() => { setViewMode('horizontal'); setPanelStudentId(null); }}
+                title="Horizontal — modal centralizado"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === 'horizontal' ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                <Rows3 className="w-3.5 h-3.5" />
+                Horizontal
+              </button>
+              <button
+                onClick={() => setViewMode('vertical')}
+                title="Vertical — painel lateral"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === 'vertical' ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                <PanelRight className="w-3.5 h-3.5" />
+                Vertical
+              </button>
+            </div>
             <button
               onClick={handleExport}
               className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 shadow-sm"
@@ -858,9 +880,16 @@ export default function Alunos() {
               return (
                 <button
                   key={s.id}
-                  onClick={() => currentUserRole !== 'GUEST' && openEditModal(s)}
+                  onClick={() => {
+                    if (currentUserRole === 'GUEST') return;
+                    if (viewMode === 'vertical') {
+                      setPanelStudentId(s.id);
+                    } else {
+                      openEditModal(s);
+                    }
+                  }}
                   disabled={currentUserRole === 'GUEST'}
-                  className="group text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:cursor-default disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  className={`group text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:cursor-default disabled:hover:translate-y-0 disabled:hover:shadow-none ${panelStudentId === s.id ? 'ring-2 ring-blue-500 border-blue-300 dark:border-blue-600' : ''}`}
                 >
                   {/* Badge de comportamento */}
                   <div className="flex items-center justify-between">
@@ -917,6 +946,15 @@ export default function Alunos() {
           </div>
         )}
       </div>
+
+      {/* Painel lateral (modo vertical) */}
+      {viewMode === 'vertical' && panelStudentId && (
+        <StudentSheet
+          studentId={panelStudentId}
+          onClose={() => setPanelStudentId(null)}
+          mode="panel"
+        />
+      )}
 
       {/* Modal Novo/Editar Aluno */}
       {isModalOpen && (() => {
