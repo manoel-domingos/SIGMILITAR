@@ -210,19 +210,21 @@ export default function XerifePage() {
               Todas
             </button>
             {classes.map(c => {
-              const hasDesignation = entries.some(e => e.class === c);
+              const allRolesFilled = (Object.keys(ROLE_CONFIG) as XerifeRole[]).every(r =>
+                entries.some(e => e.class === c && e.role === r)
+              );
               const isActive = selectedClass === c;
               return (
                 <button
                   key={c}
                   onClick={() => setSelectedClass(isActive ? '' : c)}
-                  title={hasDesignation ? `${c} — designado` : `${c} — sem designacao`}
+                  title={allRolesFilled ? `${c} — completo` : `${c} — pendente`}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                     isActive
-                      ? hasDesignation
+                      ? allRolesFilled
                         ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
                         : 'bg-rose-500 border-rose-500 text-white shadow-sm'
-                      : hasDesignation
+                      : allRolesFilled
                         ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600'
                         : 'bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20'
                   }`}
