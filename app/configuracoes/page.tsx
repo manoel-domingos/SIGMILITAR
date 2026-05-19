@@ -79,14 +79,29 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) { setError('Nome e e-mail/usuário são obrigatórios.'); return; }
+    if (!form.password || form.password.length < 4) { setError('A senha deve ter pelo menos 4 caracteres.'); return; }
     setSaving(true); setError(null);
-    const { data, error: err } = await supabase().from('user_profiles')
-      .insert([{ name: form.name.trim(), email: form.email.trim(), password: form.password || null, role: form.role, school_id: form.school_id }])
-      .select().single();
-    setSaving(false);
-    if (err) { setError(err.message); return; }
-    if (data) onCreated(data as UserRow);
-    handleClose();
+    try {
+      const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          role: form.role,
+          school_id: form.school_id,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setError(json.error || 'Erro ao criar usuario.'); return; }
+      if (json.user) onCreated(json.user as UserRow);
+      handleClose();
+    } catch (err: any) {
+      setError(err.message || 'Erro inesperado.');
+    } finally {
+      setSaving(false);
+    }
   };
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm(v => ({ ...v, [k]: e.target.value }));
 
@@ -115,7 +130,7 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Senha</label>
             <div className="relative">
-              <input type={showPass ? 'text' : 'password'} className={INPUT + ' pr-10'} placeholder="Deixe em branco para padrao do sistema" value={form.password} onChange={set('password')} />
+              <input type={showPass ? 'text' : 'password'} className={INPUT + ' pr-10'} placeholder="Minimo 4 caracteres (obrigatorio)" value={form.password} onChange={set('password')} required />
               <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
                 {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
