@@ -196,6 +196,44 @@ export default function XerifePage() {
           </div>
         </div>
 
+        {/* Filtro rápido por turma */}
+        {!loading && classes.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedClass('')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                selectedClass === ''
+                  ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600'
+              }`}
+            >
+              Todas
+            </button>
+            {classes.map(c => {
+              const hasDesignation = entries.some(e => e.class === c);
+              const isActive = selectedClass === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setSelectedClass(isActive ? '' : c)}
+                  title={hasDesignation ? `${c} — designado` : `${c} — sem designacao`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    isActive
+                      ? hasDesignation
+                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                        : 'bg-rose-500 border-rose-500 text-white shadow-sm'
+                      : hasDesignation
+                        ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600'
+                        : 'bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20'
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Cards por papel */}
         {loading ? (
           <div className="flex items-center justify-center py-24 text-slate-400">
