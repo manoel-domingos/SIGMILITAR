@@ -72,8 +72,9 @@ function ComportamentoContent() {
     };
   }).filter(s => s.matchClass);
 
+  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const filteredStudents = enrichedStudents
-    .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(s => norm(s.name).includes(norm(searchTerm)))
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   const stats = {

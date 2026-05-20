@@ -133,13 +133,16 @@ export default function Alunos() {
     return a.localeCompare(b);
   });
 
+  const norm = (str: string) =>
+    str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
   const filteredStudents = students.filter(s => {
     if (s.archived) return false;
     if (classFilter && s.class !== classFilter) return false;
-    const term = searchTerm.toLowerCase();
+    const term = norm(searchTerm);
     if (!term) return true;
-    if (s.name.toLowerCase().includes(term) || s.class.toLowerCase().includes(term)) return true;
-    if (s.contacts && s.contacts.some(c => c.name.toLowerCase().includes(term))) return true;
+    if (norm(s.name).includes(term) || norm(s.class).includes(term)) return true;
+    if (s.contacts && s.contacts.some(c => norm(c.name).includes(term))) return true;
     return false;
   }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
