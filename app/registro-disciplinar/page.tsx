@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip } from 'lucide-react';
+import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS, markdownBoldToHtml } from '@/lib/print-header';
@@ -58,7 +58,7 @@ function RegistroDisciplinarContent() {
   const [guardianIgnoredWarning, setGuardianIgnoredWarning] = useState(false);
   const guardianPhoneRef = useRef<HTMLInputElement>(null);
   const [viewOccurrence, setViewOccurrence] = useState<Occurrence | null>(null);
-  const [voTab, setVoTab] = useState<'detalhes' | 'documentos'>('detalhes');
+  const [voTab, setVoTab] = useState<'detalhes' | 'documentos' | 'responsaveis'>('detalhes');
   const [voUploadingDoc, setVoUploadingDoc] = useState(false);
   const [voUploadingEv, setVoUploadingEv] = useState(false);
   const [editingOccurrence, setEditingOccurrence] = useState<string | null>(null);
@@ -2481,10 +2481,13 @@ function RegistroDisciplinarContent() {
         const videoList = (_vo.videoUrls || [(_vo as any).videoUrl]).filter(Boolean) as string[];
         const docList   = (_vo.signedDocUrls || [(_vo as any).signedDocUrl]).filter(Boolean) as string[];
 
-        type TabDef = { id: 'detalhes' | 'documentos'; label: string; count?: number };
+        const totalContacts = voStudents.reduce((sum, s) => sum + (s.contacts?.length ?? 0), 0);
+
+        type TabDef = { id: 'detalhes' | 'documentos' | 'responsaveis'; label: string; count?: number };
         const tabs: TabDef[] = [
-          { id: 'detalhes',   label: 'Detalhes' },
-          { id: 'documentos', label: 'Documentos', count: (docList.length + videoList.length) || undefined },
+          { id: 'detalhes',     label: 'Detalhes' },
+          { id: 'responsaveis', label: 'Responsaveis', count: totalContacts || undefined },
+          { id: 'documentos',   label: 'Documentos', count: (docList.length + videoList.length) || undefined },
         ];
 
         return (
@@ -2640,6 +2643,66 @@ function RegistroDisciplinarContent() {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Tab: Responsaveis */}
+                {voTab === 'responsaveis' && (
+                  <div className="p-6 space-y-4">
+                    {voStudents.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-8">Nenhum aluno vinculado.</p>
+                    ) : voStudents.map(student => {
+                      const contacts = student.contacts ?? [];
+                      return (
+                        <div key={student.id} className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                          {/* Cabeçalho do aluno */}
+                          <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center shrink-0">
+                              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                {student.name.charAt(0)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-800 dark:text-white leading-tight">{student.name}</p>
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500">{student.class || '—'}</p>
+                            </div>
+                          </div>
+
+                          {/* Lista de contatos */}
+                          {contacts.length === 0 ? (
+                            <div className="px-4 py-5 flex items-center gap-3 text-slate-400 dark:text-slate-500">
+                              <Users className="w-4 h-4 shrink-0" />
+                              <p className="text-sm">Nenhum responsavel cadastrado para este aluno.</p>
+                            </div>
+                          ) : (
+                            <ul className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                              {contacts.map((c, idx) => (
+                                <li key={idx} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                                      <User className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{c.name || '—'}</p>
+                                      <p className="text-[11px] text-slate-400 dark:text-slate-500">{c.phone || 'Sem telefone'}</p>
+                                    </div>
+                                  </div>
+                                  {c.phone && (
+                                    <a
+                                      href={`tel:${c.phone.replace(/\D/g, '')}`}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors shrink-0"
+                                    >
+                                      <Phone className="w-3 h-3" />
+                                      Ligar
+                                    </a>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
