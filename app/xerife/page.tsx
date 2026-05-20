@@ -82,8 +82,9 @@ export default function XerifePage() {
 
   // filtragem de alunos no form
   const studentsInClass = students.filter(s => !s.archived && (!selectedClass || s.class === selectedClass));
+  const normStr = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const filteredForSearch = studentsInClass.filter(s =>
-    s.name.toLowerCase().includes(studentSearch.toLowerCase())
+    normStr(s.name).includes(normStr(studentSearch))
   );
 
   // ---------- load ----------

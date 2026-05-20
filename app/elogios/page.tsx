@@ -56,7 +56,8 @@ function ElogiosContent() {
     }
 
     if (!searchTerm) return true;
-    return student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return norm(student?.name ?? '').includes(norm(searchTerm));
   });
 
   const openAddModal = () => {

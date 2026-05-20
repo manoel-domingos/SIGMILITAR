@@ -24,7 +24,8 @@ export default function ConvocacaoPais() {
   const filteredSummons = summons.filter(s => {
     if (s.archived) return false;
     const student = students.find(st => st.id === s.studentId);
-    return student?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return norm(student?.name ?? '').includes(norm(searchTerm));
   });
 
   const openAddModal = () => {
