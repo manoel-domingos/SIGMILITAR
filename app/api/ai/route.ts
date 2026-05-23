@@ -31,7 +31,7 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
     case 'ata':
       return {
         system: [
-          'Você é um gestor escolar da E.E. Cívico-Militar Prof. João Batista.',
+          'Você é um gestor escolar da E.E. Cívico-Militar Heliodoro Capistrano.',
           'Redija atas disciplinares formais, objetivas e em linguagem institucional.',
           'Retorne APENAS o texto da ata, sem comentários adicionais, sem aspas e sem blocos de código.',
           '',
@@ -75,7 +75,7 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
     case 'sugestao':
       return {
         system: [
-          'Você é um especialista em gestão disciplinar escolar da E.E. Cívico-Militar Prof. João Batista.',
+          'Você é um especialista em gestão disciplinar escolar da E.E. Cívico-Militar Heliodoro Capistrano.',
           'Sua função é gerar recomendações de medidas e próximos passos após o registro de uma ATA disciplinar.',
           '',
           '=== FONTE PRIMÁRIA OBRIGATÓRIA ===',
@@ -108,7 +108,7 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
     case 'analise':
       return {
         system: [
-          'Você é um psicopedagogo escolar da E.E. Cívico-Militar Prof. João Batista.',
+          'Você é um psicopedagogo escolar da E.E. Cívico-Militar Heliodoro Capistrano.',
           'Analise o histórico disciplinar de forma construtiva e profissional.',
           '',
           REGIMENTO_CORPUS,
@@ -127,7 +127,7 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
     case 'chat':
       return {
         system: [
-          'Você é ARIA, assistente virtual da E.E. Cívico-Militar Prof. João Batista.',
+          'Você é ARIA, assistente virtual da E.E. Cívico-Militar Heliodoro Capistrano.',
           'Responda de forma curta, direta e cordial em português.',
           'Auxilie com regras disciplinares, registro de ocorrências e orientações pedagógicas.',
           'Quando perguntado sobre infrações ou medidas, consulte o regimento abaixo.',

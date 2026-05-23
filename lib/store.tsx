@@ -294,8 +294,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentFetchAbort = new AbortController();
         const abortSignal = currentFetchAbort;
 
-        // Resolve o school_id a filtrar: prioridade schoolId param > state atual
-        const sid = schoolId ?? activeSchoolContextRef.current;
+        // Resolve o school_id a filtrar:
+        // 1) Se deploy isolado (NEXT_PUBLIC_SCHOOL_ID definido), sempre usa esse id
+        // 2) Senão: prioridade schoolId param > state atual
+        const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
+        const sid = envSchoolId ?? (schoolId ?? activeSchoolContextRef.current);
         const bySchool = (q: any) => sid && sid !== 'DRE' ? q.eq('school_id', sid) : q;
         setIsSyncing(true);
         try {
@@ -787,7 +790,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshData = async () => {
     if (!supabase || !isSupabaseConnected) return;
-    const sid = activeSchoolContextRef.current;
+    const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
+    const sid = envSchoolId ?? activeSchoolContextRef.current;
     const bySchool = (q: any) => sid && sid !== 'DRE' ? q.eq('school_id', sid) : q;
     setIsSyncing(true);
     try {
