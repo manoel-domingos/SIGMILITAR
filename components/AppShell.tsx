@@ -425,7 +425,7 @@ function SidebarLayout({
       <aside className="hidden md:flex w-64 bg-[#1E293B] flex-col shrink-0 shadow-xl">
         <div className="p-6 flex flex-col items-center border-b border-slate-800">
           <div className="w-28 h-28 flex items-center justify-center">
-            <img src="/nova_logo.png" alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
+            <img src="/nova_logo.svg" alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
           </div>
         </div>
 
@@ -714,7 +714,7 @@ function MobileDrawer({
     >
       <div className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-800">
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-          <img src="/nova_logo.png" alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
+          <img src="/nova_logo.svg" alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
         </div>
         <button 
           className="w-11 h-11 flex items-center justify-center text-slate-400 rounded-xl active:bg-slate-700 transition-colors" 

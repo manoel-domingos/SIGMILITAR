@@ -2,7 +2,7 @@ import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { AppProvider } from '@/lib/store';
 
-const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? 'EECM Prof. João Batista';
+const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? 'EECM HELIODORO CAPISTRANO';
 
 export const metadata: Metadata = {
   title: `Gestão Disciplinar — ${schoolName}`,

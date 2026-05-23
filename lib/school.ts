@@ -10,7 +10,7 @@ export const SCHOOL_ID: string | null =
   process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
 
 export const SCHOOL_NAME: string =
-  process.env.NEXT_PUBLIC_SCHOOL_NAME ?? 'EECM Prof. João Batista';
+  process.env.NEXT_PUBLIC_SCHOOL_NAME ?? 'EECM HELIODORO CAPISTRANO';
 
 export const SCHOOL_SUBTITLE: string =
   process.env.NEXT_PUBLIC_SCHOOL_SUBTITLE ?? 'Disciplina e Monitoramento Escolar';

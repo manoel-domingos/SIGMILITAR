@@ -313,7 +313,7 @@ export default function Relatorios() {
       </div>
 
       <div className="print-footer hidden border-t border-gray-400 pt-2 mt-6 text-center text-[8.5pt] text-gray-500 leading-6">
-        <p>E.E Cívico-Militar Prof. João Batista</p>
+        <p>E.E Cívico-Militar Heliodoro Capistrano</p>
         <p>(65) 3329-1021 | (65) 99944-6304</p>
         <p>Av. Ismael José do Nascimento nº 892-N Jardim Europa — CEP 78.300-152 – TANGARÁ DA SERRA/MT</p>
         <p>escola.16020@edu.mt.gov.br</p>
