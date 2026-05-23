@@ -118,6 +118,7 @@ export default function Alunos() {
   
   const [isDeleteAllConfirmOpen, setIsDeleteAllConfirmOpen] = useState(false);
   const [deleteAllConfirmText, setDeleteAllConfirmText] = useState('');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const phoneRefs = useRef<(HTMLInputElement | null)[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -307,8 +308,13 @@ export default function Alunos() {
   };
 
   const handleImport = () => {
+    setIsImportModalOpen(true);
+  };
+
+  const triggerFileInput = () => {
     if (fileInputRef.current) {
        fileInputRef.current.click();
+       setIsImportModalOpen(false);
     }
   };
 
@@ -1550,6 +1556,90 @@ export default function Alunos() {
                 className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Importação de Planilha */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsImportModalOpen(false); }}>
+          <div className="glass-modal max-w-lg w-full p-0 overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Importar Alunos</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Siga as instruções para importar sua planilha</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsImportModalOpen(false)}
+                className="text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 p-2 rounded-full transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">1</div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Prepare sua planilha</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Certifique-se de que as colunas principais (Nome, Turma, Turno) estão presentes. O sistema usa IA para tentar identificar os campos automaticamente.</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">2</div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Use nosso modelo (opcional)</p>
+                    <button 
+                      onClick={handleExport}
+                      className="text-xs flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Baixar planilha modelo
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">3</div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Revise antes de salvar</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Após selecionar o arquivo, você poderá revisar e corrigir cada linha antes de confirmar a importação final.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl p-4 flex gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                  Formatos suportados: <strong>.xlsx, .xls, .csv</strong>. 
+                  Arquivos grandes podem levar alguns segundos para serem processados pela IA de mapeamento.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={triggerFileInput}
+                className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition shadow-md flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Selecionar Arquivo
               </button>
             </div>
           </div>
