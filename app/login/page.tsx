@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { Trophy, ShieldCheck, User as UserIcon, KeyRound, Loader2, ArrowRight } from 'lucide-react';
 import versionData from '@/lib/version.json';
+import { SCHOOL_NAME, SCHOOL_SUBTITLE } from '@/lib/school';
 
 export default function Login() {
   const router = useRouter();
@@ -116,8 +117,8 @@ export default function Login() {
              </div>
           </div>
           
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight text-center">EECM Prof. João Batista</h1>
-          <p className="text-slate-500 text-xs sm:text-sm mt-1 text-center">Disciplina e Monitoramento Escolar</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight text-center">{SCHOOL_NAME}</h1>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 text-center">{SCHOOL_SUBTITLE}</p>
         </div>
 
         {error && (

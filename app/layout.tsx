@@ -2,13 +2,15 @@ import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { AppProvider } from '@/lib/store';
 
+const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? 'EECM Prof. João Batista';
+
 export const metadata: Metadata = {
-  title: 'Gestão Disciplinar EECM',
-  description: 'Sistema de Gestão Disciplinar da Escola Estadual Cívico-Militar',
+  title: `Gestão Disciplinar — ${schoolName}`,
+  description: `Sistema de Gestão Disciplinar da ${schoolName}`,
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'EECM Disciplina',
+    title: schoolName,
   },
   formatDetection: {
     telephone: false,
