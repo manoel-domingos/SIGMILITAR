@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User, PanelRight, Rows3 } from 'lucide-react';
+import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User, PanelRight, Rows3, Menu } from 'lucide-react';
 import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
