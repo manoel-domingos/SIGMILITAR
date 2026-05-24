@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
 import { useTenantConfig } from '@/lib/useTenantConfig';
+import { ClassSelector } from '@/components/ClassSelector';
 import OccurrenceChecklist, {
   OccurrenceTask,
   ChecklistItem,
@@ -2312,30 +2313,7 @@ function RegistroDisciplinarContent() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-1">Turma *</label>
-                  <div className="flex gap-2">
-                    <select 
-                      required
-                      value={newClassName.replace(/ [A-Z]$/i, '') || '6º Ano'}
-                      onChange={(e) => {
-                        const letter = newClassName.match(/ ([A-Z])$/i)?.[1] || 'A';
-                        setNewClassName(e.target.value + ' ' + letter);
-                      }}
-                      className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {grades.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                    <select 
-                      required
-                      value={newClassName.match(/ ([A-Z])$/i)?.[1] || 'A'}
-                      onChange={(e) => {
-                        const prefix = newClassName.replace(/ [A-Z]$/i, '') || grades[0];
-                        setNewClassName(prefix + ' ' + e.target.value);
-                      }}
-                      className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {classLetters.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </div>
+                  <ClassSelector required value={newClassName} onChange={setNewClassName} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-1">Turno *</label>
