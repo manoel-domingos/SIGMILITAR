@@ -10,9 +10,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'email, password e name são obrigatórios.' }, { status: 400 });
     }
 
+    // Prioriza SOURCE_* (banco externo) sobre NEXT_PUBLIC_* (integração v0)
+    const supabaseUrl = 
+      process.env.SOURCE_SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SOURCE_SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 
+      '';
+    const serviceRoleKey = 
+      process.env.SOURCE_SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY || 
+      '';
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ error: 'Supabase não configurado.' }, { status: 500 });
+    }
+
     const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`,
+      serviceRoleKey,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/lib/store';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase';
 import {
   ShieldAlert, ShieldCheck, Edit2, Check, X, ArrowLeft,
   RefreshCw, Building2, UserPlus, Search, Trash2,
@@ -15,12 +15,8 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
-let _supabase: any = null;
-function supabase(): any {
-  return (_supabase ??= createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
+function supabase() {
+  return getSupabase();
 }
 
 type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'admin_global';

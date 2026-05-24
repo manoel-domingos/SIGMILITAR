@@ -7,7 +7,12 @@ let _supabaseAdmin: SupabaseClient | null = null;
  * Cliente Supabase para uso no browser (usa anon key)
  * Prioriza SOURCE_SUPABASE_* (banco externo) sobre NEXT_PUBLIC_SUPABASE_* (integração v0)
  */
-function getSupabase(): SupabaseClient | null {
+export function getSupabase(): SupabaseClient | null {
+  if (typeof window === 'undefined') {
+    // Server-side: não criar cliente browser
+    return null;
+  }
+  
   if (!_supabase) {
     // Prioriza banco externo (SOURCE_*), fallback para integração atual
     let supabaseUrl = 
@@ -22,6 +27,12 @@ function getSupabase(): SupabaseClient | null {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
       '';
 
+    console.log('[v0] Supabase config:', { 
+      hasUrl: !!supabaseUrl, 
+      hasKey: !!supabaseAnonKey,
+      urlPrefix: supabaseUrl?.substring(0, 30) 
+    });
+
     if (supabaseUrl && !supabaseUrl.startsWith('http')) {
       supabaseUrl = `https://${supabaseUrl}`;
     }
@@ -32,16 +43,24 @@ function getSupabase(): SupabaseClient | null {
     }
 
     if (supabaseUrl && supabaseAnonKey) {
-      _supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-          storageKey: 'eecm-auth-token',
-          flowType: 'pkce',
-        },
-      });
+      try {
+        _supabase = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+            storageKey: 'eecm-auth-token',
+            flowType: 'pkce',
+          },
+        });
+        console.log('[v0] Supabase client created successfully');
+      } catch (err) {
+        console.error('[v0] Error creating Supabase client:', err);
+        return null;
+      }
+    } else {
+      console.log('[v0] Supabase not configured - missing URL or key');
     }
   }
   return _supabase;
@@ -82,16 +101,12 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   return _supabaseAdmin;
 }
 
-export const supabase = new Proxy({} as SupabaseClient, {
-  get: (_target, prop) => {
-    const client = getSupabase();
-    return client ? (client as any)[prop as string] : null;
-  }
-});
+// Lazy-initialized client — só cria quando acessado no browser
+export const supabase: SupabaseClient | null = typeof window !== 'undefined' 
+  ? null // será inicializado via getSupabase() no primeiro uso
+  : null;
 
-export const supabaseAdmin = new Proxy({} as SupabaseClient, {
-  get: (_target, prop) => {
-    const client = getSupabaseAdmin();
-    return client ? (client as any)[prop as string] : null;
-  }
-});
+// Export getter para uso no store.tsx
+export { getSupabase as getSupabaseClient };
+
+export const supabaseAdmin: SupabaseClient | null = null;

@@ -10,15 +10,11 @@ import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, Tr
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase';
 import StudentSheet from '@/components/StudentSheet';
 
-let _supabase: any = null;
-function supabase(): any {
-  return (_supabase ??= createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
+function supabase() {
+  return getSupabase();
 }
 
 type PanelConfig = { id: string; label: string; enabled: boolean };
@@ -52,7 +48,9 @@ export default function Dashboard() {
   // Carrega painéis do Supabase ao montar
   useEffect(() => {
     if (!userId || userId === 'guest') return;
-    supabase()
+    const client = supabase();
+    if (!client) return;
+    client
       .from('dashboard_panels')
       .select('panels')
       .eq('user_id', userId)
@@ -67,7 +65,9 @@ export default function Dashboard() {
   const savePanels = (next: PanelConfig[]) => {
     setPanels(next);
     if (!userId || userId === 'guest') return;
-    supabase()
+    const client = supabase();
+    if (!client) return;
+    client
       .from('dashboard_panels')
       .upsert({ user_id: userId, panels: next, updated_at: new Date().toISOString() })
       .then(() => {});

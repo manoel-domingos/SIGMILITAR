@@ -5,9 +5,21 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const deepseekApiKey = process.env.DEEPSEEK_API_KEY || '';
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  // Prioriza SOURCE_* (banco externo) sobre NEXT_PUBLIC_* (integração v0)
+  const supabaseUrl = 
+    process.env.SOURCE_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SOURCE_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 
+    '';
+  const supabaseAnonKey = 
+    process.env.SOURCE_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SOURCE_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+    '';
+  const supabaseServiceKey = 
+    process.env.SOURCE_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 
+    '';
 
   // --- DeepSeek API oficial validation ---
   const deepseekConfigured = !!deepseekApiKey;

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { supabase } from './supabase';
+import { getSupabase } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { 
   Student, Occurrence, Accident, Praise, DisciplineRule, Summons, ConductTerm, AuditLog, StaffMember, AppUser, AppUserRole, BehaviorClass,
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
@@ -120,6 +121,17 @@ const INITIAL_APP_USERS: AppUser[] = [
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  // Cliente Supabase - inicializado via state para garantir consistência entre server e client
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
+  
+  // Inicializa o cliente no mount (apenas no browser)
+  useEffect(() => {
+    const client = getSupabase();
+    if (client) {
+      setSupabase(client);
+    }
+  }, []);
+
   const [students, setStudents] = useState<Student[]>([]);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [accidents, setAccidents] = useState<Accident[]>([]);
