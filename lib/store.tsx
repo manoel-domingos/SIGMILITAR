@@ -164,6 +164,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Ref para acesso sem closure stale dentro de fetchData/refreshData
   const activeSchoolContextRef = React.useRef(activeSchoolContext);
   const isFirstContextLoad = React.useRef(true);
+  // Ref para bloquear o onAuthStateChange durante o logout (evita race condition)
+  const logoutFlagRef = React.useRef<(val: boolean) => void>(() => {});
   
   useEffect(() => { activeSchoolContextRef.current = activeSchoolContext; }, [activeSchoolContext]);
 
@@ -418,15 +420,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       };
 
+      // Flag para bloquear o listener enquanto o logout está em progresso
+      // evita o race condition "Lock eecm-auth-token was released by another request"
+      let isLoggingOut = false;
+
       // Registra listener de mudança de autenticação (SIGNED_IN / SIGNED_OUT).
       // Deve ser declarado APÓS fetchData para que o callback possa chamá-lo.
       if (!usingMockSession) {
         supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+          // Ignora eventos disparados durante o processo de logout
+          if (isLoggingOut) return;
+
           setUser(session?.user || null);
 
           // No login novo, busca o school_id do perfil e re-executa fetchData filtrado.
-          // Isso evita que dados de outra escola apareçam enquanto o boot ainda estava
-          // sem o school_id resolvido.
           if (event === 'SIGNED_IN' && session?.user?.email) {
             try {
               const { data: profile } = await supabase
@@ -451,6 +458,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         });
       }
+
+      // Expõe o setter do flag para o logout usar
+      // (closure compartilhada dentro do mesmo useEffect)
+      logoutFlagRef.current = (val: boolean) => { isLoggingOut = val; };
 
       setIsAuthRestored(true);
 
@@ -1565,22 +1576,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = React.useCallback(async () => {
-    // 1. Limpa sessão mock/guest
+    // 1. Ativa flag para bloquear o onAuthStateChange durante o logout
+    //    (evita race condition "Lock eecm-auth-token stolen by another request")
+    logoutFlagRef.current(true);
+
+    // 2. Limpa sessão mock/guest
     localStorage.removeItem('eecm_session');
 
-    // 2. Limpa estado global antes do redirect
+    // 3. Limpa estado global antes do redirect
     setIsGuest(false);
     setUser(null);
     setActiveSchoolContextState('');
     activeSchoolContextRef.current = '';
 
-    // 3. Encerra sessão Supabase
+    // 4. Encerra sessão Supabase
     if (supabase) {
       try { await supabase.auth.signOut(); } catch (_e) { /* ignora erros de rede */ }
     }
 
-    // 4. Redirect via window.location para garantir limpeza total do estado React
-    //    e que o tenant correto seja detectado pelo domínio na próxima carga.
+    // 5. Redirect via window.location para garantir limpeza total do estado React
     window.location.href = '/login';
   }, []);
 
