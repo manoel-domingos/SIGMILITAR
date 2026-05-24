@@ -4,13 +4,41 @@
 
 ## Última atualização
 
-**Data:** 2026-05-24  
-**Sessão:** Multi-tenant runtime — detecção por domínio, logout, turmas Heliodoro  
+**Data:** 2026-05-24 (sessão 6)
+**Sessão:** Fix login (isSupabaseReady), match turmas importação, sync memories
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
 Sistema multi-tenant ativo. Detecção de tenant em **runtime pelo domínio** (`getTenantIdFromHost`). Isolamento por escola via RLS no Postgres. DRE acessa tudo.
+
+## Última ação concluída (2026-05-24) — sessão 6
+
+- **Fix login — `isSupabaseReady()`:**
+  - `lib/supabase.ts`: adicionado flag `_initialized` + `isSupabaseReady()` exportado
+  - Proxy sempre era truthy mesmo sem credenciais — causava `No API key found` no Supabase
+  - `login/page.tsx` usa `isSupabaseReady()` em vez de `if (supabase)`
+  - Erros reais de credenciais exibem mensagem ao usuário — não caem no fallback mock
+
+- **Race condition no logout corrigido:**
+  - `logoutFlagRef` bloqueia `onAuthStateChange` durante o `signOut()`
+  - Evita `Lock "eecm-auth-token" was released by another request`
+
+- **Detecção de tenant robusta:**
+  - `getTenantIdFromHost()`: passo 1 match exato → passo 2 substring do hostname
+  - Cobre previews Vercel com hash: `eecmheliodoro-abc123.vercel.app`
+
+- **Match de turmas na importação XLSX:**
+  - `parseTurmaLetter` removido — sufixo completo preservado (`"A-LING"`, `"B-CHS"`)
+  - `matchToAvailableClass()` busca em `getAllClassNames(getTenantIdFromHost())` em 3 passos: exato → substring → fuzzy por tokens
+  - Logs `[v0] classMatch:` adicionados para diagnóstico
+
+- **Sync de memories:**
+  - `v0_memories/user/eecm-project.md` — identidade + tenants
+  - `v0_memories/user/eecm-decisions.md` — decisões 0001–0007
+  - `v0_memories/user/eecm-roadmap.md` — fases + milestones
+  - `v0_memories/user/eecm-rules-development.md` — padrões de código
+  - `MEMORY.md` atualizado com índice
 
 ## Última ação concluída (2026-05-24) — sessão 5
 
