@@ -54,13 +54,27 @@ const TENANT_CONFIGS: Record<string, SchoolConfig> = {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
     classLetters: ['A', 'B', 'C', 'D'],
   },
+  eecmprofjoaobatista: {
+    grades: ['1º Ano', '2º Ano', '3º Ano'],
+    classLetters: ['A', 'B', 'C', 'D'],
+  },
   heliodoro: {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
     classLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
     specialYears: ['PRA'],
     standaloneClasses: ['EPT-AUTOMAC', 'EPT-EDIFICAC', 'EPT-ELETROTEC', 'EPT-ELETROT'],
   },
+  eecmheliodoro: {
+    grades: ['1º Ano', '2º Ano', '3º Ano'],
+    classLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
+    specialYears: ['PRA'],
+    standaloneClasses: ['EPT-AUTOMAC', 'EPT-EDIFICAC', 'EPT-ELETROTEC', 'EPT-ELETROT'],
+  },
   tangara: {
+    grades: ['1º Ano', '2º Ano', '3º Ano'],
+    classLetters: ['A', 'B', 'C'],
+  },
+  eecmtangara: {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
     classLetters: ['A', 'B', 'C'],
   },
@@ -71,7 +85,7 @@ const FUNDAMENTAL_GRADES = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 /** Retorna a configuração de anos/turmas para o tenant informado */
 export function getSchoolConfig(tenantId?: string): SchoolConfig {
   const id = tenantId ?? SCHOOL_ID;
-  return TENANT_CONFIGS[id] ?? TENANT_CONFIGS['joaobatista'];
+  return TENANT_CONFIGS[id] ?? TENANT_CONFIGS['eecmprofjoaobatista'] ?? TENANT_CONFIGS['joaobatista'];
 }
 
 /**

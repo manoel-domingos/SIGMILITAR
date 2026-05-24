@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase, isSupabaseReady } from '@/lib/supabase';
-import { useTenantConfig } from '@/lib/useTenantConfig';
+import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
 import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight } from 'lucide-react';
 import versionData from '@/lib/version.json';
 import { SCHOOL_SUBTITLE } from '@/lib/school';
@@ -57,8 +57,9 @@ export default function Login() {
         // Sem @: monta candidatos por ordem de prioridade
         // Para tenants não-joaobatista, tenta o formato tenant-específico PRIMEIRO
         // pois os usuários foram cadastrados com esse domínio (ex: admin@heliodoro.eecm.local)
-        if (tenantId !== 'joaobatista') {
-          emailCandidates.push(`${usernameNorm}@${tenantId}.eecm.local`);
+        const dbSchoolId = getDbSchoolId(tenantId);
+        if (dbSchoolId !== 'joaobatista') {
+          emailCandidates.push(`${usernameNorm}@${dbSchoolId}.eecm.local`);
         }
         emailCandidates.push(`${usernameNorm}@eecm.local`);
       }

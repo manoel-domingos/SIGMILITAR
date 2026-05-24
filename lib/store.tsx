@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase, isSupabaseReady } from './supabase';
-import { getTenantIdFromHost } from './useTenantConfig';
+import { getTenantIdFromHost, TenantContext, getDbSchoolId } from './useTenantConfig';
 import { 
   Student, Occurrence, Accident, Praise, DisciplineRule, Summons, ConductTerm, AuditLog, StaffMember, AppUser, AppUserRole, BehaviorClass,
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
@@ -121,6 +121,7 @@ const INITIAL_APP_USERS: AppUser[] = [
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const contextTenantId = useContext(TenantContext);
   const [students, setStudents] = useState<Student[]>([]);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [accidents, setAccidents] = useState<Accident[]>([]);
@@ -158,8 +159,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Contexto de escola ativa — inicializa pelo domínio para filtrar dados desde o primeiro fetch.
   // admin_global pode alternar depois; demais usuários seguem seu school_id.
   const [activeSchoolContext, setActiveSchoolContextState] = useState<string>(() => {
-    const tenantFromHost = getTenantIdFromHost();
-    return tenantFromHost !== 'joaobatista' ? tenantFromHost : '';
+    const tenantId = contextTenantId ?? getTenantIdFromHost();
+    const dbSchoolId = getDbSchoolId(tenantId);
+    return dbSchoolId !== 'joaobatista' ? dbSchoolId : '';
   });
   // Ref para acesso sem closure stale dentro de fetchData/refreshData
   const activeSchoolContextRef = React.useRef(activeSchoolContext);
@@ -289,7 +291,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // 2) Senão: prioridade schoolId param > state atual
         const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
         const sid = envSchoolId ?? (schoolId ?? activeSchoolContextRef.current);
-        const bySchool = (q: any) => sid && sid !== 'DRE' ? q.eq('school_id', sid) : q;
+        const dbSchoolId = getDbSchoolId(sid);
+        const bySchool = (q: any) => dbSchoolId && dbSchoolId !== 'DRE' ? q.eq('school_id', dbSchoolId) : q;
         setIsSyncing(true);
         try {
           // Busca tabelas sequencialmente em grupos para evitar sobrecarga de locks no Safari
@@ -832,7 +835,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!supabase || !isSupabaseConnected) return;
     const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
     const sid = envSchoolId ?? activeSchoolContextRef.current;
-    const bySchool = (q: any) => sid && sid !== 'DRE' ? q.eq('school_id', sid) : q;
+    const dbSchoolId = getDbSchoolId(sid);
+    const bySchool = (q: any) => dbSchoolId && dbSchoolId !== 'DRE' ? q.eq('school_id', dbSchoolId) : q;
     setIsSyncing(true);
     try {
       const responses = await Promise.all([

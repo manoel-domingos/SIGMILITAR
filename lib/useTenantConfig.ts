@@ -1,5 +1,14 @@
+'use client';
+
 import React from 'react';
 import { getSchoolConfig, getAllClassNames } from './school';
+
+// Contexto para prover o tenantId obtido no servidor
+export const TenantContext = React.createContext<string | null>(null);
+
+export function TenantProvider({ tenantId, children }: { tenantId: string; children: React.ReactNode }) {
+  return React.createElement(TenantContext.Provider, { value: tenantId }, children);
+}
 
 /**
  * Mapeamento de hostname → tenant ID.
@@ -7,20 +16,16 @@ import { getSchoolConfig, getAllClassNames } from './school';
  */
 export const TENANT_MAP: Record<string, string> = {
   // João Batista
-  'joaobatista.vercel.app': 'joaobatista',
-  'www.joaobatista.vercel.app': 'joaobatista',
-  'localhost': 'joaobatista',
-  'localhost:3000': 'joaobatista',
+  'eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
+  'www.eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
+  'joaobatista.vercel.app': 'eecmprofjoaobatista',
+  'localhost': 'eecmprofjoaobatista',
+  'localhost:3000': 'eecmprofjoaobatista',
 
   // Heliodoro Capistrano
-  'eecmheliodoro.vercel.app': 'heliodoro',
-  'www.eecmheliodoro.vercel.app': 'heliodoro',
-  'heliodoro.vercel.app': 'heliodoro',
-
-  // Tangará
-  'eecmtangara.vercel.app': 'tangara',
-  'www.eecmtangara.vercel.app': 'tangara',
-  'tangara.vercel.app': 'tangara',
+  'eecmheliodoro.vercel.app': 'eecmheliodoro',
+  'www.eecmheliodoro.vercel.app': 'eecmheliodoro',
+  'heliodoro.vercel.app': 'eecmheliodoro',
 };
 
 /**
@@ -28,9 +33,8 @@ export const TENANT_MAP: Record<string, string> = {
  * Ordem importa: mais específico primeiro.
  */
 const TENANT_HOSTNAME_RULES: Array<{ contains: string; tenant: string }> = [
-  { contains: 'heliodoro', tenant: 'heliodoro' },
-  { contains: 'tangara',   tenant: 'tangara' },
-  // joaobatista é o fallback — não precisa de regra
+  { contains: 'heliodoro', tenant: 'eecmheliodoro' },
+  { contains: 'joaobatista', tenant: 'eecmprofjoaobatista' },
 ];
 
 /**
@@ -38,10 +42,10 @@ const TENANT_HOSTNAME_RULES: Array<{ contains: string; tenant: string }> = [
  * Detecção em dois passos:
  *   1. Match exato pelo TENANT_MAP (hosts conhecidos)
  *   2. Substring no hostname para cobrir previews e domínios customizados
- * Fallback: 'joaobatista'
+ * Fallback: 'eecmprofjoaobatista'
  */
 export function getTenantIdFromHost(): string {
-  if (typeof window === 'undefined') return 'joaobatista';
+  if (typeof window === 'undefined') return 'eecmprofjoaobatista';
   const host = window.location.host.toLowerCase();
 
   // Passo 1: match exato
@@ -52,43 +56,61 @@ export function getTenantIdFromHost(): string {
     if (host.includes(rule.contains)) return rule.tenant;
   }
 
-  return 'joaobatista';
+  return 'eecmprofjoaobatista';
+}
+
+/**
+ * Mapeia o tenant ID para o identificador usado nas colunas school_id no banco de dados.
+ * Evita a necessidade de migrar todas as linhas existentes do Supabase.
+ */
+export function getDbSchoolId(tenantId: string): string {
+  if (tenantId === 'eecmprofjoaobatista') return 'joaobatista';
+  if (tenantId === 'eecmheliodoro') return 'heliodoro';
+  if (tenantId === 'eecmtangara') return 'tangara';
+  return tenantId;
 }
 
 // João Batista usa .png, os demais .svg
 const LOGO_EXT: Record<string, string> = {
   joaobatista: 'png',
+  eecmprofjoaobatista: 'png',
   heliodoro: 'svg',
+  eecmheliodoro: 'svg',
   tangara: 'svg',
 };
 
 const SCHOOL_NAMES: Record<string, string> = {
   joaobatista: 'EECM Prof. João Batista',
+  eecmprofjoaobatista: 'EECM Prof. João Batista',
   heliodoro: 'EECM Heliodoro Capistrano',
+  eecmheliodoro: 'EECM Heliodoro Capistrano',
   tangara: 'EECM Tangará',
 };
 
 const FUNDAMENTAL_GRADES = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 
 export function useTenantConfig() {
-  // Inicializa com 'joaobatista' no SSR para evitar hydration mismatch (React error #418).
-  // O useEffect corrige para o valor real no cliente após a montagem.
-  const [tenantId, setTenantId] = React.useState<string>('joaobatista');
+  const contextTenantId = React.useContext(TenantContext);
+  
+  // Inicializa com o valor do contexto (ou fallback do SSR) e depois sincroniza
+  const [tenantId, setTenantId] = React.useState<string>(contextTenantId ?? 'eecmprofjoaobatista');
 
   React.useEffect(() => {
-    setTenantId(getTenantIdFromHost());
-  }, []);
+    if (contextTenantId) {
+      setTenantId(contextTenantId);
+    } else {
+      setTenantId(getTenantIdFromHost());
+    }
+  }, [contextTenantId]);
 
   const ext = LOGO_EXT[tenantId] || 'png';
-
   const config = getSchoolConfig(tenantId);
-
   const allGrades = [...FUNDAMENTAL_GRADES, ...config.grades, ...(config.specialYears ?? [])];
   const allClassNames = getAllClassNames(tenantId);
 
   return {
     tenantId,
-    schoolName: SCHOOL_NAMES[tenantId] ?? SCHOOL_NAMES['joaobatista'],
+    schoolName: SCHOOL_NAMES[tenantId] ?? SCHOOL_NAMES['eecmprofjoaobatista'],
     logoSidebar: `/schools/${tenantId}/nova_logo.${ext}`,
     logoDash: `/schools/${tenantId}/logo_dash.svg`,
     logoLogin: `/schools/${tenantId}/logo_login.svg`,

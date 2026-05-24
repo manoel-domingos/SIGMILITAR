@@ -1,6 +1,8 @@
 import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { AppProvider } from '@/lib/store';
+import { TenantProvider } from '@/lib/useTenantConfig';
+import { headers } from 'next/headers';
 
 const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? 'EECM Prof. João Batista';
 
@@ -28,13 +30,18 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default async function RootLayout({children}: {children: React.ReactNode}) {
+  const headersList = await headers();
+  const tenantId = headersList.get('x-tenant') ?? process.env.NEXT_PUBLIC_TENANT ?? 'eecmprofjoaobatista';
+
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="bg-[#F8FAFC] text-slate-800 min-h-screen antialiased touch-manipulation" suppressHydrationWarning>
-        <AppProvider>
-          {children}
-        </AppProvider>
+        <TenantProvider tenantId={tenantId}>
+          <AppProvider>
+            {children}
+          </AppProvider>
+        </TenantProvider>
       </body>
     </html>
   );
