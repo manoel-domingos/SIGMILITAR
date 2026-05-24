@@ -38,6 +38,12 @@ const LOGO_EXT: Record<string, string> = {
   tangara: 'svg',
 };
 
+const SCHOOL_NAMES: Record<string, string> = {
+  joaobatista: 'EECM Prof. João Batista',
+  heliodoro: 'EECM Heliodoro Capistrano',
+  tangara: 'EECM Tangará',
+};
+
 const FUNDAMENTAL_GRADES = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 
 export function useTenantConfig() {
@@ -52,6 +58,7 @@ export function useTenantConfig() {
 
   return {
     tenantId,
+    schoolName: SCHOOL_NAMES[tenantId] ?? SCHOOL_NAMES['joaobatista'],
     logoSidebar: `/schools/${tenantId}/nova_logo.${ext}`,
     logoDash: `/schools/${tenantId}/logo_dash.svg`,
     logoLogin: `/schools/${tenantId}/logo_login.svg`,
