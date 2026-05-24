@@ -49,9 +49,6 @@ export interface SchoolConfig {
   standaloneClasses?: string[];
 }
 
-// Turmas compostas do ensino médio do Heliodoro — compartilhadas entre 1º, 2º e 3º Ano
-const HELIODORO_MEDIO_SUFFIXES = ['A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'];
-
 const TENANT_CONFIGS: Record<string, SchoolConfig> = {
   joaobatista: {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
@@ -61,11 +58,6 @@ const TENANT_CONFIGS: Record<string, SchoolConfig> = {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
     classLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
     specialYears: ['PRA'],
-    classSuffixesByGrade: {
-      '1º Ano': HELIODORO_MEDIO_SUFFIXES,
-      '2º Ano': HELIODORO_MEDIO_SUFFIXES,
-      '3º Ano': HELIODORO_MEDIO_SUFFIXES,
-    },
     standaloneClasses: ['EPT-AUTOMAC', 'EPT-EDIFICAC', 'EPT-ELETROTEC', 'EPT-ELETROT'],
   },
   tangara: {
