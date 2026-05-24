@@ -6,6 +6,7 @@ import {
   Student, Occurrence, Accident, Praise, DisciplineRule, Summons, ConductTerm, AuditLog, StaffMember, AppUser, AppUserRole, BehaviorClass,
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
 } from './data';
+import { getTenantByHost, TenantConfig, TENANTS } from './tenants';
 
 interface AppState {
   students: Student[];
@@ -26,6 +27,7 @@ interface AppState {
   currentUserSchoolId: string | null;
   activeSchoolContext: string;
   setActiveSchoolContext: (id: string) => void;
+  tenant: TenantConfig;
   openContextModal: () => void;
   setOpenContextModal: (fn: () => void) => void;
   showContextModal: boolean;
@@ -156,6 +158,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Contexto de escola ativa — admin_global pode alternar; demais usuários seguem seu school_id
   const [activeSchoolContext, setActiveSchoolContextState] = useState<string>('');
+  const [tenant, setTenant] = useState<TenantConfig>(TENANTS.joaobatista);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentTenant = getTenantByHost(window.location.hostname);
+      setTenant(currentTenant);
+      // Se não houver contexto ativo ainda, usa o do tenant do domínio
+      if (!activeSchoolContextRef.current) {
+        setActiveSchoolContextState(currentTenant.id);
+        activeSchoolContextRef.current = currentTenant.id;
+      }
+    }
+  }, []);
+
   // Ref para acesso sem closure stale dentro de fetchData/refreshData
   const activeSchoolContextRef = React.useRef(activeSchoolContext);
   const isFirstContextLoad = React.useRef(true);
@@ -1567,10 +1583,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [logout]);
 
-  return (
+    return (
     <AppContext.Provider value={{
       students, occurrences, accidents, praises, rules, summons, conductTerms, auditLogs, staffMembers, appUsers, isSupabaseConnected, isSyncing,
-      user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
+      user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, tenant, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
       showContextModal, setShowContextModal, contextSchools,
       geminiApiKey, setGeminiApiKey, groqApiKey, setGroqApiKey,
       setGuestMode, setMockUser, logout, uploadFile,

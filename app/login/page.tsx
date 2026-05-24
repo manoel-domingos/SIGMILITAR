@@ -6,11 +6,10 @@ import { useAppContext } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { Trophy, ShieldCheck, User as UserIcon, KeyRound, Loader2, ArrowRight } from 'lucide-react';
 import versionData from '@/lib/version.json';
-import { SCHOOL_NAME, SCHOOL_SUBTITLE } from '@/lib/school';
 
 export default function Login() {
   const router = useRouter();
-  const { user, isGuest, setGuestMode, setMockUser, isSupabaseConnected, currentUserRole } = useAppContext();
+  const { user, isGuest, setGuestMode, setMockUser, isSupabaseConnected, currentUserRole, tenant } = useAppContext();
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -100,7 +99,7 @@ export default function Login() {
       
       {/* Background Decor */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/logo_login.svg" alt="" className="absolute -right-32 md:-right-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain" />
+      <img src={tenant.logoLogin} alt="" className="absolute -right-32 md:-right-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain" />
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
 
@@ -108,7 +107,7 @@ export default function Login() {
         <div className="flex flex-col items-center mb-5 sm:mb-6">
           <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center relative mb-3">
              {/* eslint-disable-next-line @next/next/no-img-element */}
-             <img src="/logo_login.svg" alt="Logo EECM" className="w-full h-full object-contain drop-shadow-xl" />
+             <img src={tenant.logoLogin} alt={`Logo ${tenant.name}`} className="w-full h-full object-contain drop-shadow-xl" />
              
              <div className="fallback-container hidden flex-col items-center">
                 <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30 mb-4 transform -rotate-3 hover:rotate-0 transition-transform">
@@ -117,8 +116,8 @@ export default function Login() {
              </div>
           </div>
           
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight text-center">{SCHOOL_NAME}</h1>
-          <p className="text-slate-500 text-xs sm:text-sm mt-1 text-center">{SCHOOL_SUBTITLE}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight text-center">{tenant.name}</h1>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 text-center">{tenant.subtitle}</p>
         </div>
 
         {error && (
