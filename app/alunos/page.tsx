@@ -104,7 +104,7 @@ export default function Alunos() {
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [activeTab, setActiveTab] = useState<'atividades' | 'dados' | 'responsaveis' | 'documentos'>('atividades');
-  const [viewMode, setViewMode] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [viewMode, setViewMode] = useState<'horizontal' | 'vertical' | 'list'>('horizontal');
   const [panelStudentId, setPanelStudentId] = useState<string | null>(null);
   
   // Import review state
@@ -837,12 +837,20 @@ export default function Alunos() {
             {/* Toggle de modo de visualizacao */}
             <div className="flex items-center bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-full p-0.5 gap-0.5 shadow-sm">
               <button
+                onClick={() => { setViewMode('list'); setPanelStudentId(null); }}
+                title="Lista — visualização compacta"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === 'list' ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              >
+                <Menu className="w-3.5 h-3.5" />
+                Lista
+              </button>
+              <button
                 onClick={() => { setViewMode('horizontal'); setPanelStudentId(null); }}
                 title="Horizontal — modal centralizado"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === 'horizontal' ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 <Rows3 className="w-3.5 h-3.5" />
-                Horizontal
+                Cards
               </button>
               <button
                 onClick={() => setViewMode('vertical')}
@@ -850,7 +858,7 @@ export default function Alunos() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${viewMode === 'vertical' ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
               >
                 <PanelRight className="w-3.5 h-3.5" />
-                Vertical
+                Painel
               </button>
             </div>
             <button
@@ -862,12 +870,100 @@ export default function Alunos() {
           </div>
         </div>
 
-        {/* Grid de cards */}
+        {/* Lista/Grid de Alunos */}
         {filteredStudents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-600">
             <Users className="w-10 h-10 mb-3 opacity-30" />
             <p className="text-sm font-medium">Nenhum aluno encontrado</p>
             <p className="text-xs mt-1">Tente ajustar os filtros ou cadastrar um novo aluno</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/60 rounded-2xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Aluno</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Turma</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center">Pts</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Comportamento</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ocorrências</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredStudents.map((s) => {
+                    const pts = getStudentPoints(s.id);
+                    const beh = getStudentBehavior(pts);
+                    const occs = getStudentOccurrences(s.id);
+                    const behColor =
+                      beh === 'Excepcional' ? { dot: 'bg-emerald-500', badge: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/20' } :
+                      beh === 'Otimo'       ? { dot: 'bg-blue-500',    badge: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/20' } :
+                      beh === 'Bom'         ? { dot: 'bg-slate-400',   badge: 'bg-slate-50 dark:bg-slate-700/30 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600' } :
+                      beh === 'Regular'     ? { dot: 'bg-amber-500',   badge: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/20' } :
+                                              { dot: 'bg-rose-500',    badge: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/20' };
+
+                    return (
+                      <tr 
+                        key={s.id} 
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                        onClick={() => {
+                          if (currentUserRole === 'GUEST') return;
+                          openEditModal(s);
+                        }}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 overflow-hidden flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-xs">
+                              {s.photoUrl ? <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" /> : s.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-bold text-slate-800 dark:text-white text-sm">{s.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{s.class}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-500">{s.shift}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <span className={`text-sm font-black ${pts >= 7 ? 'text-blue-600 dark:text-blue-400' : pts >= 5 ? 'text-amber-500' : 'text-rose-500'}`}>
+                            {pts.toFixed(1)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border ${behColor.badge}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${behColor.dot}`} />
+                            {beh}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{occs.length}</span>
+                            <div className="flex gap-0.5">
+                              {occs.filter(o => o.ruleCode >= 300).length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" title="Grave" />}
+                              {occs.filter(o => o.ruleCode >= 200 && o.ruleCode < 300).length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Media" />}
+                              {occs.filter(o => o.ruleCode < 200).length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-400" title="Leve" />}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditModal(s);
+                            }}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
