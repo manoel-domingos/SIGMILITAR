@@ -12,6 +12,7 @@ import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhats
 import { supabase } from '@/lib/supabase';
 import { useSearchParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
+import { useTenantConfig } from '@/lib/useTenantConfig';
 import OccurrenceChecklist, {
   OccurrenceTask,
   ChecklistItem,
@@ -26,6 +27,7 @@ function RegistroDisciplinarContent() {
     addOccurrence, updateOccurrence, archiveOccurrence, checkRecidivism, getEscalationStatus,
     addStudent, updateStudent, addStaffMember, uploadFile
   } = useAppContext();
+  const { grades, classLetters } = useTenantConfig();
   const searchParams = useSearchParams();
 
   const paramMonth = searchParams.get('month');
@@ -2320,28 +2322,18 @@ function RegistroDisciplinarContent() {
                       }}
                       className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="6º Ano">6º Ano</option>
-                      <option value="7º Ano">7º Ano</option>
-                      <option value="8º Ano">8º Ano</option>
-                      <option value="9º Ano">9º Ano</option>
-                      <option value="1º Ano">1�� Ano</option>
-                      <option value="2º Ano">2º Ano</option>
-                      <option value="3º Ano">3º Ano</option>
+                      {grades.map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
                     <select 
                       required
                       value={newClassName.match(/ ([A-Z])$/i)?.[1] || 'A'}
                       onChange={(e) => {
-                        const prefix = newClassName.replace(/ [A-Z]$/i, '') || '6º Ano';
+                        const prefix = newClassName.replace(/ [A-Z]$/i, '') || grades[0];
                         setNewClassName(prefix + ' ' + e.target.value);
                       }}
                       className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                      <option value="D">D</option>
-                      <option value="E">E</option>
+                      {classLetters.map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </div>
                 </div>

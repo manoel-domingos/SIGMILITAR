@@ -7,6 +7,7 @@ import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, Chevr
 import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
+import { useTenantConfig } from '@/lib/useTenantConfig';
 
 const analyzeSheetWithAI = async (csvSnippet: string) => {
   try {
@@ -84,6 +85,7 @@ Se não houver coluna para alguma dessas chaves internas, não inclua a chave no
 
 export default function Alunos() {
   const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile, getStudentOccurrences, occurrences } = useAppContext();
+  const { grades, classLetters } = useTenantConfig();
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1259,11 +1261,11 @@ export default function Alunos() {
                           <div className="flex gap-2">
                             <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
                               className="w-2/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                              {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                              {grades.map(v => <option key={v}>{v}</option>)}
                             </select>
-                            <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                            <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
                               className="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                              {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                              {classLetters.map(v => <option key={v}>{v}</option>)}
                             </select>
                           </div>
                         </div>
@@ -1521,11 +1523,11 @@ export default function Alunos() {
                     <div className="flex gap-2">
                       <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
                         className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                        {grades.map(v => <option key={v}>{v}</option>)}
                       </select>
-                      <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                      <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
                         className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                        {classLetters.map(v => <option key={v}>{v}</option>)}
                       </select>
                     </div>
                   </div>
@@ -1837,28 +1839,7 @@ export default function Alunos() {
                               }}
                               className="w-2/3 px-2 py-1.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 bg-white"
                             >
-                                <option value="Berçário">Berçário</option>
-                                <option value="Maternal I">Maternal I</option>
-                                <option value="Maternal II">Maternal II</option>
-                                <option value="Pré I">Pré I</option>
-                                <option value="Pré II">Pré II</option>
-                                <option value="1º Ano">1º Ano</option>
-                                <option value="2º Ano">2º Ano</option>
-                                <option value="3º Ano">3º Ano</option>
-                                <option value="4º Ano">4º Ano</option>
-                                <option value="5º Ano">5º Ano</option>
-                                <option value="6º Ano">6º Ano</option>
-                                <option value="7º Ano">7º Ano</option>
-                                <option value="8º Ano">8º Ano</option>
-                                <option value="9º Ano">9º Ano</option>
-                                {/* Add dynamically if missing */}
-                                {student.class && ![
-                                  'Berçário', 'Maternal I', 'Maternal II', 'Pré I', 'Pré II',
-                                  '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', 
-                                  '6º Ano', '7º Ano', '8º Ano', '9º Ano'
-                                ].includes(student.class.replace(/ [A-Z]$/i, '')) && (
-                                  <option value={student.class.replace(/ [A-Z]$/i, '')}>{student.class.replace(/ [A-Z]$/i, '')}</option>
-                                )}
+                                {grades.map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
                             <input
                               type="text"
