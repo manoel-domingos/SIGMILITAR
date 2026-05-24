@@ -307,12 +307,6 @@ export default function Alunos() {
     setEditingStudent(null);
   };
 
-  const handleDownloadTemplate = () => {
-    const link = document.createElement('a');
-    link.href = '/api/alunos/template';
-    link.click();
-  };
-
   const handleImport = () => {
     setIsImportModalOpen(true);
   };
@@ -789,15 +783,6 @@ export default function Alunos() {
               accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
               onChange={processImportedData}
             />
-            <button
-              onClick={handleDownloadTemplate}
-              disabled={currentUserRole === 'GUEST'}
-              title={currentUserRole === 'GUEST' ? 'Apenas leitura — entre como gestor para baixar template' : 'Baixar template Excel com estrutura padrão'}
-              className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-800 dark:text-slate-200 px-6 py-2 rounded-full font-medium flex items-center justify-center gap-2 transition shadow-sm flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="w-5 h-5" />
-              Template
-            </button>
             <button
               onClick={handleImport}
               disabled={isImporting || currentUserRole === 'GUEST'}
@@ -1709,12 +1694,14 @@ export default function Alunos() {
                   <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">2</div>
                   <div className="space-y-2">
                     <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Use nosso modelo (opcional)</p>
-                    <button 
-                      onClick={handleExport}
+                    <a 
+                      href="https://docs.google.com/spreadsheets/d/1uHCYwVKG16APXXbcWUUiP_2VFXw2FbUcjq95cRTC7zw/edit?usp=sharing"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-xs flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline font-medium"
                     >
-                      <Download className="w-3.5 h-3.5" /> Baixar planilha modelo
-                    </button>
+                      <Download className="w-3.5 h-3.5" /> Abrir planilha modelo
+                    </a>
                   </div>
                 </div>
 
