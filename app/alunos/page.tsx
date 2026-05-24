@@ -7,7 +7,8 @@ import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, Chevr
 import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
-import { useTenantConfig } from '@/lib/useTenantConfig';
+import { useTenantConfig, getTenantIdFromHost } from '@/lib/useTenantConfig';
+import { getAllClassNames } from '@/lib/school';
 import { ClassSelector } from '@/components/ClassSelector';
 
 const analyzeSheetWithAI = async (csvSnippet: string) => {
@@ -509,10 +510,60 @@ export default function Alunos() {
           }
         }
 
-        // ── Montar turma a partir de SÉRIE + TURMA (formato SIGMILITAR) ──
-        // SÉRIE: "1 ANO" → "1º Ano"
-        // TURMA: "A-LING" → letra "A"
-        // Resultado: "1º Ano A"
+        // ── Montar e validar turma a partir de SÉRIE + TURMA (formato SIGMILITAR) ──
+        // Usa a lista atualizada do tenant para fazer match normalizado.
+        // Exemplo: SÉRIE="1 ANO" + TURMA="A-LING" → "1º Ano A-LING"
+
+        /**
+         * Normaliza string para comparação: minúsculas, sem acentos, sem espaços extras.
+         */
+        const norm = (s: string) =>
+          s.trim().toLowerCase()
+           .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+           .replace(/\s+/g, ' ');
+
+        /**
+         * Busca a melhor turma na lista disponível para o tenant.
+         * Passos: (1) match exato normalizado → (2) match parcial → (3) retorna candidato bruto.
+         */
+        const matchToAvailableClass = (candidate: string): string => {
+          const available = getAllClassNames(getTenantIdFromHost());
+          const normCandidate = norm(candidate);
+
+          // Passo 1: match exato normalizado (case-insensitive + sem acentos)
+          const exact = available.find(c => norm(c) === normCandidate);
+          if (exact) {
+            console.log('[v0] classMatch: exato', { planilha: candidate, encontrado: exact });
+            return exact;
+          }
+
+          // Passo 2: match parcial — o candidato está contido no nome da turma ou vice-versa
+          const partial = available.find(c =>
+            norm(c).includes(normCandidate) || normCandidate.includes(norm(c))
+          );
+          if (partial) {
+            console.log('[v0] classMatch: parcial', { planilha: candidate, encontrado: partial });
+            return partial;
+          }
+
+          // Passo 3: similaridade simples — conta tokens em comum
+          const candidateTokens = normCandidate.split(' ');
+          let bestScore = 0;
+          let bestMatch = '';
+          for (const c of available) {
+            const tokens = norm(c).split(' ');
+            const score = candidateTokens.filter(t => tokens.includes(t)).length;
+            if (score > bestScore) { bestScore = score; bestMatch = c; }
+          }
+          if (bestScore > 0) {
+            console.log('[v0] classMatch: fuzzy', { planilha: candidate, encontrado: bestMatch, score: bestScore });
+            return bestMatch;
+          }
+
+          console.log('[v0] classMatch: sem resultado', { planilha: candidate, disponíveis: available });
+          return candidate; // retorna bruto para exibir no modal e o usuário corrigir
+        };
+
         const parseSerie = (s: string) => {
           const m = s.match(/(\d+)/);
           if (!m) return '';
@@ -520,19 +571,16 @@ export default function Alunos() {
           const suffixes: Record<number, string> = { 1:'1º Ano', 2:'2º Ano', 3:'3º Ano', 4:'4º Ano', 5:'5º Ano', 6:'6º Ano', 7:'7º Ano', 8:'8º Ano', 9:'9º Ano' };
           return suffixes[n] || `${n}º Ano`;
         };
-        const parseTurmaLetter = (t: string) => {
-          // "A-LING" → "A", "B" → "B", "TURMA A" → "A"
-          const m = t.match(/^([A-Z])/i);
-          return m ? m[1].toUpperCase() : '';
-        };
 
         if (serie || turma) {
           const gradeStr = parseSerie(serie);
-          const letterStr = parseTurmaLetter(turma);
-          className = gradeStr + (letterStr ? ' ' + letterStr : '');
+          // Preserva o sufixo completo da turma (ex: "A-LING", não só "A")
+          const turmaClean = turma.trim().toUpperCase();
+          const candidate = gradeStr + (turmaClean ? ' ' + turmaClean : '');
+          className = matchToAvailableClass(candidate);
         }
 
-        // Fallback: classe vem de uma coluna genérica
+        // Fallback: classe vem do nome da aba/coluna genérica
         if (!className) {
           const rawClass = sheetNameStr;
           const upperRaw = rawClass.toUpperCase();
@@ -552,7 +600,10 @@ export default function Alunos() {
             const iso = rawClass.match(/\b([A-G])\b/i);
             if (iso) parsedId = iso[1].toUpperCase();
           }
-          className = parsedGrade ? parsedGrade + (parsedId ? ' ' + parsedId : '') : rawClass.replace(/[-_.\s]*V[EÊ]SP.*$/i, '').replace(/[-_.\s]*MAT.*$/i, '').replace(/[-_.\s]*NOT.*$/i, '').replace(/[-_.\s]+$/, '').trim();
+          const rawCandidate = parsedGrade
+            ? parsedGrade + (parsedId ? ' ' + parsedId : '')
+            : rawClass.replace(/[-_.\s]*V[EÊ]SP.*$/i, '').replace(/[-_.\s]*MAT.*$/i, '').replace(/[-_.\s]*NOT.*$/i, '').replace(/[-_.\s]+$/, '').trim();
+          className = rawCandidate ? matchToAvailableClass(rawCandidate) : rawCandidate;
         }
 
         // ── Turno: coluna TURNO > nome da aba ──
