@@ -262,25 +262,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (!usingMockSession) {
-        // Check session
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            setUser(session.user);
-          }
-        } catch (e) {
-          console.error("Failed to get supabase session", e);
-        }
-
-        supabase.auth.onAuthStateChange((_event: string, session: any) => {
-          setUser(session?.user || null);
-        });
-      }
-
-      setIsAuthRestored(true);
-
-      // Controle de abort para evitar requisições concorrentes (AbortError no Safari/iOS)
+      // Controle de abort para evitar requisições concorrentes (AbortController no Safari/iOS)
       let currentFetchAbort: AbortController | null = null;
       let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -430,6 +412,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setIsSyncing(false);
         }
       };
+
+      // Registra listener de mudança de autenticação (SIGNED_IN / SIGNED_OUT).
+      // Deve ser declarado APÓS fetchData para que o callback possa chamá-lo.
+      if (!usingMockSession) {
+        supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+          setUser(session?.user || null);
+
+          // No login novo, busca o school_id do perfil e re-executa fetchData filtrado.
+          // Isso evita que dados de outra escola apareçam enquanto o boot ainda estava
+          // sem o school_id resolvido.
+          if (event === 'SIGNED_IN' && session?.user?.email) {
+            try {
+              const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('school_id, role')
+                .eq('email', session.user.email.toLowerCase())
+                .single();
+
+              const sid = profile?.school_id && profile.school_id !== 'DRE'
+                ? profile.school_id
+                : '';
+
+              if (sid) {
+                activeSchoolContextRef.current = sid;
+                setActiveSchoolContext(sid);
+              }
+
+              await fetchData(sid || undefined);
+            } catch (_e) {
+              await fetchData(undefined);
+            }
+          }
+        });
+      }
+
+      setIsAuthRestored(true);
 
       // Resolve o school_id do usuário ANTES de buscar dados para garantir filtro correto
       let bootSchoolId = '';
