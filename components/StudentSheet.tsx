@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, User, Camera, BookOpen, Phone, Paperclip, FileText, AlertCircle, CheckCircle2, Clock, MapPin, Archive, Plus, Trash2 } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
 import { useTenantConfig } from '@/lib/useTenantConfig';
+import { ClassSelector } from '@/components/ClassSelector';
 
 type Tab = 'atividades' | 'dados' | 'responsaveis' | 'documentos';
 
@@ -273,16 +274,7 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turma *</label>
-                    <div className="flex gap-2">
-                      <select required disabled={readOnly} value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={e => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
-                        className="w-2/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60">
-                        {grades.map(v => <option key={v}>{v}</option>)}
-                      </select>
-                      <select required disabled={readOnly} value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={e => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
-                        className="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60">
-                        {classLetters.map(v => <option key={v}>{v}</option>)}
-                      </select>
-                    </div>
+                    <ClassSelector required disabled={readOnly} value={className} onChange={setClassName} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turno *</label>

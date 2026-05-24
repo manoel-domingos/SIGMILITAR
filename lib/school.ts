@@ -38,7 +38,19 @@ export interface SchoolConfig {
   classLetters: string[];
   /** Anos adicionais/especiais que aparecem somente nesta escola */
   specialYears?: string[];
+  /**
+   * Turmas compostas por ano — quando definido, substitui a geração automática
+   * "Grade + Letra" para os anos do ensino médio.
+   * Chave: nome do ano (ex: "1º Ano"). Valor: lista de sufixos de turma (ex: ["A-LING", "B-CHS"]).
+   * Turmas sem vínculo a ano (ex: EPT-AUTOMAC) ficam em "standalone".
+   */
+  classSuffixesByGrade?: Record<string, string[]>;
+  /** Turmas independentes (não vinculadas a um ano específico) */
+  standaloneClasses?: string[];
 }
+
+// Turmas compostas do ensino médio do Heliodoro — compartilhadas entre 1º, 2º e 3º Ano
+const HELIODORO_MEDIO_SUFFIXES = ['A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'];
 
 const TENANT_CONFIGS: Record<string, SchoolConfig> = {
   joaobatista: {
@@ -49,6 +61,12 @@ const TENANT_CONFIGS: Record<string, SchoolConfig> = {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
     classLetters: ['A', 'B', 'C'],
     specialYears: ['PRA'],
+    classSuffixesByGrade: {
+      '1º Ano': HELIODORO_MEDIO_SUFFIXES,
+      '2º Ano': HELIODORO_MEDIO_SUFFIXES,
+      '3º Ano': HELIODORO_MEDIO_SUFFIXES,
+    },
+    standaloneClasses: ['EPT-AUTOMAC', 'EPT-EDIFICAC', 'EPT-ELETROTEC', 'EPT-ELETROT'],
   },
   tangara: {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
@@ -66,16 +84,33 @@ export function getSchoolConfig(tenantId?: string): SchoolConfig {
 
 /**
  * Retorna todos os nomes de turma possíveis para o tenant informado.
- * Ex: ["1º Ano A", "1º Ano B", ..., "PRA A", "PRA B"]
+ * Para o Heliodoro: "1º Ano A-LING", "1º Ano B-CHS", ..., "EPT-AUTOMAC".
+ * Para outros tenants: "1º Ano A", "1º Ano B", etc.
  */
 export function getAllClassNames(tenantId?: string): string[] {
   const config = getSchoolConfig(tenantId);
   const allGrades = [...FUNDAMENTAL_GRADES, ...config.grades, ...(config.specialYears ?? [])];
   const names: string[] = [];
+
   for (const grade of allGrades) {
-    for (const letter of config.classLetters) {
-      names.push(`${grade} ${letter}`);
+    const suffixes = config.classSuffixesByGrade?.[grade];
+    if (suffixes) {
+      // Turmas compostas: "1º Ano A-LING", "1º Ano B-CHS", etc.
+      for (const suffix of suffixes) {
+        names.push(`${grade} ${suffix}`);
+      }
+    } else {
+      // Turmas simples: "1º Ano A", "1º Ano B", etc.
+      for (const letter of config.classLetters) {
+        names.push(`${grade} ${letter}`);
+      }
     }
   }
+
+  // Turmas independentes (ex: EPT-AUTOMAC) — sem vínculo a um ano
+  for (const standalone of config.standaloneClasses ?? []) {
+    names.push(standalone);
+  }
+
   return names;
 }

@@ -59,9 +59,15 @@ export function useTenantConfig() {
     grades: allGrades,
     /** Apenas anos do ensino médio + especiais (sem fundamental) */
     seniorGrades: [...config.grades, ...(config.specialYears ?? [])],
-    /** Letras de turma disponíveis */
+    /** Letras de turma disponíveis (simples, ex: A B C) */
     classLetters: config.classLetters,
-    /** Todos os nomes de turma completos ex: "1º Ano A" */
+    /** Todos os nomes de turma completos ex: "1º Ano A" ou "1º Ano A-LING" */
     allClassNames,
+    /** Sufixos de turma por ano (ex: { "1º Ano": ["A-LING", "B-CHS"] }) — null se não definido */
+    classSuffixesByGrade: config.classSuffixesByGrade ?? null,
+    /** Turmas independentes (sem ano) ex: ["EPT-AUTOMAC"] */
+    standaloneClasses: config.standaloneClasses ?? [],
+    /** true se o tenant usa turmas compostas (sufixos) em vez de letras simples */
+    hasCompoundClasses: !!config.classSuffixesByGrade,
   };
 }

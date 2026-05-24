@@ -8,6 +8,7 @@ import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
 import { useTenantConfig } from '@/lib/useTenantConfig';
+import { ClassSelector } from '@/components/ClassSelector';
 
 const analyzeSheetWithAI = async (csvSnippet: string) => {
   try {
@@ -1258,16 +1259,7 @@ export default function Alunos() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turma *</label>
-                          <div className="flex gap-2">
-                            <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
-                              className="w-2/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                              {grades.map(v => <option key={v}>{v}</option>)}
-                            </select>
-                            <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
-                              className="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                              {classLetters.map(v => <option key={v}>{v}</option>)}
-                            </select>
-                          </div>
+                          <ClassSelector required value={className} onChange={setClassName} />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Turno *</label>
@@ -1520,16 +1512,7 @@ export default function Alunos() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-600 mb-1">Turma *</label>
-                    <div className="flex gap-2">
-                      <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
-                        className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {grades.map(v => <option key={v}>{v}</option>)}
-                      </select>
-                      <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
-                        className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {classLetters.map(v => <option key={v}>{v}</option>)}
-                      </select>
-                    </div>
+                    <ClassSelector required value={className} onChange={setClassName} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-600 mb-1">Turno *</label>
@@ -1829,30 +1812,12 @@ export default function Alunos() {
                             placeholder="Nome..."
                           />
                         </td>
-                        <td className="py-2 px-4 w-40">
-                          <div className="flex gap-1">
-                            <select
-                              value={student.class ? student.class.replace(/ [A-Z]$/i, '') : '6º Ano'}
-                              onChange={(e) => {
-                                const letter = student.class ? (student.class.match(/ ([A-Z])$/i)?.[1] || 'A') : 'A';
-                                handleReviewChange(index, 'class', `${e.target.value} ${letter}`);
-                              }}
-                              className="w-2/3 px-2 py-1.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 bg-white"
-                            >
-                                {grades.map(v => <option key={v} value={v}>{v}</option>)}
-                            </select>
-                            <input
-                              type="text"
-                              maxLength={1}
-                              value={student.class ? (student.class.match(/ ([A-Z])$/i)?.[1] || '') : ''}
-                              onChange={(e) => {
-                                const prefix = student.class ? student.class.replace(/ [A-Z]$/i, '') : '6º Ano';
-                                handleReviewChange(index, 'class', `${prefix} ${e.target.value.toUpperCase()}`.trim());
-                              }}
-                              className="w-1/3 px-2 py-1.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 bg-white text-center"
-                              placeholder="Turma"
-                            />
-                          </div>
+                        <td className="py-2 px-4 w-44">
+                          <ClassSelector
+                            value={student.class || ''}
+                            onChange={(v) => handleReviewChange(index, 'class', v)}
+                            selectClassName="px-2 py-1.5 text-xs"
+                          />
                         </td>
                         <td className="py-2 px-4 w-40">
                           <select 
