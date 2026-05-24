@@ -104,7 +104,7 @@ export default function Alunos() {
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [activeTab, setActiveTab] = useState<'atividades' | 'dados' | 'responsaveis' | 'documentos'>('atividades');
-  const [viewMode, setViewMode] = useState<'horizontal' | 'vertical' | 'list'>('horizontal');
+  const [viewMode, setViewMode] = useState<'horizontal' | 'vertical' | 'list'>('list');
   const [panelStudentId, setPanelStudentId] = useState<string | null>(null);
   
   // Import review state
