@@ -59,7 +59,7 @@ const TENANT_CONFIGS: Record<string, SchoolConfig> = {
   },
   heliodoro: {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
-    classLetters: ['A', 'B', 'C'],
+    classLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
     specialYears: ['PRA'],
     classSuffixesByGrade: {
       '1º Ano': HELIODORO_MEDIO_SUFFIXES,
