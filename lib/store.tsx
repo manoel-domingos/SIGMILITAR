@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { supabase } from './supabase';
+import { supabase, isSupabaseReady } from './supabase';
 import { getTenantIdFromHost } from './useTenantConfig';
 import { 
   Student, Occurrence, Accident, Praise, DisciplineRule, Summons, ConductTerm, AuditLog, StaffMember, AppUser, AppUserRole, BehaviorClass,
@@ -196,12 +196,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Abre o modal imediatamente com os dados já disponíveis
     setShowContextModal(true);
     // Busca escolas em background para garantir lista atualizada
-    if (supabase) {
-      supabase.from('schools').select('id, name').neq('id', 'DRE').order('name')
-        .then(({ data }: { data: {id: string; name: string}[] | null }) => {
-          if (data && data.length > 0) setContextSchools(data);
-        })
-        .catch(() => {});
+    if (isSupabaseReady()) {
+      (async () => {
+        try {
+          const { data } = await supabase.from('schools').select('id, name').neq('id', 'DRE').order('name');
+          if (data && data.length > 0) setContextSchools(data as {id: string; name: string}[]);
+        } catch (_) {}
+      })();
     }
   }, []);
 
@@ -497,11 +498,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await fetchData(bootSchoolId || undefined);
 
       // Pré-carrega lista de escolas para o modal de seleção
-      supabase.from('schools').select('id, name').neq('id', 'DRE').order('name')
-        .then(({ data }: { data: {id: string; name: string}[] | null }) => {
-          if (data && data.length > 0) setContextSchools(data);
-        })
-        .catch(() => {});
+      try {
+        const { data: schoolsData } = await supabase.from('schools').select('id, name').neq('id', 'DRE').order('name');
+        if (schoolsData && schoolsData.length > 0) setContextSchools(schoolsData as {id: string; name: string}[]);
+      } catch (_) {}
 
       // Real-time Subscriptions com debounce para evitar múltiplos fetches simultâneos
       const debouncedFetch = () => {
