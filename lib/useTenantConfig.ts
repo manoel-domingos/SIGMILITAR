@@ -23,12 +23,35 @@ export const TENANT_MAP: Record<string, string> = {
 };
 
 /**
+ * Regras de detecção por substring do hostname.
+ * Ordem importa: mais específico primeiro.
+ */
+const TENANT_HOSTNAME_RULES: Array<{ contains: string; tenant: string }> = [
+  { contains: 'heliodoro', tenant: 'heliodoro' },
+  { contains: 'tangara',   tenant: 'tangara' },
+  // joaobatista é o fallback — não precisa de regra
+];
+
+/**
  * Função pura (sem hook) — pode ser chamada em qualquer contexto, inclusive store.
- * Retorna o tenant ID detectado pelo hostname atual ou fallback para 'joaobatista'.
+ * Detecção em dois passos:
+ *   1. Match exato pelo TENANT_MAP (hosts conhecidos)
+ *   2. Substring no hostname para cobrir previews e domínios customizados
+ * Fallback: 'joaobatista'
  */
 export function getTenantIdFromHost(): string {
   if (typeof window === 'undefined') return 'joaobatista';
-  return TENANT_MAP[window.location.host] || 'joaobatista';
+  const host = window.location.host.toLowerCase();
+
+  // Passo 1: match exato
+  if (TENANT_MAP[host]) return TENANT_MAP[host];
+
+  // Passo 2: substring (cobre eecmheliodoro-abc123.vercel.app, domínios customizados, etc.)
+  for (const rule of TENANT_HOSTNAME_RULES) {
+    if (host.includes(rule.contains)) return rule.tenant;
+  }
+
+  return 'joaobatista';
 }
 
 // João Batista usa .png, os demais .svg
@@ -47,8 +70,7 @@ const SCHOOL_NAMES: Record<string, string> = {
 const FUNDAMENTAL_GRADES = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 
 export function useTenantConfig() {
-  const host = typeof window !== 'undefined' ? window.location.host : '';
-  const tenantId = TENANT_MAP[host] || 'joaobatista';
+  const tenantId = getTenantIdFromHost();
   const ext = LOGO_EXT[tenantId] || 'png';
 
   const config = getSchoolConfig(tenantId);
