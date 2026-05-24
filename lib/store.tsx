@@ -1565,12 +1565,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = React.useCallback(async () => {
+    // 1. Limpa sessão mock/guest
     localStorage.removeItem('eecm_session');
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+
+    // 2. Limpa estado global antes do redirect
     setIsGuest(false);
     setUser(null);
+    setActiveSchoolContextState('');
+    activeSchoolContextRef.current = '';
+
+    // 3. Encerra sessão Supabase
+    if (supabase) {
+      try { await supabase.auth.signOut(); } catch (_e) { /* ignora erros de rede */ }
+    }
+
+    // 4. Redirect via window.location para garantir limpeza total do estado React
+    //    e que o tenant correto seja detectado pelo domínio na próxima carga.
+    window.location.href = '/login';
   }, []);
 
   // Monitor session expiration (10 minutes)

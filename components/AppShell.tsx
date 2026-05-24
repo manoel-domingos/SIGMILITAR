@@ -5,7 +5,8 @@ import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { SCHOOL_NAME, SCHOOL_LOGO_SIDEBAR, SCHOOL_LOGO_DASH } from '@/lib/school';
+import { useTenantConfig } from '@/lib/useTenantConfig';
+
 import {
   LayoutDashboard, Users, FileText, Activity,
   BarChart, AlertTriangle, Star, CheckSquare, FileBadge,
@@ -421,12 +422,13 @@ function SidebarLayout({
   openMobileMenu: () => void;
   children: React.ReactNode;
 }) {
+  const { logoSidebar } = useTenantConfig();
   return (
     <>
       <aside className="hidden md:flex w-64 bg-[#1E293B] flex-col shrink-0 shadow-xl">
         <div className="p-6 flex flex-col items-center border-b border-slate-800">
           <div className="w-28 h-28 flex items-center justify-center">
-            <img src={SCHOOL_LOGO_SIDEBAR} alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
+            <img src={logoSidebar} alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
           </div>
         </div>
 
@@ -525,6 +527,7 @@ function TopbarLayout({
 }) {
   const currentInfo = findGroupForPath(pathname);
   const { currentUserRole, activeSchoolContext } = useAppContext();
+  const { logoDash, schoolName } = useTenantConfig();
 
   return (
     <>
@@ -540,7 +543,7 @@ function TopbarLayout({
               <Menu className="w-6 h-6" />
             </button>
             <img
-              src={SCHOOL_LOGO_DASH}
+              src={logoDash}
               alt="EECM"
               className="w-auto h-10 sm:h-12 md:h-16 object-contain shrink-0 drop-shadow-sm"
             />
@@ -551,13 +554,12 @@ function TopbarLayout({
                   {(() => {
                     const active = schools.find(s => s.id === activeSchoolContext);
                     if (active) {
-                      // Remove prefixos comuns para exibir só o nome sem "EECM Prof." redundante
                       return active.name
                         .replace(/^EECM\s*/i, '')
                         .replace(/^Prof\.?\s*/i, '')
                         .toUpperCase();
                     }
-                    return SCHOOL_NAME.replace(/^EECM\s*/i, '').replace(/^Prof\.?\s*/i, '').toUpperCase();
+                    return schoolName.replace(/^EECM\s*/i, '').replace(/^Prof\.?\s*/i, '').toUpperCase();
                   })()}
                 </span>
               </h1>
@@ -709,13 +711,14 @@ function MobileDrawer({
   onClose: () => void;
   pathname: string;
 }) {
+  const { logoSidebar } = useTenantConfig();
   return (
     <aside
       className={'fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden safe-area-inset ' + (open ? 'translate-x-0' : '-translate-x-full')}
     >
       <div className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-800">
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-          <img src={SCHOOL_LOGO_SIDEBAR} alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
+          <img src={logoSidebar} alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
         </div>
         <button 
           className="w-11 h-11 flex items-center justify-center text-slate-400 rounded-xl active:bg-slate-700 transition-colors" 
