@@ -57,17 +57,20 @@ export default function Login() {
           return;
         }
 
-        // Erro real do Supabase (credenciais erradas, usuário não encontrado, etc.)
+        // Erro do Supabase — verifica se o username está na lista mock
+        // antes de bloquear. "Invalid login credentials" pode significar
+        // "usuário não existe" OU "senha errada" — o Supabase não distingue.
         if (authError) {
           console.log('[v0] login: erro Supabase =', authError.message);
-          // Só mostra erro de credenciais — não cai no mock para usuários reais
-          if (authError.message.toLowerCase().includes('invalid') ||
-              authError.message.toLowerCase().includes('not found') ||
-              authError.message.toLowerCase().includes('email')) {
+          const isMockUser = ['gestor', 'maykon', 'manoel', 'djeovani', 'joana', 'edma', 'murillo', 'george', 'proença', 'proenca'].includes(username.toLowerCase());
+          if (!isMockUser) {
+            // Usuário não está na lista mock → mostra erro de credenciais
             setError('Usuário ou senha inválidos');
             setLoading(false);
             return;
           }
+          // Usuário está na lista mock → deixa cair no bloco abaixo
+          console.log('[v0] login: usuário mock, continuando para fallback');
         }
       } catch (err) {
         console.log('[v0] login: exceção Supabase =', err);
