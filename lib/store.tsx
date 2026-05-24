@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase } from './supabase';
+import { getTenantIdFromHost } from './useTenantConfig';
 import { 
   Student, Occurrence, Accident, Praise, DisciplineRule, Summons, ConductTerm, AuditLog, StaffMember, AppUser, AppUserRole, BehaviorClass,
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
@@ -154,8 +155,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return matched?.school_id ?? null;
   }, [user, isGuest, appUsers]);
 
-  // Contexto de escola ativa — admin_global pode alternar; demais usuários seguem seu school_id
-  const [activeSchoolContext, setActiveSchoolContextState] = useState<string>('');
+  // Contexto de escola ativa — inicializa pelo domínio para filtrar dados desde o primeiro fetch.
+  // admin_global pode alternar depois; demais usuários seguem seu school_id.
+  const [activeSchoolContext, setActiveSchoolContextState] = useState<string>(() => {
+    const tenantFromHost = getTenantIdFromHost();
+    return tenantFromHost !== 'joaobatista' ? tenantFromHost : '';
+  });
   // Ref para acesso sem closure stale dentro de fetchData/refreshData
   const activeSchoolContextRef = React.useRef(activeSchoolContext);
   const isFirstContextLoad = React.useRef(true);
@@ -449,8 +454,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setIsAuthRestored(true);
 
-      // Resolve o school_id do usuário ANTES de buscar dados para garantir filtro correto
-      let bootSchoolId = '';
+      // Resolve o school_id do usuário ANTES de buscar dados para garantir filtro correto.
+      // Prioridade: (1) perfil do Supabase → (2) domínio atual → (3) sem filtro (admin_global)
+      const domainTenantId = getTenantIdFromHost();
+      let bootSchoolId = domainTenantId !== 'joaobatista' ? domainTenantId : '';
+
       if (!usingMockSession) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
@@ -462,14 +470,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
               .single();
             if (profile?.school_id && profile.school_id !== 'DRE') {
               bootSchoolId = profile.school_id;
-              // Sincroniza o ref imediatamente para fetchData e refreshData usarem
-              activeSchoolContextRef.current = bootSchoolId;
-              setActiveSchoolContext(bootSchoolId);
             }
           }
         } catch (e) {
-          // sem perfil ainda — continua sem filtro (admin_global)
+          // sem perfil ainda — usa o tenant do domínio como fallback
         }
+      }
+
+      // Sincroniza o ref e estado com o school_id resolvido
+      if (bootSchoolId) {
+        activeSchoolContextRef.current = bootSchoolId;
+        setActiveSchoolContextState(bootSchoolId);
       }
 
       await fetchData(bootSchoolId || undefined);

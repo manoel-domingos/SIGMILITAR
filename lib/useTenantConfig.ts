@@ -1,11 +1,10 @@
 import { getSchoolConfig, getAllClassNames } from './school';
 
 /**
- * Hook para detectar o tenant pela URL e retornar configurações dinâmicas:
- * logos, anos, turmas e letras de turma.
+ * Mapeamento de hostname → tenant ID.
+ * Usado tanto no hook (client) quanto no store (runtime).
  */
-
-const TENANT_MAP: Record<string, string> = {
+export const TENANT_MAP: Record<string, string> = {
   // João Batista
   'joaobatista.vercel.app': 'joaobatista',
   'www.joaobatista.vercel.app': 'joaobatista',
@@ -22,6 +21,15 @@ const TENANT_MAP: Record<string, string> = {
   'www.eecmtangara.vercel.app': 'tangara',
   'tangara.vercel.app': 'tangara',
 };
+
+/**
+ * Função pura (sem hook) — pode ser chamada em qualquer contexto, inclusive store.
+ * Retorna o tenant ID detectado pelo hostname atual ou fallback para 'joaobatista'.
+ */
+export function getTenantIdFromHost(): string {
+  if (typeof window === 'undefined') return 'joaobatista';
+  return TENANT_MAP[window.location.host] || 'joaobatista';
+}
 
 // João Batista usa .png, os demais .svg
 const LOGO_EXT: Record<string, string> = {
