@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase, isSupabaseReady } from '@/lib/supabase';
 import { useTenantConfig } from '@/lib/useTenantConfig';
-import { Trophy, ShieldCheck, User as UserIcon, KeyRound, Loader2, ArrowRight } from 'lucide-react';
+import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight } from 'lucide-react';
 import versionData from '@/lib/version.json';
 import { SCHOOL_SUBTITLE } from '@/lib/school';
 
@@ -25,20 +25,18 @@ const MOCK_USERS: Record<string, { role: string; name: string }> = {
 
 export default function Login() {
   const router = useRouter();
-  const { user, isGuest, setGuestMode, setMockUser, currentUserRole } = useAppContext();
+  const { user, isGuest, setMockUser, currentUserRole, isAuthRestored } = useAppContext();
   const { logoLogin, schoolName, tenantId } = useTenantConfig();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Auto redirect após login bem-sucedido
   useEffect(() => {
-    if (user || isGuest) {
+    if ((user || isGuest) && isAuthRestored) {
       router.push(currentUserRole === 'admin_global' ? '/dre' : '/');
     }
-  }, [user, isGuest, currentUserRole, router]);
+  }, [user, isGuest, currentUserRole, isAuthRestored, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,11 +55,12 @@ export default function Login() {
         emailCandidates.push(username.trim());
       } else {
         // Sem @: monta candidatos por ordem de prioridade
-        emailCandidates.push(`${usernameNorm}@eecm.local`);
-        // Formato tenant-específico (ex: admin@heliodoro.eecm.local)
+        // Para tenants não-joaobatista, tenta o formato tenant-específico PRIMEIRO
+        // pois os usuários foram cadastrados com esse domínio (ex: admin@heliodoro.eecm.local)
         if (tenantId !== 'joaobatista') {
           emailCandidates.push(`${usernameNorm}@${tenantId}.eecm.local`);
         }
+        emailCandidates.push(`${usernameNorm}@eecm.local`);
       }
 
       let loginSuccess = false;
@@ -119,17 +118,13 @@ export default function Login() {
         },
       }));
       setMockUser(usernameNorm);
-      router.push('/');
+      // Não faz redirect aqui — o useEffect de auto-redirect aguarda
+      // isAuthRestored e currentUserRole para decidir a rota correta (/dre ou /)
       return;
     }
 
     setError('Usuário ou senha inválidos');
     setLoading(false);
-  };
-
-  const handleGuestLogin = () => {
-    setGuestMode();
-    router.push('/');
   };
 
   if (user || isGuest) return null;
@@ -233,14 +228,7 @@ export default function Login() {
         </form>
 
         <div className="mt-4 pt-4 border-t border-slate-200/60 text-center">
-          <button
-            onClick={handleGuestLogin}
-            className="text-slate-500 hover:text-slate-800 text-sm font-medium transition-colors flex items-center justify-center gap-2 mx-auto"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            Acesso Somente Leitura
-          </button>
-          <p className="mt-6 text-[11px] text-slate-400 italic">
+          <p className="text-[11px] text-slate-400 italic">
             Versão: {versionData.version}
           </p>
         </div>
