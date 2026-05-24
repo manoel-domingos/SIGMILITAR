@@ -1,3 +1,4 @@
+import React from 'react';
 import { getSchoolConfig, getAllClassNames } from './school';
 
 /**
@@ -70,7 +71,14 @@ const SCHOOL_NAMES: Record<string, string> = {
 const FUNDAMENTAL_GRADES = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 
 export function useTenantConfig() {
-  const tenantId = getTenantIdFromHost();
+  // Inicializa com 'joaobatista' no SSR para evitar hydration mismatch (React error #418).
+  // O useEffect corrige para o valor real no cliente após a montagem.
+  const [tenantId, setTenantId] = React.useState<string>('joaobatista');
+
+  React.useEffect(() => {
+    setTenantId(getTenantIdFromHost());
+  }, []);
+
   const ext = LOGO_EXT[tenantId] || 'png';
 
   const config = getSchoolConfig(tenantId);

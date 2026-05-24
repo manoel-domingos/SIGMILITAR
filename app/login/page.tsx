@@ -26,7 +26,7 @@ const MOCK_USERS: Record<string, { role: string; name: string }> = {
 export default function Login() {
   const router = useRouter();
   const { user, isGuest, setGuestMode, setMockUser, currentUserRole } = useAppContext();
-  const { logoLogin, schoolName } = useTenantConfig();
+  const { logoLogin, schoolName, tenantId } = useTenantConfig();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -48,47 +48,55 @@ export default function Login() {
     const usernameNorm = username.trim().toLowerCase().replace('ç', 'c').replace('ã', 'a');
 
     // ── 1. Tentativa via Supabase Auth ──────────────────────────────────────
+    // Tenta vários formatos de email para cobrir perfis legados e novos.
     if (isSupabaseReady()) {
-      try {
-        const emailToUse = username.includes('@')
-          ? username.trim()
-          : `${usernameNorm}@eecm.local`;
+      const emailCandidates: string[] = [];
 
-        const { data, error: authError } = await supabase.auth.signInWithPassword({
-          email: emailToUse,
-          password,
-        });
-
-        if (!authError && data?.user) {
-          // Login real — store.tsx captura via onAuthStateChange
-          localStorage.setItem('eecm_session', JSON.stringify({
-            type: 'real',
-            user: {
-              id: data.user.id,
-              email: data.user.email,
-              user_metadata: data.user.user_metadata,
-            },
-          }));
-          return; // redirect acontece via useEffect acima
+      if (username.includes('@')) {
+        // Email completo fornecido — tenta diretamente
+        emailCandidates.push(username.trim());
+      } else {
+        // Sem @: monta candidatos por ordem de prioridade
+        emailCandidates.push(`${usernameNorm}@eecm.local`);
+        // Formato tenant-específico (ex: admin@heliodoro.eecm.local)
+        if (tenantId !== 'joaobatista') {
+          emailCandidates.push(`${usernameNorm}@${tenantId}.eecm.local`);
         }
-
-        // Supabase retornou erro — decide se bloqueia ou cai no mock
-        if (authError) {
-          const msg = authError.message.toLowerCase();
-          const isNotFound = msg.includes('invalid') || msg.includes('not found');
-          const isMock = usernameNorm in MOCK_USERS;
-
-          if (!isMock) {
-            // Usuário não é mock e falhou no Supabase → credenciais inválidas
-            setError('Usuário ou senha inválidos');
-            setLoading(false);
-            return;
-          }
-          // É um usuário mock e o Supabase não o conhece → cai no bloco 2
-        }
-      } catch (_err) {
-        // Erro de rede/timeout → cai no bloco 2 (mock)
       }
+
+      let loginSuccess = false;
+      for (const emailToUse of emailCandidates) {
+        try {
+          const { data, error: authError } = await supabase.auth.signInWithPassword({
+            email: emailToUse,
+            password,
+          });
+
+          if (!authError && data?.user) {
+            localStorage.setItem('eecm_session', JSON.stringify({
+              type: 'real',
+              user: {
+                id: data.user.id,
+                email: data.user.email,
+                user_metadata: data.user.user_metadata,
+              },
+            }));
+            loginSuccess = true;
+            return; // redirect via useEffect
+          }
+        } catch (_err) {
+          // Erro de rede — tenta próximo candidato
+        }
+      }
+
+      // Todos os candidatos falharam — verifica se é usuário mock ou erro real
+      const isMock = usernameNorm in MOCK_USERS;
+      if (!isMock) {
+        setError('Usuário ou senha inválidos');
+        setLoading(false);
+        return;
+      }
+      // Usuário mock → cai no bloco 2
     }
 
     // ── 2. Fallback mock ────────────────────────────────────────────────────
