@@ -76,7 +76,7 @@ type LayoutMode = 'sidebar' | 'topbar';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, tenant, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -539,8 +539,8 @@ function TopbarLayout({
               <Menu className="w-6 h-6" />
             </button>
             <img
-              src="/logo_dash.svg"
-              alt="EECM"
+              src={tenant.logoDash}
+              alt={tenant.name}
               className="w-auto h-10 sm:h-12 md:h-16 object-contain shrink-0 drop-shadow-sm"
             />
             <div className="hidden sm:block min-w-0">
@@ -550,18 +550,17 @@ function TopbarLayout({
                   {(() => {
                     const active = schools.find(s => s.id === activeSchoolContext);
                     if (active) {
-                      // Remove prefixos comuns para exibir só o nome sem "EECM Prof." redundante
                       return active.name
                         .replace(/^EECM\s*/i, '')
                         .replace(/^Prof\.?\s*/i, '')
                         .toUpperCase();
                     }
-                    return 'PROF. JOÃO BATISTA';
+                    return tenant.name.replace(/^EECM\s*/i, '').replace(/^PROF\.\s*/i, '').toUpperCase();
                   })()}
                 </span>
               </h1>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-0.5">
-                Disciplina e Monitoramento Escolar
+                {tenant.subtitle}
               </p>
             </div>
             {currentUserRole === 'admin_global' && onOpenContextModal && (
@@ -714,7 +713,7 @@ function MobileDrawer({
     >
       <div className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-800">
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-          <img src="/nova_logo.svg" alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md" />
+          <img src={tenant.logoDash} alt={`Logo ${tenant.name}`} className="w-full h-full object-contain drop-shadow-md" />
         </div>
         <button 
           className="w-11 h-11 flex items-center justify-center text-slate-400 rounded-xl active:bg-slate-700 transition-colors" 

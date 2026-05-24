@@ -11,7 +11,8 @@ export function middleware(request: NextRequest) {
   const isDreDomain =
     host.startsWith('dre.') ||
     host === 'dretga.vercel.app' ||
-    host === 'www.dretga.vercel.app';
+    host === 'www.dretga.vercel.app' ||
+    host.includes('dre-'); // Para suportar previews da Vercel que contenham 'dre-'
 
   if (isDreDomain) {
     // Já está no login DRE ou numa rota interna — deixa passar
