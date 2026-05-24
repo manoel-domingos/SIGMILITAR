@@ -1,6 +1,51 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * Mapeamento de hostname completo → tenant ID.
+ * Usado pelo middleware para injetar o header x-tenant nas requisições,
+ * permitindo que Server Components e API routes saibam o tenant sem
+ * depender de window.location.
+ */
+const HOST_TO_TENANT: Record<string, string> = {
+  // João Batista
+  'eecmprofjoaobatista.vercel.app': 'joaobatista',
+  'joaobatista.vercel.app': 'joaobatista',
+
+  // Heliodoro Capistrano
+  'eecmheliodoro.vercel.app': 'heliodoro',
+  'heliodoro.vercel.app': 'heliodoro',
+
+  // Tangará
+  'eecmtangara.vercel.app': 'tangara',
+  'tangara.vercel.app': 'tangara',
+
+  // Desenvolvimento local
+  'localhost': 'joaobatista',
+  'localhost:3000': 'joaobatista',
+};
+
+/** Regras de fallback por substring — cobre previews com hash (ex: eecmheliodoro-abc.vercel.app) */
+const TENANT_SUBSTRING_RULES: Array<{ contains: string; tenant: string }> = [
+  { contains: 'heliodoro', tenant: 'heliodoro' },
+  { contains: 'tangara',   tenant: 'tangara' },
+  { contains: 'joaobatista', tenant: 'joaobatista' },
+];
+
+function resolveTenantFromHost(host: string): string | null {
+  const h = host.toLowerCase();
+
+  // Passo 1: match exato
+  if (HOST_TO_TENANT[h]) return HOST_TO_TENANT[h];
+
+  // Passo 2: substring (cobre deploy previews com hash)
+  for (const rule of TENANT_SUBSTRING_RULES) {
+    if (h.includes(rule.contains)) return rule.tenant;
+  }
+
+  return null; // não reconhecido
+}
+
 export function middleware(request: NextRequest) {
   // Remove porta do host para comparação (ex: "dretga.vercel.app:443" → "dretga.vercel.app")
   const rawHost = request.headers.get('host') ?? '';
@@ -34,6 +79,15 @@ export function middleware(request: NextRequest) {
     }
 
     // "/" com sessão ativa (usuário veio do modal de escolas) — deixa passar
+  }
+
+  // Injeta x-tenant no header da requisição para uso em Server Components e API routes.
+  // O cliente continua usando window.location.host via getTenantIdFromHost().
+  const tenantId = resolveTenantFromHost(rawHost);
+  if (tenantId) {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-tenant', tenantId);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   return NextResponse.next();
