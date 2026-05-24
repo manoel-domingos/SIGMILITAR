@@ -307,7 +307,11 @@ export default function Alunos() {
     setEditingStudent(null);
   };
 
-  const handleImport = () => {
+  const handleDownloadTemplate = () => {
+    const link = document.createElement('a');
+    link.href = '/api/alunos/template';
+    link.click();
+  };
     setIsImportModalOpen(true);
   };
 
@@ -783,6 +787,15 @@ export default function Alunos() {
               accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
               onChange={processImportedData}
             />
+            <button
+              onClick={handleDownloadTemplate}
+              disabled={currentUserRole === 'GUEST'}
+              title={currentUserRole === 'GUEST' ? 'Apenas leitura — entre como gestor para baixar template' : 'Baixar template Excel com estrutura padrão'}
+              className="bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-700/60 text-slate-800 dark:text-slate-200 px-6 py-2 rounded-full font-medium flex items-center justify-center gap-2 transition shadow-sm flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-5 h-5" />
+              Template
+            </button>
             <button
               onClick={handleImport}
               disabled={isImporting || currentUserRole === 'GUEST'}
