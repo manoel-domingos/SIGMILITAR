@@ -1570,9 +1570,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const setMockUser = (username: string) => {
-    setUser({ email: username, role: 'admin' });
+    // email deve bater com INITIAL_APP_USERS para currentUserRole ser resolvido corretamente
+    setUser({ email: username });
     setIsGuest(false);
-    localStorage.setItem('eecm_session', JSON.stringify({ type: 'mock', email: username }));
+    setIsAuthRestored(true);
   };
 
   const logout = React.useCallback(async () => {
