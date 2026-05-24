@@ -1,50 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-let _supabase: any = null;
-let _initialized = false;
+// Instâncias separadas para SSR e cliente — evita que o singleton do SSR
+// (onde window é undefined) bloqueie a inicialização no browser.
+let _clientInstance: SupabaseClient | null = null;
+let _serverInstance: SupabaseClient | null = null;
 
-function getSupabase(): any {
-  // Só inicializa uma vez por ciclo de vida do módulo
-  if (_initialized) return _supabase;
-  _initialized = true;
-
-  let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+function buildClient(): SupabaseClient | null {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-  if (supabaseUrl && !supabaseUrl.startsWith('http')) {
-    supabaseUrl = `https://${supabaseUrl}`;
-  }
+  if (!supabaseUrl || !supabaseAnonKey) return null;
 
-  // Rejeita placeholders e keys claramente inválidas
-  if (
-    !supabaseUrl ||
-    !supabaseAnonKey ||
-    supabaseUrl === 'https://your-project-url.supabase.co' ||
-    supabaseUrl.includes('YOUR_SUPABASE') ||
-    supabaseAnonKey.length < 20
-  ) {
-    if (typeof window !== 'undefined') {
-      console.warn('[supabase] Credenciais ausentes — modo offline ativo.',
-        'URL:', supabaseUrl ? 'presente' : 'AUSENTE',
-        'KEY:', supabaseAnonKey ? `presente (${supabaseAnonKey.length} chars)` : 'AUSENTE'
-      );
-    }
-    _supabase = null;
-    return null;
-  }
-
-  _supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
+      persistSession: typeof window !== 'undefined',
+      autoRefreshToken: typeof window !== 'undefined',
+      detectSessionInUrl: typeof window !== 'undefined',
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
       storageKey: 'eecm-auth-token',
       flowType: 'pkce',
     },
   });
+}
 
-  return _supabase;
+function getSupabase(): SupabaseClient | null {
+  if (typeof window !== 'undefined') {
+    // Contexto do browser — singleton por aba
+    if (!_clientInstance) _clientInstance = buildClient();
+    return _clientInstance;
+  } else {
+    // Contexto SSR — singleton por processo
+    if (!_serverInstance) _serverInstance = buildClient();
+    return _serverInstance;
+  }
 }
 
 /**
@@ -55,10 +43,10 @@ export function isSupabaseReady(): boolean {
   return getSupabase() !== null;
 }
 
-export const supabase = new Proxy({}, {
+export const supabase = new Proxy({} as SupabaseClient, {
   get: (_target, prop) => {
     const client = getSupabase();
-    return client ? (client as any)[prop as string] : null;
-  }
-}) as any;
+    return client ? (client as any)[prop as string] : undefined;
+  },
+}) as SupabaseClient;
 
