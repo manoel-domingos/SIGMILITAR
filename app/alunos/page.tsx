@@ -312,6 +312,8 @@ export default function Alunos() {
     link.href = '/api/alunos/template';
     link.click();
   };
+
+  const handleImport = () => {
     setIsImportModalOpen(true);
   };
 
