@@ -7,6 +7,7 @@ import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, Chevr
 import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
+import { useTenantConfig } from '@/lib/useTenantConfig';
 
 const analyzeSheetWithAI = async (csvSnippet: string) => {
   try {
@@ -84,6 +85,7 @@ Se não houver coluna para alguma dessas chaves internas, não inclua a chave no
 
 export default function Alunos() {
   const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile, getStudentOccurrences, occurrences } = useAppContext();
+  const { grades, classLetters } = useTenantConfig();
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -367,9 +369,10 @@ export default function Alunos() {
           if (cells.some(c => c === 'nome' || c === 'aluno' || c === 'nome do aluno' || c === 'estudante' || c === 'nome completo')) score += 5;
           if (cells.some(c => c === 'turma' || c === 'serie' || c === 'ano')) score += 3;
           if (cells.some(c => c === 'turno' || c === 'periodo')) score += 3;
-          if (cells.some(c => c === 'cpf' || c === 'matricula')) score += 3;
-          if (cells.some(c => c.includes('telefone') || c === 'telefone' || c.includes('contato'))) score += 2;
-          if (cells.some(c => c === 'sig')) score += 2;
+          if (cells.some(c => c === 'cpf' || c === 'matricula' || c === 'cod aluno' || c === 'cod. aluno')) score += 3;
+          if (cells.some(c => c === 'telefones' || c.includes('telefone') || c === 'telefone' || c.includes('contato'))) score += 2;
+          if (cells.some(c => c.includes('laudo') || c.includes('paed') || c.includes('cid'))) score += 2;
+          if (cells.some(c => c === 'sig' || c === 'no' || c === 'n')) score += 1;
           
           // Bonus for first few rows to break ties
           const positionBonus = Math.max(0, 5 - i);
@@ -434,54 +437,69 @@ export default function Alunos() {
            if (c.father && row[c.father] !== undefined && String(row[c.father]).trim() !== '') pai = String(row[c.father]).trim();
         }
 
+        // ── Campos específicos do formato SIGMILITAR ──
+        let serie = '';    // coluna SÉRIE: "1 ANO", "2 ANO", etc.
+        let turma = '';    // coluna TURMA: "A-LING", "B-LING", etc.
+        let laudoCid = ''; // coluna SOB LAUDO PAED/CID
+        let turnoCol = ''; // coluna TURNO (se existir)
+
         for (const key of Object.keys(row)) {
           const normKey = normalizeStr(key);
           const val = String(row[key] || '').trim();
 
           if (val === '-' || val === '' || key === '_SHEET_NAME_') continue;
 
-          // Capture Student ID if present
-          if (normKey === 'cod aluno' || normKey === 'id' || normKey === 'codigo' || normKey === 'cod') {
+          // Matrícula / Cód. Aluno
+          if (normKey === 'cod aluno' || normKey === 'cod. aluno' || normKey === 'codigo' || normKey === 'cod') {
             if (!studentId) studentId = val;
           }
-          else if (normKey === 'matricula' || normKey === 'matr' || normKey === 'matr.') {
+          else if (normKey === 'matricula' || normKey === 'matr' || normKey === 'matr.' || normKey === 'rematricula') {
              if (!registrationNumber) registrationNumber = val;
           }
+          // Nome
           else if (normKey === 'nome' || normKey === 'nome completo' || normKey === 'nome aluno' || normKey === 'aluno' || normKey === 'nome do aluno') {
              if (!name) name = val;
           }
-          else if (normKey === 'turma' || normKey === 'serie' || normKey.includes('turma')) {
-             if (!className) className = val;
+          // Formato SIGMILITAR: SÉRIE e TURMA separados
+          else if (normKey === 'serie' || normKey === 'serie.' || normKey === 'ano' || normKey === 'serie escolar') {
+             if (!serie) serie = val;
           }
-          else if (normKey === 'turno' || normKey === 'periodo') {
-             if (!shift || shift === 'Matutino') shift = val;
+          else if (normKey === 'turma') {
+             if (!turma) turma = val;
           }
+          // Turno
+          else if (normKey === 'turno' || normKey === 'periodo' || normKey === 'turno (m/v/n)') {
+             if (!turnoCol) turnoCol = val;
+          }
+          // CPF
           else if (normKey === 'cpf') {
              if (!cpf) cpf = val;
           }
-          else if (normKey.includes('endereco') || normKey.includes('endereco completo') || normKey === 'end' || normKey === 'end.') {
+          // Endereço
+          else if (normKey.includes('endereco') || normKey === 'end' || normKey === 'end.') {
              if (!address) address = val;
           }
+          // Data nascimento
           else if (normKey.includes('nascimento') || normKey.includes('data nasc') || normKey === 'dt. nasc.' || normKey === 'dt nasc') {
              if (!birthDate) birthDate = val;
           }
+          // SOB LAUDO PAED/CID → vai para observação
+          else if (normKey.includes('laudo') || normKey.includes('paed') || normKey.includes('cid') || normKey === 'sob laudo paedcid') {
+             if (!laudoCid) laudoCid = val;
+          }
+          // Observação
           else if (normKey.includes('observacao') || normKey === 'obs' || normKey === 'obs.' || normKey === 'observacoes') {
              if (!observation) observation = val;
           }
-          else if (
-            normKey === 'mae' || 
-            normKey.includes('mae') || 
-            key.toLowerCase().includes('mãe') ||
-            normKey.includes('ma£e') || 
-            normKey.includes('mae') ||
-            (normKey.startsWith('m') && (normKey.includes('e') || normKey.includes('resp')) && normKey.length < 15)
-          ) {
+          // Responsáveis
+          else if (normKey === 'mae' || normKey.includes('mae') || key.toLowerCase().includes('mãe')) {
             if (!mae) mae = val;
           }
           else if (normKey === 'pai' || normKey.includes('pai')) {
             if (!pai) pai = val;
           }
-          else if (normKey === 'telefone 1' || normKey === 'telefone1' || normKey === 'tel 1' || normKey === 'contato 1' || normKey === 'telefone' || normKey.includes('telefone') || normKey.includes('celular') || normKey.includes('contato')) {
+          // Telefones (campo único com múltiplos números separados por espaço ou /)
+          else if (normKey === 'telefones' || normKey === 'telefone' || normKey === 'telefone 1' || normKey === 'telefone1' || normKey === 'tel 1' || normKey === 'contato 1' || normKey.includes('telefone') || normKey.includes('celular') || normKey.includes('contato')) {
              if (!tel1) tel1 = val;
              else if (!tel2 && val !== tel1) tel2 = val;
           }
@@ -490,67 +508,85 @@ export default function Alunos() {
           }
         }
 
-        let rawClass = className || sheetNameStr;
-        const upperRaw = rawClass.toUpperCase();
-        
-        if (upperRaw.includes('VESP')) shift = 'Vespertino';
-        else if (upperRaw.includes('MAT')) shift = 'Matutino';
-        else if (upperRaw.includes('NOT')) shift = 'Noturno';
+        // ── Montar turma a partir de SÉRIE + TURMA (formato SIGMILITAR) ──
+        // SÉRIE: "1 ANO" → "1º Ano"
+        // TURMA: "A-LING" → letra "A"
+        // Resultado: "1º Ano A"
+        const parseSerie = (s: string) => {
+          const m = s.match(/(\d+)/);
+          if (!m) return '';
+          const n = parseInt(m[1]);
+          const suffixes: Record<number, string> = { 1:'1º Ano', 2:'2º Ano', 3:'3º Ano', 4:'4º Ano', 5:'5º Ano', 6:'6º Ano', 7:'7º Ano', 8:'8º Ano', 9:'9º Ano' };
+          return suffixes[n] || `${n}º Ano`;
+        };
+        const parseTurmaLetter = (t: string) => {
+          // "A-LING" → "A", "B" → "B", "TURMA A" → "A"
+          const m = t.match(/^([A-Z])/i);
+          return m ? m[1].toUpperCase() : '';
+        };
 
-        let parsedGrade = '';
-        let parsedIdentifier = '';
-
-        const gradeMatch = rawClass.match(/(\d+)[º°oa-z]*/i);
-        if (gradeMatch) {
-            parsedGrade = gradeMatch[1] + 'º Ano';
+        if (serie || turma) {
+          const gradeStr = parseSerie(serie);
+          const letterStr = parseTurmaLetter(turma);
+          className = gradeStr + (letterStr ? ' ' + letterStr : '');
         }
 
-        const letterMatch = rawClass.match(/\d+[º°oa-z]*\s*[-_.\s]*([A-Za-z])/i);
-        if (letterMatch) {
-            const letter = letterMatch[1].toUpperCase();
-            if (letter !== 'V' && letter !== 'M' && letter !== 'N') {
-                parsedIdentifier = letter;
-            }
-        }
-        
-        if (!parsedIdentifier) {
-           const isolateLetter = rawClass.match(/\b([A-G])\b/i);
-           if (isolateLetter) parsedIdentifier = isolateLetter[1].toUpperCase();
+        // Fallback: classe vem de uma coluna genérica
+        if (!className) {
+          const rawClass = sheetNameStr;
+          const upperRaw = rawClass.toUpperCase();
+          if (upperRaw.includes('VESP')) shift = 'Vespertino';
+          else if (upperRaw.includes('MAT')) shift = 'Matutino';
+          else if (upperRaw.includes('NOT')) shift = 'Noturno';
+
+          const gradeMatch = rawClass.match(/(\d+)[º°oa-z]*/i);
+          const letterMatch = rawClass.match(/\d+[º°oa-z]*\s*[-_.\s]*([A-Za-z])/i);
+          const parsedGrade = gradeMatch ? gradeMatch[1] + 'º Ano' : '';
+          let parsedId = '';
+          if (letterMatch) {
+            const l = letterMatch[1].toUpperCase();
+            if (l !== 'V' && l !== 'M' && l !== 'N') parsedId = l;
+          }
+          if (!parsedId) {
+            const iso = rawClass.match(/\b([A-G])\b/i);
+            if (iso) parsedId = iso[1].toUpperCase();
+          }
+          className = parsedGrade ? parsedGrade + (parsedId ? ' ' + parsedId : '') : rawClass.replace(/[-_.\s]*V[EÊ]SP.*$/i, '').replace(/[-_.\s]*MAT.*$/i, '').replace(/[-_.\s]*NOT.*$/i, '').replace(/[-_.\s]+$/, '').trim();
         }
 
-        if (parsedGrade) {
-            className = parsedGrade + (parsedIdentifier ? ' ' + parsedIdentifier : '');
-        } else {
-            className = rawClass.replace(/[-_.\s]*V[EÊ]SP.*$/i, '').replace(/[-_.\s]*MAT.*$/i, '').replace(/[-_.\s]*NOT.*$/i, '').replace(/[-_.\s]+$/, '').trim();
-        }
-
-        if (shift) {
-           const shiftUpper = shift.toUpperCase();
-           if (shiftUpper.startsWith('V')) shift = 'Vespertino';
-           else if (shiftUpper.startsWith('M')) shift = 'Matutino';
-           else if (shiftUpper.startsWith('N')) shift = 'Noturno';
-        }
+        // ── Turno: coluna TURNO > nome da aba ──
+        const rawShift = turnoCol || sheetNameStr;
+        const upperShift = rawShift.toUpperCase();
+        if (upperShift.includes('VESP') || upperShift.startsWith('V')) shift = 'Vespertino';
+        else if (upperShift.includes('NOT') || upperShift.startsWith('N')) shift = 'Noturno';
+        else shift = 'Matutino';
 
         const validShift = ['Matutino', 'Vespertino', 'Noturno'].includes(shift) ? shift as any : 'Matutino';
 
+        // Mescla laudo CID na observação
+        if (laudoCid && laudoCid !== '-') {
+          observation = observation ? `${observation} | Laudo: ${laudoCid}` : `Laudo: ${laudoCid}`;
+        }
+
           const extractPhones = (phoneStr: string) => {
-             if (!phoneStr) return [];
-             const splitMatches = phoneStr.split(/[\/;,]|\s+e\s+/i);
-             if (splitMatches.length > 1) {
-                 return splitMatches.flatMap(p => {
-                    let n = p.replace(/\D/g, '');
-                    if (n.length === 8 || n.length === 9) n = '65' + n;
-                    if (n.length >= 10 && n.length <= 11) {
-                       if (n.length === 10) return ['(' + n.substring(0, 2) + ') ' + n.substring(2, 6) + '-' + n.substring(6, 10)];
-                       if (n.length === 11) return ['(' + n.substring(0, 2) + ') ' + n.substring(2, 7) + '-' + n.substring(7, 11)];
-                    }
-                    if (n.length > 11) {
-                        return ['(' + n.substring(0, 2) + ') ' + n.substring(2, Math.min(n.length, 7)) + '-' + n.substring(Math.min(n.length, 7), Math.min(n.length, 11))];
-                    }
-                    return [];
-                 });
+             if (!phoneStr || phoneStr === '-') return [];
+
+             const formatPhone = (n: string): string | null => {
+               n = n.replace(/\D/g, '');
+               if (n.length === 8 || n.length === 9) n = '65' + n;
+               if (n.length === 10) return '(' + n.substring(0, 2) + ') ' + n.substring(2, 6) + '-' + n.substring(6, 10);
+               if (n.length === 11) return '(' + n.substring(0, 2) + ') ' + n.substring(2, 7) + '-' + n.substring(7, 11);
+               return null;
+             };
+
+             // Tenta separar por delimitadores explícitos: / ; , "e" ou espaço entre números
+             // Formato SIGMILITAR: "65992391101 65992391102" (separado por espaço)
+             const parts = phoneStr.split(/[\/;,]|\s+e\s+|\s+/i).filter(p => p.replace(/\D/g, '').length >= 8);
+             if (parts.length > 1) {
+               return parts.map(p => formatPhone(p)).filter(Boolean) as string[];
              }
 
+             // Sem delimitador: tenta extrair múltiplos números concatenados
              let nums = phoneStr.replace(/\D/g, '');
              let extracted: string[] = [];
              
@@ -569,11 +605,7 @@ export default function Alunos() {
                 if (nums.length >= 10) extracted = [nums];
              }
              
-             return extracted.map(n => {
-                 if (n.length === 10) return '(' + n.substring(0, 2) + ') ' + n.substring(2, 6) + '-' + n.substring(6, 10);
-                 if (n.length === 11) return '(' + n.substring(0, 2) + ') ' + n.substring(2, 7) + '-' + n.substring(7, 11);
-                 return n;
-             });
+             return extracted.map(n => formatPhone(n) || n);
           };
 
         const formatCpf = (cpfStr: string) => {
@@ -1229,11 +1261,11 @@ export default function Alunos() {
                           <div className="flex gap-2">
                             <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
                               className="w-2/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                              {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                              {grades.map(v => <option key={v}>{v}</option>)}
                             </select>
-                            <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                            <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
                               className="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                              {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                              {classLetters.map(v => <option key={v}>{v}</option>)}
                             </select>
                           </div>
                         </div>
@@ -1491,11 +1523,11 @@ export default function Alunos() {
                     <div className="flex gap-2">
                       <select required value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={(e) => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
                         className="w-2/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                        {grades.map(v => <option key={v}>{v}</option>)}
                       </select>
-                      <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                      <select required value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={(e) => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
                         className="w-1/3 bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                        {classLetters.map(v => <option key={v}>{v}</option>)}
                       </select>
                     </div>
                   </div>
@@ -1807,28 +1839,7 @@ export default function Alunos() {
                               }}
                               className="w-2/3 px-2 py-1.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border-slate-200 bg-white"
                             >
-                                <option value="Berçário">Berçário</option>
-                                <option value="Maternal I">Maternal I</option>
-                                <option value="Maternal II">Maternal II</option>
-                                <option value="Pré I">Pré I</option>
-                                <option value="Pré II">Pré II</option>
-                                <option value="1º Ano">1º Ano</option>
-                                <option value="2º Ano">2º Ano</option>
-                                <option value="3º Ano">3º Ano</option>
-                                <option value="4º Ano">4º Ano</option>
-                                <option value="5º Ano">5º Ano</option>
-                                <option value="6º Ano">6º Ano</option>
-                                <option value="7º Ano">7º Ano</option>
-                                <option value="8º Ano">8º Ano</option>
-                                <option value="9º Ano">9º Ano</option>
-                                {/* Add dynamically if missing */}
-                                {student.class && ![
-                                  'Berçário', 'Maternal I', 'Maternal II', 'Pré I', 'Pré II',
-                                  '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', 
-                                  '6º Ano', '7º Ano', '8º Ano', '9º Ano'
-                                ].includes(student.class.replace(/ [A-Z]$/i, '')) && (
-                                  <option value={student.class.replace(/ [A-Z]$/i, '')}>{student.class.replace(/ [A-Z]$/i, '')}</option>
-                                )}
+                                {grades.map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
                             <input
                               type="text"

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Camera, BookOpen, Phone, Paperclip, FileText, AlertCircle, CheckCircle2, Clock, MapPin, Archive, Plus, Trash2 } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
+import { useTenantConfig } from '@/lib/useTenantConfig';
 
 type Tab = 'atividades' | 'dados' | 'responsaveis' | 'documentos';
 
@@ -29,6 +30,7 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
     getStudentPoints, getStudentBehavior, getStudentOccurrences, uploadFile,
   } = useAppContext();
 
+  const { grades, classLetters } = useTenantConfig();
   const student = students.find(s => s.id === studentId);
   if (!student) return null;
 
@@ -274,11 +276,11 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
                     <div className="flex gap-2">
                       <select required disabled={readOnly} value={className.replace(/ [A-Z]$/i, '') || '6º Ano'} onChange={e => { const l = className.match(/ ([A-Z])$/i)?.[1] || 'A'; setClassName(`${e.target.value} ${l}`); }}
                         className="w-2/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60">
-                        {['6º Ano','7º Ano','8º Ano','9º Ano','1º Ano','2º Ano','3º Ano'].map(v => <option key={v}>{v}</option>)}
+                        {grades.map(v => <option key={v}>{v}</option>)}
                       </select>
-                      <select required disabled={readOnly} value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={e => { const p = className.replace(/ [A-Z]$/i, '') || '6º Ano'; setClassName(`${p} ${e.target.value}`); }}
+                      <select required disabled={readOnly} value={className.match(/ ([A-Z])$/i)?.[1] || 'A'} onChange={e => { const p = className.replace(/ [A-Z]$/i, '') || grades[0]; setClassName(`${p} ${e.target.value}`); }}
                         className="w-1/3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60">
-                        {['A','B','C','D','E'].map(v => <option key={v}>{v}</option>)}
+                        {classLetters.map(v => <option key={v}>{v}</option>)}
                       </select>
                     </div>
                   </div>
