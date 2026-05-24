@@ -4,13 +4,40 @@
 
 ## Última atualização
 
-**Data:** 2026-05-17  
-**Sessão:** Novo layout do painel DRE — sidebar + lista de ocorrências  
+**Data:** 2026-05-24  
+**Sessão:** Multi-tenant runtime — detecção por domínio, logout, turmas Heliodoro  
 **Operador:** Manoel Domingos
 
 ## Foco atual
 
-Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acessa tudo.
+Sistema multi-tenant ativo. Detecção de tenant em **runtime pelo domínio** (`getTenantIdFromHost`). Isolamento por escola via RLS no Postgres. DRE acessa tudo.
+
+## Última ação concluída (2026-05-24) — sessão 5
+
+- **Detecção de tenant por domínio (runtime):**
+  - `lib/useTenantConfig.ts`: exporta `getTenantIdFromHost()` (função pura) e `TENANT_MAP`
+  - `lib/school.ts`: `getSchoolConfig()` + `getAllClassNames()` com suporte a turmas compostas por tenant
+  - `lib/store.tsx`: `activeSchoolContext` inicializa pelo domínio; boot usa domínio como fallback; `onAuthStateChange` resolve `school_id` do perfil e re-executa `fetchData` filtrado ao `SIGNED_IN`
+  - `components/AppShell.tsx`: `SCHOOL_NAME`, `SCHOOL_LOGO_SIDEBAR`, `SCHOOL_LOGO_DASH` estáticos removidos — substituídos por `schoolName`, `logoSidebar`, `logoDash` do `useTenantConfig`
+
+- **Logout corrigido:**
+  - `logout()` no store limpa estado + `supabase.auth.signOut()` + `window.location.href = '/login'`
+  - Não depende mais do `useEffect` do AppShell para redirecionar
+
+- **Turmas compostas — Heliodoro:**
+  - `lib/school.ts`: `SchoolConfig` estendida com `classSuffixesByGrade` e `standaloneClasses`
+  - Heliodoro: `A-LING`, `B-CHS`, `B-LING`, `C-CHS`, `C-MAT/CNT`, `D-EPT/INFORM`, `D-MAT/CNT`, `E-EPT/INFORM`, `E-MAT/CNT` (por ano) + `EPT-AUTOMAC`, `EPT-EDIFICAC`, `EPT-ELETROTEC`, `EPT-ELETROT` (standalone)
+  - `components/ClassSelector.tsx`: componente reutilizável — modo composto (select único agrupado) ou modo simples (dois selects ano + letra)
+  - Aplicado em `alunos/page.tsx`, `StudentSheet.tsx`, `registro-disciplinar/page.tsx`
+
+- **Parser XLSX aprimorado (formato SIGMILITAR):**
+  - Detecta colunas `SÉRIE` + `TURMA` separadas e as combina
+  - `TELEFONES` separados por espaço divididos em dois contatos
+  - `SOB LAUDO PAED/CID` mesclado na Observação
+
+- **`useTenantConfig` expõe:** `tenantId`, `schoolName`, `logoSidebar`, `logoDash`, `logoLogin`, `grades`, `seniorGrades`, `classLetters`, `allClassNames`, `classSuffixesByGrade`, `standaloneClasses`, `hasCompoundClasses`
+
+- Zero erros TypeScript em todas as sessões
 
 ## Última ação concluída (2026-05-17) — sessão 4
 
@@ -60,6 +87,8 @@ Sistema multi-tenant ativo. Isolamento por escola via RLS no Postgres. DRE acess
 
 ## Próxima ação
 
+- [ ] Validar em produção: acesso a `eecmheliodoro.vercel.app` carrega dados e logo do Heliodoro sem resync manual
+- [ ] Validar logout: botão desloga e redireciona para `/login` corretamente em todos os tenants
 - [ ] Verificar se uploads estão funcionando corretamente após mudanças nas políticas RLS
 - [ ] Melhorar UX de preview dos arquivos após upload (gallery/thumbnail)
 - [ ] Implementar deleção de arquivos do Storage quando ocorrência/aluno é deletado
