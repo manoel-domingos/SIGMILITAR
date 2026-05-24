@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseReady } from '@/lib/supabase';
 import { Trophy, ShieldCheck, User as UserIcon, KeyRound, Loader2, ArrowRight } from 'lucide-react';
 import versionData from '@/lib/version.json';
 import { SCHOOL_NAME, SCHOOL_SUBTITLE, SCHOOL_LOGO_LOGIN } from '@/lib/school';
@@ -30,17 +30,22 @@ export default function Login() {
     setError('');
 
     // 1. Tentar autenticacao real via Supabase PRIMEIRO
-    if (supabase) {
+    // Usa isSupabaseReady() em vez de `if (supabase)` — o Proxy é sempre truthy
+    // mesmo quando as credenciais estão ausentes no bundle do cliente.
+    console.log('[v0] login: supabase ready =', isSupabaseReady());
+    if (isSupabaseReady()) {
       try {
         const emailToUse = username.includes('@') ? username : `${username.toLowerCase()}@eecm.local`;
-        
+        console.log('[v0] login: tentando Supabase com email =', emailToUse);
+
         const { data, error: authError } = await supabase.auth.signInWithPassword({
           email: emailToUse,
           password,
         });
 
+        console.log('[v0] login: authError =', authError?.message, '| user =', data?.user?.email);
+
         if (!authError && data.user) {
-          // Login real via Supabase - salvar sessao como 'real'
           localStorage.setItem('eecm_session', JSON.stringify({
             type: 'real',
             user: {
@@ -49,13 +54,27 @@ export default function Login() {
               user_metadata: data.user.user_metadata
             }
           }));
-          // O useEffect de auto-redirect acima vai cuidar do destino correto
-          // após currentUserRole ser resolvido pelo store
           return;
         }
+
+        // Erro real do Supabase (credenciais erradas, usuário não encontrado, etc.)
+        if (authError) {
+          console.log('[v0] login: erro Supabase =', authError.message);
+          // Só mostra erro de credenciais — não cai no mock para usuários reais
+          if (authError.message.toLowerCase().includes('invalid') ||
+              authError.message.toLowerCase().includes('not found') ||
+              authError.message.toLowerCase().includes('email')) {
+            setError('Usuário ou senha inválidos');
+            setLoading(false);
+            return;
+          }
+        }
       } catch (err) {
-        // Continua para fallback mock
+        console.log('[v0] login: exceção Supabase =', err);
+        // Continua para fallback mock apenas em caso de erro de rede/timeout
       }
+    } else {
+      console.log('[v0] login: Supabase não disponível — usando fallback mock');
     }
 
     // 2. Fallback para mock users (caso Supabase falhe ou nao esteja configurado)
