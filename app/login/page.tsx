@@ -100,7 +100,7 @@ export default function Login() {
       
       {/* Background Decor */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={SCHOOL_LOGO_LOGIN} alt="" className="absolute -right-32 md:-right-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-15 pointer-events-none object-contain" />
+      <img src={SCHOOL_LOGO_LOGIN} alt="" className="absolute -right-32 md:-right-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] pointer-events-none object-contain" style={{ opacity: 0.15, mixBlendMode: 'screen' }} />
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none z-0" />
 
