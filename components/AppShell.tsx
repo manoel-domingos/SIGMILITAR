@@ -73,6 +73,14 @@ function findGroupForPath(pathname: string): { groupLabel: string; itemLabel: st
   return null;
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin_global: 'Admin Global',
+  GESTOR: 'Gestor',
+  COORD: 'Coordenador',
+  MONITOR: 'Monitor',
+  PROFESSOR: 'Professor',
+};
+
 type LayoutMode = 'sidebar' | 'topbar';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -239,7 +247,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Gestor Escolar';
   const userInitials = userName.split(' ').slice(0, 2).map((n: string) => n[0]?.toUpperCase()).join('') || 'US';
-  const userRole = isGuest ? 'Somente Leitura' : 'Admin';
+  const userRole = isGuest
+    ? 'Somente Leitura'
+    : (ROLE_LABELS[currentUserRole || ''] || currentUserRole || 'Usuário');
 
   const rightControls = (
     <RightControls

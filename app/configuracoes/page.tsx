@@ -23,7 +23,7 @@ function supabase(): any {
   ));
 }
 
-type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'admin_global';
+type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'PROFESSOR' | 'admin_global';
 type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status';
 
 interface UserRow {
@@ -33,13 +33,14 @@ interface UserRow {
 interface School { id: string; name: string; }
 
 const ROLE_LABELS: Record<AppRole, string> = {
-  admin_global: 'Admin Global', GESTOR: 'Gestor', COORD: 'Coordenador', MONITOR: 'Monitor',
+  admin_global: 'Admin Global', GESTOR: 'Gestor', COORD: 'Coordenador', MONITOR: 'Monitor', PROFESSOR: 'Professor',
 };
 const ROLE_COLORS: Record<AppRole, string> = {
   admin_global: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
   GESTOR:  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   COORD:   'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   MONITOR: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  PROFESSOR: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
 };
 const AVATAR_COLORS = ['bg-blue-500','bg-emerald-500','bg-amber-500','bg-rose-500','bg-indigo-500','bg-teal-500','bg-orange-500','bg-cyan-500'];
 function getAvatarColor(name: string) {
@@ -202,12 +203,14 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
               <option value="GESTOR">Gestor</option>
               <option value="COORD">Coordenador</option>
               <option value="MONITOR">Monitor</option>
+              <option value="PROFESSOR">Professor</option>
             </select>
             <p className="text-[11px] text-slate-400">
               {form.role === 'admin_global' && 'Acesso total a todas as escolas e configurações.'}
               {form.role === 'GESTOR' && 'Acesso total à escola vinculada.'}
               {form.role === 'COORD' && 'Acesso de coordenação sem configurações.'}
               {form.role === 'MONITOR' && 'Apenas leitura e registro de ocorrências.'}
+              {form.role === 'PROFESSOR' && 'Acesso a alunos e registro de ocorrências.'}
             </p>
           </div>
           
@@ -733,7 +736,7 @@ function ConfiguracoesInner() {
                         {editingId === u.id ? (
                           <select value={editValues.role} onChange={e => setEditValues(v => ({ ...v, role: e.target.value as AppRole }))}
                             className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            {(['admin_global','GESTOR','COORD','MONITOR'] as AppRole[])
+                            {(['admin_global','GESTOR','COORD','MONITOR','PROFESSOR'] as AppRole[])
                               .filter(r => r !== 'admin_global' || currentUserRole === 'admin_global')
                               .map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                           </select>

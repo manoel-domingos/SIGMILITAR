@@ -11,7 +11,7 @@ import { SCHOOL_SUBTITLE } from '@/lib/school';
 
 export default function Login() {
   const router = useRouter();
-  const { user, isGuest, currentUserRole, isAuthRestored } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored } = useAppContext();
   const { logoLogin, schoolName, tenantId } = useTenantConfig();
 
   const [username, setUsername] = useState('');
@@ -40,9 +40,23 @@ export default function Login() {
   // Redirecionamento automático após autenticação confirmada
   useEffect(() => {
     if ((user || isGuest) && isAuthRestored) {
+      if (typeof window !== 'undefined' && currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+        const hostname = window.location.hostname.toLowerCase();
+        if (!hostname.includes('localhost')) {
+          const canonicalHost = currentUserSchoolId === 'heliodoro' 
+            ? 'eecmheliodoro.kallyteros.com.br' 
+            : 'eecmprofjoaobatista.kallyteros.com.br';
+            
+          if (hostname !== canonicalHost) {
+            console.log(`[REDIRECT] Usuário pertence à escola ${currentUserSchoolId}. Redirecionando para ${canonicalHost}...`);
+            window.location.href = `https://${canonicalHost}/`;
+            return;
+          }
+        }
+      }
       router.push(currentUserRole === 'admin_global' ? '/dre' : '/');
     }
-  }, [user, isGuest, currentUserRole, isAuthRestored, router]);
+  }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

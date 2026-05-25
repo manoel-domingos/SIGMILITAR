@@ -116,7 +116,7 @@ export interface ConductTerm {
   archived?: boolean;
 }
 
-export type AppUserRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'admin_global';
+export type AppUserRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'PROFESSOR' | 'admin_global';
 
 export interface AppUser {
   id: string;

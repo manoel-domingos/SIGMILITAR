@@ -16,6 +16,7 @@ function normalizeDbRole(role: string, email?: string): AppUserRole {
   if (r.includes('coord')) return 'COORD';
   if (r.includes('monitor')) return 'MONITOR';
   if (r.includes('gestor')) return 'GESTOR';
+  if (r.includes('prof')) return 'PROFESSOR';
   return 'GESTOR';
 }
 
