@@ -6,8 +6,8 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password, name, role, school_id } = await req.json();
 
-    if (!email || !password || !name) {
-      return NextResponse.json({ error: 'email, password e name são obrigatórios.' }, { status: 400 });
+    if (!email || !name) {
+      return NextResponse.json({ error: 'email e name são obrigatórios.' }, { status: 400 });
     }
 
     const supabaseAdmin = createClient(
@@ -19,23 +19,39 @@ export async function POST(req: NextRequest) {
     // Normaliza email: se nao tiver @, adiciona @eecm.local
     const emailNormalized = email.includes('@') ? email : `${email.toLowerCase()}@eecm.local`;
 
-    // 1. Cria no auth.users
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: emailNormalized,
-      password,
-      email_confirm: true,
-      user_metadata: { name, role },
-    });
+    let userId = '';
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+    if (password) {
+      // 1. Cria no auth.users tradicionalmente
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: emailNormalized,
+        password,
+        email_confirm: true,
+        user_metadata: { name, role },
+      });
+
+      if (authError) {
+        return NextResponse.json({ error: authError.message }, { status: 400 });
+      }
+      userId = authData.user.id;
+    } else {
+      // 2. Envia convite oficial do Supabase por email (fluxo de convites)
+      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+        emailNormalized,
+        { data: { name, role } }
+      );
+
+      if (inviteError) {
+        return NextResponse.json({ error: inviteError.message }, { status: 400 });
+      }
+      userId = inviteData.user.id;
     }
 
-    // 2. Insere no user_profiles com o UUID do auth
+    // 3. Insere no user_profiles com o UUID do auth
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .insert([{
-        id: authData.user.id,
+        id: userId,
         name,
         email: emailNormalized,
         role,
@@ -46,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     if (profileError) {
       // Rollback: remove do auth se falhar no perfil
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
       return NextResponse.json({ error: profileError.message }, { status: 400 });
     }
 

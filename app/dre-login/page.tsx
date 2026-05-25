@@ -9,7 +9,7 @@ import versionData from '@/lib/version.json';
 
 export default function DreLogin() {
   const router = useRouter();
-  const { user, currentUserRole, isAuthRestored, setMockUser } = useAppContext();
+  const { user, currentUserRole, isAuthRestored } = useAppContext();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -38,73 +38,32 @@ export default function DreLogin() {
     setChecking(true);
     setError('');
 
-    const user_lower = username.toLowerCase().trim();
-    const pass_lower = password.toLowerCase().trim();
+    const emailToUse = username.toLowerCase().trim().includes('@')
+      ? username.trim()
+      : `${username.toLowerCase().trim()}@eecm.local`;
 
-    // 1. Tentar Supabase Auth (caso esteja configurado com usuários reais)
     if (supabase) {
       try {
-        const emailToUse = user_lower.includes('@')
-          ? user_lower
-          : `${user_lower}@eecm.local`;
-
         const { data, error: authError } = await supabase.auth.signInWithPassword({
           email: emailToUse,
           password,
         });
 
-        if (!authError && data.user) {
-          localStorage.setItem('eecm_session', JSON.stringify({
-            type: 'real',
-            user: { id: data.user.id, email: data.user.email, user_metadata: data.user.user_metadata },
-          }));
-          // useEffect aguarda isAuthRestored e redireciona
-          return;
+        if (authError) {
+          setError(authError.message === 'Invalid login credentials' ? 'Usuário ou senha inválidos.' : authError.message);
+          setLoading(false);
+          setChecking(false);
         }
-      } catch {
-        // continua para autenticação mock
-      }
-    }
-
-    // 2. Autenticação mock — mesmo mecanismo do login da escola
-    // Aceita: username === password (ou variações sem acento)
-    const normalizedUser = user_lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const normalizedPass = pass_lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const passwordMatch = normalizedPass === normalizedUser || pass_lower === user_lower;
-
-    const validUsers = ['gestor', 'maykon', 'manoel', 'djeovani', 'joana', 'edma', 'murillo', 'george', 'proença', 'proenca'];
-
-    if (validUsers.includes(user_lower) && passwordMatch) {
-      // Verifica se esse mock user tem role admin_global
-      const adminUsers = ['manoel']; // apenas estes têm acesso DRE
-      if (!adminUsers.includes(user_lower)) {
-        setError('Acesso negado. Este portal é restrito a gestores da DRE.');
+      } catch (err: any) {
+        setError(err.message || 'Erro de conexão com o servidor.');
         setLoading(false);
         setChecking(false);
-        return;
       }
-
-      localStorage.setItem('eecm_session', JSON.stringify({
-        type: 'mock',
-        user: {
-          id: `mock-${user_lower}`,
-          email: `${user_lower}@eecm.local`,
-          user_metadata: {
-            name: username.charAt(0).toUpperCase() + username.slice(1).toLowerCase(),
-            role: 'admin_global',
-          },
-        },
-      }));
-      // Cookie leve para o middleware poder detectar sessão ativa no domínio DRE
-      document.cookie = 'eecm_session=1; path=/; SameSite=Lax';
-      setMockUser(user_lower);
-      return;
-      // useEffect redireciona após currentUserRole resolver
+    } else {
+      setError('Supabase não inicializado.');
+      setLoading(false);
+      setChecking(false);
     }
-
-    setError('Credenciais inválidas. Verifique e tente novamente.');
-    setLoading(false);
-    setChecking(false);
   };
 
   // Se já autenticado como admin_global, não renderiza o login

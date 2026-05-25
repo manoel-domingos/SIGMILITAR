@@ -112,7 +112,7 @@ function DisciplineRing({ value }: { value: number }) {
 
 export default function DrePage() {
   const router = useRouter();
-  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, setMockUser, isSupabaseConnected, isSyncing, refreshData } = useAppContext();
+  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, isSupabaseConnected, isSyncing, refreshData } = useAppContext();
 
   // Redirect para /dre ao entrar (admin_global já está cá, outros vão para /)
   useEffect(() => {

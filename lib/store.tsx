@@ -1610,6 +1610,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
 
+  const activeTenantId = useMemo(() => {
+    if (activeSchoolContext === 'heliodoro') return 'eecmheliodoro';
+    if (activeSchoolContext === 'tangara') return 'eecmtangara';
+    return 'eecmprofjoaobatista';
+  }, [activeSchoolContext]);
+
   return (
     <AppContext.Provider value={{
       students, occurrences, accidents, praises, rules, summons, conductTerms, auditLogs, staffMembers, appUsers, isSupabaseConnected, isSyncing,
@@ -1628,7 +1634,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateRule, addStaffMember,
       getStudentPoints, getStudentBehavior, getStudentOccurrences, checkRecidivism, getEscalationStatus
     }}>
-      {children}
+      <TenantContext.Provider value={activeTenantId}>
+        {children}
+      </TenantContext.Provider>
     </AppContext.Provider>
   );
 }

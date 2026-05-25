@@ -7,7 +7,7 @@ import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, Chevr
 import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
 import { GoogleGenAI, Type } from "@google/genai";
-import { useTenantConfig, getTenantIdFromHost } from '@/lib/useTenantConfig';
+import { useTenantConfig } from '@/lib/useTenantConfig';
 import { getAllClassNames } from '@/lib/school';
 import { ClassSelector } from '@/components/ClassSelector';
 
@@ -87,7 +87,7 @@ Se não houver coluna para alguma dessas chaves internas, não inclua a chave no
 
 export default function Alunos() {
   const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile, getStudentOccurrences, occurrences } = useAppContext();
-  const { grades, classLetters } = useTenantConfig();
+  const { grades, classLetters, allClassNames, tenantId } = useTenantConfig();
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -527,7 +527,7 @@ export default function Alunos() {
          * Passos: (1) match exato normalizado → (2) match parcial → (3) retorna candidato bruto.
          */
         const matchToAvailableClass = (candidate: string): string => {
-          const available = getAllClassNames(getTenantIdFromHost());
+          const available = allClassNames;
           const normCandidate = norm(candidate);
 
           // Passo 1: match exato normalizado (case-insensitive + sem acentos)
