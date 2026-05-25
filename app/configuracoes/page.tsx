@@ -27,7 +27,7 @@ function supabase(): any {
 
 type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'PROFESSOR' | 'admin_global';
 type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status' | 'users_prof' | 'occurrences_prof' | 'conduct_prof' | 'reports_prof';
-
+type Severity = 'Leve' | 'Media' | 'Grave';
 
 interface UserRow {
   id: string; name: string; email: string;
