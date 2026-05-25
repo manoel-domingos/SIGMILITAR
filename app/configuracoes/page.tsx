@@ -448,11 +448,27 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
     if (pwd.next !== pwd.confirm) { setPwdMsg({t:'err', m:'As senhas não coincidem.'}); return; }
     if (pwd.next.length < 4) { setPwdMsg({t:'err', m:'Senha deve ter ao menos 4 caracteres.'}); return; }
     if (!user?.email) return;
-    const { error } = await supabase().from('user_profiles').update({ password: pwd.next }).eq('email', user.email);
-    if (error) { setPwdMsg({t:'err', m: error.message}); return; }
-    setPwd({ current: '', next: '', confirm: '' });
-    setPwdMsg({t:'ok', m:'Senha alterada com sucesso.'});
-    setTimeout(() => setPwdMsg(null), 3000);
+    
+    try {
+      // 1. Atualiza a senha no Supabase Auth usando o cliente atual
+      const { error: authError } = await supabase().auth.updateUser({ password: pwd.next });
+      if (authError) {
+        setPwdMsg({ t: 'err', m: 'Erro no Supabase Auth: ' + authError.message });
+        return;
+      }
+
+      // 2. Sincroniza a tabela user_profiles para compatibilidade histórica
+      const { error } = await supabase().from('user_profiles').update({ password: pwd.next }).eq('email', user.email);
+      if (error) {
+        console.warn('Erro ao salvar cópia no user_profiles:', error.message);
+      }
+
+      setPwd({ current: '', next: '', confirm: '' });
+      setPwdMsg({ t: 'ok', m: 'Senha alterada com sucesso!' });
+      setTimeout(() => setPwdMsg(null), 3000);
+    } catch (err: any) {
+      setPwdMsg({ t: 'err', m: err.message || 'Erro ao redefinir senha.' });
+    }
   };
 
   return (

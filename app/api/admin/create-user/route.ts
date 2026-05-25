@@ -71,3 +71,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message || 'Erro interno' }, { status: 500 });
   }
 }
+
+// Rota server-side: usa service_role para redefinir a senha de outro usuário
+export async function PATCH(req: NextRequest) {
+  try {
+    const { userId, password } = await req.json();
+
+    if (!userId || !password) {
+      return NextResponse.json({ error: 'userId e password são obrigatórios.' }, { status: 400 });
+    }
+
+    if (password.length < 4) {
+      return NextResponse.json({ error: 'A senha deve ter pelo menos 4 caracteres.' }, { status: 400 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // Atualiza a senha no Supabase Auth usando a API de Admin
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+      userId,
+      { password }
+    );
+
+    if (authError) {
+      return NextResponse.json({ error: authError.message }, { status: 400 });
+    }
+
+    // Atualiza a senha na tabela user_profiles para compatibilidade histórica
+    const { error: profileError } = await supabaseAdmin
+      .from('user_profiles')
+      .update({ password, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (profileError) {
+      console.warn('Falha ao sincronizar senha com user_profiles:', profileError.message);
+    }
+
+    return NextResponse.json({ success: true, user: authData.user });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Erro interno' }, { status: 500 });
+  }
+}
