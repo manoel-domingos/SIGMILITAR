@@ -118,6 +118,8 @@ const INITIAL_APP_USERS: AppUser[] = [
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+let isExchangingCode = false;
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const contextTenantId = useContext(TenantContext);
   const [students, setStudents] = useState<Student[]>([]);
@@ -502,6 +504,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const hasOAuthCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('code');
       
       if (hasOAuthCode) {
+        if (isExchangingCode) {
+          console.log("[OAUTH] Já existe uma troca de código em andamento neste carregamento de página. Ignorando chamada duplicada para evitar colisão e consumo duplo de token.");
+          return;
+        }
+        isExchangingCode = true;
         try {
           const code = new URLSearchParams(window.location.search).get('code');
           if (code) {
