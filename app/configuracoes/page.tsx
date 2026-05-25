@@ -255,6 +255,180 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
   );
 }
 
+// ─── Drawer: editar usuário ──────────────────────────────────────────────────
+function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
+  user: UserRow | null;
+  open: boolean;
+  onClose: () => void;
+  schools: School[];
+  onUpdated: (updated: UserRow) => void;
+}) {
+  const { currentUserRole } = useAppContext();
+  const [form, setForm] = useState({ name: '', email: '', role: 'GESTOR' as AppRole, school_id: '' });
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pwdMsg, setPwdMsg] = useState<{ t: 'ok' | 'err'; m: string } | null>(null);
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setForm({ name: user.name || '', email: user.email || '', role: user.role, school_id: user.school_id });
+      setNewPassword('');
+      setConfirmPassword('');
+      setError(null);
+      setPwdMsg(null);
+      setProfileSaved(false);
+    }
+  }, [user]);
+
+  const handleClose = () => { setError(null); setPwdMsg(null); onClose(); };
+
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (!form.name.trim()) { setError('Nome é obrigatório.'); return; }
+    setSaving(true); setError(null);
+    try {
+      const { error: dbErr } = await supabase()
+        .from('user_profiles')
+        .update({ name: form.name.trim(), email: form.email.trim(), role: form.role, school_id: form.school_id, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (dbErr) { setError(dbErr.message); return; }
+      onUpdated({ ...user, name: form.name.trim(), email: form.email.trim(), role: form.role, school_id: form.school_id });
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
+    } catch (err: any) {
+      setError(err.message || 'Erro inesperado.');
+    } finally { setSaving(false); }
+  };
+
+  const savePassword = async () => {
+    if (!user) return;
+    if (newPassword.length < 4) { setPwdMsg({ t: 'err', m: 'Senha deve ter pelo menos 4 caracteres.' }); return; }
+    if (newPassword !== confirmPassword) { setPwdMsg({ t: 'err', m: 'As senhas nao coincidem.' }); return; }
+    setSavingPwd(true); setPwdMsg(null);
+    try {
+      const res = await fetch('/api/admin/create-user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, password: newPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setPwdMsg({ t: 'err', m: json.error || 'Erro ao alterar senha.' }); return; }
+      setNewPassword(''); setConfirmPassword('');
+      setPwdMsg({ t: 'ok', m: 'Senha alterada com sucesso!' });
+      setTimeout(() => setPwdMsg(null), 3000);
+    } catch (err: any) {
+      setPwdMsg({ t: 'err', m: err.message || 'Erro inesperado.' });
+    } finally { setSavingPwd(false); }
+  };
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(v => ({ ...v, [k]: e.target.value }));
+
+  return (
+    <>
+      <div className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={handleClose} />
+      <aside className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            {user && <Avatar name={user.name || user.email} />}
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Editar Usuario</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[220px]">{user?.email}</p>
+            </div>
+          </div>
+          <button onClick={handleClose} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-7 h-7 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center shrink-0"><User className="w-3.5 h-3.5 text-blue-500" /></div>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Dados do Perfil</p>
+            </div>
+            {error && <div className="flex items-start gap-2 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 text-sm px-4 py-3 rounded-xl border border-rose-100 dark:border-rose-900/40"><ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+            <form id="edit-user-form" onSubmit={saveProfile} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome completo <span className="text-rose-500">*</span></label>
+                <input className={INPUT} placeholder="Nome completo" value={form.name} onChange={set('name')} autoFocus />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">E-mail / Login</label>
+                <input className={INPUT} placeholder="email@escola.com" value={form.email} onChange={set('email')} />
+                <p className="text-[11px] text-slate-400">Alterar o e-mail modifica o login de acesso do usuario.</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Papel / Permissao</label>
+                <select className={SELECT} value={form.role} onChange={set('role')}>
+                  {currentUserRole === 'admin_global' && <option value="admin_global">Admin Global</option>}
+                  <option value="GESTOR">Gestor</option>
+                  <option value="COORD">Coordenador</option>
+                  <option value="MONITOR">Monitor</option>
+                  <option value="PROFESSOR">Professor</option>
+                </select>
+              </div>
+              {currentUserRole === 'admin_global' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Escola</label>
+                  <select className={SELECT} value={form.school_id} onChange={set('school_id')}>
+                    {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.id})</option>)}
+                  </select>
+                </div>
+              )}
+            </form>
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800" />
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-7 h-7 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center shrink-0"><KeyRound className="w-3.5 h-3.5 text-amber-500" /></div>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Redefinir Senha</p>
+            </div>
+            {pwdMsg && (
+              <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-xl border ${pwdMsg.t === 'ok' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/40' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-900/40'}`}>
+                {pwdMsg.t === 'ok' ? <Check className="w-4 h-4 shrink-0" /> : <ShieldAlert className="w-4 h-4 shrink-0" />}{pwdMsg.m}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-amber-500" /> Nova Senha</label>
+              <div className="relative">
+                <input type={showPass ? 'text' : 'password'} className={INPUT + ' pr-10'} placeholder="Minimo 4 caracteres" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">{showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Confirmar Nova Senha</label>
+              <div className="relative">
+                <input type={showConfirm ? 'text' : 'password'} className={INPUT + ' pr-10'} placeholder="Repita a nova senha" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">{showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+              </div>
+            </div>
+            <button type="button" onClick={savePassword} disabled={savingPwd || !newPassword} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-semibold transition flex items-center justify-center gap-2">
+              {savingPwd ? <RefreshCw className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+              {savingPwd ? 'Alterando...' : 'Alterar Senha'}
+            </button>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+          <button type="button" onClick={handleClose} className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancelar</button>
+          <button form="edit-user-form" type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98]">
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {saving ? 'Salvando...' : profileSaved ? 'Salvo!' : 'Salvar Perfil'}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
 // ─── Tab: Meu Perfil ─────────────────────────────────────────────────────────
 function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }) {
   const { currentUserRole } = useAppContext();
@@ -543,6 +717,7 @@ function ConfiguracoesInner() {
   const [saving, setSaving]     = useState(false);
   const [toast, setToast]       = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editDrawerUser, setEditDrawerUser] = useState<UserRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const t = searchParams?.get('tab') as Tab | null;
@@ -669,6 +844,17 @@ function ConfiguracoesInner() {
   return (
     <>
       <CreateUserDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} schools={schools} onCreated={handleCreated} />
+      <EditUserDrawer
+        user={editDrawerUser}
+        open={editDrawerUser !== null}
+        onClose={() => setEditDrawerUser(null)}
+        schools={schools}
+        onUpdated={(updated) => {
+          setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+          showToast('Usuario atualizado com sucesso.');
+          setEditDrawerUser(null);
+        }}
+      />
 
       {/* Modal de exclusao */}
       {deleteId && (
@@ -830,7 +1016,7 @@ function ConfiguracoesInner() {
                               </div>
                             ) : (
                               <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
-                                <button onClick={() => startEdit(u)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setEditDrawerUser(u)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Editar usuario"><Edit2 className="w-3.5 h-3.5" /></button>
                                 <button onClick={() => setDeleteId(u.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition" title="Remover"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
                             )}
