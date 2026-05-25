@@ -491,20 +491,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const domainTenantId = getTenantIdFromHost();
       let bootSchoolId = domainTenantId !== 'joaobatista' ? domainTenantId : '';
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.email) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('school_id, role')
-            .eq('email', session.user.email.toLowerCase())
-            .single();
-          if (profile?.school_id && profile.school_id !== 'DRE') {
-            bootSchoolId = profile.school_id;
+      const hasOAuthCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('code');
+      
+      if (!hasOAuthCode) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.email) {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('school_id, role')
+              .eq('email', session.user.email.toLowerCase())
+              .single();
+            if (profile?.school_id && profile.school_id !== 'DRE') {
+              bootSchoolId = profile.school_id;
+            }
           }
+        } catch (e) {
+          // sem perfil ainda — usa o tenant do domínio como fallback
         }
-      } catch (e) {
-        // sem perfil ainda — usa o tenant do domínio como fallback
       }
 
       // Sincroniza o ref e estado com o school_id resolvido
