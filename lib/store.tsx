@@ -464,7 +464,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
             await fetchData(sid || undefined);
           } catch (err: any) {
             console.error("[WHITELIST] Erro durante verificação:", err.message);
-            await fetchData(undefined);
+            isLoggingOut = true;
+            setUser(null);
+            setIsGuest(false);
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('eecm-auth-token');
+              localStorage.setItem('eecm_login_error', 'Acesso Negado: Não foi possível verificar suas permissões de acesso. Confirme se o seu e-mail foi cadastrado pelo administrador.');
+            }
+            await supabase.auth.signOut();
+            window.location.href = '/login?error=whitelist';
           }
         } else {
           setUser(null);

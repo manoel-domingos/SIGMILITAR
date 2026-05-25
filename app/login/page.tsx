@@ -113,6 +113,28 @@ export default function Login() {
     }
   };
 
+  const [processingOAuth, setProcessingOAuth] = useState(false);
+
+  // Detecta se é um callback do Google/OAuth e mostra tela de carregamento premium
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has('code')) {
+        setProcessingOAuth(true);
+      }
+    }
+  }, []);
+
+  if (processingOAuth && !error) {
+    return (
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-blue-900 text-white">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-400 mb-4" />
+        <h2 className="text-xl font-bold tracking-wide">Validando acesso...</h2>
+        <p className="text-slate-400 text-sm mt-1 text-center px-4">Aguarde enquanto confirmamos sua sessão com o Google.</p>
+      </div>
+    );
+  }
+
   if (user || isGuest) return null;
 
   return (
