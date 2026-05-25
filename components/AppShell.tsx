@@ -314,6 +314,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </TopbarLayout>
       )}
 
+      {/* Navegação na Base para Mobile (Premium) */}
+      <BottomNavigation pathname={pathname} />
+
       <AIChat />
 
       {/* Modal de seleção de contexto — admin_global */}
@@ -541,8 +544,9 @@ function SidebarLayout({
       <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         <header className="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 sm:px-8 shrink-0">
           <div className="flex items-center gap-3">
+            {/* Ocultado para favorecer Bottom Navigation */}
             <button
-              className="p-2 -ml-2 text-slate-500 dark:text-slate-400 md:hidden"
+              className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hidden"
               onClick={openMobileMenu}
             >
               <Menu className="w-6 h-6" />
@@ -554,7 +558,7 @@ function SidebarLayout({
           {rightControls}
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
           {children}
         </div>
       </main>
@@ -589,8 +593,9 @@ function TopbarLayout({
         {/* top row: logo + right controls */}
         <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-4 px-4 md:px-6 py-1 max-w-[1600px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {/* Ocultado para favorecer Bottom Navigation */}
             <button
-              className="w-11 h-11 -ml-1 flex items-center justify-center text-slate-500 dark:text-slate-400 md:hidden rounded-xl active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+              className="w-11 h-11 -ml-1 flex items-center justify-center text-slate-500 dark:text-slate-400 hidden rounded-xl active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
               onClick={openMobileMenu}
               aria-label="Abrir menu"
             >
@@ -697,7 +702,7 @@ function TopbarLayout({
         {currentInfo?.itemLabel || 'Gestão'}
       </div>
 
-      <main className="flex-1 p-4 md:p-8">
+      <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
         {children}
       </main>
     </>
@@ -921,6 +926,80 @@ function MobileDrawer({
         </p>
       </div>
     </aside>
+  );
+}
+
+/* ---------- BOTTOM NAVIGATION (Mobile Menu) ---------- */
+
+function BottomNavigation({ pathname }: { pathname: string }) {
+  const navItems = [
+    {
+      label: 'Início',
+      icon: LayoutDashboard,
+      href: '/',
+      active: pathname === '/',
+    },
+    {
+      label: 'Alunos',
+      icon: GraduationCap,
+      href: '/alunos',
+      active: ['/alunos', '/ficha', '/xerife', '/arquivados'].includes(pathname),
+    },
+    {
+      label: 'Disciplina',
+      icon: Gavel,
+      href: '/registro-disciplinar',
+      active: ['/registro-disciplinar', '/faltas', '/termo', '/convocacao'].includes(pathname) || pathname.startsWith('/disciplina'),
+    },
+    {
+      label: 'Conduta',
+      icon: Smile,
+      href: '/comportamento',
+      active: ['/comportamento', '/elogios', '/acidentes'].includes(pathname),
+    },
+    {
+      label: 'Relatórios',
+      icon: BarChart,
+      href: '/relatorios',
+      active: pathname === '/relatorios',
+    },
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200/50 dark:border-slate-800/50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom,0px))] px-4 flex items-center justify-around transition-all duration-200">
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className="flex flex-col items-center justify-center flex-1 text-center transition-transform active:scale-95"
+          >
+            <Icon
+              className={`w-5 h-5 transition-all duration-200 ${
+                item.active
+                  ? 'text-blue-600 dark:text-blue-400 scale-110'
+                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
+              }`}
+            />
+            <span
+              className={`text-[10px] font-semibold mt-1 transition-colors duration-200 ${
+                item.active
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-slate-400 dark:text-slate-500'
+              }`}
+            >
+              {item.label}
+            </span>
+            <span
+              className={`w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 mt-1 transition-all duration-200 ${
+                item.active ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+              }`}
+            />
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
