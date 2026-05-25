@@ -409,7 +409,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Registra listener de mudança de autenticação (SIGNED_IN / SIGNED_OUT).
       // Deve ser declarado APÓS fetchData para que o callback possa chamá-lo.
-      supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+      supabase.auth.onAuthStateChange((event: string, session: any) => {
         console.log(`[AUTH EVENT] Evento recebido: ${event}`, session?.user ? `Usuário: ${session.user.email}` : "Sem sessão ativa");
         
         // Ignora eventos disparados durante o processo de logout
@@ -420,73 +420,79 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (session?.user?.email) {
           const emailLower = session.user.email.toLowerCase();
-          console.log(`[AUTH EVENT] Verificando whitelist para o e-mail: ${emailLower}...`);
-          try {
-            // 1. Verifica se o e-mail existe na whitelist (user_profiles)
-            console.log(`[WHITELIST] Buscando perfil de '${emailLower}' na tabela 'user_profiles'...`);
-            const { data: profile, error: profileErr } = await supabase
-              .from('user_profiles')
-              .select('id, school_id, role')
-              .eq('email', emailLower)
-              .single();
+          
+          // Executa a verificação da whitelist de forma assíncrona na próxima rodada do event loop (setTimeout 0)
+          // Isso evita um DEADLOCK (trava mútua) interno do cliente Supabase-js, pois a troca manual de código
+          // (exchangeCodeForSession) ainda está segurando o lock de autenticação enquanto o callback síncrono roda.
+          setTimeout(async () => {
+            console.log(`[AUTH EVENT] [Async] Verificando whitelist para o e-mail: ${emailLower}...`);
+            try {
+              // 1. Verifica se o e-mail existe na whitelist (user_profiles)
+              console.log(`[WHITELIST] Buscando perfil de '${emailLower}' na tabela 'user_profiles'...`);
+              const { data: profile, error: profileErr } = await supabase
+                .from('user_profiles')
+                .select('id, school_id, role')
+                .eq('email', emailLower)
+                .single();
 
-            console.log(`[WHITELIST] Resposta da busca na whitelist:`, { profile, error: profileErr });
+              console.log(`[WHITELIST] Resposta da busca na whitelist:`, { profile, error: profileErr });
 
-            if (profileErr || !profile) {
-              console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower, profileErr);
-              
-              // Dispara erro global e desloga
+              if (profileErr || !profile) {
+                console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower, profileErr);
+                
+                // Dispara erro global e desloga
+                isLoggingOut = true;
+                setUser(null);
+                setIsGuest(false);
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('eecm-auth-token');
+                  localStorage.setItem('eecm_login_error', 'Acesso Negado: Seu e-mail não está cadastrado em nenhuma escola. Solicite acesso ao administrador.');
+                }
+                await supabase.auth.signOut();
+                window.location.href = '/login?error=whitelist';
+                return;
+              }
+
+              console.log(`[WHITELIST] E-mail autorizado! Perfil encontrado:`, profile);
+
+              // 2. Vínculo automático de UUID:
+              if (profile.id !== session.user.id) {
+                console.log("[WHITELIST] Associando UUID do perfil ao UUID de autenticação do usuário...");
+                const { error: updateErr } = await supabase
+                  .from('user_profiles')
+                  .update({ id: session.user.id })
+                  .eq('email', emailLower);
+                
+                if (updateErr) console.error("[WHITELIST] Falha ao associar UUID:", updateErr.message);
+              }
+
+              // 3. Atualiza estado do usuário
+              setUser(session.user);
+              setIsGuest(false);
+
+              const sid = profile.school_id && profile.school_id !== 'DRE'
+                ? profile.school_id
+                : '';
+
+              if (sid) {
+                activeSchoolContextRef.current = sid;
+                setActiveSchoolContext(sid);
+              }
+
+              await fetchData(sid || undefined);
+            } catch (err: any) {
+              console.error("[WHITELIST] Erro durante verificação:", err.message);
               isLoggingOut = true;
               setUser(null);
               setIsGuest(false);
               if (typeof window !== 'undefined') {
                 localStorage.removeItem('eecm-auth-token');
-                localStorage.setItem('eecm_login_error', 'Acesso Negado: Seu e-mail não está cadastrado em nenhuma escola. Solicite acesso ao administrador.');
+                localStorage.setItem('eecm_login_error', 'Acesso Negado: Não foi possível verificar suas permissões de acesso. Confirme se o seu e-mail foi cadastrado pelo administrador.');
               }
               await supabase.auth.signOut();
               window.location.href = '/login?error=whitelist';
-              return;
             }
-
-            console.log(`[WHITELIST] E-mail autorizado! Perfil encontrado:`, profile);
-
-            // 2. Vínculo automático de UUID:
-            if (profile.id !== session.user.id) {
-              console.log("[WHITELIST] Associando UUID do perfil ao UUID de autenticação do usuário...");
-              const { error: updateErr } = await supabase
-                .from('user_profiles')
-                .update({ id: session.user.id })
-                .eq('email', emailLower);
-              
-              if (updateErr) console.error("[WHITELIST] Falha ao associar UUID:", updateErr.message);
-            }
-
-            // 3. Atualiza estado do usuário
-            setUser(session.user);
-            setIsGuest(false);
-
-            const sid = profile.school_id && profile.school_id !== 'DRE'
-              ? profile.school_id
-              : '';
-
-            if (sid) {
-              activeSchoolContextRef.current = sid;
-              setActiveSchoolContext(sid);
-            }
-
-            await fetchData(sid || undefined);
-          } catch (err: any) {
-            console.error("[WHITELIST] Erro durante verificação:", err.message);
-            isLoggingOut = true;
-            setUser(null);
-            setIsGuest(false);
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('eecm-auth-token');
-              localStorage.setItem('eecm_login_error', 'Acesso Negado: Não foi possível verificar suas permissões de acesso. Confirme se o seu e-mail foi cadastrado pelo administrador.');
-            }
-            await supabase.auth.signOut();
-            window.location.href = '/login?error=whitelist';
-          }
+          }, 0);
         } else {
           setUser(null);
           setIsGuest(false);
