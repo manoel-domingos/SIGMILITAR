@@ -11,7 +11,7 @@ const hostToTenant: Record<string, string> = {
 
 export function middleware(request: NextRequest) {
   const rawHost = request.headers.get('host') ?? '';
-  const host = rawHost.split(':')[0].toLowerCase();
+  const host = rawHost.split(':')[0].toLowerCase().replace(/^www\./, '');
   const pathname = request.nextUrl.pathname;
 
   // ─── 1. LÓGICA DRE (mantida intacta) ───────────────────────────

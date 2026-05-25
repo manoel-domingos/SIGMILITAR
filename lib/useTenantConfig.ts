@@ -18,6 +18,8 @@ export const TENANT_MAP: Record<string, string> = {
   // João Batista
   'eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
   'www.eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
+  'eecmprofjoaobatista.kallyteros.com.br': 'eecmprofjoaobatista',
+  'www.eecmprofjoaobatista.kallyteros.com.br': 'eecmprofjoaobatista',
   'joaobatista.vercel.app': 'eecmprofjoaobatista',
   'localhost': 'eecmprofjoaobatista',
   'localhost:3000': 'eecmprofjoaobatista',
@@ -25,6 +27,8 @@ export const TENANT_MAP: Record<string, string> = {
   // Heliodoro Capistrano
   'eecmheliodoro.vercel.app': 'eecmheliodoro',
   'www.eecmheliodoro.vercel.app': 'eecmheliodoro',
+  'eecmheliodoro.kallyteros.com.br': 'eecmheliodoro',
+  'www.eecmheliodoro.kallyteros.com.br': 'eecmheliodoro',
   'heliodoro.vercel.app': 'eecmheliodoro',
 };
 
