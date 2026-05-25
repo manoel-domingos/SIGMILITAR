@@ -423,11 +423,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           console.log(`[AUTH EVENT] Verificando whitelist para o e-mail: ${emailLower}...`);
           try {
             // 1. Verifica se o e-mail existe na whitelist (user_profiles)
+            console.log(`[WHITELIST] Buscando perfil de '${emailLower}' na tabela 'user_profiles'...`);
             const { data: profile, error: profileErr } = await supabase
               .from('user_profiles')
               .select('id, school_id, role')
               .eq('email', emailLower)
               .single();
+
+            console.log(`[WHITELIST] Resposta da busca na whitelist:`, { profile, error: profileErr });
 
             if (profileErr || !profile) {
               console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower, profileErr);
@@ -576,7 +579,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setActiveSchoolContextState(bootSchoolId);
       }
 
-      await fetchData(bootSchoolId || undefined);
+      if (!hasOAuthCode) {
+        console.log("[AUTH] Carregando dados iniciais para a escola:", bootSchoolId || "Padrão");
+        await fetchData(bootSchoolId || undefined);
+      } else {
+        console.log("[AUTH] Ignorando carga inicial de dados paralela na URL de callback do Google para evitar gargalo e garantir foco no Whitelist.");
+      }
 
       // Pré-carrega lista de escolas para o modal de seleção
       try {
