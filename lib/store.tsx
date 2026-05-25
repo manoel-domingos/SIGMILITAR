@@ -39,8 +39,6 @@ interface AppState {
   setIsDebugMode: (v: boolean) => void;
   setGeminiApiKey: (v: string) => void;
   setGroqApiKey: (v: string) => void;
-  setGuestMode: () => void;
-  setMockUser: (username: string) => void;
   logout: () => Promise<void>;
   uploadFile: (file: File, bucket: string) => Promise<string | null>;
 }
@@ -246,27 +244,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function initAuthAndData() {
-      let usingMockSession = false;
-      // Restore session from localStorage if within 10 minutes
-      // Restaurar sessão mock/guest (sem timeout - permanece até logout)
-      try {
-        const stored = localStorage.getItem('eecm_session');
-        if (stored) {
-          const { type, email } = JSON.parse(stored);
-          if (type === 'mock' && email) {
-            setUser({ email, role: 'admin' });
-            setIsGuest(false);
-            usingMockSession = true;
-          } else if (type === 'guest') {
-            setIsGuest(true);
-            setUser(null);
-            usingMockSession = true;
-          }
-        }
-      } catch (err) {
-        console.error("Failed to restore session", err);
-      }
-
       if (!supabase) {
         setIsAuthRestored(true);
         return;
@@ -430,38 +407,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Registra listener de mudança de autenticação (SIGNED_IN / SIGNED_OUT).
       // Deve ser declarado APÓS fetchData para que o callback possa chamá-lo.
-      if (!usingMockSession) {
-        supabase.auth.onAuthStateChange(async (event: string, session: any) => {
-          // Ignora eventos disparados durante o processo de logout
-          if (isLoggingOut) return;
+      supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+        // Ignora eventos disparados durante o processo de logout
+        if (isLoggingOut) return;
 
-          setUser(session?.user || null);
+        if (session?.user?.email) {
+          const emailLower = session.user.email.toLowerCase();
+          try {
+            // 1. Verifica se o e-mail existe na whitelist (user_profiles)
+            const { data: profile, error: profileErr } = await supabase
+              .from('user_profiles')
+              .select('id, school_id, role')
+              .eq('email', emailLower)
+              .single();
 
-          // No login novo, busca o school_id do perfil e re-executa fetchData filtrado.
-          if (event === 'SIGNED_IN' && session?.user?.email) {
-            try {
-              const { data: profile } = await supabase
-                .from('user_profiles')
-                .select('school_id, role')
-                .eq('email', session.user.email.toLowerCase())
-                .single();
-
-              const sid = profile?.school_id && profile.school_id !== 'DRE'
-                ? profile.school_id
-                : '';
-
-              if (sid) {
-                activeSchoolContextRef.current = sid;
-                setActiveSchoolContext(sid);
+            if (profileErr || !profile) {
+              console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower);
+              
+              // Dispara erro global e desloga
+              isLoggingOut = true;
+              setUser(null);
+              setIsGuest(false);
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('eecm-auth-token');
+                localStorage.setItem('eecm_login_error', 'Acesso Negado: Seu e-mail não está cadastrado em nenhuma escola. Solicite acesso ao administrador.');
               }
-
-              await fetchData(sid || undefined);
-            } catch (_e) {
-              await fetchData(undefined);
+              await supabase.auth.signOut();
+              window.location.href = '/login?error=whitelist';
+              return;
             }
+
+            // 2. Vínculo automático de UUID:
+            if (profile.id !== session.user.id) {
+              console.log("[WHITELIST] Associando UUID do perfil ao UUID de autenticação do usuário...");
+              const { error: updateErr } = await supabase
+                .from('user_profiles')
+                .update({ id: session.user.id })
+                .eq('email', emailLower);
+              
+              if (updateErr) console.error("[WHITELIST] Falha ao associar UUID:", updateErr.message);
+            }
+
+            // 3. Atualiza estado do usuário
+            setUser(session.user);
+            setIsGuest(false);
+
+            const sid = profile.school_id && profile.school_id !== 'DRE'
+              ? profile.school_id
+              : '';
+
+            if (sid) {
+              activeSchoolContextRef.current = sid;
+              setActiveSchoolContext(sid);
+            }
+
+            await fetchData(sid || undefined);
+          } catch (err: any) {
+            console.error("[WHITELIST] Erro durante verificação:", err.message);
+            await fetchData(undefined);
           }
-        });
-      }
+        } else {
+          setUser(null);
+          setIsGuest(false);
+        }
+      });
 
       // Expõe o setter do flag para o logout usar
       // (closure compartilhada dentro do mesmo useEffect)
@@ -474,22 +483,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const domainTenantId = getTenantIdFromHost();
       let bootSchoolId = domainTenantId !== 'joaobatista' ? domainTenantId : '';
 
-      if (!usingMockSession) {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user?.email) {
-            const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('school_id, role')
-              .eq('email', session.user.email.toLowerCase())
-              .single();
-            if (profile?.school_id && profile.school_id !== 'DRE') {
-              bootSchoolId = profile.school_id;
-            }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('school_id, role')
+            .eq('email', session.user.email.toLowerCase())
+            .single();
+          if (profile?.school_id && profile.school_id !== 'DRE') {
+            bootSchoolId = profile.school_id;
           }
-        } catch (e) {
-          // sem perfil ainda — usa o tenant do domínio como fallback
         }
+      } catch (e) {
+        // sem perfil ainda — usa o tenant do domínio como fallback
       }
 
       // Sincroniza o ref e estado com o school_id resolvido
@@ -1568,17 +1575,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return Math.min(10.0, Math.max(0, parseFloat(currentPoints.toFixed(2))));
   };
 
-  const setGuestMode = () => {
-    setIsGuest(true);
-    localStorage.setItem('eecm_session', JSON.stringify({ type: 'guest' }));
-  };
 
-  const setMockUser = (username: string) => {
-    // email deve bater com INITIAL_APP_USERS para currentUserRole ser resolvido corretamente
-    setUser({ email: username });
-    setIsGuest(false);
-    setIsAuthRestored(true);
-  };
 
   const logout = React.useCallback(async () => {
     // 1. Ativa flag para bloquear o onAuthStateChange durante o logout
@@ -1611,28 +1608,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     window.location.href = '/login';
   }, []);
 
-  // Monitor session expiration (10 minutes)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const stored = localStorage.getItem('eecm_session');
-      if (stored) {
-        try {
-          const { timestamp } = JSON.parse(stored);
-          const now = Date.now();
-          const TEN_MINUTES = 10 * 60 * 1000;
-          
-          if (now - timestamp >= TEN_MINUTES) {
-            logout();
-            console.log("Session expired automatically");
-          }
-        } catch (e) {
-          localStorage.removeItem('eecm_session');
-        }
-      }
-    }, 60000); // Check every minute
-    
-    return () => clearInterval(interval);
-  }, [logout]);
+
 
   return (
     <AppContext.Provider value={{
@@ -1640,7 +1616,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
       showContextModal, setShowContextModal, contextSchools,
       geminiApiKey, setGeminiApiKey, groqApiKey, setGroqApiKey,
-      setGuestMode, setMockUser, logout, uploadFile,
+      logout, uploadFile,
       logAction, refreshData,
       addAppUser, updateAppUser, deleteAppUser,
       addStudent, importStudents, updateStudent, archiveStudent, restoreStudent, deleteStudent, deleteAllStudents,
