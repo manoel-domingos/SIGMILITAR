@@ -8,6 +8,16 @@ import {
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
 } from './data';
 
+function normalizeDbRole(role: string): AppUserRole {
+  if (!role) return 'GESTOR';
+  const r = role.toLowerCase();
+  if (r.includes('admin')) return 'admin_global';
+  if (r.includes('coord')) return 'COORD';
+  if (r.includes('monitor')) return 'MONITOR';
+  if (r.includes('gestor')) return 'GESTOR';
+  return 'GESTOR';
+}
+
 interface AppState {
   students: Student[];
   occurrences: Occurrence[];
@@ -152,7 +162,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const currentUserSchoolId = useMemo(() => {
     if (!user?.email || isGuest) return null;
-    const matched = appUsers.find(u => u.email.toLowerCase() === user.email.toLowerCase());
+    const emailLower = user.email.toLowerCase();
+    const matched = appUsers.find(u => u.email.toLowerCase() === emailLower);
     return matched?.school_id ?? null;
   }, [user, isGuest, appUsers]);
 
@@ -318,7 +329,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               id: u.id,
               name: u.name || '',
               email: u.email || '',
-              role: u.role || 'GESTOR',
+              role: normalizeDbRole(u.role),
               school_id: u.school_id || '',
             })));
           }
