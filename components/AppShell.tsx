@@ -1510,3 +1510,182 @@ function ProfileMenu({
     </div>
   );
 }
+
+/* ---------- NOTIFICATION BELL DROPDOWN ---------- */
+
+function NotificationBell() {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [activeTab, setActiveTab] = useState<'notifications' | 'updates'>('notifications');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  // Position the portal relative to the trigger button
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isOpen]);
+
+  // Close on outside click or Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setIsOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const notifications = [
+    { id: 1, title: 'Bem-vindo ao Novo EECM', desc: 'Painel multitenant integrado e sincronizado em tempo real.', date: 'Hoje', type: 'info' },
+    { id: 2, title: 'Modo Professor Liberado', desc: 'Professor agora possui acesso seguro e direto às suas ocorrências.', date: 'Ontem', type: 'success' },
+    { id: 3, title: 'Segurança de Whitelist Ativa', desc: 'Seu e-mail está cadastrado e validado com sucesso.', date: '2 dias atrás', type: 'warning' },
+  ];
+
+  const updates = [
+    {
+      version: 'v1.2.6',
+      title: 'Notificações & TL;DR Changelog',
+      date: '25/05/2026',
+      commits: [
+        'Adicionado sino de notificações no cabeçalho com abas rápidas.',
+        'Desenvolvido changelog em tempo real com resumo TL;DR a cada 3 commits.',
+        'Aprimoramentos de design de cards nas abas de relatórios.'
+      ]
+    },
+    {
+      version: 'v1.2.5',
+      title: 'Transições de Abas & Painel do Professor',
+      date: '25/05/2026',
+      commits: [
+        'Adicionada transição vertical "subindo" (rolling animation, 300ms).',
+        'Liberada aba Alunos em modo leitura ampla para toda a escola.',
+        'Implementadas abas Faltas Disciplinares e Relatórios Estatísticos para Professores.'
+      ]
+    },
+    {
+      version: 'v1.2.4',
+      title: 'Supabase Sync & Google SSO',
+      date: '24/05/2026',
+      commits: [
+        'Reorganização da tela de login com animação expansiva de inputs.',
+        'Implementado login premium com Google SSO.',
+        'Casamento dinâmico de turmas na importação de planilhas.'
+      ]
+    }
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        ref={triggerRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 active:bg-slate-100 dark:active:bg-slate-700 transition shadow-sm relative"
+        title="Notificações e Atualizações"
+        aria-label="Ver notificações"
+      >
+        <Bell className="w-4 h-4" />
+        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse border border-white dark:border-slate-800" />
+      </button>
+
+      {mounted && isOpen && pos && ReactDOM.createPortal(
+        <div
+          ref={menuRef}
+          className="fixed w-80 sm:w-96 glass-dropdown overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{ top: pos.top, right: pos.right, zIndex: 99999 }}
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50 flex flex-col gap-3">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">
+              <Bell className="w-4 h-4 text-blue-500" />
+              Notificações do Sistema
+            </h3>
+            
+            {/* Tabs Selector */}
+            <div className="grid grid-cols-2 gap-1.5 bg-slate-200/50 dark:bg-slate-900 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${activeTab === 'notifications' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                <Bell className="w-3.5 h-3.5" />
+                Notificações
+              </button>
+              <button
+                onClick={() => setActiveTab('updates')}
+                className={`py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${activeTab === 'updates' ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Atualizações
+              </button>
+            </div>
+          </div>
+
+          {/* List Content */}
+          <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/40">
+            {activeTab === 'notifications' ? (
+              notifications.map(n => (
+                <div key={n.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition flex gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400`}>
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">{n.title}</p>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{n.date}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">{n.desc}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              updates.map(u => (
+                <div key={u.version} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/40 pb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-mono text-[10px] font-bold">{u.version}</span>
+                      <p className="font-bold text-slate-800 dark:text-slate-100 text-xs">{u.title}</p>
+                    </div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{u.date}</span>
+                  </div>
+                  <div className="space-y-1 pl-1">
+                    <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">TL;DR Resumo:</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+                      {u.commits.map((c, i) => <li key={i}>{c}</li>)}
+                    </ul>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50 text-center">
+            <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">EECM Monitoramento Escolar</span>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
