@@ -15,7 +15,7 @@ import {
   ChevronDown,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseReady } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
 import AIChat from '@/components/AIChat';
 
@@ -1009,32 +1009,43 @@ function ProfileMenu({
       return;
     }
 
-    if (!supabase) {
+    if (!isSupabaseReady()) {
       setPwdError('Conexão com o servidor indisponível. Verifique as configurações.');
       return;
     }
 
     setPwdLoading(true);
     try {
-      // Verificar se é uma sessão mock (localStorage) ou real (Supabase)
+      // Bloquear sessões mock — troca de senha só funciona via Supabase Auth real
       const sessionData = localStorage.getItem('eecm_session');
       const sessionParsed = sessionData ? JSON.parse(sessionData) : null;
-      
-      // Se for sessão mock (login como "manoel"), não permite trocar senha
-      if (sessionParsed && sessionParsed.type === 'mock') {
-        setPwdError('A troca de senha só está disponível para usuários autenticados via Supabase. Seu acesso é via modo demo.');
+      if (sessionParsed?.type === 'mock') {
+        setPwdError('Troca de senha não disponível no modo demo.');
         setPwdLoading(false);
         return;
       }
 
-      // Tentar obter sessão real do Supabase
-      const { data: supabaseSession } = await supabase.auth.getSession();
-      if (!supabaseSession?.session) {
+      // Verificar sessão ativa
+      const { data: sessionResult, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionResult?.session) {
         setPwdError('Sessão expirada. Faça login novamente para alterar a senha.');
         setPwdLoading(false);
         return;
       }
 
+      // Reautenticar com a senha atual antes de trocar
+      const userEmail = sessionResult.session.user.email ?? '';
+      const { error: reAuthError } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: currentPassword,
+      });
+      if (reAuthError) {
+        setPwdError('Senha atual incorreta.');
+        setPwdLoading(false);
+        return;
+      }
+
+      // Alterar senha via Supabase Auth
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
         setPwdError(error.message);
