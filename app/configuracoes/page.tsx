@@ -62,16 +62,21 @@ const SELECT = INPUT + ' appearance-none cursor-pointer';
 function CreateUserDrawer({ open, onClose, schools, onCreated }: {
   open: boolean; onClose: () => void; schools: School[]; onCreated: (u: UserRow) => void;
 }) {
+  const { currentUserRole, currentUserSchoolId } = useAppContext();
   const firstSchool = schools[0]?.id ?? '';
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'GESTOR' as AppRole, school_id: firstSchool });
   const [showPass, setShowPass] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sincroniza default quando schools carrega
+  // Sincroniza default quando schools carrega ou conforme o papel do usuario
   useEffect(() => {
-    if (firstSchool && !form.school_id) setForm(v => ({ ...v, school_id: firstSchool }));
-  }, [firstSchool]);
+    if (currentUserRole === 'GESTOR' && currentUserSchoolId) {
+      setForm(v => ({ ...v, school_id: currentUserSchoolId }));
+    } else if (firstSchool && !form.school_id) {
+      setForm(v => ({ ...v, school_id: firstSchool }));
+    }
+  }, [firstSchool, currentUserRole, currentUserSchoolId]);
 
   const reset = () => { setForm({ name: '', email: '', password: '', role: 'GESTOR', school_id: firstSchool }); setError(null); setShowPass(false); };
   const handleClose = () => { reset(); onClose(); };
@@ -79,7 +84,7 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) { setError('Nome e e-mail/usuário são obrigatórios.'); return; }
-    if (!form.password || form.password.length < 4) { setError('A senha deve ter pelo menos 4 caracteres.'); return; }
+    if (form.password && form.password.length < 4) { setError('A senha deve ter pelo menos 4 caracteres.'); return; }
     setSaving(true); setError(null);
     try {
       const res = await fetch('/api/admin/create-user', {
@@ -130,16 +135,17 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Senha</label>
             <div className="relative">
-              <input type={showPass ? 'text' : 'password'} className={INPUT + ' pr-10'} placeholder="Minimo 4 caracteres (obrigatorio)" value={form.password} onChange={set('password')} required />
+              <input type={showPass ? 'text' : 'password'} className={INPUT + ' pr-10'} placeholder="Minimo 4 caracteres (opcional)" value={form.password} onChange={set('password')} />
               <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
                 {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <p className="text-[11px] text-slate-400">Deixe em branco para enviar um link de convite oficial por e-mail.</p>
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Papel / Permissao</label>
             <select className={SELECT} value={form.role} onChange={set('role')}>
-              <option value="admin_global">Admin Global</option>
+              {currentUserRole === 'admin_global' && <option value="admin_global">Admin Global</option>}
               <option value="GESTOR">Gestor</option>
               <option value="COORD">Coordenador</option>
               <option value="MONITOR">Monitor</option>
@@ -153,9 +159,13 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Escola</label>
-            <select className={SELECT} value={form.school_id} onChange={set('school_id')}>
-              {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.id})</option>)}
-            </select>
+            {currentUserRole === 'admin_global' ? (
+              <select className={SELECT} value={form.school_id} onChange={set('school_id')}>
+                {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.id})</option>)}
+              </select>
+            ) : (
+              <input className={INPUT + ' opacity-60 cursor-not-allowed'} value={schools.find(s => s.id === currentUserSchoolId)?.name || currentUserSchoolId || ''} readOnly />
+            )}
           </div>
         </form>
         <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex gap-3">
@@ -437,7 +447,7 @@ export default function ConfiguracoesPage() {
 }
 
 function ConfiguracoesInner() {
-  const { currentUserRole, user } = useAppContext();
+  const { currentUserRole, currentUserSchoolId, user } = useAppContext();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -460,6 +470,17 @@ function ConfiguracoesInner() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    let uQuery = supabase().from('user_profiles').select('*').order('name');
+    let sQuery = supabase().from('schools').select('id, name').order('id');
+
+    const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
+    const resolvedSchoolId = envSchoolId ?? currentUserSchoolId;
+
+    if (currentUserRole === 'GESTOR' && resolvedSchoolId) {
+      uQuery = uQuery.eq('school_id', resolvedSchoolId);
+      sQuery = sQuery.eq('id', resolvedSchoolId);
+    }
+
     const [{ data: ud }, { data: sd }] = await Promise.all([
       supabase().from('user_profiles').select('*').order('name'),
       supabase().from('schools').select('id, name').order('id'),
