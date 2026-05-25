@@ -17,8 +17,8 @@ export function middleware(request: NextRequest) {
   // ─── 1. LÓGICA DRE (mantida intacta) ───────────────────────────
   const isDreDomain =
     host.startsWith('dre.') ||
-    host === 'dretga.vercel.app' ||
-    host === 'www.dretga.vercel.app';
+    host === 'dretga.kallyteros.com.br' ||
+    host === 'www.dretga.kallyteros.com.br';
 
   if (isDreDomain) {
     if (pathname === '/dre-login' || pathname.startsWith('/dre')) {
