@@ -18,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
 
   // Sincroniza erros de Whitelist da URL ou LocalStorage
   useEffect(() => {
@@ -54,7 +55,7 @@ export default function Login() {
           }
         }
       }
-      router.push(currentUserRole === 'admin_global' ? '/dre' : '/');
+      router.push(currentUserRole === 'admin_global' ? '/dre' : currentUserRole === 'PROFESSOR' ? '/registro-disciplinar' : '/');
     }
   }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router]);
 
@@ -207,67 +208,36 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">E-mail ou Usuário</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                autoComplete="username"
-                className="w-full bg-white/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Ex: seu.nome@escola.com"
-              />
-              <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-            </div>
-          </div>
+        <style>{`
+          .password-container {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease-out;
+          }
+          .password-container.expanded {
+            max-height: 120px;
+            opacity: 1;
+          }
+          .submit-container {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 350ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease-out;
+          }
+          .submit-container.expanded {
+            max-height: 60px;
+            opacity: 1;
+            margin-top: 1rem;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .password-container, .submit-container {
+              transition: none !important;
+            }
+          }
+        `}</style>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700">Senha de Acesso</label>
-              <a href="#" tabIndex={-1} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors outline-none cursor-pointer">
-                Esqueceu a senha?
-              </a>
-            </div>
-            <div className="relative">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="w-full bg-white/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-              />
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition-all duration-250 flex items-center justify-center gap-2 mt-2 shadow-md shadow-blue-600/20 active:scale-[0.98]"
-          >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                Entrar com E-mail <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Divisor de métodos de Login */}
-        <div className="flex items-center my-5">
-          <div className="flex-1 border-t border-slate-200" />
-          <span className="px-3 text-slate-400 text-xs font-semibold uppercase tracking-wider">ou acesse com</span>
-          <div className="flex-1 border-t border-slate-200" />
-        </div>
-
-        {/* Botão Google Login Premium */}
+        {/* Botão Google Login Premium - Acima do e-mail */}
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
@@ -282,6 +252,72 @@ export default function Login() {
           </svg>
           Conta do Google (Gmail)
         </button>
+
+        {/* Divisor de métodos de Login */}
+        <div className="flex items-center my-5">
+          <div className="flex-1 border-t border-slate-200" />
+          <span className="px-3 text-slate-400 text-xs font-semibold uppercase tracking-wider">ou</span>
+          <div className="flex-1 border-t border-slate-200" />
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">E-mail ou Usuário</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onFocus={() => setShowPasswordSection(true)}
+                onClick={() => setShowPasswordSection(true)}
+                required
+                autoComplete="username"
+                className="w-full bg-white/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Ex: seu.nome@escola.com"
+              />
+              <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+            </div>
+          </div>
+
+          <div className={`password-container ${showPasswordSection ? 'expanded' : ''}`}>
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-slate-700">Senha de Acesso</label>
+                <a href="#" tabIndex={-1} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors outline-none cursor-pointer">
+                  Esqueceu a senha?
+                </a>
+              </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required={showPasswordSection}
+                  autoComplete="current-password"
+                  className="w-full bg-white/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="••••••••"
+                />
+                <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+              </div>
+            </div>
+          </div>
+
+          <div className={`submit-container ${showPasswordSection ? 'expanded' : ''}`}>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white font-semibold py-2.5 rounded-xl transition-all duration-250 flex items-center justify-center gap-2 shadow-md shadow-blue-600/20 active:scale-[0.98]"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Entrar com E-mail <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
+        </form>
 
         <div className="mt-5 pt-4 border-t border-slate-200/60 text-center">
           <p className="text-[11px] text-slate-400 italic">

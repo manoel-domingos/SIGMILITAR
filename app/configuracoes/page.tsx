@@ -11,9 +11,11 @@ import {
   Eye, EyeOff, Users, ChevronRight, Lock, Brain,
   Zap, Activity, Server, Database, Wifi, WifiOff,
   BarChart2, Cpu, MessageSquare, User, KeyRound,
+  FileText, CheckSquare,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import AppShell from '@/components/AppShell';
 
 let _supabase: any = null;
 function supabase(): any {
@@ -24,7 +26,8 @@ function supabase(): any {
 }
 
 type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'PROFESSOR' | 'admin_global';
-type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status';
+type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status' | 'users_prof' | 'occurrences_prof' | 'conduct_prof' | 'reports_prof';
+
 
 interface UserRow {
   id: string; name: string; email: string;
@@ -513,11 +516,18 @@ function TabAria() {
 // ─── Página principal ────────────────────────────────────────────────────────
 export default function ConfiguracoesPage() {
   return (
-    <Suspense>
-      <ConfiguracoesInner />
-    </Suspense>
+    <AppShell>
+      <Suspense fallback={
+        <div className="flex items-center justify-center p-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      }>
+        <ConfiguracoesInner />
+      </Suspense>
+    </AppShell>
   );
 }
+
 
 function ConfiguracoesInner() {
   const { currentUserRole, currentUserSchoolId, user } = useAppContext();
@@ -536,8 +546,26 @@ function ConfiguracoesInner() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const t = searchParams?.get('tab') as Tab | null;
-    return (t && ['users','schools','profile','aria','status'].includes(t)) ? t : 'users';
+    const allowed = ['users','schools','profile','aria','status','users_prof','occurrences_prof','conduct_prof','reports_prof'];
+    if (t && allowed.includes(t)) return t;
+    return currentUserRole === 'PROFESSOR' ? 'profile' : 'users';
   });
+
+  const [renderedTab, setRenderedTab] = useState<Tab>(activeTab);
+  const [animationClass, setAnimationClass] = useState<'animate-roll-in' | 'animate-roll-out' | ''>('');
+
+  useEffect(() => {
+    if (activeTab !== renderedTab) {
+      setAnimationClass('animate-roll-out');
+      const timer = setTimeout(() => {
+        setRenderedTab(activeTab);
+        setAnimationClass('animate-roll-in');
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setAnimationClass('animate-roll-in');
+    }
+  }, [activeTab, renderedTab]);
 
   const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500); };
 
@@ -568,7 +596,8 @@ function ConfiguracoesInner() {
   // Sincroniza aba com query param
   useEffect(() => {
     const t = searchParams?.get('tab') as Tab | null;
-    if (t && ['users','schools','profile','aria','status'].includes(t)) setActiveTab(t);
+    const allowed = ['users','schools','profile','aria','status','users_prof','occurrences_prof','conduct_prof','reports_prof'];
+    if (t && allowed.includes(t)) setActiveTab(t);
   }, [searchParams]);
 
   const startEdit = (u: UserRow) => { setEditingId(u.id); setEditValues({ role: u.role, school_id: u.school_id }); };
@@ -603,13 +632,13 @@ function ConfiguracoesInner() {
     u.school_id.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (currentUserRole !== 'admin_global' && currentUserRole !== 'GESTOR') {
+  if (currentUserRole !== 'admin_global' && currentUserRole !== 'GESTOR' && currentUserRole !== 'PROFESSOR') {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 min-h-[50vh] gap-4">
         <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center">
           <ShieldAlert className="w-8 h-8 text-rose-400" />
         </div>
-        <div><h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Acesso Negado</h2><p className="mt-1 text-sm">Esta area e restrita ao Admin Global.</p></div>
+        <div><h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Acesso Negado</h2><p className="mt-1 text-sm">Esta area e restrita ao Admin Global, Gestores e Professores.</p></div>
         <button onClick={() => router.back()} className="text-blue-600 hover:underline text-sm">Voltar</button>
       </div>
     );
@@ -622,6 +651,14 @@ function ConfiguracoesInner() {
         { id: 'profile', label: 'Meu Perfil',       icon: User },
         { id: 'aria',    label: 'Assistente ARIA',  icon: Brain },
         { id: 'status',  label: 'Integrações',      icon: Activity },
+      ]
+    : currentUserRole === 'PROFESSOR'
+    ? [
+        { id: 'profile', label: 'Minha Conta',       icon: User },
+        { id: 'users_prof', label: 'Alunos',        icon: Users },
+        { id: 'occurrences_prof', label: 'Ocorrências', icon: FileText },
+        { id: 'conduct_prof', label: 'Faltas Disciplinares', icon: CheckSquare },
+        { id: 'reports_prof', label: 'Relatórios', icon: BarChart2 },
       ]
     : [
         { id: 'users',   label: 'Usuários da Escola', icon: Users },
@@ -697,124 +734,635 @@ function ConfiguracoesInner() {
           ))}
         </div>
 
-        {/* ── TAB: Usuarios ── */}
-        {activeTab === 'users' && (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/50">
-              <div className="relative max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input type="text" placeholder="Buscar usuario..." value={search} onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
-                  <tr>
-                    {['Usuario','Papel','Escola','Acoes'].map((h, i) => (
-                      <th key={h} className={`px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide ${i === 3 ? 'text-right' : ''}`}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
-                  {loading ? (
-                    <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-400"><RefreshCw className="w-5 h-5 animate-spin inline mr-2" /> Carregando...</td></tr>
-                  ) : filtered.length === 0 ? (
-                    <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-400">{search ? 'Nenhum resultado.' : 'Nenhum usuario cadastrado.'}</td></tr>
-                  ) : filtered.map(u => (
-                    <tr key={u.id} className={`group transition hover:bg-slate-50 dark:hover:bg-slate-800/60 ${editingId === u.id ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={u.name || u.email} />
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{u.name || '—'}</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{u.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        {editingId === u.id ? (
-                          <select value={editValues.role} onChange={e => setEditValues(v => ({ ...v, role: e.target.value as AppRole }))}
-                            className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            {(['admin_global','GESTOR','COORD','MONITOR','PROFESSOR'] as AppRole[])
-                              .filter(r => r !== 'admin_global' || currentUserRole === 'admin_global')
-                              .map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                          </select>
-                        ) : (
-                          <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${ROLE_COLORS[u.role] ?? 'bg-slate-100 text-slate-600'}`}>{ROLE_LABELS[u.role] ?? u.role}</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        {editingId === u.id ? (
-                          currentUserRole === 'admin_global' ? (
-                            <select value={editValues.school_id} onChange={e => setEditValues(v => ({ ...v, school_id: e.target.value }))}
-                              className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                              {schools.map(s => <option key={s.id} value={s.id}>{s.id} — {s.name}</option>)}
-                            </select>
-                          ) : (
-                            <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">{editValues.school_id}</span>
-                          )
-                        ) : (
-                          <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">{u.school_id}</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        {editingId === u.id ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button onClick={() => saveEdit(u.id)} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition"><Check className="w-3.5 h-3.5" /> Salvar</button>
-                            <button onClick={cancelEdit} className="p-1.5 border border-slate-200 dark:border-slate-600 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"><X className="w-3.5 h-3.5" /></button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
-                            <button onClick={() => startEdit(u)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => setDeleteId(u.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition" title="Remover"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {!loading && filtered.length > 0 && (
-              <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700/50 text-xs text-slate-400 dark:text-slate-500">
-                {filtered.length} de {users.length} usuario{users.length !== 1 ? 's' : ''}
+        <style>{`
+          @keyframes rollOutUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+          }
+          @keyframes rollInUp {
+            0% { transform: translateY(100px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+          }
+          .animate-roll-out {
+            animation: rollOutUp 300ms ease-in-out forwards;
+          }
+          .animate-roll-in {
+            animation: rollInUp 300ms ease-in-out forwards;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .animate-roll-out, .animate-roll-in {
+              animation: none !important;
+              transform: none !important;
+              opacity: 1 !important;
+            }
+          }
+        `}</style>
+
+        {/* Dynamic Transition Wrapper */}
+        <div className="relative overflow-hidden min-h-[500px]">
+          <div className={animationClass}>
+            {/* ── TAB: Usuarios ── */}
+            {renderedTab === 'users' && (
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/50">
+                  <div className="relative max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="text" placeholder="Buscar usuario..." value={search} onChange={e => setSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                      <tr>
+                        {['Usuario','Papel','Escola','Acoes'].map((h, i) => (
+                          <th key={h} className={`px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide ${i === 3 ? 'text-right' : ''}`}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
+                      {loading ? (
+                        <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-400"><RefreshCw className="w-5 h-5 animate-spin inline mr-2" /> Carregando...</td></tr>
+                      ) : filtered.length === 0 ? (
+                        <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-400">{search ? 'Nenhum resultado.' : 'Nenhum usuario cadastrado.'}</td></tr>
+                      ) : filtered.map(u => (
+                        <tr key={u.id} className={`group transition hover:bg-slate-50 dark:hover:bg-slate-800/60 ${editingId === u.id ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <Avatar name={u.name || u.email} />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{u.name || '—'}</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{u.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {editingId === u.id ? (
+                              <select value={editValues.role} onChange={e => setEditValues(v => ({ ...v, role: e.target.value as AppRole }))}
+                                className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                {(['admin_global','GESTOR','COORD','MONITOR','PROFESSOR'] as AppRole[])
+                                  .filter(r => r !== 'admin_global' || currentUserRole === 'admin_global')
+                                  .map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                              </select>
+                            ) : (
+                              <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${ROLE_COLORS[u.role] ?? 'bg-slate-100 text-slate-600'}`}>{ROLE_LABELS[u.role] ?? u.role}</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {editingId === u.id ? (
+                              currentUserRole === 'admin_global' ? (
+                                <select value={editValues.school_id} onChange={e => setEditValues(v => ({ ...v, school_id: e.target.value }))}
+                                  className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                  {schools.map(s => <option key={s.id} value={s.id}>{s.id} — {s.name}</option>)}
+                                </select>
+                              ) : (
+                                <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">{editValues.school_id}</span>
+                              )
+                            ) : (
+                              <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">{u.school_id}</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-right">
+                            {editingId === u.id ? (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button onClick={() => saveEdit(u.id)} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition"><Check className="w-3.5 h-3.5" /> Salvar</button>
+                                <button onClick={cancelEdit} className="p-1.5 border border-slate-200 dark:border-slate-600 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"><X className="w-3.5 h-3.5" /></button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onClick={() => startEdit(u)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Editar"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setDeleteId(u.id)} className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition" title="Remover"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!loading && filtered.length > 0 && (
+                  <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700/50 text-xs text-slate-400 dark:text-slate-500">
+                    {filtered.length} de {users.length} usuario{users.length !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* ── TAB: Escolas ── */}
-        {activeTab === 'schools' && (
-          <div className="space-y-3">
-            {schools.map(s => (
-              <div key={s.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5 text-blue-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-800 dark:text-slate-100">{s.name}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5">{s.id}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-slate-400 dark:text-slate-500">{users.filter(u => u.school_id === s.id).length} usuario{users.filter(u => u.school_id === s.id).length !== 1 ? 's' : ''}</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600" />
-                </div>
+            {/* ── TAB: Escolas ── */}
+            {renderedTab === 'schools' && (
+              <div className="space-y-3">
+                {schools.map(s => (
+                  <div key={s.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center shrink-0">
+                      <Building2 className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 dark:text-slate-100">{s.name}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5">{s.id}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-slate-400 dark:text-slate-500">{users.filter(u => u.school_id === s.id).length} usuario{users.filter(u => u.school_id === s.id).length !== 1 ? 's' : ''}</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* ── TAB: Meu Perfil ── */}
+            {renderedTab === 'profile' && <TabProfile user={user} />}
+
+            {/* ── TAB: ARIA ── */}
+            {renderedTab === 'aria' && <TabAria />}
+
+            {/* ── TAB: Status ── */}
+            {renderedTab === 'status' && <TabStatus />}
+
+            {/* ── TAB: Alunos (Professor View) ── */}
+            {renderedTab === 'users_prof' && <TabUsersProf />}
+
+            {/* ── TAB: Ocorrências (Professor View) ── */}
+            {renderedTab === 'occurrences_prof' && <TabOccurrencesProf />}
+
+            {/* ── TAB: Faltas Disciplinares (Professor View) ── */}
+            {renderedTab === 'conduct_prof' && <TabConductProf />}
+
+            {/* ── TAB: Relatórios (Professor View) ── */}
+            {renderedTab === 'reports_prof' && <TabReportsProf />}
           </div>
-        )}
-
-        {/* ── TAB: Meu Perfil ── */}
-        {activeTab === 'profile' && <TabProfile user={user} />}
-
-        {/* ── TAB: ARIA ── */}
-        {activeTab === 'aria' && <TabAria />}
-
-        {/* ── TAB: Status ── */}
-        {activeTab === 'status' && <TabStatus />}
+        </div>
       </div>
     </>
   );
 }
+
+/* ── SUB-COMPONENTS: PROFESSOR VIEWS ───────────────────────────────────────── */
+
+function TabUsersProf() {
+  const { students, occurrences, user } = useAppContext();
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
+
+  // Professor has read-only access to all students in all classes
+  const uniqueClasses = Array.from(new Set(students.map(s => s.class).filter(Boolean))).sort();
+  const [selectedClass, setSelectedClass] = useState(uniqueClasses[0] || '');
+  const [search, setSearch] = useState('');
+
+  const filteredStudents = students.filter(s => 
+    s.class === selectedClass &&
+    !s.archived &&
+    (s.name.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Painel de Alunos</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Visualização completa de estudantes da escola (Modo Leitura).</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar aluno..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-xl">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+              <tr>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Aluno</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Turma</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Comportamento</th>
+                <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-right">Pontos</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
+              {filteredStudents.length === 0 ? (
+                <tr><td colSpan={4} className="px-5 py-12 text-center text-slate-400">Nenhum estudante ativo cadastrado nesta turma.</td></tr>
+              ) : filteredStudents.map(s => {
+                const sPoints = s.points ?? 8.0;
+                let behavior: BehaviorClass = 'Bom';
+                if (sPoints >= 9.5) behavior = 'Excepcional';
+                else if (sPoints >= 8.5) behavior = 'Ótimo';
+                else if (sPoints >= 7.0) behavior = 'Bom';
+                else if (sPoints >= 5.0) behavior = 'Regular';
+                else if (sPoints >= 3.0) behavior = 'Insuficiente';
+                else behavior = 'Incompatível';
+
+                const behaviorColors: Record<BehaviorClass, string> = {
+                  Excepcional: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 border border-indigo-200/50',
+                  'Ótimo': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/50',
+                  Bom: 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border border-blue-200/50',
+                  Regular: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50',
+                  Insuficiente: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/50',
+                  'Incompatível': 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 border border-red-200/50',
+                };
+
+                return (
+                  <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                    <td className="px-5 py-4 flex items-center gap-3">
+                      {s.photoUrl ? (
+                        <img src={s.photoUrl} alt={s.name} className="w-8 h-8 rounded-full object-cover shrink-0" onError={e => (e.target as any).style.display = 'none'} />
+                      ) : (
+                        <Avatar name={s.name} />
+                      )}
+                      <div>
+                        <p className="font-semibold text-slate-800 dark:text-slate-100">{s.name}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{s.id}</p>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300 font-medium">{s.class} — {s.shift}</td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${behaviorColors[behavior]}`}>
+                        {behavior}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 font-extrabold text-blue-600 dark:text-blue-400 text-sm text-right">{sPoints.toFixed(1)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabOccurrencesProf() {
+  const { occurrences, students, rules, user } = useAppContext();
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
+  const [search, setSearch] = useState('');
+
+  const profOccs = occurrences.filter(o => 
+    (o.registeredBy && (o.registeredBy.toLowerCase() === user?.email?.toLowerCase() || o.registeredBy.toLowerCase() === userName.toLowerCase())) ||
+    (o.locatedBy && (o.locatedBy.toLowerCase() === user?.email?.toLowerCase() || o.locatedBy.toLowerCase() === userName.toLowerCase()))
+  );
+
+  const filteredOccs = profOccs.filter(o => {
+    const student = students.find(s => s.id === o.studentId);
+    const rule = rules.find(r => r.code === o.ruleCode);
+    const text = (student?.name || '') + ' ' + (rule?.description || '') + ' ' + o.location + ' ' + o.registeredBy;
+    return text.toLowerCase().includes(search.toLowerCase());
+  });
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Minhas Ocorrências Registradas</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Histórico completo de infrações lavradas ou localizadas por você (Somente Leitura).</p>
+        </div>
+        <div className="relative max-w-xs w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Buscar por aluno ou infração..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div className="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-xl">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+            <tr>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Data</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Aluno / Turma</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Infração / Art.</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Gravidade</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Relato</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
+            {filteredOccs.length === 0 ? (
+              <tr><td colSpan={5} className="px-5 py-12 text-center text-slate-400">Você ainda não possui ocorrências lavradas sob seu registro.</td></tr>
+            ) : filteredOccs.map(o => {
+              const student = students.find(s => s.id === o.studentId);
+              const rule = rules.find(r => r.code === o.ruleCode);
+              const dateStr = o.date ? new Date(o.date).toLocaleDateString('pt-BR') : '---';
+
+              const severityColors: Record<Severity, string> = {
+                Leve: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/50',
+                Media: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50',
+                Grave: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/50',
+              };
+
+              return (
+                <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                  <td className="px-5 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">{dateStr} {o.hour || ''}</td>
+                  <td className="px-5 py-4">
+                    <p className="font-semibold text-slate-800 dark:text-slate-100">{student?.name || 'Aluno Desconhecido'}</p>
+                    <p className="text-xs text-slate-400 font-mono">{student?.class || 'Turma não informada'}</p>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className="font-mono text-xs text-blue-600 dark:text-blue-400 block font-bold">Artigo {o.ruleCode}</span>
+                    <span className="text-xs text-slate-500 max-w-xs block truncate" title={rule?.description}>{rule?.description || '---'}</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${severityColors[rule?.severity || 'Leve']}`}>
+                      {rule?.severity || 'Leve'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-slate-500 dark:text-slate-400 max-w-xs truncate" title={o.observations}>{o.observations || 'Sem relato adicional.'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function TabConductProf() {
+  const { occurrences, students, rules } = useAppContext();
+  const uniqueClasses = Array.from(new Set(students.map(s => s.class).filter(Boolean))).sort();
+  const [selectedClass, setSelectedClass] = useState(uniqueClasses[0] || '');
+  const [search, setSearch] = useState('');
+
+  // Filter occurrences to show all occurrences of students in the selected class
+  const classOccurrences = occurrences.filter(o => {
+    const student = students.find(s => s.id === o.studentId);
+    return student && student.class === selectedClass && !student.archived;
+  });
+
+  const filteredConducts = classOccurrences.filter(o => {
+    const student = students.find(s => s.id === o.studentId);
+    const rule = rules.find(r => r.code === o.ruleCode);
+    const text = (student?.name || '') + ' ' + (rule?.description || '') + ' ' + (student?.class || '');
+    return text.toLowerCase().includes(search.toLowerCase());
+  });
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Faltas Disciplinares</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Visão consolidada de todas as faltas disciplinares registradas na turma selecionada (Somente Leitura).</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={selectedClass}
+            onChange={e => setSelectedClass(e.target.value)}
+            className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {uniqueClasses.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar aluno ou falta..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto border border-slate-100 dark:border-slate-700 rounded-xl">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+            <tr>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Aluno</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Data</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Fato Gerador / Artigo</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Gravidade</th>
+              <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Medida Aplicada</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
+            {filteredConducts.length === 0 ? (
+              <tr><td colSpan={5} className="px-5 py-12 text-center text-slate-400">Nenhum registro de falta disciplinar encontrado para os filtros ativos.</td></tr>
+            ) : filteredConducts.map(o => {
+              const student = students.find(s => s.id === o.studentId);
+              const rule = rules.find(r => r.code === o.ruleCode);
+              const dateStr = o.date ? new Date(o.date).toLocaleDateString('pt-BR') : '---';
+
+              const severityColors: Record<Severity, string> = {
+                Leve: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/50',
+                Media: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50',
+                Grave: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/50',
+              };
+
+              return (
+                <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                  <td className="px-5 py-4">
+                    <p className="font-semibold text-slate-800 dark:text-slate-100">{student?.name || '---'}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{student?.id || '---'}</p>
+                  </td>
+                  <td className="px-5 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">{dateStr}</td>
+                  <td className="px-5 py-4 max-w-xs truncate" title={rule?.description || 'Infração'}>
+                    <span className="font-mono text-xs text-blue-600 dark:text-blue-400 block font-bold">Cód {o.ruleCode}</span>
+                    <span className="text-slate-600 dark:text-slate-300">{rule?.description || '---'}</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${severityColors[rule?.severity || 'Leve']}`}>
+                      {rule?.severity || 'Leve'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-slate-600 dark:text-slate-300 font-medium">{o.measure || rule?.measure || 'Advertência Oral'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function TabReportsProf() {
+  const { occurrences, students, praises, user } = useAppContext();
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
+
+  // Get professor's occurrences
+  const profOccs = occurrences.filter(o => 
+    (o.registeredBy && (o.registeredBy.toLowerCase() === user?.email?.toLowerCase() || o.registeredBy.toLowerCase() === userName.toLowerCase())) ||
+    (o.locatedBy && (o.locatedBy.toLowerCase() === user?.email?.toLowerCase() || o.locatedBy.toLowerCase() === userName.toLowerCase()))
+  );
+
+  const uniqueClasses = Array.from(new Set(students.map(s => s.class).filter(Boolean))).sort();
+  const [activeReport, setActiveReport] = useState<'none' | 'summary' | 'occurrences'>('none');
+
+  // Compute stats for all classes dynamically
+  const classStats = uniqueClasses.map(cls => {
+    const classStudents = students.filter(s => s.class === cls && !s.archived);
+    const avgPoints = classStudents.reduce((acc, s) => acc + (s.points ?? 8.0), 0) / (classStudents.length || 1);
+    const infractionsCount = occurrences.filter(o => {
+      const s = students.find(st => st.id === o.studentId);
+      return s && s.class === cls;
+    }).length;
+    const praisesCount = praises ? praises.filter(p => {
+      const s = students.find(st => st.id === p.studentId);
+      return s && s.class === cls;
+    }).length : 0;
+
+    return {
+      class: cls,
+      studentsCount: classStudents.length,
+      avgPoints,
+      infractionsCount,
+      praisesCount,
+    };
+  }).filter(stat => stat.studentsCount > 0); // only show classes with students
+
+  const handlePrint = () => {
+    if (typeof window !== 'undefined') window.print();
+  };
+
+  return (
+    <div className="space-y-6">
+      {activeReport === 'none' ? (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-500">
+                <BarChart2 className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base">Resumo Comportamental das Turmas</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Relatório consolidado com o total de alunos, médias comportamentais de pontos, total de elogios e faltas disciplinares de todas as turmas da instituição.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveReport('summary')}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition"
+            >
+              Visualizar Relatório
+            </button>
+          </div>
+
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center text-indigo-500">
+                <FileText className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-base">Ficha Disciplinar Consolidada</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Extrato detalhado e formal de todas as ocorrências escolares lavradas e identificadas sob seu registro para fins de arquivamento legal.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveReport('occurrences')}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition"
+            >
+              Visualizar Relatório
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-6 print:p-0 print:border-0 print:shadow-none">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4 print:hidden">
+            <button
+              onClick={() => setActiveReport('none')}
+              className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-sm font-medium flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-4 h-4" /> Voltar
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md"
+            >
+              Imprimir Relatório
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            <div className="text-center space-y-1">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Escola Estadual Cívico-Militar</h2>
+              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-semibold">Relatório Disciplinar do Corpo Docente</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Professor(a): <span className="font-bold">{userName}</span> | E-mail: {user?.email}</p>
+              <p className="text-[10px] text-slate-400 italic">Data de Emissão: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</p>
+            </div>
+
+            {activeReport === 'summary' ? (
+              <div className="space-y-4">
+                <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm border-b pb-2">Resumo Geral por Turma</h3>
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {classStats.map(stat => (
+                    <div key={stat.class} className="border border-slate-100 dark:border-slate-700 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{stat.class}</span>
+                        <span className="text-xs text-slate-400">{stat.studentsCount} alunos</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Média pts</p>
+                          <p className="text-base font-extrabold text-blue-600 dark:text-blue-400">{stat.avgPoints.toFixed(1)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Ocorrências</p>
+                          <p className="text-base font-extrabold text-rose-600 dark:text-rose-400">{stat.infractionsCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Elogios</p>
+                          <p className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">{stat.praisesCount}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm border-b pb-2">Histórico de Ocorrências Autoras</h3>
+                <div className="overflow-x-auto border rounded-xl border-slate-100 dark:border-slate-700">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100">
+                      <tr>
+                        <th className="px-4 py-2.5 font-bold text-slate-600 dark:text-slate-400">Data</th>
+                        <th className="px-4 py-2.5 font-bold text-slate-600 dark:text-slate-400">Aluno</th>
+                        <th className="px-4 py-2.5 font-bold text-slate-600 dark:text-slate-400">Turma</th>
+                        <th className="px-4 py-2.5 font-bold text-slate-600 dark:text-slate-400">Infração / Art.</th>
+                        <th className="px-4 py-2.5 font-bold text-slate-600 dark:text-slate-400">Relato / Observação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {profOccs.length === 0 ? (
+                        <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">Nenhum registro localizado sob sua autoria.</td></tr>
+                      ) : profOccs.map(o => {
+                        const student = students.find(s => s.id === o.studentId);
+                        return (
+                          <tr key={o.id}>
+                            <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{o.date ? new Date(o.date).toLocaleDateString('pt-BR') : '---'}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-800">{student?.name || '---'}</td>
+                            <td className="px-4 py-3 text-slate-600">{student?.class || '---'}</td>
+                            <td className="px-4 py-3 font-medium text-slate-700">Artigo {o.ruleCode}</td>
+                            <td className="px-4 py-3 text-slate-500 max-w-xs truncate" title={o.observations}>{o.observations || '---'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

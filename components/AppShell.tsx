@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { useTenantConfig } from '@/lib/useTenantConfig';
 
@@ -445,39 +445,81 @@ function SidebarLayout({
 
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-4 px-3">
-            {MENU_GROUPS.map((group) => {
-              if (group.href) {
-                const active = pathname === group.href;
+            {pathname === '/configuracoes' ? (
+              (() => {
+                const { currentUserRole } = useAppContext();
+                const searchParams = useSearchParams();
+                const activeConfigTab = searchParams?.get('tab') || 'profile';
+                const configTabs = (currentUserRole === 'admin_global'
+                  ? [
+                      { id: 'users',   label: 'Usuários',        icon: Users },
+                      { id: 'schools', label: 'Escolas',          icon: Building2 },
+                      { id: 'profile', label: 'Meu Perfil',       icon: User },
+                      { id: 'aria',    label: 'Assistente ARIA',  icon: Brain },
+                      { id: 'status',  label: 'Integrações',      icon: Activity },
+                    ]
+                  : currentUserRole === 'PROFESSOR'
+                  ? [
+                      { id: 'profile', label: 'Minha Conta',       icon: User },
+                      { id: 'users_prof', label: 'Alunos',        icon: Users },
+                      { id: 'occurrences_prof', label: 'Ocorrências', icon: FileText },
+                      { id: 'conduct_prof', label: 'Faltas Disciplinares', icon: CheckSquare },
+                      { id: 'reports_prof', label: 'Relatórios', icon: BarChart },
+                    ]
+                  : [
+                      { id: 'users',   label: 'Usuários da Escola', icon: Users },
+                      { id: 'profile', label: 'Meu Perfil',       icon: User },
+                    ]
+                );
+                return configTabs.map((tab) => {
+                  const active = activeConfigTab === tab.id;
+                  return (
+                    <li key={tab.id}>
+                      <Link
+                        href={`/configuracoes?tab=${tab.id}`}
+                        className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
+                      >
+                        <tab.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
+                        {tab.label}
+                      </Link>
+                    </li>
+                  );
+                });
+              })()
+            ) : (
+              MENU_GROUPS.map((group) => {
+                if (group.href) {
+                  const active = pathname === group.href;
+                  return (
+                    <li key={group.label}>
+                      <Link
+                        href={group.href}
+                        className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
+                      >
+                        <group.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
+                        {group.label}
+                      </Link>
+                    </li>
+                  );
+                }
                 return (
                   <li key={group.label}>
-                    <Link
-                      href={group.href}
-                      className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
-                    >
-                      <group.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
+                    <p className="px-4 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-2">
+                      <group.icon className="w-3.5 h-3.5" />
                       {group.label}
-                    </Link>
-                  </li>
-                );
-              }
-              return (
-                <li key={group.label}>
-                  <p className="px-4 mb-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-2">
-                    <group.icon className="w-3.5 h-3.5" />
-                    {group.label}
-                  </p>
-                  <ul className="space-y-0.5">
-                    {group.children!.map((item) => {
-                      const active = pathname === item.href;
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            className={'flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-colors ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
-                          >
-                            <item.icon className={'w-4 h-4 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
-                            {item.label}
-                          </Link>
+                    </p>
+                    <ul className="space-y-0.5">
+                      {group.children!.map((item) => {
+                        const active = pathname === item.href;
+                        return (
+                          <li key={item.href}>
+                            <Link
+                              href={item.href}
+                              className={'flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-colors ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
+                            >
+                              <item.icon className={'w-4 h-4 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
+                              {item.label}
+                            </Link>
                         </li>
                       );
                     })}
@@ -597,14 +639,56 @@ function TopbarLayout({
 
         {/* nav row: grouped pills with hover dropdown */}
         <div className="pointer-events-auto hidden md:flex items-center justify-center gap-1 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-md rounded-full px-4 md:px-10 py-1">
-          {MENU_GROUPS.map((group) => (
-            <GroupPill
-              key={group.label}
-              group={group}
-              pathname={pathname}
-              activeGroup={currentInfo?.groupLabel}
-            />
-          ))}
+          {pathname === '/configuracoes' ? (
+            (() => {
+              const { currentUserRole } = useAppContext();
+              const searchParams = useSearchParams();
+              const activeConfigTab = searchParams?.get('tab') || 'profile';
+              const configTabs = (currentUserRole === 'admin_global'
+                ? [
+                    { id: 'users',   label: 'Usuários',        icon: Users },
+                    { id: 'schools', label: 'Escolas',          icon: Building2 },
+                    { id: 'profile', label: 'Meu Perfil',       icon: User },
+                    { id: 'aria',    label: 'Assistente ARIA',  icon: Brain },
+                    { id: 'status',  label: 'Integrações',      icon: Activity },
+                  ]
+                : currentUserRole === 'PROFESSOR'
+                ? [
+                    { id: 'profile', label: 'Minha Conta',       icon: User },
+                    { id: 'users_prof', label: 'Alunos',        icon: Users },
+                    { id: 'occurrences_prof', label: 'Ocorrências', icon: FileText },
+                    { id: 'conduct_prof', label: 'Faltas Disciplinares', icon: CheckSquare },
+                    { id: 'reports_prof', label: 'Relatórios', icon: BarChart },
+                  ]
+                : [
+                    { id: 'users',   label: 'Usuários da Escola', icon: Users },
+                    { id: 'profile', label: 'Meu Perfil',       icon: User },
+                  ]
+              );
+              return configTabs.map((tab) => {
+                const active = activeConfigTab === tab.id;
+                return (
+                  <Link
+                    key={tab.id}
+                    href={`/configuracoes?tab=${tab.id}`}
+                    className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
+                  >
+                    <tab.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
+                    <span className="whitespace-nowrap">{tab.label}</span>
+                  </Link>
+                );
+              });
+            })()
+          ) : (
+            MENU_GROUPS.map((group) => (
+              <GroupPill
+                key={group.label}
+                group={group}
+                pathname={pathname}
+                activeGroup={currentInfo?.groupLabel}
+              />
+            ))
+          )}
         </div>
       </header>
 
@@ -743,41 +827,84 @@ function MobileDrawer({
       </div>
       <nav className="flex-1 overflow-y-auto py-3 overscroll-contain">
         <ul className="space-y-3 px-2 sm:px-3">
-          {MENU_GROUPS.map((group) => {
-            if (group.href) {
-              const active = pathname === group.href;
+          {pathname === '/configuracoes' ? (
+            (() => {
+              const { currentUserRole } = useAppContext();
+              const searchParams = useSearchParams();
+              const activeConfigTab = searchParams?.get('tab') || 'profile';
+              const configTabs = (currentUserRole === 'admin_global'
+                ? [
+                    { id: 'users',   label: 'Usuários',        icon: Users },
+                    { id: 'schools', label: 'Escolas',          icon: Building2 },
+                    { id: 'profile', label: 'Meu Perfil',       icon: User },
+                    { id: 'aria',    label: 'Assistente ARIA',  icon: Brain },
+                    { id: 'status',  label: 'Integrações',      icon: Activity },
+                  ]
+                : currentUserRole === 'PROFESSOR'
+                ? [
+                    { id: 'profile', label: 'Minha Conta',       icon: User },
+                    { id: 'users_prof', label: 'Alunos',        icon: Users },
+                    { id: 'occurrences_prof', label: 'Ocorrências', icon: FileText },
+                    { id: 'conduct_prof', label: 'Faltas Disciplinares', icon: CheckSquare },
+                    { id: 'reports_prof', label: 'Relatórios', icon: BarChart },
+                  ]
+                : [
+                    { id: 'users',   label: 'Usuários da Escola', icon: Users },
+                    { id: 'profile', label: 'Meu Perfil',       icon: User },
+                  ]
+              );
+              return configTabs.map((tab) => {
+                const active = activeConfigTab === tab.id;
+                return (
+                  <li key={tab.id}>
+                    <Link
+                      href={`/configuracoes?tab=${tab.id}`}
+                      onClick={onClose}
+                      className={'flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
+                    >
+                      <tab.icon className="w-5 h-5 shrink-0" />
+                      {tab.label}
+                    </Link>
+                  </li>
+                );
+              });
+            })()
+          ) : (
+            MENU_GROUPS.map((group) => {
+              if (group.href) {
+                const active = pathname === group.href;
+                return (
+                  <li key={group.label}>
+                    <Link
+                      href={group.href}
+                      onClick={onClose}
+                      className={'flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
+                    >
+                      <group.icon className="w-5 h-5 shrink-0" />
+                      {group.label}
+                    </Link>
+                  </li>
+                );
+              }
               return (
                 <li key={group.label}>
-                  <Link
-                    href={group.href}
-                    onClick={onClose}
-                    className={'flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
-                  >
-                    <group.icon className="w-5 h-5 shrink-0" />
+                  <p className="px-4 mb-2 text-[11px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-2">
+                    <group.icon className="w-4 h-4" />
                     {group.label}
-                  </Link>
-                </li>
-              );
-            }
-            return (
-              <li key={group.label}>
-                <p className="px-4 mb-2 text-[11px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-2">
-                  <group.icon className="w-4 h-4" />
-                  {group.label}
-                </p>
-                <ul className="space-y-1">
-                  {group.children!.map((item) => {
-                    const active = pathname === item.href;
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          onClick={onClose}
-                          className={'flex items-center gap-3 pl-8 pr-4 py-3 rounded-xl text-base transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
-                        >
-                          <item.icon className="w-5 h-5 shrink-0" />
-                          {item.label}
-                        </Link>
+                  </p>
+                  <ul className="space-y-1">
+                    {group.children!.map((item) => {
+                      const active = pathname === item.href;
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            onClick={onClose}
+                            className={'flex items-center gap-3 pl-8 pr-4 py-3 rounded-xl text-base transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
+                          >
+                            <item.icon className="w-5 h-5 shrink-0" />
+                            {item.label}
+                          </Link>
                       </li>
                     );
                   })}
@@ -852,6 +979,15 @@ function RightControls(props: RightControlsProps) {
       >
         {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
+
+      <Link
+        href="/configuracoes"
+        className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm animate-pulse-subtle"
+        title="Configurações"
+        aria-label="Configurações do sistema"
+      >
+        <Settings className="w-4 h-4" />
+      </Link>
 
       <ProfileMenu
         isOpen={isProfileOpen}
