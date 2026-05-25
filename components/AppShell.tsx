@@ -14,6 +14,7 @@ import {
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   ChevronDown,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
+  Bell, Info,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -979,6 +980,8 @@ function RightControls(props: RightControlsProps) {
       >
         {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
       </button>
+
+      <NotificationBell />
 
       <Link
         href="/configuracoes"
