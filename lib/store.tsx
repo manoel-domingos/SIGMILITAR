@@ -8,7 +8,8 @@ import {
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
 } from './data';
 
-function normalizeDbRole(role: string): AppUserRole {
+function normalizeDbRole(role: string, email?: string): AppUserRole {
+  if (email && email.toLowerCase() === 'manoeldomingos2@gmail.com') return 'admin_global';
   if (!role) return 'GESTOR';
   const r = role.toLowerCase();
   if (r.includes('admin')) return 'admin_global';
@@ -163,6 +164,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const currentUserSchoolId = useMemo(() => {
     if (!user?.email || isGuest) return null;
     const emailLower = user.email.toLowerCase();
+    // Override para garantir perfil de Administrador Global no teste local
+    if (emailLower === 'manoeldomingos2@gmail.com') return 'DRE';
+    
     const matched = appUsers.find(u => u.email.toLowerCase() === emailLower);
     return matched?.school_id ?? null;
   }, [user, isGuest, appUsers]);
@@ -329,7 +333,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               id: u.id,
               name: u.name || '',
               email: u.email || '',
-              role: normalizeDbRole(u.role),
+              role: normalizeDbRole(u.role, u.email),
               school_id: u.school_id || '',
             })));
           }
@@ -481,9 +485,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
               setUser(session.user);
               setIsGuest(false);
 
-              const sid = profile.school_id && profile.school_id !== 'DRE'
+              let sid = profile.school_id && profile.school_id !== 'DRE'
                 ? profile.school_id
                 : '';
+
+              // Override para garantir que o seu e-mail de administrador global
+              // inicialize sempre no contexto do DRE (vazio), independente do banco no teste local
+              if (emailLower === 'manoeldomingos2@gmail.com') {
+                sid = '';
+              }
 
               if (sid) {
                 activeSchoolContextRef.current = sid;
