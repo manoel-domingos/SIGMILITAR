@@ -1585,21 +1585,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     //    (evita race condition "Lock eecm-auth-token stolen by another request")
     logoutFlagRef.current(true);
 
-    // 2. Limpa sessão mock/guest
+    // 2. Limpa sessão mock/guest e token do Supabase
     localStorage.removeItem('eecm_session');
+    localStorage.removeItem('eecm-auth-token');
 
-    // 3. Limpa estado global antes do redirect
+    // 3. Limpa cookies de sessão para evitar auto-login no F5
+    if (typeof document !== 'undefined') {
+      document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;';
+      document.cookie = 'sb-refresh-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;';
+      document.cookie = 'eecm_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;';
+    }
+
+    // 4. Limpa estado global antes do redirect
     setIsGuest(false);
     setUser(null);
     setActiveSchoolContextState('');
     activeSchoolContextRef.current = '';
 
-    // 4. Encerra sessão Supabase
+    // 5. Encerra sessão Supabase
     if (supabase) {
       try { await supabase.auth.signOut(); } catch (_e) { /* ignora erros de rede */ }
     }
 
-    // 5. Redirect via window.location para garantir limpeza total do estado React
+    // 6. Redirect via window.location para garantir limpeza total do estado React
     window.location.href = '/login';
   }, []);
 
