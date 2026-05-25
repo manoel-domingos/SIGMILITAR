@@ -527,7 +527,7 @@ function SidebarLayout({
                   </ul>
                 </li>
               );
-            })}
+            }))}
           </ul>
         </nav>
 
@@ -908,12 +908,12 @@ function MobileDrawer({
                           </Link>
                       </li>
                     );
-                  })}
-                </ul>
-              </li>
-            );
-          })}
-        </ul>
+                })}
+              </ul>
+            </li>
+          );
+        }))}
+      </ul>
       </nav>
       <div className="p-4 border-t border-slate-800 safe-area-bottom">
         <p className="text-xs text-slate-500 italic text-center">

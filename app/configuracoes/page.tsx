@@ -899,6 +899,8 @@ function ConfiguracoesInner() {
 
 /* ── SUB-COMPONENTS: PROFESSOR VIEWS ───────────────────────────────────────── */
 
+type BehaviorClass = 'Excepcional' | 'Ótimo' | 'Bom' | 'Regular' | 'Insuficiente' | 'Incompatível';
+
 function TabUsersProf() {
   const { students, occurrences, user } = useAppContext();
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
