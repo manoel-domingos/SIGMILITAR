@@ -1120,22 +1120,22 @@ function ProfileMenu({
 
           <div className="py-2">
             {currentUserRole === 'admin_global' && (
-              <>
-                <Link
-                  href="/dre"
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center gap-3"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <LayoutDashboard className="w-4 h-4" /> Painel DRE
-                </Link>
-                <Link
-                  href="/configuracoes"
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <Settings className="w-4 h-4" /> Configuração do Sistema
-                </Link>
-              </>
+              <Link
+                href="/dre"
+                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center gap-3"
+                onClick={() => setIsOpen(false)}
+              >
+                <LayoutDashboard className="w-4 h-4" /> Painel DRE
+              </Link>
+            )}
+            {(currentUserRole === 'admin_global' || currentUserRole === 'GESTOR') && (
+              <Link
+                href="/configuracoes"
+                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings className="w-4 h-4" /> {currentUserRole === 'admin_global' ? 'Configuração do Sistema' : 'Configurações'}
+              </Link>
             )}
             <button
               onClick={() => { setShowPasswordModal(true); setIsOpen(false); }}

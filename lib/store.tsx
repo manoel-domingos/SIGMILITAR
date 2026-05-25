@@ -529,7 +529,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Resolve o school_id do usuário ANTES de buscar dados para garantir filtro correto.
       // Prioridade: (1) perfil do Supabase → (2) domínio atual → (3) sem filtro (admin_global)
       const domainTenantId = getTenantIdFromHost();
-      let bootSchoolId = domainTenantId !== 'joaobatista' ? domainTenantId : '';
+      const domainDbSchoolId = getDbSchoolId(domainTenantId);
+      let bootSchoolId = domainDbSchoolId !== 'joaobatista' ? domainDbSchoolId : '';
 
       const hasOAuthCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('code');
       

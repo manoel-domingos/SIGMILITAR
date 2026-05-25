@@ -65,6 +65,7 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
   const { currentUserRole, currentUserSchoolId } = useAppContext();
   const firstSchool = schools[0]?.id ?? '';
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'GESTOR' as AppRole, school_id: firstSchool });
+  const [creationMethod, setCreationMethod] = useState<'invite' | 'password'>('invite');
   const [showPass, setShowPass] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,13 +79,24 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
     }
   }, [firstSchool, currentUserRole, currentUserSchoolId]);
 
-  const reset = () => { setForm({ name: '', email: '', password: '', role: 'GESTOR', school_id: firstSchool }); setError(null); setShowPass(false); };
+  const reset = () => {
+    setForm({ name: '', email: '', password: '', role: 'GESTOR', school_id: firstSchool });
+    setCreationMethod('invite');
+    setError(null);
+    setShowPass(false);
+  };
   const handleClose = () => { reset(); onClose(); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) { setError('Nome e e-mail/usuário são obrigatórios.'); return; }
-    if (form.password && form.password.length < 4) { setError('A senha deve ter pelo menos 4 caracteres.'); return; }
+    
+    const pwdToSubmit = creationMethod === 'password' ? form.password : '';
+    if (creationMethod === 'password' && pwdToSubmit.length < 4) {
+      setError('A senha deve ter pelo menos 4 caracteres.');
+      return;
+    }
+    
     setSaving(true); setError(null);
     try {
       const res = await fetch('/api/admin/create-user', {
@@ -93,13 +105,13 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
-          password: form.password,
+          password: pwdToSubmit,
           role: form.role,
           school_id: form.school_id,
         }),
       });
       const json = await res.json();
-      if (!res.ok) { setError(json.error || 'Erro ao criar usuario.'); return; }
+      if (!res.ok) { setError(json.error || 'Erro ao criar usuário.'); return; }
       if (json.user) onCreated(json.user as UserRow);
       handleClose();
     } catch (err: any) {
@@ -116,34 +128,75 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
       <aside className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">Novo Usuario</h2>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Novo Usuário</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Preencha os dados para criar a conta.</p>
           </div>
           <button onClick={handleClose} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"><X className="w-5 h-5" /></button>
         </div>
         <form id="create-user-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {error && <div className="flex items-start gap-2 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 text-sm px-4 py-3 rounded-xl border border-rose-100 dark:border-rose-900/40"><ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+          
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome completo <span className="text-rose-500">*</span></label>
             <input className={INPUT} placeholder="Ex: Maria Silva" value={form.name} onChange={set('name')} autoFocus />
           </div>
+          
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">E-mail ou usuario <span className="text-rose-500">*</span></label>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">E-mail ou usuário <span className="text-rose-500">*</span></label>
             <input className={INPUT} placeholder="Ex: maria.silva" value={form.email} onChange={set('email')} />
             <p className="text-[11px] text-slate-400">Usado para login. Pode ser e-mail ou nome simples.</p>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> Senha</label>
-            <div className="relative">
-              <input type={showPass ? 'text' : 'password'} className={INPUT + ' pr-10'} placeholder="Minimo 4 caracteres (opcional)" value={form.password} onChange={set('password')} />
-              <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
-                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Método de Cadastro</label>
+            <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700/30">
+              <button
+                type="button"
+                onClick={() => { setCreationMethod('invite'); setForm(v => ({ ...v, password: '' })); }}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${creationMethod === 'invite' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                <Users className="w-3.5 h-3.5" /> Enviar Convite
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreationMethod('password')}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${creationMethod === 'password' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              >
+                <KeyRound className="w-3.5 h-3.5" /> Definir Senha
               </button>
             </div>
-            <p className="text-[11px] text-slate-400">Deixe em branco para enviar um link de convite oficial por e-mail.</p>
           </div>
+
+          {creationMethod === 'invite' ? (
+            <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-4 flex gap-3 text-xs text-blue-700 dark:text-blue-400 leading-relaxed animate-in fade-in slide-in-from-top-1 duration-200">
+              <Brain className="w-5 h-5 mt-0.5 shrink-0 text-blue-500" />
+              <div>
+                <p className="font-semibold mb-0.5">Convite Oficial por E-mail</p>
+                <p>O usuário receberá uma notificação em seu e-mail com instruções e um link seguro para cadastrar sua própria senha de acesso.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-blue-500" /> Senha de Acesso <span className="text-rose-500">*</span></label>
+              <div className="relative">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  className={INPUT + ' pr-10'}
+                  placeholder="Mínimo 4 caracteres"
+                  value={form.password}
+                  onChange={set('password')}
+                  required={creationMethod === 'password'}
+                />
+                <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-400">Esta senha será usada pelo usuário para seu primeiro acesso direto.</p>
+            </div>
+          )}
+
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Papel / Permissao</label>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Papel / Permissão</label>
             <select className={SELECT} value={form.role} onChange={set('role')}>
               {currentUserRole === 'admin_global' && <option value="admin_global">Admin Global</option>}
               <option value="GESTOR">Gestor</option>
@@ -151,12 +204,13 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
               <option value="MONITOR">Monitor</option>
             </select>
             <p className="text-[11px] text-slate-400">
-              {form.role === 'admin_global' && 'Acesso total a todas as escolas e configuracoes.'}
-              {form.role === 'GESTOR' && 'Acesso total a escola vinculada.'}
-              {form.role === 'COORD' && 'Acesso de coordenacao sem configuracoes.'}
-              {form.role === 'MONITOR' && 'Apenas leitura e registro de ocorrencias.'}
+              {form.role === 'admin_global' && 'Acesso total a todas as escolas e configurações.'}
+              {form.role === 'GESTOR' && 'Acesso total à escola vinculada.'}
+              {form.role === 'COORD' && 'Acesso de coordenação sem configurações.'}
+              {form.role === 'MONITOR' && 'Apenas leitura e registro de ocorrências.'}
             </p>
           </div>
+          
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Escola</label>
             {currentUserRole === 'admin_global' ? (
@@ -169,9 +223,25 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
           </div>
         </form>
         <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex gap-3">
-          <button onClick={handleClose} className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancelar</button>
-          <button form="create-user-form" type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold transition flex items-center justify-center gap-2">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {saving ? 'Salvando...' : 'Criar Usuario'}
+          <button type="button" onClick={handleClose} className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancelar</button>
+          <button
+            form="create-user-form"
+            type="submit"
+            disabled={saving}
+            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98] ${
+              creationMethod === 'invite'
+                ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-indigo-500/10'
+                : 'bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-blue-500/10'
+            }`}
+          >
+            {saving ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : creationMethod === 'invite' ? (
+              <Users className="w-4 h-4" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
+            {saving ? 'Enviando...' : creationMethod === 'invite' ? 'Enviar Convite' : 'Criar Usuário'}
           </button>
         </div>
       </aside>
@@ -482,13 +552,13 @@ function ConfiguracoesInner() {
     }
 
     const [{ data: ud }, { data: sd }] = await Promise.all([
-      supabase().from('user_profiles').select('*').order('name'),
-      supabase().from('schools').select('id, name').order('id'),
+      uQuery,
+      sQuery,
     ]);
     if (ud) setUsers(ud as UserRow[]);
     if (sd) setSchools(sd as School[]);
     setLoading(false);
-  }, []);
+  }, [currentUserRole, currentUserSchoolId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -542,13 +612,19 @@ function ConfiguracoesInner() {
     );
   }
 
-  const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'users',   label: 'Usuarios',        icon: Users },
-    { id: 'schools', label: 'Escolas',          icon: Building2 },
-    { id: 'profile', label: 'Meu Perfil',       icon: User },
-    { id: 'aria',    label: 'Assistente ARIA',  icon: Brain },
-    { id: 'status',  label: 'Integracoes',      icon: Activity },
-  ];
+  const TABS = (currentUserRole === 'admin_global'
+    ? [
+        { id: 'users',   label: 'Usuários',        icon: Users },
+        { id: 'schools', label: 'Escolas',          icon: Building2 },
+        { id: 'profile', label: 'Meu Perfil',       icon: User },
+        { id: 'aria',    label: 'Assistente ARIA',  icon: Brain },
+        { id: 'status',  label: 'Integrações',      icon: Activity },
+      ]
+    : [
+        { id: 'users',   label: 'Usuários da Escola', icon: Users },
+        { id: 'profile', label: 'Meu Perfil',       icon: User },
+      ]
+  ) as { id: Tab; label: string; icon: React.ElementType }[];
 
   return (
     <>
@@ -657,7 +733,9 @@ function ConfiguracoesInner() {
                         {editingId === u.id ? (
                           <select value={editValues.role} onChange={e => setEditValues(v => ({ ...v, role: e.target.value as AppRole }))}
                             className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            {(['admin_global','GESTOR','COORD','MONITOR'] as AppRole[]).map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                            {(['admin_global','GESTOR','COORD','MONITOR'] as AppRole[])
+                              .filter(r => r !== 'admin_global' || currentUserRole === 'admin_global')
+                              .map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                           </select>
                         ) : (
                           <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${ROLE_COLORS[u.role] ?? 'bg-slate-100 text-slate-600'}`}>{ROLE_LABELS[u.role] ?? u.role}</span>
@@ -665,10 +743,14 @@ function ConfiguracoesInner() {
                       </td>
                       <td className="px-5 py-3.5">
                         {editingId === u.id ? (
-                          <select value={editValues.school_id} onChange={e => setEditValues(v => ({ ...v, school_id: e.target.value }))}
-                            className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            {schools.map(s => <option key={s.id} value={s.id}>{s.id} — {s.name}</option>)}
-                          </select>
+                          currentUserRole === 'admin_global' ? (
+                            <select value={editValues.school_id} onChange={e => setEditValues(v => ({ ...v, school_id: e.target.value }))}
+                              className="bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-600 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                              {schools.map(s => <option key={s.id} value={s.id}>{s.id} — {s.name}</option>)}
+                            </select>
+                          ) : (
+                            <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">{editValues.school_id}</span>
+                          )
                         ) : (
                           <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">{u.school_id}</span>
                         )}
