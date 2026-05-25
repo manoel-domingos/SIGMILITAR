@@ -789,6 +789,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkWriteAccess();
     let newId = 'S' + (students.length + 1);
     if (supabase && isSupabaseConnected) {
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
       const dbPayload: any = {
         name: s.name,
         class: s.class,
@@ -797,7 +798,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         address: s.address,
         cpf: s.cpf,
         contacts: s.contacts,
-        archived: s.archived || false
+        archived: s.archived || false,
+        school_id: dbSchoolId
         // registration_number e birth_date comentados ate as colunas serem criadas no banco
       };
       try {
@@ -829,10 +831,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkWriteAccess();
     if (supabase && isSupabaseConnected) {
       try {
+        const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
+        
         // Intelligence: Check for existing students to preserve IDs and avoid duplicates
         const { data: existingStudents } = await supabase!.from('students').select('id, name, class');
         
         const studentsToUpsert = newStudents.map(ns => {
+          let matchedId = crypto.randomUUID();
           // Try to find a match by exact name and class if matched in DB
           if (existingStudents) {
              const match = existingStudents.find((es: any) => 
@@ -840,10 +845,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
                es.class.toLowerCase().trim() === ns.class.toLowerCase().trim()
              );
              if (match) {
-                return { ...ns, id: match.id };
+                matchedId = match.id;
              }
           }
-          return { ...ns, id: crypto.randomUUID() };
+          return {
+            id: matchedId,
+            name: ns.name,
+            class: ns.class,
+            shift: ns.shift,
+            observation: ns.observation,
+            address: ns.address,
+            cpf: ns.cpf,
+            contacts: ns.contacts,
+            archived: ns.archived || false,
+            school_id: dbSchoolId
+          };
         });
 
         const { data, error } = await supabase!.from('students').upsert(studentsToUpsert, { onConflict: 'id' }).select();
