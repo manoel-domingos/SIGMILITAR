@@ -111,13 +111,15 @@ export function useTenantConfig() {
   const config = getSchoolConfig(tenantId);
   const allGrades = [...FUNDAMENTAL_GRADES, ...config.grades, ...(config.specialYears ?? [])];
   const allClassNames = getAllClassNames(tenantId);
+  
+  const dbSchoolId = getDbSchoolId(tenantId);
 
   return {
     tenantId,
     schoolName: SCHOOL_NAMES[tenantId] ?? SCHOOL_NAMES['eecmprofjoaobatista'],
-    logoSidebar: `/schools/${tenantId}/nova_logo.${ext}`,
-    logoDash: `/schools/${tenantId}/logo_dash.svg`,
-    logoLogin: `/schools/${tenantId}/logo_login.svg`,
+    logoSidebar: `/schools/${dbSchoolId}/nova_logo.${ext}`,
+    logoDash: `/schools/${dbSchoolId}/logo_dash.svg`,
+    logoLogin: `/schools/${dbSchoolId}/logo_login.svg`,
     /** Anos disponíveis no tenant (inclui fundamental + médio + especiais) */
     grades: allGrades,
     /** Apenas anos do ensino médio + especiais (sem fundamental) */

@@ -63,12 +63,22 @@ const TENANT_CONFIGS: Record<string, SchoolConfig> = {
     classLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
     specialYears: ['PRA'],
     standaloneClasses: ['EPT-AUTOMAC', 'EPT-EDIFICAC', 'EPT-ELETROTEC', 'EPT-ELETROT'],
+    classSuffixesByGrade: {
+      '1º Ano': ['A', 'A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'],
+      '2º Ano': ['A', 'A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'],
+      '3º Ano': ['A', 'A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'],
+    }
   },
   eecmheliodoro: {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
     classLetters: ['A', 'B', 'C', 'D', 'E', 'F'],
     specialYears: ['PRA'],
     standaloneClasses: ['EPT-AUTOMAC', 'EPT-EDIFICAC', 'EPT-ELETROTEC', 'EPT-ELETROT'],
+    classSuffixesByGrade: {
+      '1º Ano': ['A', 'A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'],
+      '2º Ano': ['A', 'A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'],
+      '3º Ano': ['A', 'A-LING', 'B-CHS', 'B-LING', 'C-CHS', 'C-MAT/CNT', 'D-EPT/INFORM', 'D-MAT/CNT', 'E-EPT/INFORM', 'E-MAT/CNT'],
+    }
   },
   tangara: {
     grades: ['1º Ano', '2º Ano', '3º Ano'],
