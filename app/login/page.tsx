@@ -125,6 +125,18 @@ export default function Login() {
     }
   }, []);
 
+  // Timeout para impedir loop infinito em falhas do OAuth
+  useEffect(() => {
+    if (processingOAuth) {
+      const timer = setTimeout(() => {
+        setProcessingOAuth(false);
+        setError('O tempo limite de login foi excedido. Por favor, tente novamente.');
+      }, 12000); // 12 segundos de tolerância
+      
+      return () => clearTimeout(timer);
+    }
+  }, [processingOAuth]);
+
   if (processingOAuth && !error) {
     return (
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-blue-900 text-white">
