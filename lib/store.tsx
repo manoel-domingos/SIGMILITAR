@@ -408,11 +408,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Registra listener de mudança de autenticação (SIGNED_IN / SIGNED_OUT).
       // Deve ser declarado APÓS fetchData para que o callback possa chamá-lo.
       supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+        console.log(`[AUTH EVENT] Evento recebido: ${event}`, session?.user ? `Usuário: ${session.user.email}` : "Sem sessão ativa");
+        
         // Ignora eventos disparados durante o processo de logout
-        if (isLoggingOut) return;
+        if (isLoggingOut) {
+          console.log("[AUTH EVENT] Ignorando evento pois está em processo de logout.");
+          return;
+        }
 
         if (session?.user?.email) {
           const emailLower = session.user.email.toLowerCase();
+          console.log(`[AUTH EVENT] Verificando whitelist para o e-mail: ${emailLower}...`);
           try {
             // 1. Verifica se o e-mail existe na whitelist (user_profiles)
             const { data: profile, error: profileErr } = await supabase
@@ -422,7 +428,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               .single();
 
             if (profileErr || !profile) {
-              console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower);
+              console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower, profileErr);
               
               // Dispara erro global e desloga
               isLoggingOut = true;
@@ -436,6 +442,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               window.location.href = '/login?error=whitelist';
               return;
             }
+
+            console.log(`[WHITELIST] E-mail autorizado! Perfil encontrado:`, profile);
 
             // 2. Vínculo automático de UUID:
             if (profile.id !== session.user.id) {
@@ -493,10 +501,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const hasOAuthCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('code');
       
-      if (!hasOAuthCode) {
+      if (hasOAuthCode) {
         try {
+          const code = new URLSearchParams(window.location.search).get('code');
+          if (code) {
+            console.log("[OAUTH] Código detectado na URL, iniciando troca manual por sessão...");
+            const { data, error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+            if (exchangeErr) {
+              console.error("[OAUTH] Erro ao trocar código por sessão:", exchangeErr.message);
+              throw exchangeErr;
+            }
+            if (data?.session?.user?.email) {
+              const userEmail = data.session.user.email.toLowerCase();
+              console.log("[OAUTH] Troca realizada com sucesso para o usuário:", userEmail);
+              
+              // Busca perfil e define escola do usuário
+              const { data: profile, error: profileErr } = await supabase
+                .from('user_profiles')
+                .select('school_id, role')
+                .eq('email', userEmail)
+                .single();
+                
+              if (profileErr) {
+                console.error("[OAUTH] Erro ao buscar perfil pós-troca:", profileErr.message);
+              }
+              
+              if (profile?.school_id && profile.school_id !== 'DRE') {
+                bootSchoolId = profile.school_id;
+                console.log("[OAUTH] Definindo escola de boot pós-troca:", bootSchoolId);
+              }
+            }
+          }
+        } catch (e: any) {
+          console.error("[OAUTH] Falha na troca de sessão:", e.message || e);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('eecm_login_error', 'Erro ao validar login com o Google: ' + (e.message || 'Código inválido ou expirado.'));
+          }
+          window.location.href = '/login?error=whitelist';
+          return;
+        }
+      } else {
+        try {
+          console.log("[AUTH] Buscando sessão atual...");
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user?.email) {
+            console.log("[AUTH] Sessão ativa encontrada para:", session.user.email);
             const { data: profile } = await supabase
               .from('user_profiles')
               .select('school_id, role')
@@ -504,10 +553,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
               .single();
             if (profile?.school_id && profile.school_id !== 'DRE') {
               bootSchoolId = profile.school_id;
+              console.log("[AUTH] Definindo escola de boot:", bootSchoolId);
             }
+          } else {
+            console.log("[AUTH] Nenhuma sessão ativa encontrada.");
           }
         } catch (e) {
-          // sem perfil ainda — usa o tenant do domínio como fallback
+          console.error("[AUTH] Erro ao buscar sessão:", e);
         }
       }
 
