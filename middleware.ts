@@ -199,13 +199,6 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Se estiver no domínio central e tentar acessar a raiz sem slug, redirecionar para o login
-  if (pathname === '/') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
-
   return NextResponse.next();
 }
 
