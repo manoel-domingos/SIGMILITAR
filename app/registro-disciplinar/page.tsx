@@ -449,6 +449,28 @@ function RegistroDisciplinarContent() {
 
   const filteredOccurrences = occurrences.filter(o => {
     if (o.archived) return false;
+
+    // Filtro de visibilidade para professores
+    if (currentUserRole === 'PROFESSOR') {
+      const appUser = appUsers.find(u => u.email === user?.email);
+      const staffUser = staffMembers.find(s => s.name.toLowerCase() === user?.email?.split('@')[0]?.toLowerCase());
+      
+      const profNameApp = appUser ? ('Professor ' + appUser.name).toLowerCase() : '';
+      const profNameStaff = staffUser ? (staffUser.role + ' ' + staffUser.name).toLowerCase() : '';
+      const emailUser = user?.email?.split('@')[0]?.toLowerCase() || '';
+
+      const loc = o.locatedBy?.toLowerCase() || '';
+      const reg = o.registeredBy?.toLowerCase() || '';
+      const link = o.linkedProfessor?.toLowerCase() || '';
+
+      const hasMatch = (
+        (profNameApp && (loc === profNameApp || reg === profNameApp || link === profNameApp)) ||
+        (profNameStaff && (loc === profNameStaff || reg === profNameStaff || link === profNameStaff)) ||
+        (emailUser && (loc.includes(emailUser) || reg.includes(emailUser) || link.includes(emailUser)))
+      );
+
+      if (!hasMatch) return false;
+    }
     
     // Get all students associated with this occurrence
     const relatedStudents = o.studentIds && o.studentIds.length > 0 
