@@ -24,7 +24,7 @@ import OccurrenceChecklist, {
 
 function RegistroDisciplinarContent() {
   const { 
-    students, occurrences, rules, staffMembers, user, isGuest, currentUserRole,
+    students, occurrences, rules, staffMembers, appUsers, user, isGuest, currentUserRole,
     addOccurrence, updateOccurrence, archiveOccurrence, checkRecidivism, getEscalationStatus,
     addStudent, updateStudent, addStaffMember, uploadFile, activeSchoolContext
   } = useAppContext();
@@ -347,7 +347,7 @@ function RegistroDisciplinarContent() {
           infractions: ruleDescriptions || 'Não especificada',
           dateTime: date + ' ' + hour,
           location,
-          locatedBy: locatedBy || 'não informado',
+          locatedBy: (locatedBy || 'não informado') + (linkedProfessor ? ' / Prof: ' + linkedProfessor : ''),
           measure: measureOverride ?? escalation?.measure ?? '',
           isReincidente,
           text: observations,
@@ -396,14 +396,11 @@ function RegistroDisciplinarContent() {
 
   const getLoggedProfessor = (): string => {
     if (currentUserRole !== 'PROFESSOR') return '';
-    const emailUser = user?.email?.split('@')[0] || '';
-    if (emailUser) {
-      const staff = staffMembers.find(s => 
-        s.role === 'Professor' && 
-        s.name.toLowerCase() === emailUser.toLowerCase()
-      );
-      if (staff) return staff.role + ' ' + staff.name;
-    }
+    const match = appUsers.find(u =>
+      u.role === 'PROFESSOR' &&
+      (u.email === user?.email || u.name.toLowerCase() === getLoggedUserName().toLowerCase())
+    );
+    if (match) return 'Professor ' + match.name;
     return '';
   };
 
@@ -1972,26 +1969,16 @@ function RegistroDisciplinarContent() {
                   </button>
                 </div>
 
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-slate-600 mb-1">Professor Vinculado</label>
-                    <SearchableSelect
-                      options={staffMembers
-                        .filter(s => s.role === 'Professor')
-                        .map(s => ({ value: s.role + ' ' + s.name, label: s.role + ' ' + s.name }))}
-                      value={linkedProfessor}
-                      onChange={setLinkedProfessor}
-                      placeholder="Professor da aula ou turma?"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsStaffModalOpenProf(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg transition shrink-0"
-                    title="Cadastrar novo professor"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Professor Vinculado</label>
+                  <SearchableSelect
+                    options={appUsers
+                      .filter(u => u.role === 'PROFESSOR')
+                      .map(u => ({ value: 'Professor ' + u.name, label: 'Professor ' + u.name }))}
+                    value={linkedProfessor}
+                    onChange={setLinkedProfessor}
+                    placeholder="Professor da aula ou turma?"
+                  />
                 </div>
 
                 <div>

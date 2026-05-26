@@ -1230,7 +1230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         hour: o.hour || null,
         location: o.location || null,
         located_by: o.locatedBy || null,
-        linked_professor: o.linkedProfessor || null,
+        linked_professor: o.linkedProfessor ?? null,
         rule_code: o.ruleCodes && o.ruleCodes.length > 0 ? o.ruleCodes : [o.ruleCode],
         registered_by: o.registeredBy,
         observations: o.observations || null,
@@ -1329,7 +1329,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (o.hour) dbPayload.hour = o.hour;
       if (o.location) dbPayload.location = o.location;
       if (o.locatedBy) dbPayload.located_by = o.locatedBy;
-      if (o.linkedProfessor !== undefined) dbPayload.linked_professor = o.linkedProfessor || null;
+      if (o.linkedProfessor !== undefined) dbPayload.linked_professor = o.linkedProfessor;
       if (o.ruleCodes && o.ruleCodes.length > 0) {
         dbPayload.rule_code = o.ruleCodes;
       } else if (o.ruleCode !== undefined) {
