@@ -36,6 +36,7 @@ export interface Occurrence {
   hour?: string;
   location?: string;
   locatedBy?: string;
+  linkedProfessor?: string;
   ruleCode: number;        // Primary rule (kept for backward compat)
   ruleCodes?: number[];    // All rules in this occurrence (multi-infraction)
   registeredBy: string;

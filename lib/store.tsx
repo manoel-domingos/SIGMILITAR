@@ -513,6 +513,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 hour: o.hour,
                 location: o.location,
                 locatedBy: o.located_by,
+                linkedProfessor: o.linked_professor,
                 ruleCode: allCodes[0],
                 ruleCodes: allCodes,
                 studentId: String(o.student_id),
@@ -1229,6 +1230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         hour: o.hour || null,
         location: o.location || null,
         located_by: o.locatedBy || null,
+        linked_professor: o.linkedProfessor || null,
         rule_code: o.ruleCodes && o.ruleCodes.length > 0 ? o.ruleCodes : [o.ruleCode],
         registered_by: o.registeredBy,
         observations: o.observations || null,
@@ -1281,6 +1283,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             hour: data.hour,
             location: data.location,
             locatedBy: data.located_by,
+            linkedProfessor: data.linked_professor,
             ruleCode: Array.isArray(data.rule_code) ? Number(data.rule_code[0]) : Number(data.rule_code),
             ruleCodes: Array.isArray(data.rule_code) ? data.rule_code.map(Number) : [Number(data.rule_code)],
             studentId: String(data.student_id),
@@ -1326,6 +1329,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (o.hour) dbPayload.hour = o.hour;
       if (o.location) dbPayload.location = o.location;
       if (o.locatedBy) dbPayload.located_by = o.locatedBy;
+      if (o.linkedProfessor !== undefined) dbPayload.linked_professor = o.linkedProfessor || null;
       if (o.ruleCodes && o.ruleCodes.length > 0) {
         dbPayload.rule_code = o.ruleCodes;
       } else if (o.ruleCode !== undefined) {

@@ -53,6 +53,8 @@ function RegistroDisciplinarContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [linkedProfessor, setLinkedProfessor] = useState('');
+  const [isStaffModalOpenProf, setIsStaffModalOpenProf] = useState(false);
   const [isGuardianListOpen, setIsGuardianListOpen] = useState(false);
   const [isPrintPanelOpen, setIsPrintPanelOpen] = useState(false);
   const [isAddGuardianModalOpen, setIsAddGuardianModalOpen] = useState(false);
@@ -219,6 +221,7 @@ function RegistroDisciplinarContent() {
 
     // Located by
     const locatedByStr = locatedBy.trim() ? ' pelo(a) ' + locatedBy.trim() : '';
+    const professorStr = linkedProfessor.trim() ? ' / Professor(a) vinculado(a): ' + linkedProfessor.trim() : '';
 
     // Reincidencia (exclui a propria ocorrencia ao editar)
     const isReincidente = selectedStudents.some(id => {
@@ -271,7 +274,7 @@ function RegistroDisciplinarContent() {
       `**Aluno(s) envolvido(s):** ${alunoNomesStr}`,
       ``,
       `**Relato dos Fatos:**`,
-      `No dia ${diaNum} de ${mesExtenso} de ${year}, às ${hour}, ${alunoStr} ${verboStr} no(a) ${location}${locatedByStr}${locatedBy.trim() ? '.' : '.'}${reincidenciaStr}${agravStr}${atenStr} O presente registro foi lavrado por ${registradoPor}.`,
+      `No dia ${diaNum} de ${mesExtenso} de ${year}, às ${hour}, ${alunoStr} ${verboStr} no(a) ${location}${locatedByStr}${professorStr}${locatedBy.trim() || linkedProfessor.trim() ? '.' : '.'}${reincidenciaStr}${agravStr}${atenStr} O presente registro foi lavrado por ${registradoPor}.`,
       ``,
       `**Classificação da Infração:**`,
       classifStr,
@@ -391,6 +394,19 @@ function RegistroDisciplinarContent() {
     return 'Gestor Escolar';
   };
 
+  const getLoggedProfessor = (): string => {
+    if (currentUserRole !== 'PROFESSOR') return '';
+    const emailUser = user?.email?.split('@')[0] || '';
+    if (emailUser) {
+      const staff = staffMembers.find(s => 
+        s.role === 'Professor' && 
+        s.name.toLowerCase() === emailUser.toLowerCase()
+      );
+      if (staff) return staff.role + ' ' + staff.name;
+    }
+    return '';
+  };
+
   // Carregar perfil do Supabase para preencher "Registrado por"
   useEffect(() => {
     if (!user?.email || !supabase) return;
@@ -402,24 +418,37 @@ function RegistroDisciplinarContent() {
       .then(({ data }: { data: { name: string; role: string } | null }) => {
         if (data?.name) {
           setRegisteredBy(buildUserLabel(data.name, data.role));
+          if (data.role === 'PROFESSOR') {
+            const staff = staffMembers.find(s => s.role === 'Professor' && s.name.toLowerCase() === data.name.toLowerCase());
+            if (staff) setLinkedProfessor(staff.role + ' ' + staff.name);
+          }
         } else if (user.email) {
           const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
           setRegisteredBy(staff ? staff.role + ' ' + staff.name : user.email.split('@')[0]);
+          if (staff && staff.role === 'Professor') {
+            setLinkedProfessor(staff.role + ' ' + staff.name);
+          }
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email]);
+  }, [user?.email, staffMembers]);
 
   // Atualizar registeredBy em tempo real quando o perfil for salvo no AppShell
   useEffect(() => {
     const handler = (e: Event) => {
       const { name, role } = (e as CustomEvent).detail || {};
-      if (name) setRegisteredBy(buildUserLabel(name, role));
+      if (name) {
+        setRegisteredBy(buildUserLabel(name, role));
+        if (role === 'PROFESSOR') {
+          const staff = staffMembers.find(s => s.role === 'Professor' && s.name.toLowerCase() === name.toLowerCase());
+          if (staff) setLinkedProfessor(staff.role + ' ' + staff.name);
+        }
+      }
     };
     window.addEventListener('eecm_profile_updated', handler);
     return () => window.removeEventListener('eecm_profile_updated', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, staffMembers]);
 
   const filteredOccurrences = occurrences.filter(o => {
     if (o.archived) return false;
@@ -498,6 +527,7 @@ function RegistroDisciplinarContent() {
     setHour(localHour);
     setLocation('Pátio');
     setLocatedBy('');
+    setLinkedProfessor(getLoggedProfessor());
     setSelectedRules([]);
     setRuleSearch('');
     setRegisteredBy(getLoggedUserName());
@@ -521,6 +551,7 @@ function RegistroDisciplinarContent() {
     setHour(o.hour || '');
     setLocation(o.location || 'Pátio');
     setLocatedBy(o.locatedBy || '');
+    setLinkedProfessor(o.linkedProfessor || '');
     const allCodes = o.ruleCodes && o.ruleCodes.length > 0 ? o.ruleCodes : [o.ruleCode];
     setSelectedRules(allCodes.map(String));
     const firstRule = rules.find(r => r.code === allCodes[0]);
@@ -718,6 +749,10 @@ function RegistroDisciplinarContent() {
         <span class="sid-valor">${o.locatedBy || '---'}</span>
       </div>
       <div class="sid-item">
+        <span class="sid-label">Professor Vinculado</span>
+        <span class="sid-valor">${o.linkedProfessor || '---'}</span>
+      </div>
+      <div class="sid-item">
         <span class="sid-label">Registrado por</span>
         <span class="sid-valor">${o.registeredBy || '---'}</span>
       </div>
@@ -800,6 +835,7 @@ function RegistroDisciplinarContent() {
           hour,
           location,
           locatedBy,
+          linkedProfessor,
           ruleCode: primaryRuleCode,
           ruleCodes: ruleCodesInt,
           registeredBy,
@@ -823,6 +859,7 @@ function RegistroDisciplinarContent() {
               hour,
               location,
               locatedBy,
+              linkedProfessor,
               ruleCode: primaryRuleCode,
               ruleCodes: ruleCodesInt,
               registeredBy,
@@ -858,6 +895,7 @@ function RegistroDisciplinarContent() {
             hour,
             location,
             locatedBy,
+            linkedProfessor,
             ruleCode: primaryRuleCode,
             ruleCodes: ruleCodesInt,
             registeredBy,
@@ -928,6 +966,7 @@ function RegistroDisciplinarContent() {
         setShowSuggestions(false);
         setSelectedStudents([]);
         setSelectedRules([]);
+        setLinkedProfessor('');
 
         setPostSaveAlert({
           occurrenceId: savedId ?? occurrenceNum,
@@ -954,6 +993,7 @@ function RegistroDisciplinarContent() {
       setObservations('');
       setVideoUrls([]);
       setSignedDocUrls([]);
+      setLinkedProfessor('');
     } catch (err) {
       console.error("Erro ao salvar ocorrência:", err);
       // Do not close the modal if there's an error
@@ -1180,6 +1220,22 @@ function RegistroDisciplinarContent() {
     }
   };
 
+  const handleQuickAddStaffProf = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaffName) return;
+    try {
+      await addStaffMember({
+        name: newStaffName,
+        role: 'Professor'
+      });
+      setLinkedProfessor('Professor ' + newStaffName);
+      setNewStaffName('');
+      setIsStaffModalOpenProf(false);
+    } catch (err) {
+      console.error("Erro ao adicionar professor:", err);
+    }
+  };
+
   const handleExport = (o: Occurrence) => {
     // Usa o número fixo da ATA armazenado no banco; fallback pela posição na lista total
     const _eIdx = occurrences.findIndex((x: any) => x.id === o.id);
@@ -1233,6 +1289,7 @@ function RegistroDisciplinarContent() {
         '<div class="sid-item"><span class="sid-label">' + (relatedStudents.length > 1 ? 'Alunos' : 'Aluno') + '</span><span class="sid-valor">' + studentNames + '</span></div>' +
         '<div class="sid-item"><span class="sid-label">' + (relatedStudents.length > 1 ? 'Turmas' : 'Turma') + '</span><span class="sid-valor">' + studentClasses + '</span></div>' +
         '<div class="sid-item"><span class="sid-label">Localizado por</span><span class="sid-valor">' + (o.locatedBy || '---') + '</span></div>' +
+        '<div class="sid-item"><span class="sid-label">Professor Vinculado</span><span class="sid-valor">' + (o.linkedProfessor || '---') + '</span></div>' +
         '<div class="sid-item"><span class="sid-label">Registrado por</span><span class="sid-valor">' + (o.registeredBy || '---') + '</span></div>' +
         '<div class="sidebar-divisor"></div>' +
         '<div class="sidebar-secao">INFRA\u00c7\u00c3O</div>' +
@@ -1335,6 +1392,7 @@ function RegistroDisciplinarContent() {
         '<p style="font-size:14pt;"><strong>' + (relatedStudents.length > 1 ? 'ALUNOS' : 'ALUNO') + ':</strong> ' + studentNames.toUpperCase() + '</p>' +
         '<p style="font-size:14pt;"><strong>' + (relatedStudents.length > 1 ? 'TURMAS' : 'TURMA') + ':</strong> ' + studentClasses.toUpperCase() + '</p>' +
         '<p style="font-size:14pt;"><strong>LOCALIZADO POR:</strong> ' + (o.locatedBy?.toUpperCase() || 'N\u00c3O INFORMADO') + '</p>' +
+        '<p style="font-size:14pt;"><strong>PROFESSOR VINCULADO:</strong> ' + (o.linkedProfessor?.toUpperCase() || 'N\u00c3O INFORMADO') + '</p>' +
         '<p style="font-size:14pt;"><strong>REGISTRADO POR:</strong> ' + (o.registeredBy?.toUpperCase() || 'SISTEMA') + '</p>' +
         '<div style="border:1px solid #000;padding:10pt;margin:20pt 0;font-size:11pt;">' +
           '<p><strong>INFRA\u00c7\u00c3O (ART. ' + rule?.code + '):</strong> ' + (rule?.description?.toUpperCase() || '') + '</p>' +
@@ -1914,6 +1972,28 @@ function RegistroDisciplinarContent() {
                   </button>
                 </div>
 
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Professor Vinculado</label>
+                    <SearchableSelect
+                      options={staffMembers
+                        .filter(s => s.role === 'Professor')
+                        .map(s => ({ value: s.role + ' ' + s.name, label: s.role + ' ' + s.name }))}
+                      value={linkedProfessor}
+                      onChange={setLinkedProfessor}
+                      placeholder="Professor da aula ou turma?"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsStaffModalOpenProf(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg transition shrink-0"
+                    title="Cadastrar novo professor"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-1">Registrado por</label>
                   <input 
@@ -2457,6 +2537,48 @@ function RegistroDisciplinarContent() {
         </div>
       )}
 
+      {/* Modal Quick Add Professor */}
+      {isStaffModalOpenProf && (
+        <div className="fixed inset-0 glass-overlay z-[9991] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsStaffModalOpenProf(false); }}>
+          <div className="glass-modal max-w-sm w-full p-5 animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+             <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800">Cadastrar Professor</h3>
+                <button onClick={() => setIsStaffModalOpenProf(false)} className="text-slate-400 hover:text-slate-600">
+                   <X className="w-5 h-5" />
+                </button>
+             </div>
+             <form onSubmit={handleQuickAddStaffProf} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                   <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cargo</label>
+                      <select 
+                        disabled
+                        value="Professor" 
+                        className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none text-slate-500 cursor-not-allowed"
+                      >
+                         <option value="Professor">Professor</option>
+                      </select>
+                   </div>
+                   <div className="flex-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome</label>
+                      <input 
+                         type="text" 
+                         required 
+                         autoFocus
+                         value={newStaffName} 
+                         onChange={e => setNewStaffName(e.target.value)}
+                         className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                   </div>
+                </div>
+                <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-sm mt-2">
+                   Confirmar Cadastro
+                </button>
+             </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal Visualização de Ocorrência — largo com abas */}
       {_vo && (() => {
         const voStudents = _vo.studentIds && _vo.studentIds.length > 0
@@ -2543,6 +2665,8 @@ function RegistroDisciplinarContent() {
                         { label: 'Data',       value: formatDate(_vo.date) },
                         { label: 'Hora',       value: _vo.hour || '—' },
                         { label: 'Local',      value: _vo.location || '—' },
+                        { label: 'Localizado por', value: _vo.locatedBy || '—' },
+                        { label: 'Professor Vinculado', value: _vo.linkedProfessor || '—' },
                         { label: 'Registrado por', value: _vo.registeredBy || 'Sistema' },
                       ].map(({ label, value }) => (
                         <div key={label} className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
