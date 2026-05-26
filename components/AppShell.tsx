@@ -292,6 +292,35 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setIsProfileOpen(false);
   };
 
+  // useMemo MUST be called before any conditional return to comply with React's rules of hooks.
+  const isAllowed = useMemo(() => {
+    return isRouteAllowed(pathname, currentUserRole, permissions);
+  }, [pathname, currentUserRole, permissions]);
+
+  const wrappedContent = useMemo(() => {
+    if (isAllowed) return children;
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 min-h-[60vh] gap-6 animate-in fade-in duration-300">
+        <div className="w-20 h-20 bg-rose-50/80 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 rounded-3xl flex items-center justify-center animate-bounce">
+          <ShieldAlert className="w-10 h-10 text-rose-500" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Painel Indisponível</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+            O Gestor da instituição suspendeu o acesso a este recurso para o cargo <span className="font-bold text-rose-500">{ROLE_LABELS[currentUserRole] || currentUserRole}</span>.
+          </p>
+        </div>
+        <button 
+          onClick={() => router.push('/')} 
+          className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 rounded-2xl text-sm font-semibold transition active:scale-95 shadow-lg shadow-slate-950/20"
+        >
+          Retornar ao Início
+        </button>
+      </div>
+    );
+  }, [isAllowed, children, currentUserRole, router]);
+
+  // Early return AFTER all hooks have been declared
   if (!user && !isGuest) return null;
 
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Gestor Escolar';
@@ -320,33 +349,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       toggleLayout={toggleLayout}
     />
   );
-
-  const isAllowed = useMemo(() => {
-    return isRouteAllowed(pathname, currentUserRole, permissions);
-  }, [pathname, currentUserRole, permissions]);
-
-  const wrappedContent = useMemo(() => {
-    if (isAllowed) return children;
-    return (
-      <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 min-h-[60vh] gap-6 animate-in fade-in duration-300">
-        <div className="w-20 h-20 bg-rose-50/80 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 rounded-3xl flex items-center justify-center animate-bounce">
-          <ShieldAlert className="w-10 h-10 text-rose-500" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Painel Indisponível</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            O Gestor da instituição suspendeu o acesso a este recurso para o cargo <span className="font-bold text-rose-500">{ROLE_LABELS[currentUserRole] || currentUserRole}</span>.
-          </p>
-        </div>
-        <button 
-          onClick={() => router.push('/')} 
-          className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 rounded-2xl text-sm font-semibold transition active:scale-95 shadow-lg shadow-slate-950/20"
-        >
-          Retornar ao Início
-        </button>
-      </div>
-    );
-  }, [isAllowed, children, currentUserRole, router]);
 
   return (
     <div className={'min-h-screen bg-[#eef3f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 ' + (layoutMode === 'sidebar' ? 'flex' : 'flex flex-col')}>
