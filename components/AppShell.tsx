@@ -517,6 +517,7 @@ function SidebarLayout({
   menuGroups: MenuGroup[];
 }) {
   const { logoSidebar } = useTenantConfig();
+  const { currentUserRole } = useAppContext();
   return (
     <>
       <aside className="hidden md:flex w-64 bg-[#1E293B] flex-col shrink-0 shadow-xl">
@@ -915,6 +916,7 @@ function MobileDrawer({
   menuGroups: MenuGroup[];
 }) {
   const { logoSidebar } = useTenantConfig();
+  const { currentUserRole } = useAppContext();
   return (
     <aside
       className={'fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden safe-area-inset ' + (open ? 'translate-x-0' : '-translate-x-full')}
