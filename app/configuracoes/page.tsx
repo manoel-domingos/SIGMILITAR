@@ -11,7 +11,7 @@ import {
   Eye, EyeOff, Users, ChevronRight, Lock, Brain,
   Zap, Activity, Server, Database, Wifi, WifiOff,
   BarChart2, Cpu, MessageSquare, User, KeyRound,
-  FileText, CheckSquare,
+  FileText, CheckSquare, Loader2,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -26,7 +26,7 @@ function supabase(): any {
 }
 
 type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'PROFESSOR' | 'admin_global';
-type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status' | 'users_prof' | 'occurrences_prof' | 'conduct_prof' | 'reports_prof';
+type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status' | 'users_prof' | 'occurrences_prof' | 'conduct_prof' | 'reports_prof' | 'permissions';
 type Severity = 'Leve' | 'Media' | 'Grave';
 
 interface UserRow {
@@ -737,7 +737,7 @@ function ConfiguracoesInner() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const t = searchParams?.get('tab') as Tab | null;
-    const allowed = ['users','schools','profile','aria','status','users_prof','occurrences_prof','conduct_prof','reports_prof'];
+    const allowed = ['users','schools','profile','aria','status','users_prof','occurrences_prof','conduct_prof','reports_prof','permissions'];
     if (t && allowed.includes(t)) return t;
     return currentUserRole === 'PROFESSOR' ? 'profile' : 'users';
   });
@@ -787,7 +787,7 @@ function ConfiguracoesInner() {
   // Sincroniza aba com query param
   useEffect(() => {
     const t = searchParams?.get('tab') as Tab | null;
-    const allowed = ['users','schools','profile','aria','status','users_prof','occurrences_prof','conduct_prof','reports_prof'];
+    const allowed = ['users','schools','profile','aria','status','users_prof','occurrences_prof','conduct_prof','reports_prof','permissions'];
     if (t && allowed.includes(t)) setActiveTab(t);
   }, [searchParams]);
 
@@ -842,6 +842,7 @@ function ConfiguracoesInner() {
         { id: 'profile', label: 'Meu Perfil',       icon: User },
         { id: 'aria',    label: 'Assistente ARIA',  icon: Brain },
         { id: 'status',  label: 'Integrações',      icon: Activity },
+        { id: 'permissions', label: 'Permissões',   icon: KeyRound },
       ]
     : currentUserRole === 'PROFESSOR'
     ? [
@@ -854,6 +855,7 @@ function ConfiguracoesInner() {
     : [
         { id: 'users',   label: 'Usuários da Escola', icon: Users },
         { id: 'profile', label: 'Meu Perfil',       icon: User },
+        { id: 'permissions', label: 'Permissões',   icon: KeyRound },
       ]
   ) as { id: Tab; label: string; icon: React.ElementType }[];
 
@@ -1092,6 +1094,9 @@ function ConfiguracoesInner() {
 
             {/* ── TAB: Relatórios (Professor View) ── */}
             {renderedTab === 'reports_prof' && <TabReportsProf />}
+
+            {/* ── TAB: Permissões ── */}
+            {renderedTab === 'permissions' && <TabPermissions />}
           </div>
         </div>
       </div>
@@ -1566,6 +1571,156 @@ function TabReportsProf() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function TabPermissions() {
+  const { permissions, updatePermissions, currentUserRole } = useAppContext();
+  const [localPermissions, setLocalPermissions] = useState<Record<string, Record<string, boolean>>>({});
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (permissions) {
+      setLocalPermissions(JSON.parse(JSON.stringify(permissions)));
+    }
+  }, [permissions]);
+
+  const rolesList: { id: string; label: string; color: string }[] = [
+    { id: 'GESTOR', label: 'Gestor', color: 'text-blue-500' },
+    { id: 'COORD', label: 'Coordenador', color: 'text-emerald-500' },
+    { id: 'MONITOR', label: 'Monitor', color: 'text-amber-500' },
+    { id: 'PROFESSOR', label: 'Professor', color: 'text-indigo-500' },
+  ];
+
+  const panelsList: { key: string; label: string; category: string; description: string }[] = [
+    { key: 'dashboard', label: 'Início (Dashboard)', category: 'Geral', description: 'Acesso à tela principal com gráficos e estatísticas consolidadas.' },
+    { key: 'alunos_lista', label: 'Lista de Alunos', category: 'Alunos', description: 'Visualizar a listagem e fotos de alunos cadastrados.' },
+    { key: 'alunos_ficha', label: 'Ficha Disciplinar', category: 'Alunos', description: 'Consultar pontuação e histórico de medidas do aluno.' },
+    { key: 'alunos_xerife', label: 'Xerife', category: 'Alunos', description: 'Acesso à gestão de xerifes escolares da semana.' },
+    { key: 'alunos_arquivados', label: 'Arquivados', category: 'Alunos', description: 'Acesso a alunos arquivados e históricos passados.' },
+    { key: 'disciplina_registro', label: 'Registro Disciplinar', category: 'Disciplina', description: 'Lançar e gerenciar ocorrências disciplinares de alunos.' },
+    { key: 'disciplina_faltas', label: 'Faltas Disciplinares', category: 'Disciplina', description: 'Visualizar e gerenciar as faltas disciplinares ativas.' },
+    { key: 'disciplina_termo', label: 'Termo de Conduta (TAC)', category: 'Disciplina', description: 'Lançamento e impressão de Termos de Ajustamento de Conduta.' },
+    { key: 'disciplina_convocacao', label: 'Convocação de Pais', category: 'Disciplina', description: 'Emissão e registro de convocações de pais ou responsáveis.' },
+    { key: 'disciplina_documentos', label: 'Documentos', category: 'Disciplina', description: 'Acesso à pasta de documentos oficiais e portarias.' },
+    { key: 'comportamento_rankings', label: 'Comportamento & Rankings', category: 'Comportamento', description: 'Visualizar o ranking de conduta e comportamento dos alunos.' },
+    { key: 'comportamento_elogios', label: 'Elogios e Bonificações', category: 'Comportamento', description: 'Cadastrar elogios individuais de destaque.' },
+    { key: 'comportamento_acidentes', label: 'Registro de Acidentes', category: 'Comportamento', description: 'Visualizar e cadastrar ocorrências de acidentes físicos.' },
+    { key: 'relatorios', label: 'Relatórios', category: 'Documentos', description: 'Visualizar relatórios gerenciais e estatísticas disciplinares.' },
+    { key: 'sistema_implantacao', label: 'Implantação', category: 'Sistema', description: 'Acesso às configurações de implantação de turmas e salas.' },
+    { key: 'sistema_fechamento', label: 'Fechamento do Ano', category: 'Sistema', description: 'Executar encerramento do ano letivo e reset de notas.' },
+    { key: 'sistema_auditoria', label: 'Auditoria de Ações', category: 'Sistema', description: 'Histórico auditável de ações executadas pelos usuários.' },
+  ];
+
+  const handleToggle = (role: string, panelKey: string) => {
+    if (role === 'admin_global') return;
+    
+    setLocalPermissions(prev => {
+      const updatedRole = { ...prev[role] };
+      updatedRole[panelKey] = !updatedRole[panelKey];
+      return { ...prev, [role]: updatedRole };
+    });
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    setSuccess(false);
+    try {
+      await updatePermissions(localPermissions as any);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = Array.from(new Set(panelsList.map(p => p.category)));
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-blue-500 animate-pulse" />
+              Matriz de Permissões por Cargo
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              Marque quais painéis e recursos cada perfil de acesso pode visualizar ou utilizar no sistema. As alterações entram em vigor imediatamente para todos os usuários da respectiva função.
+            </p>
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
+          </button>
+        </div>
+
+        {success && (
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-700 dark:text-emerald-400 text-sm font-semibold flex items-center gap-2 animate-pulse">
+            <ShieldCheck className="w-5 h-5" /> Permissões salvas e propagadas com sucesso no Supabase!
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 w-1/3">Painel / Recurso</th>
+                {rolesList.map(r => (
+                  <th key={r.id} className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-center text-slate-500 dark:text-slate-400">
+                    <span className={r.color}>{r.label}</span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40">
+              {categories.map(cat => (
+                <React.Fragment key={cat}>
+                  <tr className="bg-slate-50/50 dark:bg-slate-800/20">
+                    <td colSpan={5} className="px-6 py-2.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                      {cat}
+                    </td>
+                  </tr>
+                  {panelsList.filter(p => p.category === cat).map(panel => (
+                    <tr key={panel.key} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition duration-150">
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">{panel.label}</p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{panel.description}</p>
+                      </td>
+                      {rolesList.map(role => {
+                        const isAllowed = localPermissions[role.id]?.[panel.key] ?? false;
+                        return (
+                          <td key={role.id} className="px-6 py-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggle(role.id, panel.key)}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isAllowed ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'}`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isAllowed ? 'translate-x-5' : 'translate-x-0'}`}
+                              />
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -63,6 +63,36 @@ const MENU_GROUPS: MenuGroup[] = [
   },
 ];
 
+function isRouteAllowed(href: string, role: string, permissions?: Record<string, Record<string, boolean>>): boolean {
+  if (role === 'admin_global') return true;
+  if (!permissions || !permissions[role]) return true;
+
+  const mapping: Record<string, string> = {
+    '/': 'dashboard',
+    '/alunos': 'alunos_lista',
+    '/ficha': 'alunos_ficha',
+    '/xerife': 'alunos_xerife',
+    '/arquivados': 'alunos_arquivados',
+    '/registro-disciplinar': 'disciplina_registro',
+    '/faltas': 'disciplina_faltas',
+    '/termo': 'disciplina_termo',
+    '/convocacao': 'disciplina_convocacao',
+    '/disciplina/documentos': 'disciplina_documentos',
+    '/comportamento': 'comportamento_rankings',
+    '/elogios': 'comportamento_elogios',
+    '/acidentes': 'comportamento_acidentes',
+    '/relatorios': 'relatorios',
+    '/implantacao': 'sistema_implantacao',
+    '/fechamento': 'sistema_fechamento',
+    '/auditoria': 'sistema_auditoria',
+  };
+
+  const key = mapping[href];
+  if (!key) return true;
+
+  return permissions[role][key] ?? false;
+}
+
 function findGroupForPath(pathname: string): { groupLabel: string; itemLabel: string } | null {
   for (const g of MENU_GROUPS) {
     if (g.href && g.href === pathname) return { groupLabel: g.label, itemLabel: g.label };
@@ -87,13 +117,31 @@ type LayoutMode = 'sidebar' | 'topbar';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData, permissions } = useAppContext();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('topbar');
+
+  const filteredMenu = useMemo(() => {
+    return MENU_GROUPS.map(group => {
+      if (group.href) {
+        const allowed = isRouteAllowed(group.href, currentUserRole, permissions);
+        return allowed ? group : null;
+      }
+      if (group.children) {
+        const allowedChildren = group.children.filter(child => 
+          isRouteAllowed(child.href, currentUserRole, permissions)
+        );
+        if (allowedChildren.length > 0) {
+          return { ...group, children: allowedChildren };
+        }
+      }
+      return null;
+    }).filter(Boolean) as MenuGroup[];
+  }, [currentUserRole, permissions]);
 
   // Modal de seleção de contexto — estado vive no store
   const { showContextModal, setShowContextModal, contextSchools } = useAppContext();
@@ -273,6 +321,33 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     />
   );
 
+  const isAllowed = useMemo(() => {
+    return isRouteAllowed(pathname, currentUserRole, permissions);
+  }, [pathname, currentUserRole, permissions]);
+
+  const wrappedContent = useMemo(() => {
+    if (isAllowed) return children;
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 min-h-[60vh] gap-6 animate-in fade-in duration-300">
+        <div className="w-20 h-20 bg-rose-50/80 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 rounded-3xl flex items-center justify-center animate-bounce">
+          <ShieldAlert className="w-10 h-10 text-rose-500" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Painel Indisponível</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+            O Gestor da instituição suspendeu o acesso a este recurso para o cargo <span className="font-bold text-rose-500">{ROLE_LABELS[currentUserRole] || currentUserRole}</span>.
+          </p>
+        </div>
+        <button 
+          onClick={() => router.push('/')} 
+          className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 rounded-2xl text-sm font-semibold transition active:scale-95 shadow-lg shadow-slate-950/20"
+        >
+          Retornar ao Início
+        </button>
+      </div>
+    );
+  }, [isAllowed, children, currentUserRole, router]);
+
   return (
     <div className={'min-h-screen bg-[#eef3f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 ' + (layoutMode === 'sidebar' ? 'flex' : 'flex flex-col')}>
       {/* Background decoration for liquid glass effect */}
@@ -292,6 +367,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         open={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         pathname={pathname}
+        menuGroups={filteredMenu}
       />
 
       {layoutMode === 'sidebar' ? (
@@ -299,8 +375,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           pathname={pathname}
           rightControls={rightControls}
           openMobileMenu={() => setIsMobileMenuOpen(true)}
+          menuGroups={filteredMenu}
         >
-          {children}
+          {wrappedContent}
         </SidebarLayout>
       ) : (
         <TopbarLayout
@@ -309,8 +386,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           openMobileMenu={() => setIsMobileMenuOpen(true)}
           onOpenContextModal={() => setShowContextModal(true)}
           schools={schools}
+          menuGroups={filteredMenu}
         >
-          {children}
+          {wrappedContent}
         </TopbarLayout>
       )}
 
@@ -430,11 +508,13 @@ function SidebarLayout({
   rightControls,
   openMobileMenu,
   children,
+  menuGroups,
 }: {
   pathname: string;
   rightControls: React.ReactNode;
   openMobileMenu: () => void;
   children: React.ReactNode;
+  menuGroups: MenuGroup[];
 }) {
   const { logoSidebar } = useTenantConfig();
   return (
@@ -491,7 +571,7 @@ function SidebarLayout({
                 });
               })()
             ) : (
-              MENU_GROUPS.map((group) => {
+              menuGroups.map((group) => {
                 if (group.href) {
                   let href = group.href;
                   let active = pathname === group.href;
@@ -582,6 +662,7 @@ function TopbarLayout({
   children,
   onOpenContextModal,
   schools,
+  menuGroups,
 }: {
   pathname: string;
   rightControls: React.ReactNode;
@@ -589,6 +670,7 @@ function TopbarLayout({
   children: React.ReactNode;
   onOpenContextModal?: () => void;
   schools: { id: string; name: string }[];
+  menuGroups: MenuGroup[];
 }) {
   const currentInfo = findGroupForPath(pathname);
   const { currentUserRole, activeSchoolContext } = useAppContext();
@@ -693,7 +775,7 @@ function TopbarLayout({
               });
             })()
           ) : (
-            MENU_GROUPS.map((group) => (
+            menuGroups.map((group) => (
               <GroupPill
                 key={group.label}
                 group={group}
@@ -825,10 +907,12 @@ function MobileDrawer({
   open,
   onClose,
   pathname,
+  menuGroups,
 }: {
   open: boolean;
   onClose: () => void;
   pathname: string;
+  menuGroups: MenuGroup[];
 }) {
   const { logoSidebar } = useTenantConfig();
   return (
@@ -893,7 +977,7 @@ function MobileDrawer({
               });
             })()
           ) : (
-            MENU_GROUPS.map((group) => {
+            menuGroups.map((group) => {
               if (group.href) {
                 let href = group.href;
                 let active = pathname === group.href;
@@ -956,7 +1040,7 @@ function MobileDrawer({
 /* ---------- BOTTOM NAVIGATION (Mobile Menu) ---------- */
 
 function BottomNavigation({ pathname }: { pathname: string }) {
-  const { currentUserRole } = useAppContext();
+  const { currentUserRole, permissions } = useAppContext();
   const searchParams = useSearchParams();
   const tab = searchParams?.get('tab');
 
@@ -995,7 +1079,14 @@ function BottomNavigation({ pathname }: { pathname: string }) {
       href: currentUserRole === 'PROFESSOR' ? '/configuracoes?tab=reports_prof' : '/relatorios',
       active: isReportsActive,
     },
-  ];
+  ].filter(item => {
+    if (item.label === 'Início') return isRouteAllowed('/', currentUserRole, permissions);
+    if (item.label === 'Alunos') return isRouteAllowed('/alunos', currentUserRole, permissions);
+    if (item.label === 'Disciplina') return isRouteAllowed('/registro-disciplinar', currentUserRole, permissions);
+    if (item.label === 'Conduta') return isRouteAllowed('/comportamento', currentUserRole, permissions);
+    if (item.label === 'Relatórios') return isRouteAllowed('/relatorios', currentUserRole, permissions);
+    return true;
+  });
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200/50 dark:border-slate-800/50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom,0px))] px-4 flex items-center justify-around transition-all duration-200">

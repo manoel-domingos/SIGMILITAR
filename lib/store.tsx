@@ -53,10 +53,12 @@ interface AppState {
   setGroqApiKey: (v: string) => void;
   logout: () => Promise<void>;
   uploadFile: (file: File, bucket: string) => Promise<string | null>;
+  permissions: Record<AppUserRole, Record<string, boolean>>;
 }
 
 interface AppContextType extends AppState {
   logAction: (action: AuditLog['action'], entityName: string, entityId: string, details: string) => Promise<void>;
+  updatePermissions: (newPermissions: Record<AppUserRole, Record<string, boolean>>) => Promise<void>;
   
   addAppUser: (u: Omit<AppUser, 'id'>) => Promise<void>;
   updateAppUser: (id: string, u: Partial<AppUser>) => Promise<void>;
@@ -130,6 +132,104 @@ const INITIAL_APP_USERS: AppUser[] = [
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+export const DEFAULT_PERMISSIONS: Record<AppUserRole, Record<string, boolean>> = {
+  admin_global: {
+    dashboard: true,
+    alunos_lista: true,
+    alunos_ficha: true,
+    alunos_xerife: true,
+    alunos_arquivados: true,
+    disciplina_registro: true,
+    disciplina_faltas: true,
+    disciplina_termo: true,
+    disciplina_convocacao: true,
+    disciplina_documentos: true,
+    comportamento_rankings: true,
+    comportamento_elogios: true,
+    comportamento_acidentes: true,
+    relatorios: true,
+    sistema_implantacao: true,
+    sistema_fechamento: true,
+    sistema_auditoria: true,
+  },
+  GESTOR: {
+    dashboard: true,
+    alunos_lista: true,
+    alunos_ficha: true,
+    alunos_xerife: true,
+    alunos_arquivados: true,
+    disciplina_registro: true,
+    disciplina_faltas: true,
+    disciplina_termo: true,
+    disciplina_convocacao: true,
+    disciplina_documentos: true,
+    comportamento_rankings: true,
+    comportamento_elogios: true,
+    comportamento_acidentes: true,
+    relatorios: true,
+    sistema_implantacao: true,
+    sistema_fechamento: true,
+    sistema_auditoria: true,
+  },
+  COORD: {
+    dashboard: true,
+    alunos_lista: true,
+    alunos_ficha: true,
+    alunos_xerife: true,
+    alunos_arquivados: false,
+    disciplina_registro: true,
+    disciplina_faltas: true,
+    disciplina_termo: true,
+    disciplina_convocacao: true,
+    disciplina_documentos: true,
+    comportamento_rankings: true,
+    comportamento_elogios: true,
+    comportamento_acidentes: true,
+    relatorios: true,
+    sistema_implantacao: false,
+    sistema_fechamento: false,
+    sistema_auditoria: false,
+  },
+  MONITOR: {
+    dashboard: true,
+    alunos_lista: true,
+    alunos_ficha: false,
+    alunos_xerife: true,
+    alunos_arquivados: false,
+    disciplina_registro: true,
+    disciplina_faltas: false,
+    disciplina_termo: false,
+    disciplina_convocacao: false,
+    disciplina_documentos: false,
+    comportamento_rankings: true,
+    comportamento_elogios: false,
+    comportamento_acidentes: true,
+    relatorios: false,
+    sistema_implantacao: false,
+    sistema_fechamento: false,
+    sistema_auditoria: false,
+  },
+  PROFESSOR: {
+    dashboard: false,
+    alunos_lista: true,
+    alunos_ficha: false,
+    alunos_xerife: false,
+    alunos_arquivados: false,
+    disciplina_registro: true,
+    disciplina_faltas: false,
+    disciplina_termo: false,
+    disciplina_convocacao: false,
+    disciplina_documentos: false,
+    comportamento_rankings: false,
+    comportamento_elogios: false,
+    comportamento_acidentes: false,
+    relatorios: true,
+    sistema_implantacao: false,
+    sistema_fechamento: false,
+    sistema_auditoria: false,
+  }
+};
+
 let isExchangingCode = false;
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -144,6 +244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>(INITIAL_STAFF);
   const [appUsers, setAppUsers] = useState<AppUser[]>(INITIAL_APP_USERS);
+  const [permissions, setPermissions] = useState<Record<AppUserRole, Record<string, boolean>>>(DEFAULT_PERMISSIONS);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
   const [user, setUser] = useState<any | null>(null);
   const [isGuest, setIsGuest] = useState(false);
@@ -331,14 +432,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (abortSignal.signal.aborted) return;
 
           if (appUsersData && appUsersData.length > 0) {
+            // Se tiver o registro de permissões especiais no banco
+            const permissionsProfile = appUsersData.find((u: any) => u.email?.toLowerCase() === 'system_permissions@system.local');
+            if (permissionsProfile && permissionsProfile.name) {
+              try {
+                const parsed = JSON.parse(permissionsProfile.name);
+                setPermissions(parsed);
+              } catch (err) {
+                console.error('Erro ao fazer parse das permissões do Supabase, usando padrão.', err);
+                setPermissions(DEFAULT_PERMISSIONS);
+              }
+            } else {
+              setPermissions(DEFAULT_PERMISSIONS);
+            }
+
             // user_profiles usa UUID como id — mapear para AppUser
-            setAppUsers(appUsersData.map((u: any) => ({
-              id: u.id,
-              name: u.name || '',
-              email: u.email || '',
-              role: normalizeDbRole(u.role, u.email),
-              school_id: u.school_id || '',
-            })));
+            setAppUsers(appUsersData
+              .filter((u: any) => u.email?.toLowerCase() !== 'system_permissions@system.local')
+              .map((u: any) => ({
+                id: u.id,
+                name: u.name || '',
+                email: u.email || '',
+                role: normalizeDbRole(u.role, u.email),
+                school_id: u.school_id || '',
+              }))
+            );
           }
 
           if (staffData) {
@@ -791,6 +909,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     
     setAppUsers(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updatePermissions = async (newPermissions: Record<AppUserRole, Record<string, boolean>>) => {
+    if (currentUserRole !== 'GESTOR' && currentUserRole !== 'admin_global') {
+      alert('Acesso Negado: Apenas gestores ou administradores podem gerenciar permissões.');
+      return;
+    }
+    
+    setPermissions(newPermissions);
+
+    if (supabase && isSupabaseConnected) {
+      try {
+        const payload = {
+          email: 'system_permissions@system.local',
+          name: JSON.stringify(newPermissions),
+          role: 'SYSTEM',
+          setup_done: true,
+          school_id: 'DRE'
+        };
+
+        const { error } = await supabase
+          .from('user_profiles')
+          .upsert(payload, { onConflict: 'email' });
+
+        if (error) throw error;
+        
+        await logAction('UPDATE', 'role_permissions', 'system_permissions', 'Matriz de permissões atualizada pelo gestor/admin.');
+      } catch (err: any) {
+        console.error("Error saving permissions to Supabase:", err);
+        alert('Erro ao salvar permissões no banco: ' + err.message);
+      }
+    }
   };
 
   const addStudent = async (s: Omit<Student, 'id'>) => {
@@ -1773,7 +1923,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addSummons, updateSummons, archiveSummons, restoreSummons, deleteSummons,
       addConductTerm, updateConductTerm, archiveConductTerm, restoreConductTerm, deleteConductTerm,
       updateRule, addStaffMember,
-      getStudentPoints, getStudentBehavior, getStudentOccurrences, checkRecidivism, getEscalationStatus
+      getStudentPoints, getStudentBehavior, getStudentOccurrences, checkRecidivism, getEscalationStatus,
+      permissions, updatePermissions
     }}>
       <TenantContext.Provider value={activeTenantId}>
         {children}
