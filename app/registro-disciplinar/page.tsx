@@ -695,7 +695,7 @@ function RegistroDisciplinarContent() {
 
       <div class="sid-item">
         <span class="sid-label">Nº ATA</span>
-        <span class="sid-valor">${o.ataNumber || '---'}</span>
+        <span class="sid-valor">${occurrenceNum}</span>
       </div>
       <div class="sid-item">
         <span class="sid-label">Data do Registro</span>
@@ -1246,7 +1246,7 @@ function RegistroDisciplinarContent() {
 
     const mainColHTML =
       '<div class="main-col">' +
-        '<div class="ata-titulo-grande">ATA N\u00ba ' + o.ataNumber + '</div>' +
+        '<div class="ata-titulo-grande">ATA N\u00ba ' + occurrenceNum + '</div>' +
         '<div class="ata-subtitulo">Relato do Ocorrido</div>' +
         '<div class="ata-corpo">' + markdownBoldToHtml(o.observations || 'Nenhum relato registrado.') + '</div>' +
         signaturesHTML() +
