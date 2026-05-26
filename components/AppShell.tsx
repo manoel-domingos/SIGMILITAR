@@ -493,11 +493,18 @@ function SidebarLayout({
             ) : (
               MENU_GROUPS.map((group) => {
                 if (group.href) {
-                  const active = pathname === group.href;
+                  let href = group.href;
+                  let active = pathname === group.href;
+                  if (group.label === 'Relatórios' && currentUserRole === 'PROFESSOR') {
+                    const searchParams = useSearchParams();
+                    const tab = searchParams?.get('tab');
+                    href = '/configuracoes?tab=reports_prof';
+                    active = pathname === '/configuracoes' && tab === 'reports_prof';
+                  }
                   return (
                     <li key={group.label}>
                       <Link
-                        href={group.href}
+                        href={href}
                         className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                       >
                         <group.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
@@ -749,10 +756,20 @@ function GroupPill({
 
   // Direct link group (no children)
   if (group.href) {
-    const active = pathname === group.href;
+    const { currentUserRole } = useAppContext();
+    const searchParams = useSearchParams();
+    const tab = searchParams?.get('tab');
+    
+    let href = group.href;
+    let active = pathname === group.href;
+    if (group.label === 'Relatórios' && currentUserRole === 'PROFESSOR') {
+      href = '/configuracoes?tab=reports_prof';
+      active = pathname === '/configuracoes' && tab === 'reports_prof';
+    }
+    
     return (
       <Link
-        href={group.href}
+        href={href}
         className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
       >
         <group.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
@@ -878,11 +895,18 @@ function MobileDrawer({
           ) : (
             MENU_GROUPS.map((group) => {
               if (group.href) {
-                const active = pathname === group.href;
+                let href = group.href;
+                let active = pathname === group.href;
+                if (group.label === 'Relatórios' && currentUserRole === 'PROFESSOR') {
+                  const searchParams = useSearchParams();
+                  const tab = searchParams?.get('tab');
+                  href = '/configuracoes?tab=reports_prof';
+                  active = pathname === '/configuracoes' && tab === 'reports_prof';
+                }
                 return (
                   <li key={group.label}>
                     <Link
-                      href={group.href}
+                      href={href}
                       onClick={onClose}
                       className={'flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
                     >
@@ -932,6 +956,14 @@ function MobileDrawer({
 /* ---------- BOTTOM NAVIGATION (Mobile Menu) ---------- */
 
 function BottomNavigation({ pathname }: { pathname: string }) {
+  const { currentUserRole } = useAppContext();
+  const searchParams = useSearchParams();
+  const tab = searchParams?.get('tab');
+
+  const isReportsActive = currentUserRole === 'PROFESSOR'
+    ? (pathname === '/configuracoes' && tab === 'reports_prof')
+    : pathname === '/relatorios';
+
   const navItems = [
     {
       label: 'Início',
@@ -960,8 +992,8 @@ function BottomNavigation({ pathname }: { pathname: string }) {
     {
       label: 'Relatórios',
       icon: BarChart,
-      href: '/relatorios',
-      active: pathname === '/relatorios',
+      href: currentUserRole === 'PROFESSOR' ? '/configuracoes?tab=reports_prof' : '/relatorios',
+      active: isReportsActive,
     },
   ];
 

@@ -1,21 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
 import { FileText, Printer, Download, Brain, X, Loader2 } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { formatDate } from '@/lib/utils';
 import { streamAI } from '@/components/AIChat';
+import { useRouter } from 'next/navigation';
 
 export default function Relatorios() {
-  const { students, occurrences, rules } = useAppContext();
+  const { students, occurrences, rules, currentUserRole } = useAppContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (currentUserRole === 'PROFESSOR') {
+      router.push('/configuracoes?tab=reports_prof');
+    }
+  }, [currentUserRole, router]);
+
   const [activeTab, setActiveTab] = useState('gerencial');
   const [selectedMonth, setSelectedMonth] = useState('Todos os meses');
   const [selectedClass, setSelectedClass] = useState('Todas as turmas');
   const [aiReport, setAiReport] = useState('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [showAiReport, setShowAiReport] = useState(false);
+
+  if (currentUserRole === 'PROFESSOR') {
+    return null;
+  }
 
   // Determina a severity de uma ocorrência pelo primeiro ruleCode válido
   const getOccurrenceSeverity = (o: { ruleCode?: number; ruleCodes?: number[] }): string => {
