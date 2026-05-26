@@ -1159,6 +1159,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           hour: o.hour,
           location: o.location,
           locatedBy: o.located_by,
+          linkedProfessor: o.linked_professor ?? null,
           ruleCode: allCodes[0],
           ruleCodes: allCodes,
           studentId: String(o.student_id),

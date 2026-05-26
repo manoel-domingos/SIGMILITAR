@@ -416,8 +416,10 @@ function RegistroDisciplinarContent() {
         if (data?.name) {
           setRegisteredBy(buildUserLabel(data.name, data.role));
           if (data.role === 'PROFESSOR') {
-            const staff = staffMembers.find(s => s.role === 'Professor' && s.name.toLowerCase() === data.name.toLowerCase());
-            if (staff) setLinkedProfessor(staff.role + ' ' + staff.name);
+            const appUser = appUsers.find(u =>
+              u.role === 'PROFESSOR' && u.name.toLowerCase() === data.name.toLowerCase()
+            );
+            if (appUser) setLinkedProfessor('Professor ' + appUser.name);
           }
         } else if (user.email) {
           const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
@@ -437,8 +439,10 @@ function RegistroDisciplinarContent() {
       if (name) {
         setRegisteredBy(buildUserLabel(name, role));
         if (role === 'PROFESSOR') {
-          const staff = staffMembers.find(s => s.role === 'Professor' && s.name.toLowerCase() === name.toLowerCase());
-          if (staff) setLinkedProfessor(staff.role + ' ' + staff.name);
+          const appUser = appUsers.find(u =>
+            u.role === 'PROFESSOR' && u.name.toLowerCase() === name.toLowerCase()
+          );
+          if (appUser) setLinkedProfessor('Professor ' + appUser.name);
         }
       }
     };
@@ -452,22 +456,19 @@ function RegistroDisciplinarContent() {
 
     // Filtro de visibilidade para professores
     if (currentUserRole === 'PROFESSOR') {
-      const appUser = appUsers.find(u => u.email === user?.email);
-      const staffUser = staffMembers.find(s => s.name.toLowerCase() === user?.email?.split('@')[0]?.toLowerCase());
-      
-      const profNameApp = appUser ? ('Professor ' + appUser.name).toLowerCase() : '';
-      const profNameStaff = staffUser ? (staffUser.role + ' ' + staffUser.name).toLowerCase() : '';
-      const emailUser = user?.email?.split('@')[0]?.toLowerCase() || '';
+      const appUser = appUsers.find(u => u.role === 'PROFESSOR' && u.email === user?.email);
+      if (!appUser) return false;
 
-      const loc = o.locatedBy?.toLowerCase() || '';
-      const reg = o.registeredBy?.toLowerCase() || '';
-      const link = o.linkedProfessor?.toLowerCase() || '';
+      const profLabel = ('professor ' + appUser.name).toLowerCase(); // formato canônico
 
-      const hasMatch = (
-        (profNameApp && (loc === profNameApp || reg === profNameApp || link === profNameApp)) ||
-        (profNameStaff && (loc === profNameStaff || reg === profNameStaff || link === profNameStaff)) ||
-        (emailUser && (loc.includes(emailUser) || reg.includes(emailUser) || link.includes(emailUser)))
-      );
+      const loc  = o.locatedBy?.toLowerCase().trim() || '';
+      const reg  = o.registeredBy?.toLowerCase().trim() || '';
+      const link = o.linkedProfessor?.toLowerCase().trim() || '';
+
+      const hasMatch =
+        loc.includes(appUser.name.toLowerCase()) ||
+        reg.includes(appUser.name.toLowerCase()) ||
+        link === profLabel;
 
       if (!hasMatch) return false;
     }
