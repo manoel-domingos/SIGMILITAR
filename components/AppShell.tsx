@@ -1478,7 +1478,7 @@ function ProfileMenu({
                 <LayoutDashboard className="w-4 h-4" /> Painel DRE
               </Link>
             )}
-            {(currentUserRole === 'admin_global' || currentUserRole === 'GESTOR') && (
+            {(currentUserRole === 'admin_global' || currentUserRole === 'GESTOR' || currentUserRole === 'COORD') && (
               <Link
                 href="/configuracoes"
                 className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"

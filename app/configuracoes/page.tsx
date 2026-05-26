@@ -739,7 +739,7 @@ function ConfiguracoesInner() {
     const t = searchParams?.get('tab') as Tab | null;
     const allowed = ['users','schools','profile','aria','status','users_prof','occurrences_prof','conduct_prof','reports_prof','permissions'];
     if (t && allowed.includes(t)) return t;
-    return currentUserRole === 'PROFESSOR' ? 'profile' : 'users';
+    return (currentUserRole === 'PROFESSOR' || currentUserRole === 'COORD') ? 'profile' : 'users';
   });
 
   const [renderedTab, setRenderedTab] = useState<Tab>(activeTab);
@@ -823,13 +823,13 @@ function ConfiguracoesInner() {
     u.school_id.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (currentUserRole !== 'admin_global' && currentUserRole !== 'GESTOR' && currentUserRole !== 'PROFESSOR') {
+  if (currentUserRole !== 'admin_global' && currentUserRole !== 'GESTOR' && currentUserRole !== 'PROFESSOR' && currentUserRole !== 'COORD') {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center text-slate-500 min-h-[50vh] gap-4">
         <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center">
           <ShieldAlert className="w-8 h-8 text-rose-400" />
         </div>
-        <div><h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Acesso Negado</h2><p className="mt-1 text-sm">Esta area e restrita ao Admin Global, Gestores e Professores.</p></div>
+        <div><h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Acesso Negado</h2><p className="mt-1 text-sm">Esta area e restrita ao Admin Global, Gestores, Coordenadores e Professores.</p></div>
         <button onClick={() => router.back()} className="text-blue-600 hover:underline text-sm">Voltar</button>
       </div>
     );
