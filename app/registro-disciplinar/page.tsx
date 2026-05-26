@@ -26,7 +26,7 @@ function RegistroDisciplinarContent() {
   const { 
     students, occurrences, rules, staffMembers, user, isGuest, currentUserRole,
     addOccurrence, updateOccurrence, archiveOccurrence, checkRecidivism, getEscalationStatus,
-    addStudent, updateStudent, addStaffMember, uploadFile
+    addStudent, updateStudent, addStaffMember, uploadFile, activeSchoolContext
   } = useAppContext();
   const { grades, classLetters } = useTenantConfig();
   const searchParams = useSearchParams();
@@ -685,7 +685,7 @@ function RegistroDisciplinarContent() {
 </head>
 <body>
 
-  ${getSchoolHeaderHTML()}
+  ${getSchoolHeaderHTML(activeSchoolContext)}
 
   <div class="ata-layout">
 
@@ -757,7 +757,7 @@ function RegistroDisciplinarContent() {
 
   </div><!-- /ata-layout -->
 
-  ${getSchoolFooterHTML()}
+  ${getSchoolFooterHTML(activeSchoolContext)}
 
 </body>
 </html>`);
@@ -1259,9 +1259,9 @@ function RegistroDisciplinarContent() {
           '<style>' + resetCSS + ' ' + bodyCSS + ' ' + SCHOOL_HEADER_CSS + '</style>' +
         '</head>' +
         '<body>' +
-          getSchoolHeaderHTML() +
+          getSchoolHeaderHTML(activeSchoolContext) +
           '<div class="ata-layout">' + sidebarHTML + mainColHTML + '</div>' +
-          getSchoolFooterHTML() +
+          getSchoolFooterHTML(activeSchoolContext) +
         '</body>' +
       '</html>';
 
@@ -1304,10 +1304,27 @@ function RegistroDisciplinarContent() {
       ? 0.50 * (o.durationDays || 1) 
       : Math.abs(rule?.points || 0);
 
-    const headerHtmlDocx =
-      '<div style="width:160%;margin-left:-30%;margin-bottom:10px;">' +
-        '<img src="' + window.location.origin + '/CABE\u00c7ALHO JB.svg" width="100%" style="width:100%;height:auto;" alt="Cabe\u00e7alho">' +
-      '</div>';
+    const isHeliodoro = o.school_id === 'heliodoro' || activeSchoolContext === 'heliodoro';
+    const headerHtmlDocx = isHeliodoro
+      ? '<table style="width:100%; border-collapse: collapse; margin-bottom: 20px;">' +
+          '<tr>' +
+            '<td style="width: 70px; vertical-align: middle;">' +
+              '<img src="' + window.location.origin + '/logo-seduc-mt.svg" width="70" height="70" style="width:70px;height:70px;" alt="SEDUC">' +
+            '</td>' +
+            '<td style="text-align: center; vertical-align: middle; font-family: Arial, sans-serif;">' +
+              '<div style="font-size: 10pt; font-weight: bold; color: #1a237e;">GOVERNO DO ESTADO DE MATO GROSSO</div>' +
+              '<div style="font-size: 10pt; font-weight: bold; color: #1a237e;">SECRETARIA DE ESTADO DE EDUCAÇÃO</div>' +
+              '<div style="font-size: 12pt; font-weight: bold; color: #1a237e; margin-top: 2px;">ESCOLA ESTADUAL CÍVICO-MILITAR</div>' +
+              '<div style="font-size: 14pt; font-weight: bold; color: #1a237e; letter-spacing: 1px;">HELIODORO CAPISTRANO</div>' +
+            '</td>' +
+            '<td style="width: 75px; text-align: right; vertical-align: middle;">' +
+              '<img src="' + window.location.origin + '/schools/heliodoro/nova_logo.svg" width="75" height="75" style="width:75px;height:75px;" alt="Logo Escola">' +
+            '</td>' +
+          '</tr>' +
+        '</table>'
+      : '<div style="width:160%;margin-left:-30%;margin-bottom:10px;">' +
+          '<img src="' + window.location.origin + '/CABE\u00c7ALHO JB.svg" width="100%" style="width:100%;height:auto;" alt="Cabe\u00e7alho">' +
+        '</div>';
 
     const htmlContent =
       '<div style="font-family:Arial,sans-serif;">' +

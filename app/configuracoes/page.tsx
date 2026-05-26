@@ -433,15 +433,40 @@ function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
 function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }) {
   const { currentUserRole } = useAppContext();
   const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [saved, setSaved] = useState(false);
   const [pwd, setPwd] = useState({ current: '', next: '', confirm: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState<{t:'ok'|'err'; m: string}|null>(null);
+  const [profileMsg, setProfileMsg] = useState<{t:'ok'|'err'; m: string}|null>(null);
 
   const saveProfile = async () => {
     if (!user?.email) return;
-    await supabase().from('user_profiles').update({ name }).eq('email', user.email);
-    setSaved(true); setTimeout(() => setSaved(false), 2000);
+    setProfileMsg(null);
+    try {
+      if (email !== user.email) {
+        const { error: authError } = await supabase().auth.updateUser({ email });
+        if (authError) {
+          setProfileMsg({ t: 'err', m: 'Erro ao atualizar e-mail: ' + authError.message });
+          return;
+        }
+      }
+      
+      const { error: dbError } = await supabase()
+        .from('user_profiles')
+        .update({ name, email })
+        .eq('id', user.id);
+        
+      if (dbError) {
+        setProfileMsg({ t: 'err', m: 'Erro ao salvar no banco: ' + dbError.message });
+        return;
+      }
+      
+      setSaved(true); 
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      setProfileMsg({ t: 'err', m: err.message || 'Erro inesperado.' });
+    }
   };
 
   const changePwd = async () => {
@@ -484,14 +509,21 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
             <p className="text-xs text-slate-500 dark:text-slate-400">Informacoes exibidas nos registros.</p>
           </div>
         </div>
+
+        {profileMsg && (
+          <div className={`text-sm px-3 py-2.5 rounded-xl flex items-center gap-2 ${profileMsg.t === 'ok' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'}`}>
+            <ShieldAlert className="w-4 h-4 shrink-0" /> {profileMsg.m}
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome</label>
           <input className={INPUT} value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome completo" />
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Login / E-mail</label>
-          <input className={INPUT + ' opacity-60 cursor-not-allowed'} value={user?.email || ''} readOnly />
-          <p className="text-[11px] text-slate-400">Login nao pode ser alterado aqui.</p>
+          <input className={INPUT} value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" />
+          <p className="text-[11px] text-slate-400">Alterar o e-mail modifica o seu login de acesso.</p>
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Papel</label>
@@ -768,7 +800,7 @@ function ConfiguracoesInner() {
     const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
     const resolvedSchoolId = envSchoolId ?? currentUserSchoolId;
 
-    if (currentUserRole === 'GESTOR' && resolvedSchoolId) {
+    if ((currentUserRole === 'GESTOR' || currentUserRole === 'COORD') && resolvedSchoolId) {
       uQuery = uQuery.eq('school_id', resolvedSchoolId);
       sQuery = sQuery.eq('id', resolvedSchoolId);
     }

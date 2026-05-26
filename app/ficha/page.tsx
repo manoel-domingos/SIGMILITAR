@@ -10,7 +10,7 @@ import SearchableSelect from '@/components/SearchableSelect';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function FichaDisciplinar() {
-  const { students, getStudentPoints, getStudentOccurrences, rules } = useAppContext();
+  const { students, getStudentPoints, getStudentOccurrences, rules, activeSchoolContext } = useAppContext();
   const [selectedStudent, setSelectedStudent] = useState('');
   const [analysisResult, setAnalysisResult] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -134,7 +134,7 @@ export default function FichaDisciplinar() {
   </style>
 </head>
 <body>
-  ${getSchoolHeaderHTML()}
+  ${getSchoolHeaderHTML(activeSchoolContext)}
 
   <div class="ficha-titulo">
     <h2>Ficha Disciplinar Individual</h2>
@@ -176,7 +176,7 @@ export default function FichaDisciplinar() {
     </div>
   </div>
 
-  ${getSchoolFooterHTML()}
+  ${getSchoolFooterHTML(activeSchoolContext)}
 </body>
 </html>`;
 

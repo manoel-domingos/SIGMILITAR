@@ -9,7 +9,7 @@ import { getLocalDateString, formatDate } from '@/lib/utils';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function ConvocacaoPais() {
-  const { students, summons, addSummons, updateSummons, archiveSummons, currentUserRole } = useAppContext();
+  const { students, summons, addSummons, updateSummons, archiveSummons, currentUserRole, activeSchoolContext } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSummons, setEditingSummons] = useState<string | null>(null);

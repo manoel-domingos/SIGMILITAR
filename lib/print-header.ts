@@ -15,20 +15,44 @@
 const origin = (): string =>
   typeof window !== 'undefined' ? window.location.origin : '';
 
-export const getSchoolHeaderHTML = (): string => `
+export const getSchoolHeaderHTML = (schoolId?: string): string => {
+  const isHeliodoro = schoolId === 'heliodoro' || (typeof window !== 'undefined' && window.location.host.includes('heliodoro'));
+  
+  const schoolNameUpper = isHeliodoro ? 'HELIODORO CAPISTRANO' : 'PROF. JOÃO BATISTA';
+  const logoEscola = isHeliodoro ? 'nova_logo.svg' : 'logo-escola.png';
+  const logoFolder = isHeliodoro ? 'heliodoro' : '';
+  const logoPath = logoFolder ? `/schools/${logoFolder}/${logoEscola}` : `/${logoEscola}`;
+
+  return `
 <div class="cabecalho-oficial">
   <img class="cab-logo-seduc"  src="${origin()}/logo-seduc-mt.svg" alt="Logo SEDUC e Governo MT" />
   <div class="cab-center">
     <span class="cab-gov">GOVERNO DO ESTADO DE MATO GROSSO</span>
     <span class="cab-gov">SECRETARIA DE ESTADO DE EDUCAÇÃO</span>
     <span class="cab-escola">ESCOLA ESTADUAL CÍVICO-MILITAR</span>
-    <span class="cab-escola">PROF. JOÃO BATISTA</span>
+    <span class="cab-escola">${schoolNameUpper}</span>
   </div>
-  <img class="cab-logo-escola" src="${origin()}/logo-escola.png" alt="Logo EECM Prof. Joao Batista" />
+  <img class="cab-logo-escola" src="${origin()}${logoPath}" alt="Logo ${schoolNameUpper}" />
 </div>
 `;
+};
 
-export const getSchoolFooterHTML = (): string => `
+export const getSchoolFooterHTML = (schoolId?: string): string => {
+  const isHeliodoro = schoolId === 'heliodoro' || (typeof window !== 'undefined' && window.location.host.includes('heliodoro'));
+  
+  if (isHeliodoro) {
+    return `
+<div class="rodape-oficial">
+  <div>E.E Cívico-Militar Heliodoro Capistrano</div>
+  <div>(65) 3326-1234</div>
+  <div>Rua Filinto Müller, Centro</div>
+  <div>CEP 78.300-000 – TANGARÁ DA SERRA/MT</div>
+  <div>escola.heliodoro@edu.mt.gov.br</div>
+</div>
+`;
+  }
+
+  return `
 <div class="rodape-oficial">
   <div>E.E Cívico-Militar Prof. João Batista</div>
   <div>(65) 3329-1021 | (65) 99944-6304</div>
@@ -37,6 +61,7 @@ export const getSchoolFooterHTML = (): string => `
   <div>escola.16020@edu.mt.gov.br</div>
 </div>
 `;
+};
 
 /**
  * Converte marcação simples **negrito** → <strong>negrito</strong>

@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
 import { createClient } from '@supabase/supabase-js';
 import StudentSheet from '@/components/StudentSheet';
+import LandingPage from '@/components/LandingPage';
 
 let _supabase: any = null;
 function supabase(): any {
@@ -48,6 +49,30 @@ export default function Dashboard() {
   const [panels, setPanels] = useState<PanelConfig[]>(DEFAULT_PANELS);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+  const [host, setHost] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHost(window.location.hostname.toLowerCase());
+      setMounted(true);
+    }
+  }, []);
+
+  const isLandingDomain = host === 'sigmilitar.com.br' || host === 'www.sigmilitar.com.br';
+
+  if (isLandingDomain) {
+    return <LandingPage />;
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   // Carrega painéis do Supabase ao montar
   useEffect(() => {
