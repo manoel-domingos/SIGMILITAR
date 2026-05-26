@@ -288,7 +288,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section id="cta" className="relative py-32 border-t border-white/5">
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-8">Eleve a <span className="text-blue-500">disciplina</span> e <span class="text-blue-500">gestão</span> da sua instituição hoje.</h2>
+          <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-8">Eleve a <span className="text-blue-500">disciplina</span> e <span className="text-blue-500">gestão</span> da sua instituição hoje.</h2>
           
           <div className="bg-black border border-white/10 rounded-3xl p-8 md:p-12 max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
             <div className="absolute inset-0 bg-blue-500/[0.02] pointer-events-none" />
@@ -363,14 +363,14 @@ export default function LandingPage() {
             <div className="flex gap-16">
               <div>
                 <h4 className="text-white font-medium mb-4 text-sm">Plataforma</h4>
-                <ul class="space-y-2 text-sm text-white/40">
+                <ul className="space-y-2 text-sm text-white/40">
                   <li><a className="hover:text-white transition-colors" href="#problema">Visão Geral</a></li>
                   <li><a className="hover:text-white transition-colors" href="#modulos">Módulos</a></li>
                 </ul>
               </div>
               <div>
                 <h4 className="text-white font-medium mb-4 text-sm">Contato</h4>
-                <ul class="space-y-2 text-sm text-white/40">
+                <ul className="space-y-2 text-sm text-white/40">
                   <li><a className="hover:text-white transition-colors" href="#cta">Implantação</a></li>
                   <li><a className="hover:text-white transition-colors" href="/login">Acessar Sistema</a></li>
                 </ul>
