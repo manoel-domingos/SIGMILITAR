@@ -9,6 +9,7 @@ import {
   ShieldCheck, Star, Sparkles, Search, ChevronDown, Plus, Trash2,
   Check, X, MessageSquare, Calendar, RotateCcw, Loader2
 } from 'lucide-react';
+import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
 
 // supabase nunca e null neste contexto — assert para evitar TS18047
 const supabase = supabaseClient!;
@@ -54,7 +55,9 @@ function fmtDate(iso: string) {
 
 // ---------- componente ----------
 export default function XerifePage() {
-  const { students, user } = useAppContext();
+  const { students, user, activeSchoolContext } = useAppContext();
+  const { tenantId } = useTenantConfig();
+  const dbSchoolId = getDbSchoolId(activeSchoolContext || tenantId);
   const week = getCurrentWeek();
 
   const [selectedClass, setSelectedClass] = useState('');
@@ -94,11 +97,12 @@ export default function XerifePage() {
       .from('xerifes')
       .select('*')
       .eq('week_start', week.start)
+      .eq('school_id', dbSchoolId)
       .order('role')
       .order('class');
     setEntries((data as XerifeEntry[]) ?? []);
     setLoading(false);
-  }, [week.start]);
+  }, [week.start, dbSchoolId]);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
 
@@ -126,6 +130,7 @@ export default function XerifePage() {
       week_start: week.start,
       week_end: week.end,
       created_by: (user as any)?.email ?? 'sistema',
+      school_id: dbSchoolId,
     }).select().single();
 
     if (!error && data) {
@@ -302,7 +307,7 @@ export default function XerifePage() {
         )}
 
         {/* Histórico de semanas anteriores */}
-        <PreviousWeeks />
+        <PreviousWeeks dbSchoolId={dbSchoolId} />
 
       </div>
 
@@ -532,7 +537,7 @@ export default function XerifePage() {
 }
 
 // ---------- histórico ----------
-function PreviousWeeks() {
+function PreviousWeeks({ dbSchoolId }: { dbSchoolId: string }) {
   const [history, setHistory] = useState<XerifeEntry[]>([]);
   const [open, setOpen] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -543,6 +548,7 @@ function PreviousWeeks() {
     const { data } = await supabase
       .from('xerifes')
       .select('*')
+      .eq('school_id', dbSchoolId)
       .lt('week_start', week.start)
       .order('week_start', { ascending: false })
       .limit(50);

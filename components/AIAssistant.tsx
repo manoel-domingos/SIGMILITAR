@@ -5,12 +5,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Send, Sparkles, MessageSquare, History, ShieldAlert, BookOpen, PenTool, ClipboardList } from 'lucide-react';
 import { generateContentWithFallback } from '@/lib/ai';
 import { useAppContext } from '@/lib/store';
+import { useTenantConfig } from '@/lib/useTenantConfig';
 import OccurrenceChecklist, { loadChecklists, OccurrenceTask, toggleChecklistItem, removeOccurrenceTask } from './OccurrenceChecklist';
 
 type Tab = 'pendencias' | 'chat';
 
 export default function AIAssistant() {
-  const { students, occurrences, rules, geminiApiKey, groqApiKey, user } = useAppContext();
+  const { students, occurrences, rules, geminiApiKey, groqApiKey, user, activeSchoolContext } = useAppContext();
+  const { schoolName } = useTenantConfig();
+
+  const currentSchoolName = activeSchoolContext ? (
+    activeSchoolContext === 'joaobatista' ? 'EECM Prof. João Batista' :
+    activeSchoolContext === 'heliodoro' ? 'EECM Heliodoro Capistrano' :
+    activeSchoolContext === 'tangara' ? 'EECM Tangará' :
+    schoolName
+  ) : schoolName;
+
   const userId = (user as any)?.email ?? 'guest';
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('pendencias');
@@ -52,13 +62,13 @@ export default function AIAssistant() {
       
       const rulesContext = rules.slice(0, 10).map(r => r.code + ': ' + r.description + ' (' + r.points + ' pts)').join('; ');
       const prompt = [
-        'Voc\u00ea \u00e9 um Assistente de Gest\u00e3o Disciplinar Escolar de uma escola de elite.',
+        'Voc\u00ea \u00e9 um Assistente de Gest\u00e3o Disciplinar Escolar da escola ' + currentSchoolName + '.',
         'Sua fun\u00e7\u00e3o \u00e9 ajudar os gestores e professores a:',
         '1. Escrever observa\u00e7\u00f5es e atas de ocorr\u00eancias de forma profissional e clara.',
         '2. Sugerir medidas disciplinares baseadas nas regras da escola.',
         '3. Analisar o hist\u00f3rico de alunos para identificar padr\u00f5es de comportamento.',
         '',
-        'DADOS ATUAIS DA ESCOLA:',
+        'DADOS ATUAIS DA ESCOLA (' + currentSchoolName + '):',
         '- Total de alunos: ' + students.length,
         '- Regras Disciplinares (algumas): ' + rulesContext,
         '',

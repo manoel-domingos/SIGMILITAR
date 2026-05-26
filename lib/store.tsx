@@ -320,10 +320,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             { data: conductTermsData },
             { data: auditLogsData },
             { data: appUsersData },
+            { data: staffData },
           ] = await Promise.all([
             bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
             supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
-            supabase!.from('user_profiles').select('*')
+            supabase!.from('user_profiles').select('*'),
+            bySchool(supabase!.from('staff_members').select('*').order('name', { ascending: true }))
           ]);
 
           if (abortSignal.signal.aborted) return;
@@ -337,6 +339,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
               role: normalizeDbRole(u.role, u.email),
               school_id: u.school_id || '',
             })));
+          }
+
+          if (staffData) {
+            setStaffMembers(staffData.map((s: any) => ({ id: s.id, name: s.name, role: s.role })));
           }
 
           if (studentsData) {
@@ -940,10 +946,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addStaffMember = async (s: Omit<StaffMember, 'id'>) => {
     if (supabase && isSupabaseConnected) {
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
       // Salva no Supabase
       const { data, error } = await supabase
         .from('staff_members')
-        .insert({ name: s.name, role: s.role })
+        .insert({ name: s.name, role: s.role, school_id: dbSchoolId })
         .select()
         .single();
       
@@ -978,7 +985,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         bySchool(supabase!.from('summons').select('*').order('date', { ascending: false })),
         bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
         supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
-        supabase!.from('staff_members').select('*').order('name', { ascending: true })
+        bySchool(supabase!.from('staff_members').select('*').order('name', { ascending: true }))
       ]);
       
       const [
@@ -1064,6 +1071,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let newId = 'O' + (occurrences.length + 1);
     let ataNumber: number | undefined;
     if (supabase && isSupabaseConnected) {
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
       // Create a base payload with columns we know exist based on our fetch logic
       const dbPayload: any = {
         student_id: o.studentId,
@@ -1076,7 +1084,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         observations: o.observations || null,
         video_urls: o.videoUrls || [],
         signed_doc_urls: o.signedDocUrls || [],
-        archived: o.archived || false
+        archived: o.archived || false,
+        school_id: dbSchoolId
       };
 
       // Handle optional fields that might be missing from schema by 
@@ -1233,7 +1242,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkWriteAccess();
     let newId = 'A' + (accidents.length + 1);
     if (supabase && isSupabaseConnected) {
-       const dbPayload = {
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
+      const dbPayload = {
         student_id: a.studentId,
         date: a.date,
         location: a.location,
@@ -1243,7 +1253,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         registered_by: a.registeredBy,
         parents_notified: a.parentsNotified,
         medic_forwarded: a.medicForwarded,
-        observations: a.observations
+        observations: a.observations,
+        school_id: dbSchoolId
       };
       try {
         const { data, error } = await supabase!.from('accidents').insert([dbPayload]).select().single();
@@ -1317,12 +1328,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkWriteAccess();
     let newId = 'P' + (praises.length + 1);
     if (supabase && isSupabaseConnected) {
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
       const dbPayload: any = {
         student_id: p.studentId,
         date: p.date,
         article: p.type,
         description: p.description,
-        registered_by: p.registeredBy
+        registered_by: p.registeredBy,
+        school_id: dbSchoolId
       };
       try {
         const { data, error } = await supabase!.from('praises').insert([dbPayload]).select().single();
@@ -1403,13 +1416,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkWriteAccess();
     let newId = 'SUMM' + (summons.length + 1);
     if (supabase && isSupabaseConnected) {
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
       const dbPayload = {
         student_id: s.studentId,
         date: s.date,
         time: s.time,
         reason: s.reason,
         department: s.department,
-        registered_by: s.registeredBy
+        registered_by: s.registeredBy,
+        school_id: dbSchoolId
       };
       try {
         const { data, error } = await supabase!.from('summons').insert([dbPayload]).select().single();
@@ -1479,12 +1494,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkWriteAccess();
     let newId = 'TAC' + (conductTerms.length + 1);
     if (supabase && isSupabaseConnected) {
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
       const dbPayload = {
         student_id: t.studentId,
         date: t.date,
         guardian_name: t.guardianName,
         commitments: t.commitments,
-        registered_by: t.registeredBy
+        registered_by: t.registeredBy,
+        school_id: dbSchoolId
       };
       try {
         const { data, error } = await supabase!.from('conduct_terms').insert([dbPayload]).select().single();
