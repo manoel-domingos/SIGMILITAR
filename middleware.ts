@@ -140,27 +140,70 @@ export function middleware(request: NextRequest) {
 
   // ─── 3. IDENTIFICACAO DO TENANT ─────────────────────────────────────────
 
-  // Prioridade 1: variavel de ambiente (desenvolvimento local)
-  let tenant = process.env.NEXT_PUBLIC_TENANT ?? '';
+  const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
 
-  // Prioridade 2: mapa de hostnames conhecidos (producao)
-  if (!tenant && hostToTenant[host]) {
-    tenant = hostToTenant[host];
-  }
+  // Prioridade 1: Extrair o primeiro segmento da URL (se for um slug válido de escola)
+  const segments = pathname.split('/').filter(Boolean);
+  const firstSegment = segments[0]?.toLowerCase();
+  const pathHasValidTenant = firstSegment && validTenants.includes(firstSegment);
 
-  // Prioridade 3: subdominio de *.kallyteros.com.br (futuro)
-  if (!tenant && host.endsWith('.kallyteros.com.br')) {
-    tenant = host.replace('.kallyteros.com.br', '');
-  }
-
-  // ─── 4. INJETA O TENANT NOS HEADERS ─────────────────────────────────────
-  if (tenant) {
+  if (pathHasValidTenant) {
+    const tenant = firstSegment;
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-tenant', tenant);
 
     return NextResponse.next({
       request: { headers: requestHeaders },
     });
+  }
+
+  // Prioridade 2: Variável de ambiente (desenvolvimento local/deploy dedicado)
+  let tenant = process.env.NEXT_PUBLIC_TENANT ?? '';
+
+  // Prioridade 3: Mapa de hostnames conhecidos (produção)
+  if (!tenant && hostToTenant[host]) {
+    tenant = hostToTenant[host];
+  }
+
+  // Prioridade 4: Subdomínio de *.kallyteros.com.br
+  if (!tenant && host.endsWith('.kallyteros.com.br')) {
+    tenant = host.replace('.kallyteros.com.br', '');
+  }
+
+  // ─── 4. REWRITE PARA ROTAS LEGADAS OU REDIRECIONAMENTO DE CENTRAL ─────────
+  if (tenant && validTenants.includes(tenant)) {
+    const isGlobalRoute =
+      pathname === '/login' ||
+      pathname.startsWith('/api') ||
+      pathname.startsWith('/dre') ||
+      pathname.startsWith('/dre-login');
+
+    if (!isGlobalRoute) {
+      // Faz rewrite transparente para a pasta do tenant /escola
+      const url = request.nextUrl.clone();
+      url.pathname = `/${tenant}${pathname}`;
+
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-tenant', tenant);
+
+      return NextResponse.rewrite(url, {
+        request: { headers: requestHeaders },
+      });
+    } else {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-tenant', tenant);
+
+      return NextResponse.next({
+        request: { headers: requestHeaders },
+      });
+    }
+  }
+
+  // Se estiver no domínio central e tentar acessar a raiz sem slug, redirecionar para o login
+  if (pathname === '/') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();

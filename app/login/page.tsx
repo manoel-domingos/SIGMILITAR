@@ -19,6 +19,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [isCentral, setIsCentral] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname.toLowerCase();
+      setIsCentral(hostname.includes('sigmilitar') || hostname.includes('localhost') || hostname.includes('vercel.app'));
+    }
+  }, []);
+
+  const activeLogo = isCentral ? '/LOGO SIGMILITAR.svg' : logoLogin;
+  const activeSchoolName = isCentral ? 'SIGMILITAR' : schoolName;
+  const activeSchoolSubtitle = isCentral ? 'Disciplina e Monitoramento Escolar' : SCHOOL_SUBTITLE;
 
   // Sincroniza erros de Whitelist da URL ou LocalStorage
   useEffect(() => {
@@ -41,20 +53,42 @@ export default function Login() {
   // Redirecionamento automático após autenticação confirmada
   useEffect(() => {
     if ((user || isGuest) && isAuthRestored) {
-      if (typeof window !== 'undefined' && currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+      if (typeof window !== 'undefined') {
         const hostname = window.location.hostname.toLowerCase();
-        if (!hostname.includes('localhost')) {
-          const canonicalHost = currentUserSchoolId === 'heliodoro' 
-            ? 'eecmheliodoro.kallyteros.com.br' 
-            : 'eecmprofjoaobatista.kallyteros.com.br';
-            
-          if (hostname !== canonicalHost) {
-            console.log(`[REDIRECT] Usuário pertence à escola ${currentUserSchoolId}. Redirecionando para ${canonicalHost}...`);
-            window.location.href = `https://${canonicalHost}/`;
+        const isCentralDomain = hostname.includes('sigmilitar') || hostname.includes('localhost') || hostname.includes('vercel.app');
+
+        if (isCentralDomain) {
+          // No domínio central: redireciona para a rota com slug da escola do usuário
+          if (currentUserRole === 'admin_global') {
+            router.push('/dre');
             return;
+          }
+
+          if (currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+            // Mapeia schoolId para o tenant slug
+            const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
+            const targetPath = currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`;
+            console.log(`[CENTRAL REDIRECT] Redirecionando para ${targetPath}...`);
+            router.push(targetPath);
+            return;
+          }
+        } else {
+          // No domínio legado (kallyteros): redireciona para o hostname canônico se necessário
+          if (currentUserSchoolId && currentUserSchoolId !== 'DRE') {
+            const canonicalHost = currentUserSchoolId === 'heliodoro' 
+              ? 'eecmheliodoro.kallyteros.com.br' 
+              : 'eecmprofjoaobatista.kallyteros.com.br';
+              
+            if (hostname !== canonicalHost) {
+              console.log(`[REDIRECT] Usuário pertence à escola ${currentUserSchoolId}. Redirecionando para ${canonicalHost}...`);
+              window.location.href = `https://${canonicalHost}/`;
+              return;
+            }
           }
         }
       }
+
+      // Fallback
       router.push(currentUserRole === 'admin_global' ? '/dre' : currentUserRole === 'PROFESSOR' ? '/registro-disciplinar' : '/');
     }
   }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router]);
@@ -169,7 +203,7 @@ export default function Login() {
       {/* Background — logo desfocada */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={logoLogin}
+        src={activeLogo}
         alt=""
         className="absolute -right-32 md:-right-24 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] pointer-events-none object-contain select-none"
         style={{ opacity: 0.15, mixBlendMode: 'screen' }}
@@ -183,7 +217,7 @@ export default function Login() {
           <div className="w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center mb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={logoLogin}
+              src={activeLogo}
               alt="Logo School"
               className="w-full h-full object-contain drop-shadow-xl"
               onError={(e) => {
@@ -198,8 +232,8 @@ export default function Login() {
             </div>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight text-center">{schoolName}</h1>
-          <p className="text-slate-500 text-xs sm:text-sm mt-1 text-center">{SCHOOL_SUBTITLE}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight text-center">{activeSchoolName}</h1>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 text-center">{activeSchoolSubtitle}</p>
         </div>
 
         {error && (

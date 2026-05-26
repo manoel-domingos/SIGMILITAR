@@ -114,8 +114,43 @@ const ROLE_LABELS: Record<string, string> = {
 
 type LayoutMode = 'sidebar' | 'topbar';
 
+function getLinkHref(href: string, tenantId: string, rawPathname: string | null): string {
+  if (!href || href.startsWith('http') || href.startsWith('//')) return href;
+  const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
+  const segments = (rawPathname || '').split('/').filter(Boolean);
+  const isSlugMode = segments.length > 0 && validTenants.includes(segments[0].toLowerCase());
+  
+  if (isSlugMode && tenantId) {
+    const cleanHref = href.startsWith('/') ? href : `/${href}`;
+    if (
+      cleanHref.startsWith('/dre') ||
+      cleanHref.startsWith('/api') ||
+      cleanHref.startsWith('/login')
+    ) {
+      return cleanHref;
+    }
+    if (cleanHref.startsWith(`/${tenantId}/`) || cleanHref === `/${tenantId}`) {
+      return cleanHref;
+    }
+    return `/${tenantId}${cleanHref}`;
+  }
+  return href;
+}
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const { tenantId } = useTenantConfig();
+
+  const pathname = useMemo(() => {
+    if (!rawPathname) return '';
+    const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
+    const segments = rawPathname.split('/').filter(Boolean);
+    if (segments.length > 0 && validTenants.includes(segments[0].toLowerCase())) {
+      return '/' + segments.slice(1).join('/');
+    }
+    return rawPathname;
+  }, [rawPathname]);
+
   const router = useRouter();
   const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData, permissions } = useAppContext();
 
@@ -450,7 +485,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex flex-col gap-2 pt-1">
               <a
-                href="/xerife"
+                href={getLinkHref('/xerife', tenantId, rawPathname)}
                 onClick={dismissXerifeAlert}
                 className="block w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
               >
@@ -518,7 +553,8 @@ function SidebarLayout({
   children: React.ReactNode;
   menuGroups: MenuGroup[];
 }) {
-  const { logoSidebar } = useTenantConfig();
+  const { logoSidebar, tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const { currentUserRole } = useAppContext();
   const searchParams = useSearchParams();
   return (
@@ -562,7 +598,7 @@ function SidebarLayout({
                   return (
                     <li key={tab.id}>
                       <Link
-                        href={`/configuracoes?tab=${tab.id}`}
+                        href={getLinkHref(`/configuracoes?tab=${tab.id}`, tenantId, rawPathname)}
                         className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                       >
                         <tab.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
@@ -585,7 +621,7 @@ function SidebarLayout({
                   return (
                     <li key={group.label}>
                       <Link
-                        href={href}
+                        href={getLinkHref(href, tenantId, rawPathname)}
                         className={'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                       >
                         <group.icon className={'w-5 h-5 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
@@ -606,7 +642,7 @@ function SidebarLayout({
                         return (
                           <li key={item.href}>
                             <Link
-                              href={item.href}
+                              href={getLinkHref(item.href, tenantId, rawPathname)}
                               className={'flex items-center gap-3 pl-8 pr-4 py-2 rounded-lg text-sm transition-colors ' + (active ? 'bg-blue-500/10 text-blue-400 border-l-4 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-slate-800/40')}
                             >
                               <item.icon className={'w-4 h-4 ' + (active ? 'text-blue-400' : 'text-slate-500')} />
@@ -675,7 +711,8 @@ function TopbarLayout({
 }) {
   const currentInfo = findGroupForPath(pathname);
   const { currentUserRole, activeSchoolContext } = useAppContext();
-  const { logoDash, schoolName } = useTenantConfig();
+  const { logoDash, schoolName, tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const searchParams = useSearchParams();
 
   return (
@@ -765,7 +802,7 @@ function TopbarLayout({
                 return (
                   <Link
                     key={tab.id}
-                    href={`/configuracoes?tab=${tab.id}`}
+                    href={getLinkHref(`/configuracoes?tab=${tab.id}`, tenantId, rawPathname)}
                     className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
                   >
                     <tab.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
@@ -808,6 +845,8 @@ function GroupPill({
   activeGroup: string | undefined;
 }) {
   const { currentUserRole } = useAppContext();
+  const { tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -827,7 +866,7 @@ function GroupPill({
     if (!open) {
       // Primeiro clique: navega para o primeiro item do submenu e mantém aberto
       if (group.children && group.children.length > 0) {
-        router.push(group.children[0].href);
+        router.push(getLinkHref(group.children[0].href, tenantId, rawPathname));
       }
       setOpen(true);
     } else {
@@ -851,7 +890,7 @@ function GroupPill({
     
     return (
       <Link
-        href={href}
+        href={getLinkHref(href, tenantId, rawPathname)}
         className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
       >
         <group.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
@@ -885,7 +924,7 @@ function GroupPill({
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={getLinkHref(item.href, tenantId, rawPathname)}
                   onClick={() => setOpen(false)}
                   className={'flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ' + (active ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700')}
                 >
@@ -914,7 +953,8 @@ function MobileDrawer({
   pathname: string;
   menuGroups: MenuGroup[];
 }) {
-  const { logoSidebar } = useTenantConfig();
+  const { logoSidebar, tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const { currentUserRole } = useAppContext();
   const searchParams = useSearchParams();
   return (
@@ -965,7 +1005,7 @@ function MobileDrawer({
                 return (
                   <li key={tab.id}>
                     <Link
-                      href={`/configuracoes?tab=${tab.id}`}
+                      href={getLinkHref(`/configuracoes?tab=${tab.id}`, tenantId, rawPathname)}
                       onClick={onClose}
                       className={'flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
                     >
@@ -989,7 +1029,7 @@ function MobileDrawer({
                 return (
                   <li key={group.label}>
                     <Link
-                      href={href}
+                      href={getLinkHref(href, tenantId, rawPathname)}
                       onClick={onClose}
                       className={'flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
                     >
@@ -1011,7 +1051,7 @@ function MobileDrawer({
                       return (
                         <li key={item.href}>
                           <Link
-                            href={item.href}
+                            href={getLinkHref(item.href, tenantId, rawPathname)}
                             onClick={onClose}
                             className={'flex items-center gap-3 pl-8 pr-4 py-3 rounded-xl text-base transition-colors active:scale-[0.98] ' + (active ? 'bg-blue-500/15 text-blue-400 border-l-4 border-blue-500' : 'text-slate-300 active:bg-slate-700/60')}
                           >
@@ -1040,6 +1080,8 @@ function MobileDrawer({
 
 function BottomNavigation({ pathname }: { pathname: string }) {
   const { currentUserRole, permissions } = useAppContext();
+  const { tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const searchParams = useSearchParams();
   const tab = searchParams?.get('tab');
 
@@ -1094,7 +1136,7 @@ function BottomNavigation({ pathname }: { pathname: string }) {
         return (
           <Link
             key={item.label}
-            href={item.href}
+            href={getLinkHref(item.href, tenantId, rawPathname)}
             className="flex flex-col items-center justify-center flex-1 text-center transition-transform active:scale-95"
           >
             <Icon

@@ -30,6 +30,10 @@ export const TENANT_MAP: Record<string, string> = {
   'eecmheliodoro.kallyteros.com.br': 'eecmheliodoro',
   'www.eecmheliodoro.kallyteros.com.br': 'eecmheliodoro',
   'heliodoro.vercel.app': 'eecmheliodoro',
+
+  // Central Domain
+  'sigmilitar.com.br': 'central',
+  'www.sigmilitar.com.br': 'central',
 };
 
 /**
@@ -42,20 +46,48 @@ const TENANT_HOSTNAME_RULES: Array<{ contains: string; tenant: string }> = [
 ];
 
 /**
+ * Extrai o tenant ID a partir do primeiro segmento do path da URL,
+ * caso seja um slug válido de escola.
+ */
+export function getTenantIdFromPath(): string | null {
+  if (typeof window === 'undefined') return null;
+  const path = window.location.pathname;
+  const segments = path.split('/').filter(Boolean);
+  if (segments.length > 0) {
+    const firstSegment = segments[0].toLowerCase();
+    const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
+    if (validTenants.includes(firstSegment)) {
+      return firstSegment;
+    }
+  }
+  return null;
+}
+
+/**
  * Função pura (sem hook) — pode ser chamada em qualquer contexto, inclusive store.
  * Detecção em dois passos:
- *   1. Match exato pelo TENANT_MAP (hosts conhecidos)
- *   2. Substring no hostname para cobrir previews e domínios customizados
+ *   1. Extrai o tenant a partir do path (caso esteja no domínio central ou com slug)
+ *   2. Match exato pelo TENANT_MAP (hosts conhecidos)
+ *   3. Substring no hostname para cobrir previews e domínios customizados
  * Fallback: 'eecmprofjoaobatista'
  */
 export function getTenantIdFromHost(): string {
   if (typeof window === 'undefined') return 'eecmprofjoaobatista';
+
+  // Passo 1: Tenta extrair a partir do path (prioridade para domínio central com slug)
+  const pathTenant = getTenantIdFromPath();
+  if (pathTenant) return pathTenant;
+
   const host = window.location.host.toLowerCase();
 
-  // Passo 1: match exato
-  if (TENANT_MAP[host]) return TENANT_MAP[host];
+  // Passo 2: match exato pelo Hostname
+  if (TENANT_MAP[host]) {
+    // Se o match for 'central', podemos tentar usar um fallback padrão ou deixar central
+    if (TENANT_MAP[host] === 'central') return 'eecmprofjoaobatista';
+    return TENANT_MAP[host];
+  }
 
-  // Passo 2: substring (cobre eecmheliodoro-abc123.vercel.app, domínios customizados, etc.)
+  // Passo 3: substring (cobre eecmheliodoro-abc123.vercel.app, domínios customizados, etc.)
   for (const rule of TENANT_HOSTNAME_RULES) {
     if (host.includes(rule.contains)) return rule.tenant;
   }
