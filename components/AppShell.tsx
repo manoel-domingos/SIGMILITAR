@@ -518,6 +518,7 @@ function SidebarLayout({
 }) {
   const { logoSidebar } = useTenantConfig();
   const { currentUserRole } = useAppContext();
+  const searchParams = useSearchParams();
   return (
     <>
       <aside className="hidden md:flex w-64 bg-[#1E293B] flex-col shrink-0 shadow-xl">
@@ -532,8 +533,6 @@ function SidebarLayout({
           <ul className="space-y-4 px-3">
             {pathname === '/configuracoes' ? (
               (() => {
-                const { currentUserRole } = useAppContext();
-                const searchParams = useSearchParams();
                 const activeConfigTab = searchParams?.get('tab') || 'profile';
                 const configTabs = (currentUserRole === 'admin_global'
                   ? [
@@ -577,7 +576,6 @@ function SidebarLayout({
                   let href = group.href;
                   let active = pathname === group.href;
                   if (group.label === 'Relatórios' && currentUserRole === 'PROFESSOR') {
-                    const searchParams = useSearchParams();
                     const tab = searchParams?.get('tab');
                     href = '/configuracoes?tab=reports_prof';
                     active = pathname === '/configuracoes' && tab === 'reports_prof';
@@ -676,6 +674,7 @@ function TopbarLayout({
   const currentInfo = findGroupForPath(pathname);
   const { currentUserRole, activeSchoolContext } = useAppContext();
   const { logoDash, schoolName } = useTenantConfig();
+  const searchParams = useSearchParams();
 
   return (
     <>
@@ -737,8 +736,6 @@ function TopbarLayout({
         <div className="pointer-events-auto hidden md:flex items-center justify-center gap-1 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-md rounded-full px-4 md:px-10 py-1">
           {pathname === '/configuracoes' ? (
             (() => {
-              const { currentUserRole } = useAppContext();
-              const searchParams = useSearchParams();
               const activeConfigTab = searchParams?.get('tab') || 'profile';
               const configTabs = (currentUserRole === 'admin_global'
                 ? [
@@ -808,6 +805,8 @@ function GroupPill({
   pathname: string;
   activeGroup: string | undefined;
 }) {
+  const { currentUserRole } = useAppContext();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
@@ -839,8 +838,6 @@ function GroupPill({
 
   // Direct link group (no children)
   if (group.href) {
-    const { currentUserRole } = useAppContext();
-    const searchParams = useSearchParams();
     const tab = searchParams?.get('tab');
     
     let href = group.href;
@@ -917,6 +914,7 @@ function MobileDrawer({
 }) {
   const { logoSidebar } = useTenantConfig();
   const { currentUserRole } = useAppContext();
+  const searchParams = useSearchParams();
   return (
     <aside
       className={'fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden safe-area-inset ' + (open ? 'translate-x-0' : '-translate-x-full')}
@@ -938,8 +936,6 @@ function MobileDrawer({
         <ul className="space-y-3 px-2 sm:px-3">
           {pathname === '/configuracoes' ? (
             (() => {
-              const { currentUserRole } = useAppContext();
-              const searchParams = useSearchParams();
               const activeConfigTab = searchParams?.get('tab') || 'profile';
               const configTabs = (currentUserRole === 'admin_global'
                 ? [
@@ -984,7 +980,6 @@ function MobileDrawer({
                 let href = group.href;
                 let active = pathname === group.href;
                 if (group.label === 'Relatórios' && currentUserRole === 'PROFESSOR') {
-                  const searchParams = useSearchParams();
                   const tab = searchParams?.get('tab');
                   href = '/configuracoes?tab=reports_prof';
                   active = pathname === '/configuracoes' && tab === 'reports_prof';
