@@ -1304,7 +1304,7 @@ function RegistroDisciplinarContent() {
       ? 0.50 * (o.durationDays || 1) 
       : Math.abs(rule?.points || 0);
 
-    const isHeliodoro = o.school_id === 'heliodoro' || activeSchoolContext === 'heliodoro';
+    const isHeliodoro = activeSchoolContext === 'heliodoro';
     const headerHtmlDocx = isHeliodoro
       ? '<table style="width:100%; border-collapse: collapse; margin-bottom: 20px;">' +
           '<tr>' +
