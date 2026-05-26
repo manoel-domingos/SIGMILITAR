@@ -98,6 +98,57 @@ export async function PATCH(req: NextRequest) {
     );
 
     if (authError) {
+      // Se o erro for "User not found", cria automaticamente as credenciais de autenticação
+      if (authError.message === 'User not found' || authError.status === 404) {
+        // 1. Busca os dados do perfil na tabela user_profiles
+        const { data: profile, error: getProfileError } = await supabaseAdmin
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (getProfileError || !profile) {
+          return NextResponse.json({ 
+            error: `Usuário não encontrado na autenticação e falha ao buscar perfil: ${getProfileError?.message || 'Perfil não localizado.'}` 
+          }, { status: 400 });
+        }
+
+        // 2. Cria o usuário no Supabase Auth usando os dados do perfil
+        const { data: newAuthData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: profile.email,
+          password,
+          email_confirm: true,
+          user_metadata: { name: profile.name, role: profile.role },
+        });
+
+        if (createError) {
+          return NextResponse.json({ 
+            error: `Falha ao criar credenciais de autenticação para o usuário: ${createError.message}` 
+          }, { status: 400 });
+        }
+
+        // 3. Atualiza o ID do perfil com o novo UUID de autenticação gerado pelo Supabase
+        const newUuid = newAuthData.user.id;
+        const { error: updateProfileError } = await supabaseAdmin
+          .from('user_profiles')
+          .update({ 
+            id: newUuid, 
+            password, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', userId);
+
+        if (updateProfileError) {
+          console.warn('[PATCH API] Falha ao atualizar UUID do perfil pós-criação:', updateProfileError.message);
+        }
+
+        return NextResponse.json({ 
+          success: true, 
+          created: true,
+          user: newAuthData.user 
+        });
+      }
+
       return NextResponse.json({ error: authError.message }, { status: 400 });
     }
 

@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
 import { REGIMENTO_CORPUS, HIERARQUIA_FONTES } from '@/lib/regimento';
+import { getTenantServer } from '@/lib/getTenantServer';
+import { getDbSchoolId } from '@/lib/useTenantConfig';
+import { createClient } from '@supabase/supabase-js';
 
 export const maxDuration = 60;
 
@@ -26,15 +29,23 @@ const CONFIGS: Record<string, { temperature: number }> = {
   sugestao:  { temperature: 0.3 },
 };
 
-function buildPrompts(type: string, payload: Record<string, any>): { system: string; user: string } {
+function buildPrompts(type: string, payload: Record<string, any>, school: { id: string; name: string }): { system: string; user: string } {
+  const schoolContext = [
+    '=== IDENTIDADE DA ESCOLA (TENANT ATIVO) ===',
+    `ID do Tenant: ${school.id}`,
+    `Nome Oficial: ${school.name}`,
+    '',
+  ].join('\n');
+
   switch (type) {
     case 'ata':
       return {
         system: [
-          'Você é um gestor escolar da E.E. Cívico-Militar Heliodoro Capistrano.',
+          `Você é um gestor escolar da ${school.name}.`,
           'Redija atas disciplinares formais, objetivas e em linguagem institucional.',
           'Retorne APENAS o texto da ata, sem comentários adicionais, sem aspas e sem blocos de código.',
           '',
+          schoolContext,
           'FORMATO OBRIGATÓRIO (use exatamente esta estrutura com campos em negrito markdown **campo:**):',
           '',
           '**Data:** [dia] de [mês por extenso] de [ano]',
@@ -75,9 +86,10 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
     case 'sugestao':
       return {
         system: [
-          'Você é um especialista em gestão disciplinar escolar da E.E. Cívico-Militar Heliodoro Capistrano.',
+          `Você é um especialista em gestão disciplinar escolar da ${school.name}.`,
           'Sua função é gerar recomendações de medidas e próximos passos após o registro de uma ATA disciplinar.',
           '',
+          schoolContext,
           '=== FONTE PRIMÁRIA OBRIGATÓRIA ===',
           REGIMENTO_CORPUS,
           '',
@@ -94,12 +106,12 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
         ].join('\n'),
         user: [
           'Aluno(s): ' + payload.students,
-          'Infra\u00e7\u00e3o registrada: ' + payload.infractions + ' (Natureza: ' + (payload.severity ?? 'n\u00e3o informada') + ')',
-          'Medida atribu\u00edda: ' + (payload.measure ?? 'n\u00e3o informada'),
-          'Reincidente: ' + (payload.isReincidente ? 'Sim' : 'N\u00e3o'),
-          'Hist\u00f3rico: ' + (payload.totalOccurrences ?? 0) + ' ocorr\u00eancia(s) anteriores',
-          'Pontua\u00e7\u00e3o atual: ' + (payload.currentPoints ?? 'n\u00e3o informada'),
-          'Observa\u00e7\u00f5es da ATA: ' + (payload.ataText ?? 'n\u00e3o fornecido'),
+          'Infração registrada: ' + payload.infractions + ' (Natureza: ' + (payload.severity ?? 'não informada') + ')',
+          'Medida atribuída: ' + (payload.measure ?? 'não informada'),
+          'Reincidente: ' + (payload.isReincidente ? 'Sim' : 'Não'),
+          'Histórico: ' + (payload.totalOccurrences ?? 0) + ' ocorrência(s) anteriores',
+          'Pontuação atual: ' + (payload.currentPoints ?? 'não informada'),
+          'Observações da ATA: ' + (payload.ataText ?? 'não fornecido'),
           '',
           'Gere as recomendações pós-ATA conforme o Regimento Interno.',
         ].join('\n'),
@@ -108,30 +120,37 @@ function buildPrompts(type: string, payload: Record<string, any>): { system: str
     case 'analise':
       return {
         system: [
-          'Você é um psicopedagogo escolar da E.E. Cívico-Militar Heliodoro Capistrano.',
+          `Você é um psicopedagogo escolar da ${school.name}.`,
           'Analise o histórico disciplinar de forma construtiva e profissional.',
           '',
+          schoolContext,
           REGIMENTO_CORPUS,
           '',
           HIERARQUIA_FONTES,
         ].join('\n'),
-        user: 'Aluno: ' + payload.studentName + ' | Turma: ' + payload.class + '\nOcorr\u00eancias: ' + payload.totalOccurrences + ' | Pontos: ' + payload.currentPoints + '\nDetalhes: ' + payload.occurrences + '\nForne\u00e7a: padr\u00e3o de comportamento, causas prov\u00e1veis e 3 recomenda\u00e7\u00f5es pr\u00e1ticas baseadas no Regimento.',
+        user: 'Aluno: ' + payload.studentName + ' | Turma: ' + payload.class + '\nOcorrências: ' + payload.totalOccurrences + ' | Pontos: ' + payload.currentPoints + '\nDetalhes: ' + payload.occurrences + '\nForneça: padrão de comportamento, causas prováveis e 3 recomendações práticas baseadas no Regimento.',
       };
 
     case 'relatorio':
       return {
-        system: 'Especialista em gestão educacional. Gere relatórios disciplinares concisos com insights acionáveis.',
-        user: 'Per\u00edodo: ' + payload.period + ' | Total ocorr\u00eancias: ' + payload.totalOccurrences + '\nAlunos envolvidos: ' + payload.studentsWithOccurrences + '\nTop infra\u00e7\u00f5es: ' + payload.topInfractions + '\nTop turmas: ' + payload.topClasses + '\nGravidade: ' + payload.severityDistribution + '\nGere: resumo executivo, tend\u00eancias e recomenda\u00e7\u00f5es priorit\u00e1rias.',
+        system: [
+          `Você é um especialista em gestão educacional da ${school.name}.`,
+          'Gere relatórios disciplinares concisos com insights acionáveis.',
+          '',
+          schoolContext,
+        ].join('\n'),
+        user: 'Período: ' + payload.period + ' | Total ocorrências: ' + payload.totalOccurrences + '\nAlunos envolvidos: ' + payload.studentsWithOccurrences + '\nTop infrações: ' + payload.topInfractions + '\nTop turmas: ' + payload.topClasses + '\nGravidade: ' + payload.severityDistribution + '\nGere: resumo executivo, tendências e recomendações prioritárias.',
       };
 
     case 'chat':
       return {
         system: [
-          'Você é ARIA, assistente virtual da E.E. Cívico-Militar Heliodoro Capistrano.',
+          `Você é ARIA, assistente virtual da ${school.name}.`,
           'Responda de forma curta, direta e cordial em português.',
           'Auxilie com regras disciplinares, registro de ocorrências e orientações pedagógicas.',
           'Quando perguntado sobre infrações ou medidas, consulte o regimento abaixo.',
           '',
+          schoolContext,
           REGIMENTO_CORPUS,
         ].join('\n'),
         user: payload.message,
@@ -217,7 +236,45 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { system, user } = buildPrompts(type, payload);
+  // Resolve o tenant ativo a partir dos headers / sessão do servidor
+  const tenantId = await getTenantServer();
+  const dbSchoolId = getDbSchoolId(tenantId);
+
+  // Inicializa o cliente do Supabase para buscar o nome correto da escola
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const keyToUse = supabaseServiceKey || supabaseAnonKey;
+  
+  const FALLBACK_SCHOOL_NAMES: Record<string, string> = {
+    joaobatista: 'E.E. Cívico-Militar Prof. João Batista',
+    heliodoro: 'E.E. Cívico-Militar Heliodoro Capistrano',
+    tangara: 'E.E. Cívico-Militar Tangará',
+  };
+  const fallbackName = FALLBACK_SCHOOL_NAMES[dbSchoolId] || 'E.E. Cívico-Militar Heliodoro Capistrano';
+  let school = { id: dbSchoolId, name: fallbackName };
+
+  if (supabaseUrl && keyToUse) {
+    try {
+      let url = supabaseUrl;
+      if (!url.startsWith('http')) url = `https://${url}`;
+      const supabaseAdmin = createClient(url, keyToUse, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+      const { data } = await supabaseAdmin
+        .from('schools')
+        .select('*')
+        .eq('id', dbSchoolId)
+        .single();
+      if (data && data.name) {
+        school = { id: data.id, name: data.name };
+      }
+    } catch (err) {
+      console.error('[AI API] Falha ao recuperar dados da escola:', err);
+    }
+  }
+
+  const { system, user } = buildPrompts(type, payload, school);
 
   // Modelos nativos DeepSeek — fallback automatico se o primeiro nao responder
   const MODEL_CHAIN = [

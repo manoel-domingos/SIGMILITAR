@@ -995,7 +995,12 @@ function ConfiguracoesInner() {
                             <div className="flex items-center gap-3">
                               <Avatar name={u.name || u.email} />
                               <div className="min-w-0">
-                                <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{u.name || '—'}</p>
+                                <p 
+                                  onClick={() => setEditDrawerUser(u)}
+                                  className="font-semibold text-slate-800 dark:text-slate-100 truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
+                                >
+                                  {u.name || '—'}
+                                </p>
                                 <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{u.email}</p>
                               </div>
                             </div>
