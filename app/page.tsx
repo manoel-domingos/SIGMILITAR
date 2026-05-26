@@ -53,26 +53,17 @@ export default function Dashboard() {
   const [host, setHost] = useState('');
   const [mounted, setMounted] = useState(false);
 
+  const [selectedMonth, setSelectedMonth] = useState('Selecionar...');
+  const [selectedClass, setSelectedClass] = useState('Todas as turmas');
+  const [selectedShift, setSelectedShift] = useState('Todos');
+  const [selectedYear, setSelectedYear] = useState('2026');
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setHost(window.location.hostname.toLowerCase());
       setMounted(true);
     }
   }, []);
-
-  const isLandingDomain = host === 'sigmilitar.com.br' || host === 'www.sigmilitar.com.br';
-
-  if (isLandingDomain) {
-    return <LandingPage />;
-  }
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   // Carrega painéis do Supabase ao montar
   useEffect(() => {
@@ -131,10 +122,19 @@ export default function Dashboard() {
     }
   }, [userId]);
 
-  const [selectedMonth, setSelectedMonth] = useState('Selecionar...');
-  const [selectedClass, setSelectedClass] = useState('Todas as turmas');
-  const [selectedShift, setSelectedShift] = useState('Todos');
-  const [selectedYear, setSelectedYear] = useState('2026');
+  const isLandingDomain = host === 'sigmilitar.com.br' || host === 'www.sigmilitar.com.br';
+
+  if (isLandingDomain) {
+    return <LandingPage />;
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const classes = Array.from(new Set(students.map(s => s.class))).sort();
