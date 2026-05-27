@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTenantConfig, getLinkHref } from '@/lib/useTenantConfig';
+import { usePathname } from 'next/navigation';
 import {
   CheckCircle2,
   XCircle,
@@ -67,6 +69,8 @@ type Card = {
 };
 
 export default function StatusPage() {
+  const { tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const [server, setServer] = useState<ServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -180,7 +184,7 @@ export default function StatusPage() {
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
           <Link
-            href="/"
+            href={getLinkHref('/', tenantId, rawPathname)}
             className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> voltar

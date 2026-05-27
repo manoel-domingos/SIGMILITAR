@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { useTenantConfig } from '@/lib/useTenantConfig';
+import { useTenantConfig, getLinkHref } from '@/lib/useTenantConfig';
 
 import {
   LayoutDashboard, Users, FileText, Activity,
@@ -113,29 +113,6 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 type LayoutMode = 'sidebar' | 'topbar';
-
-function getLinkHref(href: string, tenantId: string, rawPathname: string | null): string {
-  if (!href || href.startsWith('http') || href.startsWith('//')) return href;
-  const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
-  const segments = (rawPathname || '').split('/').filter(Boolean);
-  const isSlugMode = segments.length > 0 && validTenants.includes(segments[0].toLowerCase());
-  
-  if (isSlugMode && tenantId) {
-    const cleanHref = href.startsWith('/') ? href : `/${href}`;
-    if (
-      cleanHref.startsWith('/dre') ||
-      cleanHref.startsWith('/api') ||
-      cleanHref.startsWith('/login')
-    ) {
-      return cleanHref;
-    }
-    if (cleanHref.startsWith(`/${tenantId}/`) || cleanHref === `/${tenantId}`) {
-      return cleanHref;
-    }
-    return `/${tenantId}${cleanHref}`;
-  }
-  return href;
-}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const rawPathname = usePathname();
@@ -1227,7 +1204,7 @@ function RightControls(props: RightControlsProps) {
       <NotificationBell />
 
       <Link
-        href="/configuracoes"
+        href={getLinkHref('/configuracoes', tenantId, rawPathname)}
         className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm animate-pulse-subtle"
         title="Configurações"
         aria-label="Configurações do sistema"
@@ -1522,7 +1499,7 @@ function ProfileMenu({
             )}
             {(currentUserRole === 'admin_global' || currentUserRole === 'GESTOR' || currentUserRole === 'COORD') && (
               <Link
-                href="/configuracoes"
+                href={getLinkHref('/configuracoes', tenantId, rawPathname)}
                 className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3"
                 onClick={() => setIsOpen(false)}
               >

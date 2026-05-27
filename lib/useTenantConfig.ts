@@ -64,6 +64,33 @@ export function getTenantIdFromPath(): string | null {
 }
 
 /**
+ * Retorna o link ajustado com o tenant/escola prefixado caso esteja em modo slug.
+ */
+export function getLinkHref(href: string, tenantId: string, rawPathname: string | null): string {
+  if (!href || href.startsWith('http') || href.startsWith('//')) return href;
+  const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
+  const segments = (rawPathname || '').split('/').filter(Boolean);
+  const isSlugMode = segments.length > 0 && validTenants.includes(segments[0].toLowerCase());
+  
+  if (isSlugMode && tenantId) {
+    const cleanHref = href.startsWith('/') ? href : `/${href}`;
+    if (
+      cleanHref.startsWith('/dre') ||
+      cleanHref.startsWith('/api') ||
+      cleanHref.startsWith('/login')
+    ) {
+      return cleanHref;
+    }
+    if (cleanHref.startsWith(`/${tenantId}/`) || cleanHref === `/${tenantId}`) {
+      return cleanHref;
+    }
+    return `/${tenantId}${cleanHref}`;
+  }
+  return href;
+}
+
+
+/**
  * Função pura (sem hook) — pode ser chamada em qualquer contexto, inclusive store.
  * Detecção em dois passos:
  *   1. Extrai o tenant a partir do path (caso esteja no domínio central ou com slug)

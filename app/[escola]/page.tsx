@@ -13,6 +13,8 @@ import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklis
 import StudentSheet from '@/components/StudentSheet';
 import LandingPage from '@/components/LandingPage';
 import { supabase } from '@/lib/supabase';
+import { useTenantConfig, getLinkHref } from '@/lib/useTenantConfig';
+import { usePathname } from 'next/navigation';
 
 type PanelConfig = { id: string; label: string; enabled: boolean };
 
@@ -33,6 +35,8 @@ function mergePanels(saved: PanelConfig[]): PanelConfig[] {
 
 export default function Dashboard() {
   const { students, occurrences, accidents, praises, rules, getStudentPoints, user, refreshData } = useAppContext();
+  const { tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const userId = (user as any)?.email ?? 'guest';
   const [pendingBanner, setPendingBanner] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -226,7 +230,7 @@ export default function Dashboard() {
                 Voce tem <span className="font-bold">{pendingCount}</span> {pendingCount === 1 ? 'pendencia' : 'pendencias'} em aberto de ocorrencias anteriores.
               </p>
               <Link
-                href="/registro-disciplinar"
+                href={getLinkHref('/registro-disciplinar', tenantId, rawPathname)}
                 className="text-xs font-bold text-amber-700 underline underline-offset-2 hover:text-amber-900 transition-colors whitespace-nowrap"
               >
                 Ver pendencias
@@ -446,7 +450,7 @@ export default function Dashboard() {
           </Link>
           {/* KPI Implantação */}
           <Link
-            href="/implantacao"
+            href={getLinkHref('/implantacao', tenantId, rawPathname)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-indigo-200/50 dark:border-indigo-500/20 bg-indigo-50/60 dark:bg-indigo-500/5 hover:bg-indigo-100/80 dark:hover:bg-indigo-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="flex items-center justify-between">
