@@ -283,44 +283,30 @@ function RegistroDisciplinarContent() {
     setObservations(ata.trim());
   };
 
-  const handleGetSuggestions = async () => {
+  const handleGetSuggestions = () => {
     if (!selectedRules.length || !selectedStudents.length) return;
-    setIsSuggesting(true);
-    setShowSuggestions(true);
-    setSuggestions('');
-    try {
-      const studentNames = selectedStudents.map(id => students.find(s => s.id === id)?.name).filter(Boolean).join(', ');
-      const ruleDescriptions = selectedRules.map(code => {
-        const r = rules.find(ru => ru.code === parseInt(code, 10));
-        return r ? 'Art. ' + r.code + ' \u2014 ' + r.description + ' (' + r.severity + ')' : '';
-      }).filter(Boolean).join('; ');
-      const primaryRule = rules.find(r => r.code === parseInt(selectedRules[0], 10));
-      const primaryStudentId = selectedStudents[0];
-      const student = students.find(s => s.id === primaryStudentId);
-      const studentOccurrences = occurrences.filter(o => o.studentId === primaryStudentId);
-      const escalation = selectedStudents.length > 0
-        ? getEscalationStatus(primaryStudentId, parseInt(selectedRules[0], 10), editingOccurrence ?? undefined)
-        : null;
+    
+    const student = students.find(s => s.id === selectedStudents[0]);
+    const rule = rules.find(ru => ru.code === parseInt(selectedRules[0], 10));
+    const escalation = getEscalationStatus(selectedStudents[0], parseInt(selectedRules[0], 10), editingOccurrence ?? undefined);
 
-      await streamAI(
-        'sugestao',
-        {
-          students: studentNames,
-          infractions: ruleDescriptions,
-          severity: primaryRule?.severity ?? '',
-          measure: measureOverride ?? escalation?.measure ?? primaryRule?.measure ?? '',
-          isReincidente: escalation?.isEscalated ?? false,
-          totalOccurrences: studentOccurrences.length,
-          currentPoints: student?.points ?? '',
-          ataText: observations,
-        },
-        (delta) => setSuggestions(prev => prev + delta)
-      );
-    } catch {
-      setSuggestions('Erro ao gerar sugestões. Tente novamente.');
-    } finally {
-      setIsSuggesting(false);
-    }
+    const reincidenciaStr = escalation.isEscalated 
+      ? `Sim (já possui infração anterior da mesma natureza: ${escalation.reason})` 
+      : 'Não';
+
+    const promptText = `Olá ARI! Preciso de uma **Sugestão do Regimento** para esta ocorrência na escola ${schoolName}:
+- **Aluno**: ${student?.name || 'Não informado'} (Turma: ${student?.class || 'N/A'})
+- **Infração**: Art. ${rule?.code} — ${rule?.description}
+- **Natureza/Gravidade**: ${rule?.severity}
+- **Reincidente nesta infração?**: ${reincidenciaStr}
+- **Medida recomendada padrão**: ${escalation.measure}
+
+Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares brasileiras, sugira de forma direta e em tópicos estruturados quais os procedimentos administrativos e medidas que o gestor deve adotar passo a passo (atenuantes, agravantes e encaminhamentos).`;
+
+    const event = new CustomEvent('trigger-ari', {
+      detail: { text: promptText }
+    });
+    window.dispatchEvent(event);
   };
 
   const handleImproveObservations = async () => {
@@ -2034,51 +2020,22 @@ function RegistroDisciplinarContent() {
                         className="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full hover:bg-blue-100 transition-all disabled:opacity-50"
                       >
                         <Sparkles size={10} className={isImproving ? "animate-spin" : ""} />
-                        {isImproving ? "Melhorando..." : "Melhorar com IA"}
+                        {isImproving ? "Aprimorando..." : "Aprimorar com IA"}
                       </button>
                       <button
                         type="button"
                         onClick={handleGetSuggestions}
-                        disabled={isSuggesting || !selectedRules.length || !selectedStudents.length}
+                        disabled={!selectedRules.length || !selectedStudents.length}
                         className="flex items-center gap-1 text-[10px] bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full hover:bg-violet-100 transition-all disabled:opacity-50 border border-violet-200"
                       >
-                        <Sparkles size={10} className={isSuggesting ? "animate-spin" : ""} />
-                        {isSuggesting ? "Consultando regimento..." : "Sugestões do Regimento"}
+                        <Sparkles size={10} />
+                        Sugestão do Regimento
                       </button>
                     </div>
                     <span className="text-[10px] text-slate-400 font-normal uppercase tracking-wider">Ajuste o tamanho se necessário</span>
                   </label>
                   {/* Campo ATA com negrito em tempo real: **texto** → bold */}
                   <AtaEditor value={observations} onChange={setObservations} />
-
-                  {/* Painel de sugestões baseado no Regimento */}
-                  {showSuggestions && (
-                    <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                      <div className="flex items-center justify-between px-3 py-2 border-b border-violet-200 bg-violet-100">
-                        <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-violet-600" />
-                          <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wider">Sugestões do Regimento Interno</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowSuggestions(false)}
-                          className="text-violet-400 hover:text-violet-700 transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="px-3 py-3">
-                        {isSuggesting && !suggestions ? (
-                          <div className="flex items-center gap-2 text-violet-600 text-xs">
-                            <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                            Consultando Regimento Interno e Manual Disciplinar...
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">{suggestions}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">

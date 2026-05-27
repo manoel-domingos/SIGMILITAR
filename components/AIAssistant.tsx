@@ -2,13 +2,30 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, X, Send, Sparkles, MessageSquare, History, ShieldAlert, BookOpen, PenTool, ClipboardList } from 'lucide-react';
+import { Bot, X, Send, Sparkles, MessageSquare, History, ShieldAlert, BookOpen, PenTool, ClipboardList, ChevronUp, ChevronDown } from 'lucide-react';
 import { generateContentWithFallback } from '@/lib/ai';
 import { useAppContext } from '@/lib/store';
 import { useTenantConfig } from '@/lib/useTenantConfig';
 import OccurrenceChecklist, { loadChecklists, OccurrenceTask, toggleChecklistItem, removeOccurrenceTask } from './OccurrenceChecklist';
 
 type Tab = 'pendencias' | 'chat';
+
+function BrainWithBeret({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Cérebro (Brain) deslocado para baixo para a boina */}
+      <g transform="translate(0, 3) scale(0.85)">
+        <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+        <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+        <path d="M12 5v14" />
+      </g>
+      {/* Boina Militar (Beret) */}
+      <path d="M4 6.5C4 5 7.5 3.5 12 3.5s8 1.5 8 3c0 .8-.5 1.5-1.5 1.8H5.5C4.5 8 4 7.3 4 6.5Z" fill="currentColor" stroke="currentColor" strokeWidth="1" />
+      <path d="M17.5 7.8c1.5 0 2.5-.5 2.5-1.3 0-.3-.3-.6-.8-.8l-1.7 2.1Z" fill="currentColor" stroke="currentColor" strokeWidth="1" />
+      <circle cx="8" cy="5.8" r="1.1" fill="#FFD700" stroke="#B8860B" strokeWidth="0.5" />
+    </svg>
+  );
+}
 
 export default function AIAssistant() {
   const { students, occurrences, rules, geminiApiKey, groqApiKey, user, activeSchoolContext } = useAppContext();
@@ -110,16 +127,16 @@ export default function AIAssistant() {
             className="w-96 h-[550px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-slate-900 p-4 flex justify-between items-center text-white">
+            <div className="bg-[#0052cc] p-4 flex justify-between items-center text-white border-b border-blue-700/30">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
-                  <Bot size={24} />
+                <div className="w-10 h-10 bg-white/15 rounded-full flex items-center justify-center shadow-inner">
+                  <BrainWithBeret className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">Assistente Disciplinar</h3>
+                  <h3 className="font-bold text-xs tracking-wide">ARI — Assistente Regimental Inteligente</h3>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                    <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider">IA Ativa</span>
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                    <span className="text-[9px] text-blue-200 font-semibold uppercase tracking-wider">Online</span>
                   </div>
                 </div>
               </div>
@@ -132,10 +149,10 @@ export default function AIAssistant() {
             <div className="flex bg-slate-800 border-b border-slate-700">
               <button
                 onClick={() => setActiveTab('pendencias')}
-                className={'flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ' + (activeTab === 'pendencias' ? 'text-white border-b-2 border-blue-400' : 'text-slate-400 hover:text-slate-200')}
+                className={'flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ' + (activeTab === 'pendencias' ? 'text-white border-b-2 border-[#0052cc]' : 'text-slate-400 hover:text-slate-200')}
               >
                 <ClipboardList size={13} />
-                Pendencias
+                Pendências
                 {pendingCount > 0 && (
                   <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
                     {pendingCount}
@@ -144,10 +161,10 @@ export default function AIAssistant() {
               </button>
               <button
                 onClick={() => setActiveTab('chat')}
-                className={'flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ' + (activeTab === 'chat' ? 'text-white border-b-2 border-blue-400' : 'text-slate-400 hover:text-slate-200')}
+                className={'flex items-center gap-1.5 flex-1 justify-center py-2.5 text-xs font-semibold transition-colors ' + (activeTab === 'chat' ? 'text-white border-b-2 border-[#0052cc]' : 'text-slate-400 hover:text-slate-200')}
               >
                 <MessageSquare size={13} />
-                Chat IA
+                Chat
               </button>
             </div>
 
@@ -273,9 +290,11 @@ export default function AIAssistant() {
 
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={'w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95 ' + (isOpen ? 'bg-slate-800 text-white rotate-90' : 'bg-blue-600 text-white')}
+        className="flex items-center gap-2.5 px-5 py-3 bg-[#0052cc] text-white rounded-full shadow-2xl hover:bg-[#0047b3] active:scale-95 transition-all duration-200 font-semibold text-sm"
       >
-        {isOpen ? <X size={28} /> : <Bot size={32} />}
+        <BrainWithBeret className="w-6 h-6 text-white" />
+        <span>{isOpen ? 'Fechar ARI' : 'ARI'}</span>
+        {isOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
       </button>
     </div>
   );
