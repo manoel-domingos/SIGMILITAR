@@ -11,7 +11,7 @@ import { SCHOOL_SUBTITLE } from '@/lib/school';
 
 export default function Login() {
   const router = useRouter();
-  const { 
+  const {
     user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored,
     showContextModal, setShowContextModal, contextSchools, setActiveSchoolContext, openContextModal
   } = useAppContext();
@@ -27,8 +27,8 @@ export default function Login() {
   function resolveSchoolPath(schoolId: string): string {
     const slug =
       schoolId === 'joaobatista' ? 'eecmprofjoaobatista' :
-      schoolId === 'heliodoro'   ? 'eecmheliodoro'        :
-      schoolId;
+        schoolId === 'heliodoro' ? 'eecmheliodoro' :
+          schoolId;
     return `/${slug}/`;
   }
 
@@ -59,11 +59,11 @@ export default function Login() {
       const searchParams = new URLSearchParams(window.location.search);
       const urlError = searchParams.get('error');
       const localError = localStorage.getItem('eecm_login_error');
-      
+
       if (urlError === 'whitelist' || localError) {
         setError(localError || 'Acesso Negado: Seu e-mail não está cadastrado nesta escola. Solicite acesso ao administrador.');
         localStorage.removeItem('eecm_login_error');
-        
+
         // Limpa a query string sem recarregar a página
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
@@ -191,7 +191,7 @@ export default function Login() {
         setProcessingOAuth(false);
         setError('O tempo limite de login foi excedido. Por favor, tente novamente.');
       }, 12000); // 12 segundos de tolerância
-      
+
       return () => clearTimeout(timer);
     }
   }, [processingOAuth]);
