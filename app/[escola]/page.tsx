@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AppShell from '@/components/AppShell';
 import CustomSelect from '@/components/CustomSelect';
 import { useAppContext } from '@/lib/store';
@@ -32,7 +32,7 @@ function mergePanels(saved: PanelConfig[]): PanelConfig[] {
 }
 
 export default function Dashboard() {
-  const { students, occurrences, accidents, praises, rules, getStudentPoints, user } = useAppContext();
+  const { students, occurrences, accidents, praises, rules, getStudentPoints, user, refreshData } = useAppContext();
   const userId = (user as any)?.email ?? 'guest';
   const [pendingBanner, setPendingBanner] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -56,6 +56,22 @@ export default function Dashboard() {
       setMounted(true);
     }
   }, []);
+
+  // Evita spam de requisições paralelas: throttling de 2 segundos a cada clique
+  const lastRefreshTime = useRef<number>(0);
+  const handleGlobalClick = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRefreshTime.current > 2000) {
+      lastRefreshTime.current = now;
+      console.log('[SCHOOL REFRESH] Clique detectado, atualizando dados da escola...');
+      refreshData();
+    }
+  }, [refreshData]);
+
+  useEffect(() => {
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [handleGlobalClick]);
 
   // Carrega painéis do Supabase ao montar
   useEffect(() => {

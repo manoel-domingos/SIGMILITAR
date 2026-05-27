@@ -140,6 +140,22 @@ export default function DrePage() {
     }
   }, [currentUserRole, router]);
 
+  // Evita spam de requisições paralelas: throttling de 2 segundos a cada clique
+  const lastRefreshTime = useRef<number>(0);
+  const handleGlobalClick = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRefreshTime.current > 2000) {
+      lastRefreshTime.current = now;
+      console.log('[DRE REFRESH] Clique detectado, atualizando dados consolidada...');
+      refreshData();
+    }
+  }, [refreshData]);
+
+  useEffect(() => {
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [handleGlobalClick]);
+
   const [stats, setStats] = useState<SchoolStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
