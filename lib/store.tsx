@@ -538,6 +538,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (summonsData) setSummons(summonsData.map((s: any) => ({...s, studentId: s.student_id, registeredBy: s.registered_by})));
           if (conductTermsData) setConductTerms(conductTermsData.map((t: any) => ({...t, studentId: t.student_id, registeredBy: t.registered_by, guardianName: t.guardian_name})));
           if (auditLogsData) setAuditLogs(auditLogsData.map((l: any) => ({...l, entityName: l.entity_name, entityId: l.entity_id, userEmail: l.user_email})));
+          setIsAuthRestored(true);
         } catch (err) {
           console.error("Initial data fetch failed", err);
         } finally {
@@ -644,14 +645,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else {
           setUser(null);
           setIsGuest(false);
+          setIsAuthRestored(true);
         }
       });
 
       // Expõe o setter do flag para o logout usar
       // (closure compartilhada dentro do mesmo useEffect)
       logoutFlagRef.current = (val: boolean) => { isLoggingOut = val; };
-
-      setIsAuthRestored(true);
 
       // Resolve o school_id do usuário ANTES de buscar dados para garantir filtro correto.
       // Prioridade: (1) perfil do Supabase → (2) domínio atual → (3) sem filtro (admin_global)
@@ -722,9 +722,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           } else {
             console.log("[AUTH] Nenhuma sessão ativa encontrada.");
+            setIsAuthRestored(true);
           }
         } catch (e) {
           console.error("[AUTH] Erro ao buscar sessão:", e);
+          setIsAuthRestored(true);
         }
       }
 

@@ -91,10 +91,15 @@ export default function LandingPage2() {
               <a href="#modulos" className="hover:text-[#0052CC] transition-colors">Módulos</a>
               <a href="#diferenciais" className="hover:text-[#0052CC] transition-colors">Diferenciais</a>
             </div>
-            <a href="#cta" className="hidden md:flex items-center gap-2 bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#0052CC]/90 transition-all duration-300">
-              Agendar Demonstração
-              <ArrowRight className="w-4 h-4" />
-            </a>
+            <div className="flex items-center gap-3">
+              <a href="/login" className="flex items-center gap-1.5 border border-[#0052CC] text-[#0052CC] px-4 py-2 rounded-full text-sm font-medium hover:bg-[#0052CC]/5 transition-all duration-300">
+                Acessar Sistema
+              </a>
+              <a href="#cta" className="hidden md:flex items-center gap-2 bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#0052CC]/90 transition-all duration-300">
+                Agendar Demonstração
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </nav>
 
@@ -531,7 +536,7 @@ export default function LandingPage2() {
                   <ul className="space-y-2 text-sm text-[#2B2C33]/70">
                     <li><a className="hover:text-[#0052CC] transition-colors" href="#">Suporte</a></li>
                     <li><a className="hover:text-[#0052CC] transition-colors" href="#cta">Implantação</a></li>
-                    <li><a className="hover:text-[#0052CC] transition-colors" href="#">Acessar Sistema</a></li>
+                    <li><a className="hover:text-[#0052CC] transition-colors" href="/login">Acessar Sistema</a></li>
                   </ul>
                 </div>
               </div>
