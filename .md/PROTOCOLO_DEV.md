@@ -12,7 +12,7 @@ Antes de alterar qualquer arquivo:
 
 1. Identifique **quais arquivos** serão tocados e em quais linhas.
 2. Mapeie **dependências**: o que mais no sistema consome ou é afetado pelo trecho a alterar.
-3. Apresente um **plano estruturado** descrevendo o que será feito — somente após aprovação execute.
+3. Apresente um plano estruturado diretamente na conversa do chat — execute após alinhamento direto.
 4. Nunca assuma que uma coluna, campo ou rota já existe — **verifique no código antes de referenciar**.
 
 ---
@@ -192,6 +192,7 @@ Após aprovação do plano:
 3. Ao adicionar campo novo à interface `Occurrence`, `Student`, `AppUser` etc. → **atualizar** `lib/data.ts`.
 4. Ao mapear campo do banco → **verificar os dois blocos** de fetch em `lib/store.tsx` (`fetchData` e `refreshData`).
 5. Após implementar, listar explicitamente o que **não** foi alterado (para garantir que domínios/fluxos paralelos como `kallyteros.com.br` continuam intocados).
+6. Toda ação manual exigida do usuário para implantação (como rodar migrações SQL no editor do Supabase, criação de buckets de storage, etc.) **deve ser sempre informada com destaque utilizando alertas visuais** (ex: `> [!IMPORTANT]` ou `> [!WARNING]`) no resultado final apresentado na conversa do chat.
 
 ---
 

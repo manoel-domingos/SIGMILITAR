@@ -194,18 +194,65 @@ export default function PedagogicoDashboard() {
         </div>
       </div>
 
-      {/* Compliance Overview Bar */}
-      <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base flex items-center gap-2">
-            <TrendingUp className="w-4.5 h-4.5 text-blue-500" />
-            Progresso Consolidado do MEG
-          </h3>
-          <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500">
-            {overallProgress >= 80 ? 'Excelente' : overallProgress >= 50 ? 'Bom' : 'Atenção'}
+      {/* Compliance Overview Card (Semelhante ao Painel de Implantação) */}
+      <div className="bg-white/80 dark:bg-slate-800/60 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700/40 space-y-4 animate-in fade-in duration-200">
+        <div className="flex items-end justify-between">
+          <div>
+            <span className="text-3xl sm:text-4xl font-extrabold text-slate-800 dark:text-slate-100 font-mono">
+              {Math.round(overallProgress)}%
+            </span>
+            <span className="ml-2 text-sm font-bold text-slate-500 dark:text-slate-400">
+              {overallProgress < 25 ? 'Iniciando' : 
+               overallProgress < 50 ? 'Em andamento' :
+               overallProgress < 75 ? 'Avançando' : 
+               overallProgress < 100 ? 'Quase concluído' : 'Concluído!'}
+            </span>
+          </div>
+          <span className="text-xs text-slate-400 dark:text-slate-500 font-mono font-semibold">
+            {checklistData.filter(c => c.status === 'concluido').length} de {MEG_EVIDENCIAS.length} etapas concluídas
           </span>
         </div>
-        <ProgressBar value={overallProgress} size="lg" showText={false} />
+        
+        {/* Barra principal consolidada */}
+        <div className="h-3.5 bg-slate-100 dark:bg-slate-900/50 rounded-full overflow-hidden shadow-inner">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${
+              overallProgress < 25 ? 'bg-rose-500 shadow-rose-500/20' :
+              overallProgress < 50 ? 'bg-amber-500 shadow-amber-500/20' :
+              overallProgress < 75 ? 'bg-blue-500 shadow-blue-500/20' : 'bg-emerald-500 shadow-emerald-500/20'
+            }`}
+            style={{ width: `${overallProgress}%` }}
+          />
+        </div>
+
+        {/* Mini barras horizontais por Eixo (semelhante ao implantação) */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 border-t border-slate-100 dark:border-slate-700/30">
+          {MEG_EIXOS.map(e => {
+            const pct = Math.round(progressByEixo[e.id] || 0);
+            
+            // Determine tiny color
+            let barColor = 'bg-rose-500';
+            if (pct >= 80) barColor = 'bg-emerald-500';
+            else if (pct >= 50) barColor = 'bg-amber-500';
+
+            return (
+              <div key={e.id} className="space-y-1.5 min-w-0">
+                <div className="flex justify-between gap-2 text-[10px] sm:text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 truncate font-semibold" title={e.nome}>
+                    Eixo {e.numero}
+                  </span>
+                  <span className="font-extrabold text-slate-700 dark:text-slate-200 font-mono">{pct}%</span>
+                </div>
+                <div className="h-2 bg-slate-100 dark:bg-slate-900/50 rounded-full overflow-hidden shadow-inner">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 ${barColor}`} 
+                    style={{ width: `${pct}%` }} 
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Grid of the 5 MEG Eixos */}
