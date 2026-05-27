@@ -1,0 +1,233 @@
+// app/[escola]/pedagogico/page.tsx
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useAppContext } from '@/lib/store';
+import { MEG_EIXOS, MEG_EVIDENCIAS } from '@/lib/meg-data';
+import EixoCard from '@/components/meg/EixoCard';
+import ProgressBar from '@/components/meg/ProgressBar';
+import { supabase } from '@/lib/supabase';
+import { 
+  GraduationCap, ClipboardCheck, AlertTriangle, ShieldCheck, 
+  TrendingUp, Award, Calendar, BookOpen 
+} from 'lucide-react';
+
+export default function PedagogicoDashboard() {
+  const router = useRouter();
+  const params = useParams();
+  const schoolSlug = params.escola as string;
+
+  const { 
+    activeSchoolContext, 
+    currentUserRole, 
+    user, 
+    isAuthRestored,
+    contextSchools
+  } = useAppContext();
+
+  const [loading, setLoading] = useState<boolean>(true);
+  const [checklistData, setChecklistData] = useState<any[]>([]);
+  const [progressByEixo, setProgressByEixo] = useState<Record<string, number>>({});
+  const [overallProgress, setOverallProgress] = useState<number>(0);
+
+  // Mapped school name
+  const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
+  const schoolName = currentSchool?.name || 'EECM';
+
+  // Fetch checklist records
+  useEffect(() => {
+    if (!isAuthRestored) return;
+
+    async function fetchChecklist() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('meg_checklist')
+          .select('*')
+          .eq('school_id', activeSchoolContext);
+
+        if (error) throw error;
+        setChecklistData(data || []);
+      } catch (err) {
+        console.error('Error fetching MEG checklist:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchChecklist();
+  }, [activeSchoolContext, isAuthRestored]);
+
+  // Calculate percentages and metrics
+  useEffect(() => {
+    const counts: Record<string, { total: number; completed: number }> = {};
+
+    // Initialize counts for each eixo
+    MEG_EIXOS.forEach(e => {
+      counts[e.id] = { total: 0, completed: 0 };
+    });
+
+    // Populate total counts from static definition
+    MEG_EVIDENCIAS.forEach(ev => {
+      if (counts[ev.eixoId]) {
+        counts[ev.eixoId].total += 1;
+      }
+    });
+
+    // Populate completed counts from Supabase results
+    checklistData.forEach(item => {
+      const ev = MEG_EVIDENCIAS.find(e => e.id === item.evidencia_id);
+      if (ev && counts[ev.eixoId] && item.status === 'concluido') {
+        counts[ev.eixoId].completed += 1;
+      }
+    });
+
+    // Calculate final percentages
+    const progress: Record<string, number> = {};
+    let totalCompleted = 0;
+    let totalEvidences = MEG_EVIDENCIAS.length;
+
+    MEG_EIXOS.forEach(e => {
+      const c = counts[e.id];
+      progress[e.id] = c.total > 0 ? (c.completed / c.total) * 100 : 0;
+      totalCompleted += c.completed;
+    });
+
+    setProgressByEixo(progress);
+    setOverallProgress(totalEvidences > 0 ? (totalCompleted / totalEvidences) * 100 : 0);
+  }, [checklistData]);
+
+  // Handle navigation
+  const handleEixoClick = (eixoSlug: string) => {
+    router.push(`/${schoolSlug}/pedagogico/${eixoSlug}`);
+  };
+
+  if (!isAuthRestored || loading) {
+    return (
+      <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-pulse">
+        {/* Header Skeleton */}
+        <div className="h-40 w-full bg-slate-200 dark:bg-slate-800/50 rounded-3xl" />
+        {/* KPI Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="h-28 bg-slate-200 dark:bg-slate-800/50 rounded-2xl" />
+          <div className="h-28 bg-slate-200 dark:bg-slate-800/50 rounded-2xl" />
+          <div className="h-28 bg-slate-200 dark:bg-slate-800/50 rounded-2xl" />
+        </div>
+        {/* Grid Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-48 bg-slate-200 dark:bg-slate-800/50 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
+      
+      {/* Premium Gradient Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-blue-700 p-6 sm:p-8 text-white shadow-lg border border-blue-500/20 dark:border-slate-800">
+        <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
+        
+        <div className="relative z-10 space-y-4 max-w-4xl">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-wide">
+            <GraduationCap className="w-4 h-4 text-cyan-300" />
+            MEG EDUCAÇÃO — SEDUC-MT
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+              Gestão Pedagógica
+            </h1>
+            <p className="text-sm sm:text-base text-blue-100 font-light mt-1">
+              Modelo de Excelência em Gestão e Acompanhamento de Evidências Escolares na unidade:
+              <span className="font-semibold text-white ml-1">{schoolName}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards Panel */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+            <Award className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+              Conformidade Geral
+            </p>
+            <p className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-100 font-mono">
+              {Math.round(overallProgress)}%
+            </p>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <ClipboardCheck className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+              Evidências Aprovadas
+            </p>
+            <p className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-100 font-mono">
+              {checklistData.filter(c => c.status === 'concluido').length} de {MEG_EVIDENCIAS.length}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+              Fases em Aberto
+            </p>
+            <p className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-100 font-mono">
+              {MEG_EVIDENCIAS.length - checklistData.filter(c => c.status === 'concluido').length} pendentes
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Compliance Overview Bar */}
+      <div className="p-6 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base flex items-center gap-2">
+            <TrendingUp className="w-4.5 h-4.5 text-blue-500" />
+            Progresso Consolidado do MEG
+          </h3>
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500">
+            {overallProgress >= 80 ? 'Excelente' : overallProgress >= 50 ? 'Bom' : 'Atenção'}
+          </span>
+        </div>
+        <ProgressBar value={overallProgress} size="lg" showText={false} />
+      </div>
+
+      {/* Grid of the 5 MEG Eixos */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-slate-400" />
+          <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+            Eixos do MEG Educação
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {MEG_EIXOS.map(e => (
+            <EixoCard
+              key={e.id}
+              eixo={e}
+              progresso={progressByEixo[e.id] || 0}
+              onClick={() => handleEixoClick(e.slug)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

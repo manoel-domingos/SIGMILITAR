@@ -14,7 +14,7 @@ import {
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   ChevronDown, ChevronRight,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
-  Bell, Info, User, Brain, BookOpen,
+  Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -59,6 +59,20 @@ const MENU_GROUPS: MenuGroup[] = [
       { href: '/implantacao', label: 'Implantação', icon: Rocket },
       { href: '/fechamento', label: 'Fechamento do Ano', icon: Award },
       { href: '/auditoria', label: 'Auditoria de Ações', icon: ShieldAlert },
+    ],
+  },
+];
+
+const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
+  { label: 'Dashboard Pedagógico', icon: LayoutDashboard, href: '/pedagogico' },
+  {
+    label: 'Eixos MEG', icon: BookOpen,
+    children: [
+      { href: '/pedagogico/gestao-escolar', label: '1. Gestão Escolar', icon: FileText },
+      { href: '/pedagogico/lideranca', label: '2. Liderança', icon: Users },
+      { href: '/pedagogico/pedagogico', label: '3. Processo Pedagógico', icon: GraduationCap },
+      { href: '/pedagogico/patrimonio', label: '4. Recursos e Patrimônio', icon: Building2 },
+      { href: '/pedagogico/clima-escolar', label: '5. Clima Escolar', icon: Activity },
     ],
   },
 ];
@@ -129,7 +143,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [rawPathname]);
 
   const router = useRouter();
-  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData, permissions } = useAppContext();
+  const { user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, isAuthRestored, logout, isSyncing, isSupabaseConnected, refreshData, permissions, activePanelModule } = useAppContext();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -138,7 +152,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('topbar');
 
   const filteredMenu = useMemo(() => {
-    return MENU_GROUPS.map(group => {
+    const activeGroups = activePanelModule === 'pedagogico' ? PEDAGOGICO_MENU_GROUPS : MENU_GROUPS;
+
+    return activeGroups.map(group => {
       if (group.href) {
         const allowed = isRouteAllowed(group.href, currentUserRole, permissions);
         return allowed ? group : null;
@@ -153,7 +169,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       }
       return null;
     }).filter(Boolean) as MenuGroup[];
-  }, [currentUserRole, permissions]);
+  }, [currentUserRole, permissions, activePanelModule]);
 
   // Modal de seleção de contexto — estado vive no store
   const { showContextModal, setShowContextModal, contextSchools, activePanelModule, setActivePanelModule } = useAppContext();
@@ -1846,7 +1862,138 @@ function NotificationBell() {
   const [activeTab, setActiveTab] = useState<'notifications' | 'updates'>('notifications');
   const [mounted, setMounted] = useState(false);
 
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [updates, setUpdates] = useState<any[]>([]);
+
   useEffect(() => { setMounted(true); }, []);
+
+  const INITIAL_NOTIFICATIONS = [
+    { id: '1', title: 'Bem-vindo ao Novo EECM', desc: 'Painel multitenant integrado e sincronizado em tempo real.', date: 'Hoje', type: 'info' },
+    { id: '2', title: 'Modo Professor Liberado', desc: 'Professor agora possui acesso seguro e direto às suas ocorrências.', date: 'Ontem', type: 'success' },
+    { id: '3', title: 'Segurança de Whitelist Ativa', desc: 'Seu e-mail está cadastrado e validado com sucesso.', date: '2 dias atrás', type: 'warning' },
+  ];
+
+  const INITIAL_UPDATES = [
+    {
+      version: 'v1.2.6',
+      title: 'Notificações & TL;DR Changelog',
+      date: '25/05/2026',
+      commits: [
+        'Adicionado sino de notificações no cabeçalho com abas rápidas.',
+        'Desenvolvido changelog em tempo real com resumo TL;DR a cada 3 commits.',
+        'Aprimoramentos de design de cards nas abas de relatórios.'
+      ]
+    },
+    {
+      version: 'v1.2.5',
+      title: 'Transições de Abas & Painel do Professor',
+      date: '25/05/2026',
+      commits: [
+        'Adicionada transição vertical "subindo" (rolling animation, 300ms).',
+        'Liberada aba Alunos em modo leitura ampla para toda a escola.',
+        'Implementadas abas Faltas Disciplinares e Relatórios Estatísticos para Professores.'
+      ]
+    },
+    {
+      version: 'v1.2.4',
+      title: 'Supabase Sync & Google SSO',
+      date: '24/05/2026',
+      commits: [
+        'Reorganização da tela de login com animação expansiva de inputs.',
+        'Implementado login premium com Google SSO.',
+        'Casamento dinâmico de turmas na importação de planilhas.'
+      ]
+    }
+  ];
+
+  // Initialize data from localStorage or use defaults
+  useEffect(() => {
+    if (mounted) {
+      const storedNotifs = localStorage.getItem('sigmilitar_notifications');
+      const storedUpdates = localStorage.getItem('sigmilitar_updates');
+
+      if (storedNotifs) {
+        setNotifications(JSON.parse(storedNotifs));
+      } else {
+        localStorage.setItem('sigmilitar_notifications', JSON.stringify(INITIAL_NOTIFICATIONS));
+        setNotifications(INITIAL_NOTIFICATIONS);
+      }
+
+      if (storedUpdates) {
+        setUpdates(JSON.parse(storedUpdates));
+      } else {
+        localStorage.setItem('sigmilitar_updates', JSON.stringify(INITIAL_UPDATES));
+        setUpdates(INITIAL_UPDATES);
+      }
+    }
+  }, [mounted]);
+
+  // Listen to 'meg-edit' events to count edits and trigger TL;DR every 3 edits
+  useEffect(() => {
+    if (!mounted) return;
+
+    function handleMegEdit(e: Event) {
+      const detail = (e as CustomEvent).detail || {};
+      const school = detail.school || 'escola';
+      const eixo = detail.eixo || 'eixo';
+      const fase = detail.fase || 'fase';
+
+      const currentCountStr = localStorage.getItem('sigmilitar_meg_edits_count') || '0';
+      const newCount = parseInt(currentCountStr, 10) + 1;
+
+      const recentEditsStr = localStorage.getItem('sigmilitar_meg_recent_edits') || '[]';
+      const recentEdits = JSON.parse(recentEditsStr);
+      recentEdits.push({ school, eixo, fase, time: new Date().toLocaleTimeString() });
+      localStorage.setItem('sigmilitar_meg_recent_edits', JSON.stringify(recentEdits));
+
+      if (newCount >= 3) {
+        localStorage.setItem('sigmilitar_meg_edits_count', '0');
+
+        // Create new Notification
+        const storedNotifs = localStorage.getItem('sigmilitar_notifications');
+        const notifsList = storedNotifs ? JSON.parse(storedNotifs) : [];
+        const newNotif = {
+          id: Date.now().toString(),
+          title: 'MEG: Gestão Pedagógica Atualizada',
+          desc: 'Mais 3 atualizações importantes cadastradas para o MEG Educação.',
+          date: 'Agora',
+          type: 'success'
+        };
+        const updatedNotifs = [newNotif, ...notifsList];
+        localStorage.setItem('sigmilitar_notifications', JSON.stringify(updatedNotifs));
+        setNotifications(updatedNotifs);
+
+        // Create new Update (dynamic TL;DR changelog)
+        const storedUpdates = localStorage.getItem('sigmilitar_updates');
+        const updatesList = storedUpdates ? JSON.parse(storedUpdates) : [];
+
+        const uniqueEdits = recentEdits.slice(-3).map((item: any) => 
+          `Alteração concluída no eixo "${item.eixo}" (Fase: "${item.fase}") na unidade escolar.`
+        );
+
+        const newUpdate = {
+          version: `v1.2.7-MEG-${Date.now().toString().slice(-4)}`,
+          title: 'Gestão Pedagógica — Resumo MEG',
+          date: new Date().toLocaleDateString('pt-BR'),
+          commits: uniqueEdits.length > 0 ? uniqueEdits : ['Resumo das evidências pedagógicas consolidadas com sucesso no sistema.']
+        };
+
+        const updatedUpdates = [newUpdate, ...updatesList];
+        localStorage.setItem('sigmilitar_updates', JSON.stringify(updatedUpdates));
+        setUpdates(updatedUpdates);
+
+        // Reset recent edits log
+        localStorage.setItem('sigmilitar_meg_recent_edits', '[]');
+      } else {
+        localStorage.setItem('sigmilitar_meg_edits_count', newCount.toString());
+      }
+    }
+
+    window.addEventListener('meg-edit', handleMegEdit);
+    return () => {
+      window.removeEventListener('meg-edit', handleMegEdit);
+    };
+  }, [mounted]);
 
   // Position the portal relative to the trigger button
   useEffect(() => {
@@ -1881,44 +2028,12 @@ function NotificationBell() {
     };
   }, [isOpen]);
 
-  const notifications = [
-    { id: 1, title: 'Bem-vindo ao Novo EECM', desc: 'Painel multitenant integrado e sincronizado em tempo real.', date: 'Hoje', type: 'info' },
-    { id: 2, title: 'Modo Professor Liberado', desc: 'Professor agora possui acesso seguro e direto às suas ocorrências.', date: 'Ontem', type: 'success' },
-    { id: 3, title: 'Segurança de Whitelist Ativa', desc: 'Seu e-mail está cadastrado e validado com sucesso.', date: '2 dias atrás', type: 'warning' },
-  ];
-
-  const updates = [
-    {
-      version: 'v1.2.6',
-      title: 'Notificações & TL;DR Changelog',
-      date: '25/05/2026',
-      commits: [
-        'Adicionado sino de notificações no cabeçalho com abas rápidas.',
-        'Desenvolvido changelog em tempo real com resumo TL;DR a cada 3 commits.',
-        'Aprimoramentos de design de cards nas abas de relatórios.'
-      ]
-    },
-    {
-      version: 'v1.2.5',
-      title: 'Transições de Abas & Painel do Professor',
-      date: '25/05/2026',
-      commits: [
-        'Adicionada transição vertical "subindo" (rolling animation, 300ms).',
-        'Liberada aba Alunos em modo leitura ampla para toda a escola.',
-        'Implementadas abas Faltas Disciplinares e Relatórios Estatísticos para Professores.'
-      ]
-    },
-    {
-      version: 'v1.2.4',
-      title: 'Supabase Sync & Google SSO',
-      date: '24/05/2026',
-      commits: [
-        'Reorganização da tela de login com animação expansiva de inputs.',
-        'Implementado login premium com Google SSO.',
-        'Casamento dinâmico de turmas na importação de planilhas.'
-      ]
-    }
-  ];
+  const handleDeleteNotif = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = notifications.filter(n => n.id !== id);
+    localStorage.setItem('sigmilitar_notifications', JSON.stringify(updated));
+    setNotifications(updated);
+  };
 
   return (
     <div className="relative">
@@ -1930,7 +2045,9 @@ function NotificationBell() {
         aria-label="Ver notificações"
       >
         <Bell className="w-4 h-4" />
-        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse border border-white dark:border-slate-800" />
+        {notifications.length > 0 && (
+          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse border border-white dark:border-slate-800" />
+        )}
       </button>
 
       {mounted && isOpen && pos && ReactDOM.createPortal(
@@ -1968,44 +2085,74 @@ function NotificationBell() {
           {/* List Content */}
           <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/40">
             {activeTab === 'notifications' ? (
-              notifications.map(n => (
-                <div key={n.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition flex gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400`}>
-                    <Info className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">{n.title}</p>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{n.date}</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">{n.desc}</p>
-                  </div>
+              notifications.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  Nenhuma notificação ativa.
                 </div>
-              ))
+              ) : (
+                notifications.map(n => (
+                  <div key={n.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition flex gap-3 group relative">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      n.type === 'success' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' :
+                      n.type === 'warning' ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400' :
+                      'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
+                    }`}>
+                      {n.type === 'success' ? <CheckCircle className="w-4 h-4" /> : n.type === 'warning' ? <AlertTriangle className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-0.5 pr-6">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate">{n.title}</p>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{n.date}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">{n.desc}</p>
+                    </div>
+                    <button
+                      onClick={(e) => handleDeleteNotif(n.id, e)}
+                      className="absolute right-3 top-4 text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400 p-1 rounded-md opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition duration-150"
+                      title="Apagar notificação"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))
+              )
             ) : (
-              updates.map(u => (
-                <div key={u.version} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition space-y-2">
-                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/40 pb-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-mono text-[10px] font-bold">{u.version}</span>
-                      <p className="font-bold text-slate-800 dark:text-slate-100 text-xs">{u.title}</p>
-                    </div>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{u.date}</span>
-                  </div>
-                  <div className="space-y-1 pl-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">TL;DR Resumo:</p>
-                    <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-                      {u.commits.map((c, i) => <li key={i}>{c}</li>)}
-                    </ul>
-                  </div>
+              updates.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  Nenhuma atualização disponível.
                 </div>
-              ))
+              ) : (
+                updates.map(u => (
+                  <div key={u.version} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/40 pb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-mono text-[10px] font-bold">{u.version}</span>
+                        <p className="font-bold text-slate-800 dark:text-slate-100 text-xs">{u.title}</p>
+                      </div>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{u.date}</span>
+                    </div>
+                    <div className="space-y-1 pl-1">
+                      <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">TL;DR Resumo:</p>
+                      <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+                        {u.commits.map((c, i) => <li key={i}>{c}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                ))
+              )
             )}
           </div>
 
           {/* Footer */}
           <div className="p-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50 text-center">
             <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">EECM Monitoramento Escolar</span>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}e="text-[10px] text-slate-400 uppercase tracking-widest font-bold">EECM Monitoramento Escolar</span>
           </div>
         </div>,
         document.body
