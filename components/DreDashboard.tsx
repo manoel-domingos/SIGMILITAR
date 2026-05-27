@@ -85,7 +85,7 @@ function IndexRing({ value, size = 64, stroke = 6 }: { value: number; size?: num
  style={{ transition: 'stroke-dasharray 0.8s ease' }}
  />
  </svg>
- <span className="absolute inset-0 flex items-center justify-center font-black text-[#2B2C33] " style={{ fontSize: size * 0.22 }}>
+ <span className="absolute inset-0 flex items-center justify-center font-black text-[#2B2C33] dark:text-slate-100 " style={{ fontSize: size * 0.22 }}>
  {value}
  </span>
  </div>
@@ -161,7 +161,7 @@ function BarPill({ value, max, color }: { value: number; max: number; color: str
 
 function TrendBadge({ value, inverse = false }: { value: number; inverse?: boolean }) {
  const good = inverse ? value < 0 : value > 0;
- if (value === 0) return <span className="text-[#2B2C33]/50 text-xs flex items-center gap-0.5"><Minus className="w-3 h-3" />—</span>;
+ if (value === 0) return <span className="text-[#2B2C33]/50 dark:text-slate-500 text-xs flex items-center gap-0.5"><Minus className="w-3 h-3" />—</span>;
  return (
  <span className={`flex items-center gap-0.5 text-xs font-semibold ${good ? 'text-emerald-500' : 'text-rose-500'}`}>
  {good ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -361,8 +361,8 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  return (
  <div className="flex flex-col items-center justify-center py-20 text-center">
  <FileWarning className="w-10 h-10 text-slate-300 mb-3" />
- <p className="text-[#2B2C33]/60 font-medium">Nenhuma escola encontrada.</p>
- <p className="text-[#2B2C33]/50 text-sm mt-1">Verifique a conexao e atualize.</p>
+ <p className="text-[#2B2C33]/60 dark:text-slate-400 font-medium">Nenhuma escola encontrada.</p>
+ <p className="text-[#2B2C33]/50 dark:text-slate-500 text-sm mt-1">Verifique a conexao e atualize.</p>
  </div>
  );
  }
@@ -384,18 +384,18 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div className="relative" ref={dropRef}>
  <button
  onClick={() => setOpen(!open)}
- className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-slate-100 hover:bg-slate-200 border border-[#2B2C33]/10 text-[#2B2C33]/70 text-xs font-semibold transition-colors"
+ className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-slate-100 hover:bg-slate-200 border border-[#2B2C33]/10 dark:border-white/10 text-[#2B2C33]/70 dark:text-slate-300 text-xs font-semibold transition-colors"
  >
  {PERIOD_LABELS[period]}
  <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
  </button>
  {open && (
- <div className="absolute right-0 top-full mt-1.5 w-36 bg-white border border-[#2B2C33]/10 rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+ <div className="absolute right-0 top-full mt-1.5 w-36 bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
  {(['dia', 'semana', 'mes'] as Period[]).map(p => (
  <button
  key={p}
  onClick={() => { onSelect(p); setOpen(false); }}
- className={`w-full text-left px-4 py-2 text-xs transition-colors ${period === p ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-[#2B2C33] hover:bg-[#F4F5F7]'}`}
+ className={`w-full text-left px-4 py-2 text-xs transition-colors ${period === p ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-[#2B2C33] dark:text-slate-100 hover:bg-[#F4F5F7] dark:hover:bg-[#22252D] dark:bg-[#0F1115]'}`}
  >
  {PERIOD_LABELS[p]}
  </button>
@@ -413,8 +413,8 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  ══════════════════════════════════════════ */}
  <div className="flex items-center justify-between gap-3 flex-wrap">
  <div>
- <h2 className="text-[#2B2C33] font-bold text-lg leading-tight">Visao Consolidada</h2>
- <p className="text-[#2B2C33]/60 text-xs mt-0.5">
+ <h2 className="text-[#2B2C33] dark:text-slate-100 font-bold text-lg leading-tight">Visao Consolidada</h2>
+ <p className="text-[#2B2C33]/60 dark:text-slate-400 text-xs mt-0.5">
  {selectedSchoolId === 'todas' ? `${stats.length} escolas · ` : ''}{PERIOD_LABELS[selectedPeriod]}
  </p>
  </div>
@@ -422,7 +422,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div className="flex items-center gap-2 flex-wrap">
  <button
  aria-label="Ajustes de filtros"
- className="w-9 h-9 rounded-full bg-white hover:bg-white/20 border border-[#2B2C33]/10 text-[#2B2C33] flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+ className="w-9 h-9 rounded-full bg-white dark:bg-[#181A20] hover:bg-white/20 border border-[#2B2C33]/10 dark:border-white/10 text-[#2B2C33] dark:text-slate-100 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
  >
  <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
  </button>
@@ -434,7 +434,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  aria-haspopup="listbox"
  aria-expanded={schoolDropdownOpen}
  aria-label="Selecionar escola"
- className="flex items-center gap-2 h-9 px-3 rounded-full bg-white hover:bg-white/20 border border-[#2B2C33]/10 text-[#2B2C33] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 min-w-[148px]"
+ className="flex items-center gap-2 h-9 px-3 rounded-full bg-white dark:bg-[#181A20] hover:bg-white/20 border border-[#2B2C33]/10 dark:border-white/10 text-[#2B2C33] dark:text-slate-100 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 min-w-[148px]"
  >
  <span className="truncate max-w-[120px]">
  {selectedSchoolId === 'todas' ? 'Todas as escolas' : selectedSchoolName.replace(/EECM Prof\. /i, '')}
@@ -445,7 +445,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div
  role="listbox"
  aria-label="Selecionar escola"
- className="absolute right-0 top-full mt-1.5 w-56 bg-white border border-[#2B2C33]/10 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+ className="absolute right-0 top-full mt-1.5 w-56 bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150"
  >
  {[{ id: 'todas', name: 'Todas as escolas' }, ...stats.map(s => ({ id: s.id, name: s.name }))].map(opt => (
  <button
@@ -453,7 +453,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  role="option"
  aria-selected={selectedSchoolId === opt.id}
  onClick={() => { setSelectedSchoolId(opt.id); setSchoolDropdownOpen(false); }}
- className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${selectedSchoolId === opt.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-[#2B2C33] hover:bg-[#F4F5F7]'}`}
+ className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${selectedSchoolId === opt.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-[#2B2C33] dark:text-slate-100 hover:bg-[#F4F5F7] dark:hover:bg-[#22252D] dark:bg-[#0F1115]'}`}
  >
  {opt.name}
  </button>
@@ -463,13 +463,13 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  </div>
 
  {/* Pills de período */}
- <div className="flex items-center bg-white border border-[#2B2C33]/10 rounded-full p-0.5" role="group" aria-label="Selecionar periodo">
+ <div className="flex items-center bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-full p-0.5" role="group" aria-label="Selecionar periodo">
  {(['dia', 'semana', 'mes'] as Period[]).map(p => (
  <button
  key={p}
  onClick={() => setSelectedPeriod(p)}
  aria-pressed={selectedPeriod === p}
- className={`px-3 h-7 rounded-full text-xs font-semibold transition-all ${selectedPeriod === p ? 'bg-white text-blue-700 shadow-sm' : 'text-[#2B2C33]/80 hover:text-[#2B2C33]'}`}
+ className={`px-3 h-7 rounded-full text-xs font-semibold transition-all ${selectedPeriod === p ? 'bg-white dark:bg-[#181A20] text-blue-700 shadow-sm' : 'text-[#2B2C33]/80 dark:text-slate-300 hover:text-[#2B2C33] dark:text-slate-100'}`}
  >
  {p === 'dia' ? 'Hoje' : p === 'semana' ? 'Semana' : 'Mes'}
  </button>
@@ -489,7 +489,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  {/* ── KPIs PRIMÁRIOS — estilo Analytics (imagem 2) ── */}
  {isVisible('kpis_primarios') && (
  <section>
- <p className="text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-widest mb-3">Visao Geral da Rede</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-widest mb-3">Visao Geral da Rede</p>
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
  {/* Card herói — Índice de Disciplina */}
@@ -517,7 +517,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  </div>
  <div className="relative w-full mt-3">
  <div className="w-full h-1.5 bg-white/20 rounded-full">
- <div className="h-full bg-white rounded-full transition-all duration-1000" style={{ width: `${avgDiscipline}%` }} />
+ <div className="h-full bg-white dark:bg-[#181A20] rounded-full transition-all duration-1000" style={{ width: `${avgDiscipline}%` }} />
  </div>
  </div>
  <p className="text-[10px] text-blue-100 mt-2 font-medium">
@@ -530,19 +530,19 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <button
  onClick={() => nav('/alunos')}
  aria-label={`${totalStudents} alunos ativos`}
- className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-blue-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+ className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-blue-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
  >
  <div className="flex items-start justify-between">
- <p className="text-[11px] font-bold text-[#2B2C33]/60 uppercase tracking-wide">Alunos Ativos</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/60 dark:text-slate-400 uppercase tracking-wide">Alunos Ativos</p>
  <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
  <Users className="w-4 h-4" aria-hidden="true" />
  </div>
  </div>
  <div>
- <p className="text-3xl font-black text-[#2B2C33] tracking-tight leading-none mt-2">{totalStudents.toLocaleString('pt-BR')}</p>
+ <p className="text-3xl font-black text-[#2B2C33] dark:text-slate-100 tracking-tight leading-none mt-2">{totalStudents.toLocaleString('pt-BR')}</p>
  <div className="flex items-center gap-1.5 mt-1.5">
  <TrendBadge value={0} />
- <span className="text-[10px] text-[#2B2C33]/50">{stats.length} escolas</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500">{stats.length} escolas</span>
  </div>
  </div>
  </button>
@@ -551,16 +551,16 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <button
  onClick={() => nav('/registro-disciplinar')}
  aria-label={`${totalOcc} ocorrencias`}
- className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-amber-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+ className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-amber-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
  >
  <div className="flex items-start justify-between">
- <p className="text-[11px] font-bold text-[#2B2C33]/60 uppercase tracking-wide">Ocorrencias</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/60 dark:text-slate-400 uppercase tracking-wide">Ocorrencias</p>
  <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
  <AlertTriangle className="w-4 h-4" aria-hidden="true" />
  </div>
  </div>
  <div>
- <p className="text-3xl font-black text-[#2B2C33] tracking-tight leading-none mt-2">{totalOcc}</p>
+ <p className="text-3xl font-black text-[#2B2C33] dark:text-slate-100 tracking-tight leading-none mt-2">{totalOcc}</p>
  <div className="flex gap-1.5 flex-wrap mt-1.5">
  {totalLeves > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 ">L {totalLeves}</span>}
  {totalMedias > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-orange-600 border border-orange-200 ">M {totalMedias}</span>}
@@ -574,19 +574,19 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <button
  onClick={() => nav('/elogios')}
  aria-label={`${totalPraises} elogios`}
- className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+ className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-[120px] w-full text-left cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
  >
  <div className="flex items-start justify-between">
- <p className="text-[11px] font-bold text-[#2B2C33]/60 uppercase tracking-wide">Elogios</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/60 dark:text-slate-400 uppercase tracking-wide">Elogios</p>
  <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
  <Star className="w-4 h-4" aria-hidden="true" />
  </div>
  </div>
  <div>
- <p className="text-3xl font-black text-[#2B2C33] tracking-tight leading-none mt-2">{totalPraises}</p>
+ <p className="text-3xl font-black text-[#2B2C33] dark:text-slate-100 tracking-tight leading-none mt-2">{totalPraises}</p>
  <div className="flex items-center gap-1.5 mt-1.5">
  <TrendBadge value={0} />
- <span className="text-[10px] text-[#2B2C33]/50">{globalPraiseRatio} por 100 alunos</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500">{globalPraiseRatio} por 100 alunos</span>
  </div>
  </div>
  </button>
@@ -597,25 +597,25 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  {/* ── KPIs SECUNDÁRIOS ── */}
  {isVisible('kpis_secundarios') && (
  <section>
- <p className="text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-widest mb-3">Metricas Derivadas</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-widest mb-3">Metricas Derivadas</p>
  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 
  {/* Taxa de gravidade */}
  <button
  onClick={() => nav('/registro-disciplinar')}
  aria-label={`Taxa de gravidade: ${globalGravityRate}%`}
- className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-rose-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
+ className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-rose-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
  >
  <div className="flex items-start justify-between">
- <p className="text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide">Taxa Gravidade</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide">Taxa Gravidade</p>
  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${globalGravityRate > 30 ? 'bg-rose-100 text-rose-600 ' : globalGravityRate > 15 ? 'bg-amber-100 text-amber-600 ' : 'bg-emerald-100 text-emerald-600 '}`}>
  <Zap className="w-4 h-4" aria-hidden="true" />
  </div>
  </div>
  <div>
- <p className="text-4xl font-black text-[#2B2C33] leading-none mt-2">{globalGravityRate}<span className="text-xl font-medium text-[#2B2C33]/50 ml-0.5">%</span></p>
+ <p className="text-4xl font-black text-[#2B2C33] dark:text-slate-100 leading-none mt-2">{globalGravityRate}<span className="text-xl font-medium text-[#2B2C33]/50 dark:text-slate-500 ml-0.5">%</span></p>
  <BarPill value={globalGravityRate} max={100} color={globalGravityRate > 30 ? 'bg-rose-500' : globalGravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
- <p className="text-[10px] text-[#2B2C33]/50 mt-3">graves / total</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 mt-3">graves / total</p>
  </div>
  </button>
 
@@ -623,20 +623,20 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <button
  onClick={() => nav('/elogios')}
  aria-label="Razao elogio sobre ocorrencia"
- className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
+ className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-emerald-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
  >
  <div className="flex items-start justify-between">
- <p className="text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide">Razao E/O</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide">Razao E/O</p>
  <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
  <Award className="w-4 h-4" aria-hidden="true" />
  </div>
  </div>
  <div>
- <p className="text-4xl font-black text-[#2B2C33] leading-none mt-2">
- {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}<span className="text-xl font-medium text-[#2B2C33]/50 ml-1">x</span>
+ <p className="text-4xl font-black text-[#2B2C33] dark:text-slate-100 leading-none mt-2">
+ {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}<span className="text-xl font-medium text-[#2B2C33]/50 dark:text-slate-500 ml-1">x</span>
  </p>
  <BarPill value={Math.min(totalPraises, totalOcc * 2)} max={totalOcc * 2 || 1} color="bg-emerald-400" />
- <p className="text-[10px] text-[#2B2C33]/50 mt-3">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 mt-3">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
  </div>
  </button>
 
@@ -644,17 +644,17 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <button
  onClick={() => nav('/acidentes')}
  aria-label={`${totalAccidents} acidentes`}
- className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-violet-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
+ className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md hover:border-violet-300 active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px]"
  >
  <div className="flex items-start justify-between">
- <p className="text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide">Acidentes</p>
+ <p className="text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide">Acidentes</p>
  <div className="w-9 h-9 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center shrink-0">
  <Activity className="w-4 h-4" aria-hidden="true" />
  </div>
  </div>
  <div>
- <p className="text-4xl font-black text-[#2B2C33] leading-none mt-2">{totalAccidents}</p>
- <p className="text-[10px] text-[#2B2C33]/50 mt-1">
+ <p className="text-4xl font-black text-[#2B2C33] dark:text-slate-100 leading-none mt-2">{totalAccidents}</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 mt-1">
  {totalStudents > 0 ? ((totalAccidents / totalStudents) * 1000).toFixed(1) : '0'} por mil alunos
  </p>
  <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${totalAccidents === 0 ? 'bg-emerald-50 text-emerald-600 ' : 'bg-amber-50 text-amber-600 '}`}>
@@ -667,17 +667,17 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <button
  onClick={() => nav('/comportamento')}
  aria-label={`${alertSchools} escolas em alerta`}
- className={`rounded-2xl p-5 shadow-sm border text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px] ${alertSchools > 0 ? 'bg-rose-50 border-rose-200 hover:border-rose-400' : 'bg-white border-[#2B2C33]/10 hover:border-blue-300'}`}
+ className={`rounded-2xl p-5 shadow-sm border text-left w-full cursor-pointer hover:scale-[1.02] hover:shadow-md active:scale-[0.98] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 flex flex-col justify-between min-h-[120px] ${alertSchools > 0 ? 'bg-rose-50 border-rose-200 hover:border-rose-400' : 'bg-white dark:bg-[#181A20] border-[#2B2C33]/10 dark:border-white/10 hover:border-blue-300'}`}
  >
  <div className="flex items-start justify-between">
- <p className="text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide">Alertas</p>
- <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${alertSchools > 0 ? 'bg-rose-100 text-rose-600 ' : 'bg-slate-100 text-[#2B2C33]/50 '}`}>
+ <p className="text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide">Alertas</p>
+ <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${alertSchools > 0 ? 'bg-rose-100 text-rose-600 ' : 'bg-slate-100 text-[#2B2C33]/50 dark:text-slate-500 '}`}>
  <AlertCircle className="w-4 h-4" aria-hidden="true" />
  </div>
  </div>
  <div>
- <p className={`text-4xl font-black leading-none mt-2 ${alertSchools > 0 ? 'text-rose-600 ' : 'text-[#2B2C33] '}`}>{alertSchools}</p>
- <p className="text-[10px] text-[#2B2C33]/50 mt-1">
+ <p className={`text-4xl font-black leading-none mt-2 ${alertSchools > 0 ? 'text-rose-600 ' : 'text-[#2B2C33] dark:text-slate-100 '}`}>{alertSchools}</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 mt-1">
  {alertSchools === 0 ? 'Nenhuma escola em alerta' : `escola${alertSchools > 1 ? 's' : ''} acima do limiar`}
  </p>
  <div className="flex gap-1 flex-wrap mt-2">
@@ -705,11 +705,11 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  {isVisible('kpis_primarios') && stats.length > 0 && (
  <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
  {/* Gráfico comparativo */}
- <div className="lg:col-span-2 bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm">
+ <div className="lg:col-span-2 bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm">
  <div className="flex items-center justify-between mb-4">
  <div>
- <p className="text-sm font-bold text-[#2B2C33] ">Comparativo por Escola</p>
- <p className="text-[11px] text-[#2B2C33]/50 ">Indice de disciplina vs ocorrencias</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 ">Comparativo por Escola</p>
+ <p className="text-[11px] text-[#2B2C33]/50 dark:text-slate-500 ">Indice de disciplina vs ocorrencias</p>
  </div>
  <PeriodBtn
  period={barPeriod}
@@ -736,18 +736,18 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  {[{color:'bg-blue-500',label:'Disciplina'},{color:'bg-orange-500',label:'Ocorrencias'},{color:'bg-emerald-500',label:'Elogios'}].map(l => (
  <div key={l.label} className="flex items-center gap-1.5">
  <div className={`w-2.5 h-2.5 rounded-sm ${l.color}`} />
- <span className="text-[10px] text-[#2B2C33]/50 ">{l.label}</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">{l.label}</span>
  </div>
  ))}
  </div>
  </div>
 
  {/* Pizza — severidade */}
- <div className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm flex flex-col">
+ <div className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm flex flex-col">
  <div className="flex items-start justify-between mb-3">
  <div>
- <p className="text-sm font-bold text-[#2B2C33] ">Severidade</p>
- <p className="text-[11px] text-[#2B2C33]/50 ">Distribuicao das ocorrencias</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 ">Severidade</p>
+ <p className="text-[11px] text-[#2B2C33]/50 dark:text-slate-500 ">Distribuicao das ocorrencias</p>
  </div>
  <PeriodBtn
  period={piePeriod}
@@ -761,7 +761,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div className="flex-1 flex items-center justify-center">
  <div className="text-center">
  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
- <p className="text-sm text-[#2B2C33]/50 font-medium">Sem ocorrencias</p>
+ <p className="text-sm text-[#2B2C33]/50 dark:text-slate-500 font-medium">Sem ocorrencias</p>
  </div>
  </div>
  ) : (
@@ -779,11 +779,11 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div key={d.name} className="flex items-center justify-between">
  <div className="flex items-center gap-2">
  <div className="w-2 h-2 rounded-full" style={{ background: d.fill }} />
- <span className="text-[11px] text-[#2B2C33]/70 ">{d.name}</span>
+ <span className="text-[11px] text-[#2B2C33]/70 dark:text-slate-300 ">{d.name}</span>
  </div>
  <div className="flex items-center gap-2">
- <span className="text-[11px] font-bold text-[#2B2C33] ">{d.value}</span>
- <span className="text-[10px] text-[#2B2C33]/50">{totalOcc > 0 ? Math.round((d.value / totalOcc) * 100) : 0}%</span>
+ <span className="text-[11px] font-bold text-[#2B2C33] dark:text-slate-100 ">{d.value}</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500">{totalOcc > 0 ? Math.round((d.value / totalOcc) * 100) : 0}%</span>
  </div>
  </div>
  ))}
@@ -803,11 +803,11 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  const delta = previous > 0 ? Math.round(((current - previous) / previous) * 100) : 0;
  const totalPeriod = chartData.reduce((s, b) => s + b.value, 0);
  const isReduction = delta < 0;
- const deltaColor = isReduction ? 'text-emerald-500' : delta > 0 ? 'text-rose-500' : 'text-[#2B2C33]/50';
- const deltaBg = isReduction ? 'bg-emerald-50 border-emerald-200 ' : delta > 0 ? 'bg-rose-50 border-rose-200 ' : 'bg-[#F4F5F7] border-[#2B2C33]/10 ';
+ const deltaColor = isReduction ? 'text-emerald-500' : delta > 0 ? 'text-rose-500' : 'text-[#2B2C33]/50 dark:text-slate-500';
+ const deltaBg = isReduction ? 'bg-emerald-50 border-emerald-200 ' : delta > 0 ? 'bg-rose-50 border-rose-200 ' : 'bg-[#F4F5F7] dark:bg-[#0F1115] border-[#2B2C33]/10 dark:border-white/10 ';
 
  return (
- <section className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm">
+ <section className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm">
  {/* Cabeçalho */}
  <div className="flex items-start justify-between mb-4">
  <div className="flex items-center gap-3">
@@ -815,8 +815,8 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <BookOpen className="w-4 h-4 text-indigo-600 " />
  </div>
  <div>
- <p className="text-sm font-bold text-[#2B2C33] leading-tight">Dormir em Sala de Aula</p>
- <p className="text-[11px] text-[#2B2C33]/50 ">Reg. 14 — Debrucar-se / dormir (comparativo)</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 leading-tight">Dormir em Sala de Aula</p>
+ <p className="text-[11px] text-[#2B2C33]/50 dark:text-slate-500 ">Reg. 14 — Debrucar-se / dormir (comparativo)</p>
  </div>
  </div>
  {/* Seletor semana / mês */}
@@ -832,18 +832,18 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div className="relative" ref={sleepDropRef}>
  <button
  onClick={() => setSleepDropOpen(o => !o)}
- className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-slate-100 hover:bg-slate-200 border border-[#2B2C33]/10 text-[#2B2C33]/70 text-xs font-semibold transition-colors"
+ className="flex items-center gap-1.5 px-3 h-7 rounded-full bg-slate-100 hover:bg-slate-200 border border-[#2B2C33]/10 dark:border-white/10 text-[#2B2C33]/70 dark:text-slate-300 text-xs font-semibold transition-colors"
  >
  {sleepPeriod === 'semana' ? 'Por Semana' : 'Por Mes'}
  <ChevronDown className={`w-3 h-3 transition-transform ${sleepDropOpen ? 'rotate-180' : ''}`} />
  </button>
  {sleepDropOpen && (
- <div className="absolute right-0 top-full mt-1.5 w-32 bg-white border border-[#2B2C33]/10 rounded-xl shadow-lg overflow-hidden z-50">
+ <div className="absolute right-0 top-full mt-1.5 w-32 bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50">
  {(['semana', 'mes'] as const).map(p => (
  <button
  key={p}
  onClick={() => { setSleepPeriod(p); setSleepDropOpen(false); }}
- className={`w-full text-left px-4 py-2 text-xs transition-colors ${sleepPeriod === p ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-[#2B2C33] hover:bg-[#F4F5F7]'}`}
+ className={`w-full text-left px-4 py-2 text-xs transition-colors ${sleepPeriod === p ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-[#2B2C33] dark:text-slate-100 hover:bg-[#F4F5F7] dark:hover:bg-[#22252D] dark:bg-[#0F1115]'}`}
  >
  {p === 'semana' ? 'Por Semana' : 'Por Mes'}
  </button>
@@ -856,23 +856,23 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
 
  {/* Metricas rápidas */}
  <div className="grid grid-cols-3 gap-3 mb-4">
- <div className="bg-[#F4F5F7] rounded-xl px-3 py-2.5 text-center">
- <p className="text-[10px] text-[#2B2C33]/50 font-medium uppercase tracking-wide mb-1">
+ <div className="bg-[#F4F5F7] dark:bg-[#0F1115] rounded-xl px-3 py-2.5 text-center">
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 font-medium uppercase tracking-wide mb-1">
  {sleepPeriod === 'semana' ? 'Esta Semana' : 'Este Mes'}
  </p>
- <p className="text-2xl font-black text-[#2B2C33] leading-none">{current}</p>
+ <p className="text-2xl font-black text-[#2B2C33] dark:text-slate-100 leading-none">{current}</p>
  </div>
- <div className="bg-[#F4F5F7] rounded-xl px-3 py-2.5 text-center">
- <p className="text-[10px] text-[#2B2C33]/50 font-medium uppercase tracking-wide mb-1">
+ <div className="bg-[#F4F5F7] dark:bg-[#0F1115] rounded-xl px-3 py-2.5 text-center">
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 font-medium uppercase tracking-wide mb-1">
  {sleepPeriod === 'semana' ? 'Semana Anterior' : 'Mes Anterior'}
  </p>
- <p className="text-2xl font-black text-[#2B2C33] leading-none">{previous}</p>
+ <p className="text-2xl font-black text-[#2B2C33] dark:text-slate-100 leading-none">{previous}</p>
  </div>
- <div className="bg-[#F4F5F7] rounded-xl px-3 py-2.5 text-center">
- <p className="text-[10px] text-[#2B2C33]/50 font-medium uppercase tracking-wide mb-1">
+ <div className="bg-[#F4F5F7] dark:bg-[#0F1115] rounded-xl px-3 py-2.5 text-center">
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 font-medium uppercase tracking-wide mb-1">
  Total no Periodo
  </p>
- <p className="text-2xl font-black text-[#2B2C33] leading-none">{totalPeriod}</p>
+ <p className="text-2xl font-black text-[#2B2C33] dark:text-slate-100 leading-none">{totalPeriod}</p>
  </div>
  </div>
 
@@ -902,7 +902,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  </LineChart>
  </ResponsiveContainer>
 
- <p className="text-[10px] text-[#2B2C33]/50 text-center mt-2">
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 text-center mt-2">
  Linha tracejada = valor do periodo anterior · Tendencia positiva indica reducao das ocorrencias
  </p>
  </section>
@@ -911,21 +911,21 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
 
  {/* ── IMPLANTAÇÃO ── */}
  {isVisible('implantacao') && (
- <section className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm">
+ <section className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm">
  <div className="flex items-center justify-between mb-5">
  <div className="flex items-center gap-2.5">
  <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
  <CheckCircle2 className="w-4 h-4 text-blue-600 " />
  </div>
  <div>
- <p className="text-sm font-bold text-[#2B2C33] ">Implantacao da Rede</p>
- <p className="text-[11px] text-[#2B2C33]/50 ">{doneImpl} de {totalImpl} itens concluidos</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 ">Implantacao da Rede</p>
+ <p className="text-[11px] text-[#2B2C33]/50 dark:text-slate-500 ">{doneImpl} de {totalImpl} itens concluidos</p>
  </div>
  </div>
  <div className="flex items-center gap-3">
  <div className="text-right">
- <p className="text-2xl font-black text-[#2B2C33] leading-none">{pctImpl}%</p>
- <p className="text-[10px] text-[#2B2C33]/50 ">concluido</p>
+ <p className="text-2xl font-black text-[#2B2C33] dark:text-slate-100 leading-none">{pctImpl}%</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">concluido</p>
  </div>
  <IndexRing value={pctImpl} size={52} stroke={5} />
  </div>
@@ -938,11 +938,11 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  return (
  <div key={school.id} className="space-y-1.5">
  <div className="flex justify-between items-center">
- <p className="text-[11px] font-semibold text-[#2B2C33]/70 truncate pr-2">{school.name.replace('EECM Prof. ', '')}</p>
+ <p className="text-[11px] font-semibold text-[#2B2C33]/70 dark:text-slate-300 truncate pr-2">{school.name.replace('EECM Prof. ', '')}</p>
  <span className={`text-[10px] font-bold shrink-0 ${pct >= 80 ? 'text-emerald-500' : pct >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>{pct}%</span>
  </div>
  <BarPill value={school.implantacaoDone} max={school.implantacaoTotal || 1} color={pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
- <p className="text-[10px] text-[#2B2C33]/50 ">{school.implantacaoDone}/{school.implantacaoTotal} itens</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">{school.implantacaoDone}/{school.implantacaoTotal} itens</p>
  </div>
  );
  })}
@@ -961,12 +961,12 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div
  key={school.id}
  onClick={() => onSchoolClick?.(school.id)}
- className={`bg-white border rounded-2xl p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${onSchoolClick ? 'cursor-pointer' : ''} ${school.riskLevel === 'critical' ? 'border-rose-300 ' : school.riskLevel === 'high' ? 'border-orange-300 ' : 'border-[#2B2C33]/10 '}`}
+ className={`bg-white dark:bg-[#181A20] border rounded-2xl p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${onSchoolClick ? 'cursor-pointer' : ''} ${school.riskLevel === 'critical' ? 'border-rose-300 ' : school.riskLevel === 'high' ? 'border-orange-300 ' : 'border-[#2B2C33]/10 dark:border-white/10 '}`}
  >
  <div className="flex items-start justify-between mb-4">
  <div className="flex-1 min-w-0 pr-2">
- <p className="text-sm font-bold text-[#2B2C33] truncate leading-tight">{school.name}</p>
- <p className="text-[11px] text-[#2B2C33]/50 mt-0.5">{school.students} alunos</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 truncate leading-tight">{school.name}</p>
+ <p className="text-[11px] text-[#2B2C33]/50 dark:text-slate-500 mt-0.5">{school.students} alunos</p>
  </div>
  <div className="flex items-center gap-2 shrink-0">
  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${risk.bg} ${risk.text} ${risk.border}`}>
@@ -982,9 +982,9 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  { label: 'Elogios', value: school.praises, color: 'text-emerald-600 ' },
  { label: 'Acid.', value: school.accidents, color: 'text-violet-600 ' },
  ].map(m => (
- <div key={m.label} className="text-center bg-[#F4F5F7] rounded-xl py-2">
+ <div key={m.label} className="text-center bg-[#F4F5F7] dark:bg-[#0F1115] rounded-xl py-2">
  <p className={`text-lg font-black ${m.color}`}>{m.value}</p>
- <p className="text-[10px] text-[#2B2C33]/50 font-medium">{m.label}</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 font-medium">{m.label}</p>
  </div>
  ))}
  </div>
@@ -1005,8 +1005,8 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  {school.implantacaoTotal > 0 && (
  <div>
  <div className="flex justify-between items-center mb-1">
- <p className="text-[10px] text-[#2B2C33]/50 font-medium">Implantacao</p>
- <p className="text-[10px] font-bold text-[#2B2C33]/60 ">{pct}%</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 font-medium">Implantacao</p>
+ <p className="text-[10px] font-bold text-[#2B2C33]/60 dark:text-slate-400 ">{pct}%</p>
  </div>
  <BarPill value={school.implantacaoDone} max={school.implantacaoTotal} color={pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
  </div>
@@ -1025,37 +1025,37 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <aside className="space-y-4 xl:sticky xl:top-4">
 
  {/* ── KPI: % Implantação do Sistema na Rede ── */}
- <div className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm">
+ <div className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm">
  <div className="flex items-center justify-between mb-1">
- <p className="text-sm font-bold text-[#2B2C33] ">Implantacao do Sistema</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 ">Implantacao do Sistema</p>
  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pctImpl >= 80 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 ' : pctImpl >= 50 ? 'bg-amber-50 text-amber-600 border border-amber-200 ' : 'bg-rose-50 text-rose-600 border border-rose-200 '}`}>
  {pctImpl >= 80 ? 'Em dia' : pctImpl >= 50 ? 'Em progresso' : 'Atrasado'}
  </span>
  </div>
- <p className="text-[11px] text-[#2B2C33]/50 mb-3">% de implantacao na rede escolar</p>
+ <p className="text-[11px] text-[#2B2C33]/50 dark:text-slate-500 mb-3">% de implantacao na rede escolar</p>
  {/* Gauge semicircular */}
  <SemiGauge value={pctImpl} />
  {/* Detalhe */}
  <div className="mt-2 grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 ">
  <div className="text-center">
- <p className="text-lg font-black text-[#2B2C33] ">{doneImpl}</p>
- <p className="text-[10px] text-[#2B2C33]/50 ">itens concluidos</p>
+ <p className="text-lg font-black text-[#2B2C33] dark:text-slate-100 ">{doneImpl}</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">itens concluidos</p>
  </div>
  <div className="text-center">
- <p className="text-lg font-black text-[#2B2C33] ">{totalImpl - doneImpl}</p>
- <p className="text-[10px] text-[#2B2C33]/50 ">pendentes</p>
+ <p className="text-lg font-black text-[#2B2C33] dark:text-slate-100 ">{totalImpl - doneImpl}</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">pendentes</p>
  </div>
  </div>
  </div>
 
  {/* ── Ranking das Escolas (disciplina) ── */}
- <div className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm">
+ <div className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
  <Building2 className="w-4 h-4 text-blue-500" aria-hidden="true" />
- <p className="text-sm font-bold text-[#2B2C33] ">Ranking Escolas</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 ">Ranking Escolas</p>
  </div>
- <span className="text-[10px] text-[#2B2C33]/50 ">indice disciplinar</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">indice disciplinar</span>
  </div>
  <div className="space-y-3">
  {ranked.map((school, idx) => {
@@ -1065,47 +1065,47 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <div
  key={school.id}
  onClick={() => onSchoolClick?.(school.id)}
- className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${onSchoolClick ? 'cursor-pointer hover:bg-[#F4F5F7]' : ''}`}
+ className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${onSchoolClick ? 'cursor-pointer hover:bg-[#F4F5F7] dark:hover:bg-[#22252D] dark:bg-[#0F1115]' : ''}`}
  >
- <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${idx === 0 ? 'bg-amber-400 text-[#2B2C33]' : idx === 1 ? 'bg-slate-300 text-[#2B2C33] ' : idx === 2 ? 'bg-orange-300 text-[#2B2C33]' : 'bg-slate-100 text-[#2B2C33]/60 '}`}>
+ <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${idx === 0 ? 'bg-amber-400 text-[#2B2C33] dark:text-slate-100' : idx === 1 ? 'bg-slate-300 text-[#2B2C33] dark:text-slate-100 ' : idx === 2 ? 'bg-orange-300 text-[#2B2C33] dark:text-slate-100' : 'bg-slate-100 text-[#2B2C33]/60 dark:text-slate-400 '}`}>
  {idx < 3 ? medals[idx] : idx + 1}
  </span>
  <IndexRing value={school.disciplineIndex} size={36} stroke={4} />
  <div className="flex-1 min-w-0">
- <p className="text-xs font-semibold text-[#2B2C33] truncate leading-tight">{school.name.replace('EECM Prof. ', '')}</p>
+ <p className="text-xs font-semibold text-[#2B2C33] dark:text-slate-100 truncate leading-tight">{school.name.replace('EECM Prof. ', '')}</p>
  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${risk.bg} ${risk.text}`}>{risk.label}</span>
  </div>
- <span className="text-[10px] text-[#2B2C33]/50 shrink-0">{school.occurrences} ocorr.</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 shrink-0">{school.occurrences} ocorr.</span>
  </div>
  );
  })}
  {ranked.length === 0 && (
- <p className="text-xs text-[#2B2C33]/50 py-4 text-center">Sem dados de escolas.</p>
+ <p className="text-xs text-[#2B2C33]/50 dark:text-slate-500 py-4 text-center">Sem dados de escolas.</p>
  )}
  </div>
  </div>
 
  {/* ── Ranking de Alunos (elogios por escola) ── */}
- <div className="bg-white border border-[#2B2C33]/10 rounded-2xl p-5 shadow-sm">
+ <div className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl p-5 shadow-sm">
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
  <GraduationCap className="w-4 h-4 text-emerald-500" aria-hidden="true" />
- <p className="text-sm font-bold text-[#2B2C33] ">Ranking Alunos</p>
+ <p className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 ">Ranking Alunos</p>
  </div>
- <span className="text-[10px] text-[#2B2C33]/50 ">elogios / 100 alunos</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">elogios / 100 alunos</span>
  </div>
  <div className="space-y-3">
  {rankedStudentSchools.map((school, idx) => (
  <div
  key={school.id}
  onClick={() => onSchoolClick?.(school.id)}
- className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${onSchoolClick ? 'cursor-pointer hover:bg-[#F4F5F7]' : ''}`}
+ className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${onSchoolClick ? 'cursor-pointer hover:bg-[#F4F5F7] dark:hover:bg-[#22252D] dark:bg-[#0F1115]' : ''}`}
  >
- <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${idx === 0 ? 'bg-emerald-500 text-white' : idx === 1 ? 'bg-emerald-300 text-[#2B2C33]' : idx === 2 ? 'bg-emerald-200 text-emerald-800 ' : 'bg-slate-100 text-[#2B2C33]/60'}`}>
+ <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${idx === 0 ? 'bg-emerald-500 text-white' : idx === 1 ? 'bg-emerald-300 text-[#2B2C33] dark:text-slate-100' : idx === 2 ? 'bg-emerald-200 text-emerald-800 ' : 'bg-slate-100 text-[#2B2C33]/60 dark:text-slate-400'}`}>
  {idx + 1}
  </span>
  <div className="flex-1 min-w-0">
- <p className="text-xs font-semibold text-[#2B2C33] truncate leading-tight">{school.name.replace('EECM Prof. ', '')}</p>
+ <p className="text-xs font-semibold text-[#2B2C33] dark:text-slate-100 truncate leading-tight">{school.name.replace('EECM Prof. ', '')}</p>
  <div className="flex items-center gap-1.5 mt-0.5">
  <div className="h-1 flex-1 bg-slate-100 rounded-full overflow-hidden">
  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${Math.min(school.praiseRatio, 100)}%` }} />
@@ -1114,12 +1114,12 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  </div>
  <div className="text-right shrink-0">
  <span className="text-xs font-black text-emerald-600 ">{school.praiseRatio}</span>
- <p className="text-[9px] text-[#2B2C33]/50">elogios</p>
+ <p className="text-[9px] text-[#2B2C33]/50 dark:text-slate-500">elogios</p>
  </div>
  </div>
  ))}
  {rankedStudentSchools.length === 0 && (
- <p className="text-xs text-[#2B2C33]/50 py-4 text-center">Sem dados de alunos.</p>
+ <p className="text-xs text-[#2B2C33]/50 dark:text-slate-500 py-4 text-center">Sem dados de alunos.</p>
  )}
  </div>
  </div>
@@ -1131,12 +1131,12 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  LISTA DE OCORRÊNCIAS COM FILTROS
  (Imagem 1 — tabela + filtros pill)
  ══════════════════════════════════════════ */}
- <section className="bg-white border border-[#2B2C33]/10 rounded-2xl shadow-sm overflow-hidden">
+ <section className="bg-white dark:bg-[#181A20] border border-[#2B2C33]/10 dark:border-white/10 rounded-2xl shadow-sm overflow-hidden">
  {/* Header */}
  <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-b border-slate-100 ">
  <div className="flex items-center gap-2">
  <FileWarning className="w-4 h-4 text-rose-500" aria-hidden="true" />
- <h2 className="text-sm font-bold text-[#2B2C33] ">Lista de Ocorrencias</h2>
+ <h2 className="text-sm font-bold text-[#2B2C33] dark:text-slate-100 ">Lista de Ocorrencias</h2>
  {totalGraves > 0 && (
  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 ">
  {totalGraves} graves
@@ -1155,9 +1155,9 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  occSevFilter === f.id
  ? f.id === 'Grave' ? 'bg-rose-500 text-white shadow-sm'
  : f.id === 'Media' ? 'bg-amber-500 text-white shadow-sm'
- : f.id === 'Leve' ? 'bg-blue-500 text-[#2B2C33] shadow-sm'
- : 'bg-white text-[#2B2C33] shadow-sm'
- : 'text-[#2B2C33]/60 hover:text-[#2B2C33]'
+ : f.id === 'Leve' ? 'bg-blue-500 text-[#2B2C33] dark:text-slate-100 shadow-sm'
+ : 'bg-white dark:bg-[#181A20] text-[#2B2C33] dark:text-slate-100 shadow-sm'
+ : 'text-[#2B2C33]/60 dark:text-slate-400 hover:text-[#2B2C33] dark:text-slate-100'
  }`}
  >
  {f.label}
@@ -1169,7 +1169,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  value={occSchoolFilter}
  onChange={e => setOccSchoolFilter(e.target.value)}
  aria-label="Filtrar por escola"
- className="h-8 px-2 rounded-full text-xs font-medium bg-slate-100 border-0 text-[#2B2C33] focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+ className="h-8 px-2 rounded-full text-xs font-medium bg-slate-100 border-0 text-[#2B2C33] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
  >
  <option value="todas">Todas as escolas</option>
  {stats.map(s => (
@@ -1184,17 +1184,17 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <table className="w-full text-sm" role="table">
  <thead>
  <tr className="border-b border-slate-100 ">
- <th className="px-5 py-3 text-left text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide whitespace-nowrap">Escola</th>
- <th className="px-5 py-3 text-left text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide whitespace-nowrap">Descricao</th>
- <th className="px-5 py-3 text-center text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide whitespace-nowrap">Qtd</th>
- <th className="px-5 py-3 text-center text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide whitespace-nowrap">Progresso</th>
- <th className="px-5 py-3 text-center text-[11px] font-bold text-[#2B2C33]/50 uppercase tracking-wide whitespace-nowrap">Severidade</th>
+ <th className="px-5 py-3 text-left text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Escola</th>
+ <th className="px-5 py-3 text-left text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Descricao</th>
+ <th className="px-5 py-3 text-center text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Qtd</th>
+ <th className="px-5 py-3 text-center text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Progresso</th>
+ <th className="px-5 py-3 text-center text-[11px] font-bold text-[#2B2C33]/50 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">Severidade</th>
  </tr>
  </thead>
  <tbody>
  {filteredOccRows.length === 0 ? (
  <tr>
- <td colSpan={5} className="px-5 py-10 text-center text-[#2B2C33]/50 text-sm">
+ <td colSpan={5} className="px-5 py-10 text-center text-[#2B2C33]/50 dark:text-slate-500 text-sm">
  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
  Nenhuma ocorrencia encontrada com os filtros selecionados.
  </td>
@@ -1207,7 +1207,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  .reduce((m, r) => Math.max(m, r.count), 1);
  const pctBar = Math.min((row.count / maxForSev) * 100, 100);
  return (
- <tr key={row.id} className="border-b border-slate-50 hover:bg-[#F4F5F7] transition-colors">
+ <tr key={row.id} className="border-b border-slate-50 hover:bg-[#F4F5F7] dark:hover:bg-[#22252D] dark:bg-[#0F1115] transition-colors">
  {/* Escola */}
  <td className="px-5 py-3.5">
  <div className="flex items-center gap-2.5">
@@ -1215,18 +1215,18 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  <Building2 className="w-3.5 h-3.5 text-blue-500" aria-hidden="true" />
  </div>
  <div>
- <p className="font-semibold text-[#2B2C33] text-xs leading-tight">{row.schoolName}</p>
- <p className="text-[10px] text-[#2B2C33]/50 ">{row.studentName}</p>
+ <p className="font-semibold text-[#2B2C33] dark:text-slate-100 text-xs leading-tight">{row.schoolName}</p>
+ <p className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 ">{row.studentName}</p>
  </div>
  </div>
  </td>
  {/* Descrição */}
  <td className="px-5 py-3.5">
- <p className="text-xs text-[#2B2C33]/70 max-w-[240px] truncate">{row.description}</p>
+ <p className="text-xs text-[#2B2C33]/70 dark:text-slate-300 max-w-[240px] truncate">{row.description}</p>
  </td>
  {/* Quantidade */}
  <td className="px-5 py-3.5 text-center">
- <span className="text-sm font-black text-[#2B2C33] ">{row.count}</span>
+ <span className="text-sm font-black text-[#2B2C33] dark:text-slate-100 ">{row.count}</span>
  </td>
  {/* Barra de progresso */}
  <td className="px-5 py-3.5">
@@ -1240,7 +1240,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  style={{ width: `${pctBar}%` }}
  />
  </div>
- <span className="text-[10px] text-[#2B2C33]/50 shrink-0 w-7 text-right">{Math.round(pctBar)}%</span>
+ <span className="text-[10px] text-[#2B2C33]/50 dark:text-slate-500 shrink-0 w-7 text-right">{Math.round(pctBar)}%</span>
  </div>
  </td>
  {/* Badge severidade */}
@@ -1261,7 +1261,7 @@ export default function DreDashboard({ stats, loading, isVisible, sleepData, onS
  {/* Footer */}
  {filteredOccRows.length > 0 && (
  <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
- <p className="text-[11px] text-[#2B2C33]/50 ">
+ <p className="text-[11px] text-[#2B2C33]/50 dark:text-slate-500 ">
  {filteredOccRows.length} registro{filteredOccRows.length !== 1 ? 's' : ''} exibido{filteredOccRows.length !== 1 ? 's' : ''}
  </p>
  <button
