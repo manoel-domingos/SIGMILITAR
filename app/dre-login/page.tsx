@@ -70,119 +70,125 @@ export default function DreLogin() {
   if (isAuthRestored && user && currentUserRole === 'admin_global') return null;
 
   return (
-    <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 relative overflow-hidden">
-      {/* Marca d'água — logo DRE à direita */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/logo_dre_color.svg"
-        alt=""
-        className="absolute -right-8 md:right-0 top-[40%] md:top-[45%] -translate-y-1/2 w-[102vw] md:w-[60vw] max-w-[780px] opacity-30 pointer-events-none object-contain"
-      />
-      <div className="absolute top-0 left-0 w-[40%] h-[40%] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Card principal */}
-      <div className="w-full max-w-md p-6 sm:p-7 bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl relative z-10 mx-4">
-
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-5 sm:mb-6">
-          <div className="w-36 h-36 sm:w-44 sm:h-44 -mb-2 -mt-2 flex items-center justify-center">
+    <div className="min-h-[100dvh] w-full flex flex-col md:flex-row bg-white text-[#2B2C33] overflow-hidden">
+      
+      {/* Lado Esquerdo: Formulário */}
+      <div className="w-full md:w-1/3 lg:w-[480px] flex flex-col justify-between p-8 md:p-12 border-r border-[#F4F5F7] relative z-10 bg-white overflow-y-auto shadow-xl">
+        <div className="w-full max-w-sm mx-auto flex flex-col pt-4">
+          
+          <div className="flex items-center justify-center mb-10 w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo_dre_color.svg"
               alt="Logo DRE"
-              className="w-full h-full object-contain"
+              className="h-28 md:h-32 w-auto object-contain"
             />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight text-center">
-            Painel DRE
-          </h1>
-          <p className="text-slate-500 text-xs sm:text-sm mt-1 text-center">
-            Gestao Regional de Educacao
-          </p>
+
+          <h1 className="text-3xl font-bold tracking-tight mb-2 text-[#2B2C33] text-center">Painel DRE</h1>
+          <p className="text-[#2B2C33]/70 text-sm mb-8 font-light text-center">Gestão Regional de Educação</p>
+
+          {error && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm text-center font-medium">
+              {error}
+            </div>
+          )}
+
+          {checking && !error && (
+            <div className="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-xl text-blue-600 text-sm text-center flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Verificando permissões...
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-[#2B2C33]/80 mb-2">Usuário DRE</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  required
+                  autoComplete="username"
+                  placeholder="Ex: gestor"
+                  className="w-full bg-white border border-[#2B2C33]/10 rounded-xl pl-10 pr-4 py-3 text-sm text-[#2B2C33] focus:outline-none focus:ring-1 focus:ring-[#0052CC]/50 focus:border-[#0052CC]/50 transition-colors placeholder-[#2B2C33]/30"
+                />
+                <UserIcon className="w-4 h-4 text-[#2B2C33]/40 absolute left-3 top-3.5" />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-[#2B2C33]/80">Senha de Acesso</label>
+                <a href="#" tabIndex={-1} className="text-xs text-[#0052CC] hover:text-[#0052CC]/80 transition-colors">
+                  Esqueceu a senha?
+                </a>
+              </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full bg-white border border-[#2B2C33]/10 rounded-xl pl-10 pr-4 py-3 text-sm text-[#2B2C33] focus:outline-none focus:ring-1 focus:ring-[#0052CC]/50 focus:border-[#0052CC]/50 transition-colors placeholder-[#2B2C33]/30"
+                />
+                <KeyRound className="w-4 h-4 text-[#2B2C33]/40 absolute left-3 top-3.5" />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || checking}
+              className="w-full mt-2 bg-[#0052CC] hover:bg-[#0052CC]/90 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              {loading || checking ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Entrar no Sistema <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
-        {/* Erro */}
-        {error && (
-          <div className="mb-4 sm:mb-5 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-sm text-center font-medium">
-            {error}
+        <div className="w-full max-w-sm mx-auto mt-12 pt-6 border-t border-[#2B2C33]/5 text-center">
+          <div className="flex items-center justify-center gap-2 text-[#2B2C33]/50 text-xs font-medium mb-2">
+            <ShieldCheck className="w-4 h-4 text-[#0052CC]" />
+            <span>Acesso restrito — gestores DRE</span>
           </div>
-        )}
-
-        {/* Aguardando verificação de permissão */}
-        {checking && !error && (
-          <div className="mb-4 sm:mb-5 p-3 bg-blue-50 border border-blue-100 rounded-xl text-blue-600 text-sm text-center flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Verificando permissoes...
-          </div>
-        )}
-
-        {/* Formulário */}
-        <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Usuário</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                required
-                autoComplete="username"
-                placeholder="Ex: gestor"
-                className="w-full bg-white/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-              <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700">Senha de Acesso</label>
-              <a href="#" tabIndex={-1} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors outline-none">
-                Esqueceu a senha?
-              </a>
-            </div>
-            <div className="relative">
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full bg-white/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || checking}
-            className="w-full disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 mt-1 shadow-md"
-            style={{ backgroundColor: '#2d3184' }}
-          >
-            {loading || checking ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                Entrar no Sistema <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Rodapé do card */}
-        <div className="mt-4 pt-4 border-t border-slate-200/60 text-center">
-          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs">
-            <ShieldCheck className="w-4 h-4" style={{ color: '#2d3184' }} />
-            <span>Acesso restrito — gestores DRE autorizados</span>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-400 italic">
-            Versão: {versionData.version}
-          </p>
         </div>
       </div>
 
+      {/* Lado Direito: Divulgação DRE */}
+      <div className="hidden md:flex flex-1 flex-col justify-center p-12 lg:p-24 relative overflow-hidden bg-white">
+        {/* Background dots exactly like LandingPage.tsx hero */}
+        <div className="absolute inset-0 bg-[#F4F5F7] opacity-30 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#2B2C33 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+        
+        {/* Background glow effects */}
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#0052CC]/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#0052CC]/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="max-w-2xl relative z-10 mx-auto w-full">
+          <span className="text-[#0052CC] text-8xl font-serif absolute -top-10 -left-10 opacity-10 select-none">"</span>
+          <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-bold tracking-tight text-[#2B2C33] mb-10 leading-tight">
+            Acompanhe todas as escolas cívico-militares da região em um único painel consolidado.
+          </h2>
+          
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#0052CC] font-bold border border-[#2B2C33]/10 shadow-sm">
+              D
+            </div>
+            <div>
+              <div className="text-[#2B2C33] font-bold">Direção Regional</div>
+              <div className="text-[#2B2C33]/50 text-sm font-mono mt-0.5">Visão Estratégica</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

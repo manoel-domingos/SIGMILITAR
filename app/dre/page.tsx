@@ -58,18 +58,18 @@ function calcRisk(s: SchoolStats): SchoolStats['riskLevel'] {
 }
 
 const RISK_META = {
-  low:      { label: 'Baixo',    color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
-  medium:   { label: 'Medio',    color: 'text-amber-600 dark:text-amber-400',     bg: 'bg-amber-50 dark:bg-amber-500/10',     dot: 'bg-amber-400' },
-  high:     { label: 'Alto',     color: 'text-orange-600 dark:text-orange-400',   bg: 'bg-orange-50 dark:bg-orange-500/10',   dot: 'bg-orange-500' },
-  critical: { label: 'Critico',  color: 'text-rose-600 dark:text-rose-400',       bg: 'bg-rose-50 dark:bg-rose-500/10',       dot: 'bg-rose-500' },
+  low:      { label: 'Baixo',    color: 'text-emerald-600 ', bg: 'bg-emerald-50 ', dot: 'bg-emerald-500' },
+  medium:   { label: 'Medio',    color: 'text-amber-600 ',     bg: 'bg-amber-50 ',     dot: 'bg-amber-400' },
+  high:     { label: 'Alto',     color: 'text-orange-600 ',   bg: 'bg-orange-50 ',   dot: 'bg-orange-500' },
+  critical: { label: 'Critico',  color: 'text-rose-600 ',       bg: 'bg-rose-50 ',       dot: 'bg-rose-500' },
 };
 
 function TrendBadge({ value, inverse = false }: { value: number; inverse?: boolean }) {
   const good = inverse ? value < 0 : value > 0;
   const neutral = value === 0;
-  if (neutral) return <span className="flex items-center gap-0.5 text-slate-400 text-xs"><Minus className="w-3 h-3" /> —</span>;
+  if (neutral) return <span className="flex items-center gap-0.5 text-[#2B2C33]/80 text-xs"><Minus className="w-3 h-3" /> —</span>;
   return (
-    <span className={`flex items-center gap-0.5 text-xs font-medium ${good ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+    <span className={`flex items-center gap-0.5 text-xs font-medium ${good ? 'text-emerald-600 ' : 'text-rose-500 '}`}>
       {good ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
       {Math.abs(value)}%
     </span>
@@ -80,7 +80,7 @@ function TrendBadge({ value, inverse = false }: { value: number; inverse?: boole
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
-    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+    <div className="w-full h-1.5 bg-[#F4F5F7]  rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
     </div>
   );
@@ -95,11 +95,11 @@ function DisciplineRing({ value }: { value: number }) {
   return (
     <div className="relative w-12 h-12 flex-shrink-0">
       <svg viewBox="0 0 44 44" className="w-12 h-12 -rotate-90">
-        <circle cx="22" cy="22" r={r} fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-100 dark:text-slate-700" />
+        <circle cx="22" cy="22" r={r} fill="none" stroke="currentColor" strokeWidth="4" className="text-[#2B2C33] " />
         <circle cx="22" cy="22" r={r} fill="none" stroke={color} strokeWidth="4"
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700 dark:text-slate-200">
+      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[#2B2C33] ">
         {value}
       </span>
     </div>
@@ -426,16 +426,16 @@ export default function DrePage() {
   return (
     <>
     {/* ── Fundo azul igual ao login DRE ── */}
-    <div className="min-h-screen bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 relative">
+    <div className="min-h-screen bg-[#F4F5F7] text-[#2B2C33] relative">
       {/* Blobs decorativos */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full" />
+        
+        
       </div>
 
       {/* ── Header pill — mesmo estilo das escolas ── */}
       <header className="z-30 px-4 pt-3 pb-2 pointer-events-none" role="banner">
-        <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-3 px-4 md:px-6 py-1.5 max-w-7xl mx-auto">
+        <div className="pointer-events-auto bg-white  backdrop-blur-2xl border border-[#2B2C33]/10  shadow-sm rounded-full flex items-center justify-between gap-3 px-4 md:px-6 py-1.5 max-w-7xl mx-auto">
 
           {/* Esquerda: logo + título */}
           <div className="flex items-center gap-3 min-w-0">
@@ -444,17 +444,17 @@ export default function DrePage() {
               <img src="/logo_dre_color.svg" alt="Logo DRE" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block min-w-0">
-              <h1 className="text-base md:text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
+              <h1 className="text-base md:text-lg font-bold text-[#2B2C33]  leading-tight truncate">
                 <span className="font-extrabold">Painel</span>{' '}
-                <span className="text-slate-500 dark:text-slate-400 font-normal">DRE</span>
+                <span className="text-[#2B2C33]/80  font-normal">DRE</span>
               </h1>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <p className="text-[10px] text-[#2B2C33]/80  uppercase tracking-wider">
                 Gestao Regional de Educacao
               </p>
             </div>
             {/* Badge alerta */}
             {alertSchools > 0 && (
-              <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold border border-rose-200 dark:border-rose-500/30 shrink-0">
+              <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50  text-rose-600  text-[10px] font-bold border border-rose-200  shrink-0">
                 <AlertCircle className="w-3 h-3" aria-hidden="true" /> {alertSchools} alerta{alertSchools > 1 ? 's' : ''}
               </span>
             )}
@@ -465,7 +465,7 @@ export default function DrePage() {
 
             {/* Status ONLINE */}
             <div
-              className={'inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ' + (isSupabaseConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30')}
+              className={'inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ' + (isSupabaseConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200   ' : 'bg-rose-50 text-rose-600 border border-rose-200   ')}
               aria-label={isSupabaseConnected ? 'Conectado ao servidor' : 'Sem conexao'}
             >
               {isSupabaseConnected ? <CloudCheck className="w-3.5 h-3.5" aria-hidden="true" /> : <CloudOff className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -475,7 +475,7 @@ export default function DrePage() {
             {/* Trocar escola */}
             <button
               onClick={() => openContextModal()}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[#2B2C33]/70  bg-white  backdrop-blur-xl border border-[#2B2C33]/10  hover:bg-[#F4F5F7] active:scale-95 transition shadow-sm"
               aria-label="Trocar escola"
               title="Trocar Escola"
             >
@@ -485,7 +485,7 @@ export default function DrePage() {
             {/* Editar painel */}
             <button
               onClick={() => setDrawerOpen(true)}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[#2B2C33]/70  bg-white  backdrop-blur-xl border border-[#2B2C33]/10  hover:bg-[#F4F5F7] active:scale-95 transition shadow-sm"
               aria-label="Editar painel"
               title="Editar Painel"
             >
@@ -495,7 +495,7 @@ export default function DrePage() {
             {/* Dark mode */}
             <button
               onClick={toggleTheme}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[#2B2C33]/70  bg-white  backdrop-blur-xl border border-[#2B2C33]/10  hover:bg-[#F4F5F7] active:scale-95 transition shadow-sm"
               aria-label={isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
               title={isDarkMode ? 'Modo claro' : 'Modo escuro'}
             >
@@ -506,7 +506,7 @@ export default function DrePage() {
             <button
               onClick={() => load()}
               disabled={loading}
-              className={'w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm disabled:opacity-50 ' + (loading ? 'animate-spin text-blue-500' : '')}
+              className={'w-9 h-9 rounded-full flex items-center justify-center text-[#2B2C33]/70  bg-white  backdrop-blur-xl border border-[#2B2C33]/10  hover:bg-[#F4F5F7] active:scale-95 transition shadow-sm disabled:opacity-50 ' + (loading ? 'animate-spin text-[#0052CC]' : '')}
               aria-label="Atualizar dados"
               title="Atualizar"
             >
@@ -520,7 +520,7 @@ export default function DrePage() {
               aria-haspopup="true"
               aria-expanded={profileOpen}
               aria-label={`Menu do usuario ${userName}`}
-              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border border-white/50 dark:border-slate-700/60 hover:bg-white/90 dark:hover:bg-slate-700 active:scale-95 transition shadow-sm"
+              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full bg-white  backdrop-blur-xl border border-[#2B2C33]/10  hover:bg-white/90 active:scale-95 transition shadow-sm"
             >
               {user?.user_metadata?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -531,8 +531,8 @@ export default function DrePage() {
                 </span>
               )}
               <div className="text-left hidden sm:block leading-tight pr-1">
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">{userName}</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400">admin global</p>
+                <p className="text-xs font-semibold text-[#2B2C33] ">{userName}</p>
+                <p className="text-[10px] text-[#2B2C33]/80 ">admin global</p>
               </div>
             </button>
 
@@ -545,28 +545,28 @@ export default function DrePage() {
                 className="fixed w-64 glass-dropdown overflow-hidden text-sm animate-in fade-in slide-in-from-top-2 duration-200"
                 style={{ top: profileMenuPos.top, right: profileMenuPos.right, zIndex: 99999 }}
               >
-                <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
-                  <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{userName}</p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user?.email || 'admin@dre.local'}</p>
+                <div className="p-4 border-b border-[#2B2C33]/10  bg-[#F4F5F7]/80 ">
+                  <p className="font-semibold text-[#2B2C33]  truncate">{userName}</p>
+                  <p className="text-[#2B2C33]/80  text-xs truncate">{user?.email || 'admin@dre.local'}</p>
                 </div>
                 <div className="py-2" role="none">
                   <button
                     role="menuitem"
                     onClick={() => { router.push('/configuracoes'); setProfileOpen(false); }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-purple-600 dark:text-purple-400 flex items-center gap-3 transition-colors"
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F4F5F7] text-purple-600  flex items-center gap-3 transition-colors"
                   >
                     <Settings className="w-4 h-4" aria-hidden="true" /> Configuracao do Sistema
                   </button>
                   <button
                     role="menuitem"
                     onClick={() => { logout(); setProfileOpen(false); }}
-                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400 flex items-center gap-3 transition-colors"
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#F4F5F7] text-rose-600  flex items-center gap-3 transition-colors"
                   >
                     <LogOut className="w-4 h-4" aria-hidden="true" /> Sair
                   </button>
                 </div>
-                <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/50">
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500 italic text-center">
+                <div className="px-4 py-2.5 border-t border-[#2B2C33]/10  bg-[#F4F5F7]/80 ">
+                  <p className="text-[11px] text-[#2B2C33]/80  italic text-center">
                     DRE · Gestao Regional
                   </p>
                 </div>
@@ -583,13 +583,13 @@ export default function DrePage() {
       {drawerOpen && (
         <>
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setDrawerOpen(false)} />
-          <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="fixed top-0 right-0 h-full w-80 bg-white  shadow-2xl z-50 flex flex-col border-l border-[#2B2C33]/10 ">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#2B2C33]/10 ">
               <div>
-                <h2 className="font-bold text-slate-800 dark:text-white text-base">Configurar Painel DRE</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Ative, desative e reordene</p>
+                <h2 className="font-bold text-[#2B2C33]  text-base">Configurar Painel DRE</h2>
+                <p className="text-xs text-[#2B2C33]/80  mt-0.5">Ative, desative e reordene</p>
               </div>
-              <button onClick={() => setDrawerOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+              <button onClick={() => setDrawerOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F4F5F7] text-[#2B2C33]/80 hover:text-[#2B2C33]/70 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -602,20 +602,20 @@ export default function DrePage() {
                   onDragOver={e => e.preventDefault()}
                   onDrop={() => { if (dragIdx !== null && dragIdx !== idx) movePanel(dragIdx, idx); setDragIdx(null); }}
                   onDragEnd={() => setDragIdx(null)}
-                  className={'flex items-center gap-3 px-3 py-3 rounded-xl border transition-all cursor-grab active:cursor-grabbing ' + (dragIdx === idx ? 'opacity-40 scale-95' : '') + ' ' + (panel.enabled ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-700/50')}
+                  className={'flex items-center gap-3 px-3 py-3 rounded-xl border transition-all cursor-grab active:cursor-grabbing ' + (dragIdx === idx ? 'opacity-40 scale-95' : '') + ' ' + (panel.enabled ? 'bg-white  border-[#2B2C33]/10  shadow-sm' : 'bg-[#F4F5F7]  border-[#2B2C33]/10 ')}
                 >
-                  <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
-                  <span className={'flex-1 text-sm font-medium ' + (panel.enabled ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500 line-through')}>{panel.label}</span>
+                  <GripVertical className="w-4 h-4 text-[#2B2C33]/70  shrink-0" />
+                  <span className={'flex-1 text-sm font-medium ' + (panel.enabled ? 'text-[#2B2C33] ' : 'text-[#2B2C33]/80  line-through')}>{panel.label}</span>
                   <button onClick={() => togglePanel(panel.id)} className="shrink-0 transition-colors" title={panel.enabled ? 'Desativar' : 'Ativar'}>
                     {panel.enabled
-                      ? <ToggleRight className="w-7 h-7 text-blue-500" />
-                      : <ToggleLeft  className="w-7 h-7 text-slate-300 dark:text-slate-600" />}
+                      ? <ToggleRight className="w-7 h-7 text-[#0052CC]" />
+                      : <ToggleLeft  className="w-7 h-7 text-[#2B2C33]/70 " />}
                   </button>
                 </div>
               ))}
             </div>
-            <div className="px-4 py-4 border-t border-slate-100 dark:border-slate-800">
-              <button onClick={() => setPanels(DRE_DEFAULT_PANELS)} className="w-full text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+            <div className="px-4 py-4 border-t border-[#2B2C33]/10 ">
+              <button onClick={() => setPanels(DRE_DEFAULT_PANELS)} className="w-full text-xs text-[#2B2C33]/80 hover:text-[#2B2C33] transition-colors py-2 rounded-lg hover:bg-[#F4F5F7]">
                 Restaurar padrao
               </button>
             </div>
@@ -640,44 +640,44 @@ export default function DrePage() {
       {false && <section className="hidden">
 
         {/* Indice Global de Disciplina — destaque */}
-        <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 shadow-lg shadow-blue-500/20 text-white">
-          <p className="text-xs font-semibold uppercase tracking-widest text-blue-200">Indice de Disciplina</p>
+        <div className="col-span-2 md:col-span-1 bg-gradient-to-br bg-white rounded-2xl p-5 shadow-lg shadow-sm text-[#2B2C33]">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#2B2C33]/60">Indice de Disciplina</p>
           <div className="flex items-end justify-between mt-2">
             <div>
               <p className="text-5xl font-black tracking-tight">{avgDiscipline}</p>
-              <p className="text-xs text-blue-200 mt-1">media da rede · /100</p>
+              <p className="text-xs text-[#2B2C33]/60 mt-1">media da rede · /100</p>
             </div>
-            <Shield className="w-10 h-10 text-blue-300/60" />
+            <Shield className="w-10 h-10 text-[#0052CC]/40" />
           </div>
           <ProgressBar value={avgDiscipline} max={100} color="bg-white/40" />
-          <p className="text-[10px] text-blue-200 mt-1">
+          <p className="text-[10px] text-[#2B2C33]/60 mt-1">
             {avgDiscipline >= 75 ? 'Rede em boa situacao disciplinar' : avgDiscipline >= 55 ? 'Atencao necessaria em algumas escolas' : 'Intervencao recomendada'}
           </p>
         </div>
 
         {/* Total alunos */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-2xl p-5 shadow-sm">
           <div className="flex items-start justify-between">
-            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-              <Users className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+            <div className="w-9 h-9 rounded-xl bg-[#F4F5F7]  flex items-center justify-center">
+              <Users className="w-4 h-4 text-[#2B2C33]/70 " />
             </div>
             <TrendBadge value={0} />
           </div>
-          <p className="text-3xl font-black text-slate-800 dark:text-white mt-3 tracking-tight">{totalStudents.toLocaleString('pt-BR')}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium uppercase tracking-wide">Alunos Ativos</p>
-          <p className="text-[11px] text-slate-400 mt-1">{stats.length} escola{stats.length !== 1 ? 's' : ''} ativas</p>
+          <p className="text-3xl font-black text-[#2B2C33]  mt-3 tracking-tight">{totalStudents.toLocaleString('pt-BR')}</p>
+          <p className="text-xs text-[#2B2C33]/80  mt-0.5 font-medium uppercase tracking-wide">Alunos Ativos</p>
+          <p className="text-[11px] text-[#2B2C33]/80 mt-1">{stats.length} escola{stats.length !== 1 ? 's' : ''} ativas</p>
         </div>
 
         {/* Ocorrencias */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-2xl p-5 shadow-sm">
           <div className="flex items-start justify-between">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <div className="w-9 h-9 rounded-xl bg-amber-50  flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-amber-600 " />
             </div>
             <TrendBadge value={0} inverse />
           </div>
-          <p className="text-3xl font-black text-slate-800 dark:text-white mt-3 tracking-tight">{totalOcc}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium uppercase tracking-wide">Ocorrencias</p>
+          <p className="text-3xl font-black text-[#2B2C33]  mt-3 tracking-tight">{totalOcc}</p>
+          <p className="text-xs text-[#2B2C33]/80  mt-0.5 font-medium uppercase tracking-wide">Ocorrencias</p>
           <div className="flex gap-2 mt-1">
             <span className="text-[10px] text-amber-500 font-medium">L {stats.reduce((s,x)=>s+x.leves,0)}</span>
             <span className="text-[10px] text-orange-500 font-medium">M {stats.reduce((s,x)=>s+x.medias,0)}</span>
@@ -686,81 +686,81 @@ export default function DrePage() {
         </div>
 
         {/* Elogios */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-2xl p-5 shadow-sm">
           <div className="flex items-start justify-between">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
-              <Star className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-9 h-9 rounded-xl bg-emerald-50  flex items-center justify-center">
+              <Star className="w-4 h-4 text-emerald-600 " />
             </div>
             <TrendBadge value={0} />
           </div>
-          <p className="text-3xl font-black text-slate-800 dark:text-white mt-3 tracking-tight">{totalPraises}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium uppercase tracking-wide">Elogios</p>
-          <p className="text-[11px] text-slate-400 mt-1">{globalPraiseRatio} por 100 alunos</p>
+          <p className="text-3xl font-black text-[#2B2C33]  mt-3 tracking-tight">{totalPraises}</p>
+          <p className="text-xs text-[#2B2C33]/80  mt-0.5 font-medium uppercase tracking-wide">Elogios</p>
+          <p className="text-[11px] text-[#2B2C33]/80 mt-1">{globalPraiseRatio} por 100 alunos</p>
         </div>
       </section>}
 
       {/* ---- KPIs SECUNDÁRIOS — substituído por DreDashboard ---- */}
       {false && <section className="hidden">
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <BarChart3 className="w-4 h-4 text-rose-500" />
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Taxa de Gravidade</p>
+            <p className="text-[11px] font-semibold text-[#2B2C33]/80  uppercase tracking-wide">Taxa de Gravidade</p>
           </div>
-          <p className="text-2xl font-black text-slate-800 dark:text-white">{globalGravityRate}<span className="text-base font-medium text-slate-400">%</span></p>
+          <p className="text-2xl font-black text-[#2B2C33] ">{globalGravityRate}<span className="text-base font-medium text-[#2B2C33]/80">%</span></p>
           <ProgressBar value={globalGravityRate} max={100} color={globalGravityRate > 30 ? 'bg-rose-500' : globalGravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
-          <p className="text-[10px] text-slate-400 mt-1">ocorrencias graves / total</p>
+          <p className="text-[10px] text-[#2B2C33]/80 mt-1">ocorrencias graves / total</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Award className="w-4 h-4 text-emerald-500" />
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Razao Elogio/Ocorrencia</p>
+            <p className="text-[11px] font-semibold text-[#2B2C33]/80  uppercase tracking-wide">Razao Elogio/Ocorrencia</p>
           </div>
-          <p className="text-2xl font-black text-slate-800 dark:text-white">
+          <p className="text-2xl font-black text-[#2B2C33] ">
             {totalOcc > 0 ? (totalPraises / totalOcc).toFixed(1) : '—'}
-            <span className="text-sm font-medium text-slate-400 ml-1">x</span>
+            <span className="text-sm font-medium text-[#2B2C33]/80 ml-1">x</span>
           </p>
           <ProgressBar value={Math.min(totalPraises, totalOcc * 2)} max={totalOcc * 2 || 1} color="bg-emerald-400" />
-          <p className="text-[10px] text-slate-400 mt-1">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
+          <p className="text-[10px] text-[#2B2C33]/80 mt-1">{totalPraises > totalOcc ? 'acima do esperado' : 'abaixo do esperado'}</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Activity className="w-4 h-4 text-violet-500" />
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Acidentes Registrados</p>
+            <p className="text-[11px] font-semibold text-[#2B2C33]/80  uppercase tracking-wide">Acidentes Registrados</p>
           </div>
-          <p className="text-2xl font-black text-slate-800 dark:text-white">{totalAccidents}</p>
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-2xl font-black text-[#2B2C33] ">{totalAccidents}</p>
+          <p className="text-[10px] text-[#2B2C33]/80 mt-1">
             {totalStudents > 0 ? ((totalAccidents / totalStudents) * 1000).toFixed(1) : '0'} por mil alunos
           </p>
-          <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${totalAccidents === 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+          <div className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${totalAccidents === 0 ? 'bg-emerald-50  text-emerald-600 ' : 'bg-amber-50  text-amber-600 '}`}>
             {totalAccidents === 0 ? 'Zero acidentes' : 'Requer atencao'}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Zap className="w-4 h-4 text-amber-500" />
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Alertas Ativos</p>
+            <p className="text-[11px] font-semibold text-[#2B2C33]/80  uppercase tracking-wide">Alertas Ativos</p>
           </div>
-          <p className="text-2xl font-black text-slate-800 dark:text-white">{alertSchools}</p>
-          <p className="text-[10px] text-slate-400 mt-1">
+          <p className="text-2xl font-black text-[#2B2C33] ">{alertSchools}</p>
+          <p className="text-[10px] text-[#2B2C33]/80 mt-1">
             {alertSchools === 0 ? 'Nenhuma escola em alerta' : `${alertSchools} escola${alertSchools > 1 ? 's' : ''} acima do limiar`}
           </p>
           <div className="flex gap-1 mt-2">
             {stats.filter(s => s.riskLevel === 'critical').length > 0 && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100  text-rose-600 ">
                 {stats.filter(s => s.riskLevel === 'critical').length} CRITICO
               </span>
             )}
             {stats.filter(s => s.riskLevel === 'high').length > 0 && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100  text-orange-600 ">
                 {stats.filter(s => s.riskLevel === 'high').length} ALTO
               </span>
             )}
             {alertSchools === 0 && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">TUDO OK</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100  text-emerald-600 ">TUDO OK</span>
             )}
           </div>
         </div>
@@ -772,34 +772,34 @@ export default function DrePage() {
         const doneImpl  = stats.reduce((s, x) => s + x.implantacaoDone, 0);
         const pctImpl   = totalImpl > 0 ? Math.round((doneImpl / totalImpl) * 100) : 0;
         return (
-          <section className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+          <section className="bg-white  border border-[#2B2C33]/10  rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Implantacao da Rede</h2>
+                <CheckCircle2 className="w-4 h-4 text-[#0052CC] " />
+                <h2 className="text-sm font-semibold text-[#2B2C33]  uppercase tracking-wide">Implantacao da Rede</h2>
               </div>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${pctImpl >= 80 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : pctImpl >= 50 ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${pctImpl >= 80 ? 'bg-emerald-50  text-emerald-600 ' : pctImpl >= 50 ? 'bg-amber-50  text-amber-600 ' : 'bg-rose-50  text-rose-600 '}`}>
                 {pctImpl}% concluido
               </span>
             </div>
             <div className="flex items-center gap-4 mb-3">
-              <p className="text-4xl font-black text-slate-800 dark:text-white tracking-tight">{doneImpl}<span className="text-base font-medium text-slate-400 ml-1">/ {totalImpl}</span></p>
+              <p className="text-4xl font-black text-[#2B2C33]  tracking-tight">{doneImpl}<span className="text-base font-medium text-[#2B2C33]/80 ml-1">/ {totalImpl}</span></p>
               <div className="flex-1">
                 <ProgressBar value={doneImpl} max={totalImpl || 1} color={pctImpl >= 80 ? 'bg-emerald-500' : pctImpl >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
-                <p className="text-[10px] text-slate-400 mt-1">itens concluidos de {totalImpl} no total da rede</p>
+                <p className="text-[10px] text-[#2B2C33]/80 mt-1">itens concluidos de {totalImpl} no total da rede</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-[#2B2C33]/10 ">
               {stats.map(school => {
                 const pct = school.implantacaoTotal > 0 ? Math.round((school.implantacaoDone / school.implantacaoTotal) * 100) : 0;
                 return (
                   <div key={school.id} className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate">{school.name.replace('EECM Prof. ', '')}</p>
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{pct}%</span>
+                      <p className="text-[11px] font-medium text-[#2B2C33]/70  truncate">{school.name.replace('EECM Prof. ', '')}</p>
+                      <span className="text-[10px] font-bold text-[#2B2C33]/80 ">{pct}%</span>
                     </div>
                     <ProgressBar value={school.implantacaoDone} max={school.implantacaoTotal || 1} color={pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-rose-400'} />
-                    <p className="text-[10px] text-slate-400">{school.implantacaoDone}/{school.implantacaoTotal} itens</p>
+                    <p className="text-[10px] text-[#2B2C33]/80">{school.implantacaoDone}/{school.implantacaoTotal} itens</p>
                   </div>
                 );
               })}
@@ -812,25 +812,25 @@ export default function DrePage() {
       {false && <div className="hidden">
 
         {/* Ranking de disciplina */}
-        {isVisible('ranking') && <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+        {isVisible('ranking') && <div className="bg-white  border border-[#2B2C33]/10  rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Shield className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Ranking Disciplinar</h2>
+            <Shield className="w-4 h-4 text-[#0052CC]" />
+            <h2 className="text-sm font-semibold text-[#2B2C33] ">Ranking Disciplinar</h2>
           </div>
           {loading ? (
-            <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 dark:bg-slate-700 rounded-lg animate-pulse"/>)}</div>
+            <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-10 bg-[#F4F5F7]  rounded-lg animate-pulse"/>)}</div>
           ) : ranked.length === 0 ? (
-            <p className="text-sm text-slate-400">Sem dados.</p>
+            <p className="text-sm text-[#2B2C33]/80">Sem dados.</p>
           ) : (
             <div className="space-y-3">
               {ranked.map((school, idx) => {
                 const risk = RISK_META[school.riskLevel];
                 return (
                   <div key={school.id} className="flex items-center gap-3">
-                    <span className="w-5 text-center text-xs font-bold text-slate-400">{idx + 1}</span>
+                    <span className="w-5 text-center text-xs font-bold text-[#2B2C33]/80">{idx + 1}</span>
                     <DisciplineRing value={school.disciplineIndex} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{school.name}</p>
+                      <p className="text-sm font-semibold text-[#2B2C33]  truncate">{school.name}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`w-1.5 h-1.5 rounded-full ${risk.dot}`} />
                         <span className={`text-[10px] font-medium ${risk.color}`}>{risk.label}</span>
@@ -838,7 +838,7 @@ export default function DrePage() {
                     </div>
                     <button
                       onClick={() => { setActiveSchoolContext(school.id); router.push(resolveSchoolPath(school.id)); }}
-                      className="flex-shrink-0 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-600 transition-colors"
+                      className="flex-shrink-0 p-1.5 rounded-lg hover:bg-[#F4F5F7] text-[#2B2C33]/80 hover:text-[#0052CC] transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -851,11 +851,11 @@ export default function DrePage() {
 
         {/* Cards de escolas */}
         {isVisible('escolas') && <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Escolas da Rede</h2>
+          <h2 className="text-xs font-semibold text-[#2B2C33]/80 uppercase tracking-widest">Escolas da Rede</h2>
           {loading ? (
-            <div className="space-y-3">{[1,2].map(i=><div key={i} className="h-44 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse"/>)}</div>
+            <div className="space-y-3">{[1,2].map(i=><div key={i} className="h-44 rounded-2xl bg-[#F4F5F7]  animate-pulse"/>)}</div>
           ) : stats.length === 0 ? (
-            <p className="text-sm text-slate-400">Nenhuma escola encontrada.</p>
+            <p className="text-sm text-[#2B2C33]/80">Nenhuma escola encontrada.</p>
           ) : (
             stats.map(school => {
               const risk = RISK_META[school.riskLevel];
@@ -863,21 +863,21 @@ export default function DrePage() {
               const detail = schoolDetails[school.id];
               const isLoadingThis = loadingDetail === school.id;
               const kpis = [
-                { label: 'Alunos',    value: school.students,    color: 'text-slate-700 dark:text-white',          bg: 'bg-slate-50 dark:bg-slate-700/50',        activeBg: 'bg-slate-100 dark:bg-slate-700' },
-                { label: 'Ocorr.',    value: school.occurrences, color: 'text-amber-600 dark:text-amber-400',      bg: 'bg-amber-50/60 dark:bg-amber-500/10',     activeBg: 'bg-amber-100 dark:bg-amber-500/20' },
-                { label: 'Graves',    value: school.graves,      color: 'text-rose-600 dark:text-rose-400',        bg: 'bg-rose-50/60 dark:bg-rose-500/10',       activeBg: 'bg-rose-100 dark:bg-rose-500/20' },
-                { label: 'Elogios',   value: school.praises,     color: 'text-emerald-600 dark:text-emerald-400',  bg: 'bg-emerald-50/60 dark:bg-emerald-500/10', activeBg: 'bg-emerald-100 dark:bg-emerald-500/20' },
-                { label: 'Acidentes', value: school.accidents,   color: 'text-violet-600 dark:text-violet-400',    bg: 'bg-violet-50/60 dark:bg-violet-500/10',   activeBg: 'bg-violet-100 dark:bg-violet-500/20' },
+                { label: 'Alunos',    value: school.students,    color: 'text-[#2B2C33] ',          bg: 'bg-[#F4F5F7] ',        activeBg: 'bg-[#F4F5F7] ' },
+                { label: 'Ocorr.',    value: school.occurrences, color: 'text-amber-600 ',      bg: 'bg-amber-50/60 ',     activeBg: 'bg-amber-100 ' },
+                { label: 'Graves',    value: school.graves,      color: 'text-rose-600 ',        bg: 'bg-rose-50/60 ',       activeBg: 'bg-rose-100 ' },
+                { label: 'Elogios',   value: school.praises,     color: 'text-emerald-600 ',  bg: 'bg-emerald-50/60 ', activeBg: 'bg-emerald-100 ' },
+                { label: 'Acidentes', value: school.accidents,   color: 'text-violet-600 ',    bg: 'bg-violet-50/60 ',   activeBg: 'bg-violet-100 ' },
               ];
               return (
                 <div
                   key={school.id}
-                  className={`bg-white dark:bg-slate-800 border rounded-2xl shadow-sm transition-all duration-300
+                  className={`bg-white  border rounded-2xl shadow-sm transition-all duration-300
                     ${isExpanded
-                      ? 'border-blue-400 dark:border-blue-500/60 shadow-blue-100 dark:shadow-blue-900/20 shadow-md ring-2 ring-blue-200 dark:ring-blue-500/20'
-                      : school.riskLevel === 'critical' ? 'border-rose-300 dark:border-rose-500/40 hover:shadow-md'
-                      : school.riskLevel === 'high' ? 'border-orange-200 dark:border-orange-500/30 hover:shadow-md'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-md'
+                      ? 'border-blue-400  shadow-blue-100  shadow-md ring-2 ring-blue-200 '
+                      : school.riskLevel === 'critical' ? 'border-rose-300  hover:shadow-md'
+                      : school.riskLevel === 'high' ? 'border-orange-200  hover:shadow-md'
+                      : 'border-[#2B2C33]/10  hover:border-blue-300 :border-blue-500/50 hover:shadow-md'
                     }`}
                 >
                   {/* Cabecalho clicavel */}
@@ -888,11 +888,11 @@ export default function DrePage() {
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isExpanded ? 'bg-blue-100 dark:bg-blue-500/20' : 'bg-blue-50 dark:bg-blue-500/10'}`}>
-                          <ShieldCheck className={`w-5 h-5 transition-colors ${isExpanded ? 'text-blue-700 dark:text-blue-300' : 'text-blue-600 dark:text-blue-400'}`} />
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isExpanded ? 'bg-blue-100 ' : 'bg-blue-50 '}`}>
+                          <ShieldCheck className={`w-5 h-5 transition-colors ${isExpanded ? 'text-blue-700 ' : 'text-[#0052CC] '}`} />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-slate-800 dark:text-white text-sm">{school.name}</h3>
+                          <h3 className="font-semibold text-[#2B2C33]  text-sm">{school.name}</h3>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${risk.dot}`} />
                             <span className={`text-[10px] font-semibold ${risk.color}`}>Risco {risk.label}</span>
@@ -901,7 +901,7 @@ export default function DrePage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <DisciplineRing value={school.disciplineIndex} />
-                        <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${isExpanded ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+                        <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${isExpanded ? 'bg-blue-100  text-blue-700 ' : 'bg-[#F4F5F7]  text-[#2B2C33]/80 '}`}>
                           <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
@@ -915,7 +915,7 @@ export default function DrePage() {
                           className={`text-center rounded-lg py-2 transition-all duration-200 ${isExpanded ? m.activeBg + ' scale-[1.03] shadow-sm' : m.bg}`}
                         >
                           <p className={`text-base font-black ${m.color}`}>{m.value}</p>
-                          <p className="text-[9px] text-slate-400 mt-0.5">{m.label}</p>
+                          <p className="text-[9px] text-[#2B2C33]/80 mt-0.5">{m.label}</p>
                         </div>
                       ))}
                     </div>
@@ -924,15 +924,15 @@ export default function DrePage() {
                     <div className="grid grid-cols-2 gap-3 text-xs mt-2">
                       <div>
                         <div className="flex justify-between mb-0.5">
-                          <span className="text-slate-500 dark:text-slate-400">Taxa graves</span>
-                          <span className="font-semibold text-slate-700 dark:text-slate-200">{school.gravityRate}%</span>
+                          <span className="text-[#2B2C33]/80 ">Taxa graves</span>
+                          <span className="font-semibold text-[#2B2C33] ">{school.gravityRate}%</span>
                         </div>
                         <ProgressBar value={school.gravityRate} max={100} color={school.gravityRate > 30 ? 'bg-rose-400' : school.gravityRate > 15 ? 'bg-amber-400' : 'bg-emerald-400'} />
                       </div>
                       <div>
                         <div className="flex justify-between mb-0.5">
-                          <span className="text-slate-500 dark:text-slate-400">Elogios/100 alunos</span>
-                          <span className="font-semibold text-slate-700 dark:text-slate-200">{school.praiseRatio}</span>
+                          <span className="text-[#2B2C33]/80 ">Elogios/100 alunos</span>
+                          <span className="font-semibold text-[#2B2C33] ">{school.praiseRatio}</span>
                         </div>
                         <ProgressBar value={school.praiseRatio} max={100} color="bg-emerald-400" />
                       </div>
@@ -941,11 +941,11 @@ export default function DrePage() {
                     {/* Barra de distribuicao */}
                     {school.occurrences > 0 && (
                       <div className="mt-3">
-                        <p className="text-[9px] text-slate-400 mb-1 uppercase tracking-wide">Distribuicao de ocorrencias</p>
+                        <p className="text-[9px] text-[#2B2C33]/80 mb-1 uppercase tracking-wide">Distribuicao de ocorrencias</p>
                         <div className="flex h-2 rounded-full overflow-hidden gap-px">
-                          {school.leves  > 0 && <div className="bg-amber-300 dark:bg-amber-500 rounded-l-full" style={{ width: `${(school.leves/school.occurrences)*100}%` }} />}
-                          {school.medias > 0 && <div className="bg-orange-400 dark:bg-orange-500" style={{ width: `${(school.medias/school.occurrences)*100}%` }} />}
-                          {school.graves > 0 && <div className="bg-rose-500 dark:bg-rose-600 rounded-r-full" style={{ width: `${(school.graves/school.occurrences)*100}%` }} />}
+                          {school.leves  > 0 && <div className="bg-amber-300  rounded-l-full" style={{ width: `${(school.leves/school.occurrences)*100}%` }} />}
+                          {school.medias > 0 && <div className="bg-orange-400 " style={{ width: `${(school.medias/school.occurrences)*100}%` }} />}
+                          {school.graves > 0 && <div className="bg-rose-500  rounded-r-full" style={{ width: `${(school.graves/school.occurrences)*100}%` }} />}
                         </div>
                       </div>
                     )}
@@ -953,10 +953,10 @@ export default function DrePage() {
 
                   {/* Painel expandido */}
                   <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="px-5 pb-5 border-t border-slate-100 dark:border-slate-700/60 pt-4 space-y-5">
+                    <div className="px-5 pb-5 border-t border-[#2B2C33]/10  pt-4 space-y-5">
 
                       {isLoadingThis ? (
-                        <div className="flex items-center justify-center py-6 gap-2 text-slate-400 text-sm">
+                        <div className="flex items-center justify-center py-6 gap-2 text-[#2B2C33]/80 text-sm">
                           <RefreshCw className="w-4 h-4 animate-spin" />
                           Carregando detalhes...
                         </div>
@@ -967,18 +967,18 @@ export default function DrePage() {
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5 mb-3">
                               <Trophy className="w-4 h-4 text-amber-500" />
-                              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Ranking de Elogios</span>
+                              <span className="text-xs font-bold text-[#2B2C33]  uppercase tracking-wide">Ranking de Elogios</span>
                             </div>
                             {detail.topStudents.length === 0 ? (
-                              <p className="text-xs text-slate-400 py-2">Nenhum elogio registrado.</p>
+                              <p className="text-xs text-[#2B2C33]/80 py-2">Nenhum elogio registrado.</p>
                             ) : detail.topStudents.map((s, i) => (
-                              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors">
-                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-slate-300 text-slate-700' : i === 2 ? 'bg-orange-300 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>{i+1}</span>
+                              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50  hover:bg-emerald-100 :bg-emerald-500/20 transition-colors">
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-slate-300 text-[#2B2C33]' : i === 2 ? 'bg-orange-300 text-white' : 'bg-[#F4F5F7]  text-[#2B2C33]/80'}`}>{i+1}</span>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{s.name}</p>
-                                  <p className="text-[10px] text-slate-400">{s.class_name}</p>
+                                  <p className="text-xs font-semibold text-[#2B2C33]  truncate">{s.name}</p>
+                                  <p className="text-[10px] text-[#2B2C33]/80">{s.class_name}</p>
                                 </div>
-                                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 shrink-0">{s.praiseCount}x</span>
+                                <span className="text-xs font-black text-emerald-600  shrink-0">{s.praiseCount}x</span>
                               </div>
                             ))}
                           </div>
@@ -987,18 +987,18 @@ export default function DrePage() {
                           <div className="space-y-2">
                             <div className="flex items-center gap-1.5 mb-3">
                               <FileWarning className="w-4 h-4 text-rose-500" />
-                              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Top Infrações</span>
+                              <span className="text-xs font-bold text-[#2B2C33]  uppercase tracking-wide">Top Infrações</span>
                             </div>
                             {detail.topInfractions.length === 0 ? (
-                              <p className="text-xs text-slate-400 py-2">Nenhuma infração registrada.</p>
+                              <p className="text-xs text-[#2B2C33]/80 py-2">Nenhuma infração registrada.</p>
                             ) : detail.topInfractions.map((inf, i) => (
-                              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors">
-                                <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-[10px] font-black text-rose-600 dark:text-rose-400 shrink-0">{i+1}</span>
+                              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-rose-50  hover:bg-rose-100 :bg-rose-500/20 transition-colors">
+                                <span className="w-5 h-5 rounded-full bg-rose-100  flex items-center justify-center text-[10px] font-black text-rose-600  shrink-0">{i+1}</span>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{inf.student_name}</p>
-                                  <p className="text-[10px] text-slate-400">{inf.class_name}</p>
+                                  <p className="text-xs font-semibold text-[#2B2C33]  truncate">{inf.student_name}</p>
+                                  <p className="text-[10px] text-[#2B2C33]/80">{inf.class_name}</p>
                                 </div>
-                                <span className="text-xs font-black text-rose-600 dark:text-rose-400 shrink-0">{inf.count}x</span>
+                                <span className="text-xs font-black text-rose-600  shrink-0">{inf.count}x</span>
                               </div>
                             ))}
                           </div>
@@ -1008,7 +1008,7 @@ export default function DrePage() {
                       {/* Botão acessar escola */}
                       <button
                         onClick={(e) => { e.stopPropagation(); setActiveSchoolContext(school.id); router.push(resolveSchoolPath(school.id)); }}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold transition-all"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#0052CC] hover:bg-[#0052CC] active:scale-95 text-white text-sm font-semibold transition-all"
                       >
                         Acessar painel da escola <ChevronRight className="w-4 h-4" />
                       </button>
@@ -1025,21 +1025,21 @@ export default function DrePage() {
     {/* Modal de seleção de escola — renderizado direto na DRE pois não usa AppShell */}
     {showContextModal && (
       <div
-        className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+        className="fixed inset-0 bg-white/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
         onMouseDown={(e) => { if (e.target === e.currentTarget) setShowContextModal(false); }}
       >
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
-          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+        <div className="bg-white  border border-[#2B2C33]/10  rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
+          <div className="w-16 h-16 bg-blue-50  rounded-2xl flex items-center justify-center mx-auto">
+            <Building2 className="w-8 h-8 text-[#0052CC] " />
           </div>
           <div className="space-y-1">
-            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Qual painel deseja ver?</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Voce pode alternar a qualquer momento pelo botao Trocar Escola.</p>
+            <h3 className="text-xl font-bold text-[#2B2C33] ">Qual painel deseja ver?</h3>
+            <p className="text-sm text-[#2B2C33]/80 ">Voce pode alternar a qualquer momento pelo botao Trocar Escola.</p>
           </div>
           <div className="flex flex-col gap-2 pt-1">
             <button
               onClick={() => { setActiveSchoolContext('DRE'); setShowContextModal(false); }}
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-[#0052CC] hover:bg-[#0052CC] text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
             >
               <Building2 className="w-4 h-4" /> Painel DRE — Visao Consolidada
             </button>
@@ -1047,7 +1047,7 @@ export default function DrePage() {
               <button
                 key={s.id}
                 onClick={() => { setActiveSchoolContext(s.id); setShowContextModal(false); router.push(resolveSchoolPath(s.id)); }}
-                className="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl border border-[#2B2C33]/10  text-sm font-semibold text-[#2B2C33]  hover:bg-[#F4F5F7] transition-colors flex items-center justify-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4 text-amber-500" /> {s.name}
               </button>
