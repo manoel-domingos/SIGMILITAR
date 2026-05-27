@@ -10,17 +10,9 @@ import { FileText, AlertTriangle, Users, Star, ArrowRight, HeartPulse, Award, Tr
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
-import { createClient } from '@supabase/supabase-js';
 import StudentSheet from '@/components/StudentSheet';
 import LandingPage from '@/components/LandingPage';
-
-let _supabase: any = null;
-function supabase(): any {
-  return (_supabase ??= createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
-}
+import { supabase } from '@/lib/supabase';
 
 type PanelConfig = { id: string; label: string; enabled: boolean };
 
@@ -68,12 +60,13 @@ export default function Dashboard() {
   // Carrega painéis do Supabase ao montar
   useEffect(() => {
     if (!userId || userId === 'guest') return;
-    supabase()
+    supabase
       .from('dashboard_panels')
       .select('panels')
       .eq('user_id', userId)
-      .single()
-      .then(({ data }: { data: { panels: PanelConfig[] } | null }) => {
+      .maybeSingle()
+      .then(({ data, error }: { data: { panels: PanelConfig[] } | null; error: any }) => {
+        if (error) return; // silencia erros de rede; usuário fica com painéis padrão
         if (data?.panels && Array.isArray(data.panels)) {
           setPanels(mergePanels(data.panels));
         }
@@ -83,7 +76,7 @@ export default function Dashboard() {
   const savePanels = (next: PanelConfig[]) => {
     setPanels(next);
     if (!userId || userId === 'guest') return;
-    supabase()
+    supabase
       .from('dashboard_panels')
       .upsert({ user_id: userId, panels: next, updated_at: new Date().toISOString() })
       .then(() => {});
@@ -103,7 +96,7 @@ export default function Dashboard() {
   const isVisible = (id: string) => panels.find(p => p.id === id)?.enabled ?? true;
 
   useEffect(() => {
-    supabase()
+    supabase
       .from('implantacao_items')
       .select('done')
       .then(({ data }: { data: { done: boolean }[] | null }) => {
@@ -122,7 +115,12 @@ export default function Dashboard() {
     }
   }, [userId]);
 
-  const isLandingDomain = host === 'sigmilitar.com.br' || host === 'www.sigmilitar.com.br';
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const validSlugs = ['eecmprofjoaobatista', 'eecmheliodoro', 'eecmtangara'];
+  const firstSegment = pathname.split('/').filter(Boolean)[0]?.toLowerCase() ?? '';
+  const isLandingDomain =
+    (host === 'sigmilitar.com.br' || host === 'www.sigmilitar.com.br') &&
+    !validSlugs.includes(firstSegment);
 
   if (isLandingDomain) {
     return <LandingPage />;

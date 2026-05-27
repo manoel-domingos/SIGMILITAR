@@ -30,7 +30,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://vercel.live https://*.vercel.live",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live https://*.vercel.live",
       "font-src 'self' data: https://fonts.gstatic.com https://vercel.live https://*.vercel.live",
-      "img-src 'self' data: blob: https://picsum.photos https://lh3.googleusercontent.com https://*.googleusercontent.com https://vercel.live https://*.vercel.live https://vercel.com https://*.vercel.com",
+      "img-src 'self' data: blob: https://picsum.photos https://lh3.googleusercontent.com https://*.googleusercontent.com https://vercel.live https://*.vercel.live https://vercel.com https://*.vercel.com https://i.postimg.cc https://*.postimg.cc",
       "connect-src 'self' https://" + SUPABASE_HOST + " wss://" + SUPABASE_HOST + " https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://vercel.live https://*.vercel.live wss://*.vercel.live",
       "frame-src 'self' https://accounts.google.com https://vercel.live https://*.vercel.live",
       "frame-ancestors 'none'",
