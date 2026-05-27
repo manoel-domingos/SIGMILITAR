@@ -12,7 +12,7 @@ Antes de alterar qualquer arquivo:
 
 1. Identifique **quais arquivos** serão tocados e em quais linhas.
 2. Mapeie **dependências**: o que mais no sistema consome ou é afetado pelo trecho a alterar.
-3. Apresente um **plano estruturado** descrevendo o que será feito — somente após aprovação execute.
+3. Apresente um plano estruturado diretamente na conversa do chat — execute após alinhamento direto.
 4. Nunca assuma que uma coluna, campo ou rota já existe — **verifique no código antes de referenciar**.
 
 ---
