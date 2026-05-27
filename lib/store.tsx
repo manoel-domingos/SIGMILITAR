@@ -49,6 +49,8 @@ interface AppState {
   showContextModal: boolean;
   setShowContextModal: (v: boolean) => void;
   contextSchools: { id: string; name: string }[];
+  activePanelModule: 'civico-militar' | 'pedagogico';
+  setActivePanelModule: (module: 'civico-militar' | 'pedagogico') => void;
   isAuthRestored: boolean;
   isDebugMode: boolean;
   geminiApiKey: string;
@@ -255,6 +257,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isAuthRestored, setIsAuthRestored] = useState(false);
+
+  const [activePanelModule, setActivePanelModuleState] = useState<'civico-militar' | 'pedagogico'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('active_panel_module');
+      if (stored === 'civico-militar' || stored === 'pedagogico') return stored;
+    }
+    return 'civico-militar';
+  });
+
+  const setActivePanelModule = React.useCallback((module: 'civico-militar' | 'pedagogico') => {
+    setActivePanelModuleState(module);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('active_panel_module', module);
+    }
+  }, []);
 
   const currentUserRole = useMemo(() => {
     if (isGuest) return 'GUEST';
@@ -1959,6 +1976,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       students, occurrences, accidents, praises, rules, summons, conductTerms, auditLogs, staffMembers, appUsers, isSupabaseConnected, isSyncing,
       user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
       showContextModal, setShowContextModal, contextSchools,
+      activePanelModule, setActivePanelModule,
       geminiApiKey, setGeminiApiKey, groqApiKey, setGroqApiKey,
       logout, uploadFile,
       logAction, refreshData,
