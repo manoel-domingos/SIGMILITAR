@@ -1171,6 +1171,8 @@ function RightControls(props: RightControlsProps) {
     isProfileOpen, setIsProfileOpen, user, userName, userInitials, userRole,
     currentUserRole, logout, setIsChatOpen, layoutMode, toggleLayout,
   } = props;
+  const { tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
 
   return (
     <div className="flex items-center gap-1 sm:gap-2">
@@ -1249,6 +1251,8 @@ function ProfileMenu({
   isOpen, setIsOpen, user, userName, userInitials, userRole,
   currentUserRole, logout, setIsChatOpen, layoutMode, toggleLayout,
 }: ProfileMenuProps) {
+  const { tenantId } = useTenantConfig();
+  const rawPathname = usePathname();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
