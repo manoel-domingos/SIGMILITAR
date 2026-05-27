@@ -9,7 +9,7 @@ import {
 } from './data';
 
 function normalizeDbRole(role: string, email?: string): AppUserRole {
-  if (email && email.toLowerCase() === 'manoeldomingos2@gmail.com') return 'admin_global';
+  if (email && (email.toLowerCase() === 'manoeldomingos2@gmail.com' || email.toLowerCase() === 'manoeldomingos@gmail.com')) return 'admin_global';
   if (!role) return 'GESTOR';
   const r = role.toLowerCase();
   if (r.includes('admin')) return 'admin_global';
@@ -126,6 +126,7 @@ const INITIAL_STAFF: StaffMember[] = [
 
 const INITIAL_APP_USERS: AppUser[] = [
   { id: 'U1', email: 'manoeldomingos2@gmail.com', name: 'Manoel', role: 'admin_global', school_id: 'DRE' },
+  { id: 'U1_1', email: 'manoeldomingos@gmail.com', name: 'Manoel', role: 'admin_global', school_id: 'DRE' },
   { id: 'U2', email: 'manoel', name: 'Manoel (Mock)', role: 'admin_global', school_id: 'DRE' },
   { id: 'U3', email: 'maykon', name: 'Maykon', role: 'GESTOR', school_id: 'joaobatista' }
 ];
@@ -267,7 +268,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user?.email || isGuest) return null;
     const emailLower = user.email.toLowerCase();
     // Override para garantir perfil de Administrador Global no teste local
-    if (emailLower === 'manoeldomingos2@gmail.com') return 'DRE';
+    if (emailLower === 'manoeldomingos2@gmail.com' || emailLower === 'manoeldomingos@gmail.com') return 'DRE';
     
     const matched = appUsers.find(u => u.email.toLowerCase() === emailLower);
     return matched?.school_id ?? null;
@@ -617,7 +618,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
               // Override para garantir que o seu e-mail de administrador global
               // inicialize sempre no contexto do DRE (vazio), independente do banco no teste local
-              if (emailLower === 'manoeldomingos2@gmail.com') {
+              if (emailLower === 'manoeldomingos2@gmail.com' || emailLower === 'manoeldomingos@gmail.com') {
                 sid = '';
               }
 

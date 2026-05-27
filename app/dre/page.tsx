@@ -112,7 +112,7 @@ function DisciplineRing({ value }: { value: number }) {
 
 export default function DrePage() {
   const router = useRouter();
-  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, isSupabaseConnected, isSyncing, refreshData } = useAppContext();
+  const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, isSupabaseConnected, isSyncing, refreshData, isAuthRestored } = useAppContext();
 
   const resolveSchoolPath = (schoolId: string): string => {
     if (typeof window === 'undefined') return '/';
@@ -135,10 +135,10 @@ export default function DrePage() {
 
   // Redirect para /dre ao entrar (admin_global já está cá, outros vão para /)
   useEffect(() => {
-    if (currentUserRole && currentUserRole !== 'admin_global') {
+    if (isAuthRestored && currentUserRole && currentUserRole !== 'admin_global') {
       router.replace('/');
     }
-  }, [currentUserRole, router]);
+  }, [isAuthRestored, currentUserRole, router]);
 
   // Evita spam de requisições paralelas: throttling de 2 segundos a cada clique
   const lastRefreshTime = useRef<number>(0);
@@ -277,10 +277,10 @@ export default function DrePage() {
   const isVisible = (id: string) => panels.find(p => p.id === id)?.enabled ?? true;
 
   useEffect(() => {
-    if (currentUserRole !== 'admin_global' && currentUserSchoolId !== 'DRE') {
+    if (isAuthRestored && currentUserRole !== 'admin_global' && currentUserSchoolId !== 'DRE') {
       router.replace('/');
     }
-  }, [currentUserRole, currentUserSchoolId, router]);
+  }, [isAuthRestored, currentUserRole, currentUserSchoolId, router]);
 
   const load = React.useCallback(async () => {
     setLoading(true);
