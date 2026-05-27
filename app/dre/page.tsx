@@ -114,6 +114,25 @@ export default function DrePage() {
   const router = useRouter();
   const { currentUserRole, currentUserSchoolId, setActiveSchoolContext, openContextModal, showContextModal, setShowContextModal, contextSchools, logout, user, isSupabaseConnected, isSyncing, refreshData } = useAppContext();
 
+  const resolveSchoolPath = (schoolId: string): string => {
+    if (typeof window === 'undefined') return '/';
+    const hostname = window.location.hostname.toLowerCase();
+    const isCentral = hostname.includes('sigmilitar') ||
+                      hostname.includes('localhost') ||
+                      hostname.includes('vercel.app');
+
+    if (!isCentral) return '/'; // kallyteros: sem slug, comportamento atual
+
+    // Mapeia o schoolId para o slug da URL
+    const slug =
+      schoolId === 'joaobatista'  ? 'eecmprofjoaobatista' :
+      schoolId === 'heliodoro'    ? 'eecmheliodoro'        :
+      schoolId === 'tangara'      ? 'tangara'              :
+      schoolId; // fallback: usa o próprio id como slug
+
+    return `/${slug}/`;
+  };
+
   // Redirect para /dre ao entrar (admin_global já está cá, outros vão para /)
   useEffect(() => {
     if (currentUserRole && currentUserRole !== 'admin_global') {
@@ -596,7 +615,7 @@ export default function DrePage() {
         sleepData={sleepData}
         onSchoolClick={(schoolId) => {
           setActiveSchoolContext(schoolId);
-          router.push('/');
+          router.push(resolveSchoolPath(schoolId));
         }}
         onNavigate={(route) => router.push(route)}
       />
@@ -802,7 +821,7 @@ export default function DrePage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => { setActiveSchoolContext(school.id); router.push('/'); }}
+                      onClick={() => { setActiveSchoolContext(school.id); router.push(resolveSchoolPath(school.id)); }}
                       className="flex-shrink-0 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-600 transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -972,7 +991,7 @@ export default function DrePage() {
 
                       {/* Botão acessar escola */}
                       <button
-                        onClick={(e) => { e.stopPropagation(); setActiveSchoolContext(school.id); router.push('/'); }}
+                        onClick={(e) => { e.stopPropagation(); setActiveSchoolContext(school.id); router.push(resolveSchoolPath(school.id)); }}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold transition-all"
                       >
                         Acessar painel da escola <ChevronRight className="w-4 h-4" />
@@ -1011,7 +1030,7 @@ export default function DrePage() {
             {contextSchools.map(s => (
               <button
                 key={s.id}
-                onClick={() => { setActiveSchoolContext(s.id); setShowContextModal(false); router.push('/'); }}
+                onClick={() => { setActiveSchoolContext(s.id); setShowContextModal(false); router.push(resolveSchoolPath(s.id)); }}
                 className="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4 text-amber-500" /> {s.name}
