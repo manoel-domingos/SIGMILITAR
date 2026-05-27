@@ -326,15 +326,15 @@ export default function LandingPage2() {
                     <Star className="w-5 h-5 fill-current" />
                   </div>
                   <p className="text-[#2B2C33] font-medium text-lg mb-8 leading-relaxed">
-                    [DEPOIMENTO - PREENCHER] "O <strong className="orbitron text-[#0052CC]">SIGMILITAR</strong> mudou a nossa rotina. Antes perdíamos horas transcrevendo ATAs e checando pontuações no Excel. Hoje, a IA resolve a burocracia e nós focamos nos alunos. É indispensável para o modelo Cívico-Militar."
+                    O SIGMILITAR mudou a nossa rotina. Antes perdíamos horas transcrevendo ATAs e checando pontuações no Excel. Hoje, a IA resolve a burocracia e nós focamos nos alunos. É indispensável para o modelo Cívico-Militar."
                   </p>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#F4F5F7] rounded-full flex items-center justify-center text-[#2B2C33] font-bold text-lg border border-[#2B2C33]/10">
                       G
                     </div>
                     <div>
-                      <div className="text-[#2B2C33] font-bold">[Nome do Gestor]</div>
-                      <div className="text-[#2B2C33]/60 text-sm">Direção — EECM [Nome da Escola]</div>
+                      <div className="text-[#2B2C33] font-bold">Andrade</div>
+                      <div className="text-[#2B2C33]/60 text-sm">Gestor — E. E. Prof. Heliodoro Capistrano Da Silva</div>
                     </div>
                   </div>
                 </div>

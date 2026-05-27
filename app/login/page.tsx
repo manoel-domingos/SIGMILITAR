@@ -297,11 +297,7 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="w-full max-w-sm mx-auto mt-12 pt-6 border-t border-[#2B2C33]/5">
-          <p className="text-xs text-[#2B2C33]/40 font-mono">
-            {activeSchoolName} · v.{versionData.version}
-          </p>
-        </div>
+
       </div>
 
       {/* Lado Direito: Testemunho / Divulgação com Background do LandingPage */}
