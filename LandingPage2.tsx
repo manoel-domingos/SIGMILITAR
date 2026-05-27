@@ -83,7 +83,7 @@ export default function LandingPage2() {
         <nav className="fixed top-0 w-full z-50 border-b border-[#F4F5F7] bg-white/90 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <a href="#" className="flex items-center group">
-              <img src="https://i.postimg.cc/rwTsT0rf/LOGO-SIGMILITAR.jpg" alt="SIGMILITAR" className="h-12 md:h-14 w-auto object-contain rounded-lg" />
+              <img src="https://i.postimg.cc/Nj086jsf/LOGO-SIGMILITAR.png" alt="SIGMILITAR" className="h-12 md:h-14 w-auto object-contain rounded-lg" />
             </a>
             <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[#2B2C33]/70">
               <a href="#problema" className="hover:text-[#0052CC] transition-colors">Problema</a>
@@ -91,15 +91,10 @@ export default function LandingPage2() {
               <a href="#modulos" className="hover:text-[#0052CC] transition-colors">Módulos</a>
               <a href="#diferenciais" className="hover:text-[#0052CC] transition-colors">Diferenciais</a>
             </div>
-            <div className="flex items-center gap-3">
-              <a href="/login" className="flex items-center gap-1.5 border border-[#0052CC] text-[#0052CC] px-4 py-2 rounded-full text-sm font-medium hover:bg-[#0052CC]/5 transition-all duration-300">
-                Acessar Sistema
-              </a>
-              <a href="#cta" className="hidden md:flex items-center gap-2 bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#0052CC]/90 transition-all duration-300">
-                Agendar Demonstração
-                <ArrowRight className="w-4 h-4" />
-              </a>
-            </div>
+            <a href="#cta" className="hidden md:flex items-center gap-2 bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#0052CC]/90 transition-all duration-300">
+              Agendar Demonstração
+              <ArrowRight className="w-4 h-4" />
+            </a>
           </div>
         </nav>
 
@@ -254,41 +249,7 @@ export default function LandingPage2() {
               </div>
               <div className="flex-1 scroll-reveal opacity-0 translate-y-8 transition-all duration-700 delay-200">
                 <div className="relative bg-white rounded-3xl border border-[#2B2C33]/10 p-2 overflow-hidden shadow-xl">
-                  {/* Mock Dashboard Element */}
-                  <div className="bg-[#F4F5F7] rounded-2xl border border-[#2B2C33]/5 p-6 h-[400px] flex flex-col">
-                    <div className="flex justify-between items-center mb-6 border-b border-[#2B2C33]/10 pb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <span className="text-xs font-mono text-[#2B2C33]/70 uppercase" style={{ fontFamily: 'Geist Mono, monospace' }}>Dashboard Executivo</span>
-                      </div>
-                      <span className="text-[10px] font-mono text-[#0052CC] border border-[#0052CC]/30 px-2 py-1 rounded bg-white" style={{ fontFamily: 'Geist Mono, monospace' }}>LIVE</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="bg-white border border-[#2B2C33]/5 rounded-xl p-4 shadow-sm">
-                        <div className="text-[10px] font-mono text-[#2B2C33]/50 mb-1 uppercase" style={{ fontFamily: 'Geist Mono, monospace' }}>Ocorrências Mês</div>
-                        <div className="text-2xl font-bold text-[#2B2C33]">124</div>
-                      </div>
-                      <div className="bg-red-50 border border-red-100 rounded-xl p-4 shadow-sm">
-                        <div className="text-[10px] font-mono text-red-600 mb-1 uppercase" style={{ fontFamily: 'Geist Mono, monospace' }}>Casos Graves</div>
-                        <div className="text-2xl font-bold text-red-600">12</div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 bg-white border border-[#2B2C33]/5 rounded-xl p-4 relative overflow-hidden shadow-sm">
-                      <div className="text-[10px] font-mono text-[#2B2C33]/50 mb-3 uppercase" style={{ fontFamily: 'Geist Mono, monospace' }}>Alertas Recentes</div>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2"><AlertTriangle className="w-3 h-3 text-yellow-600" /><span className="text-[#2B2C33]/90 text-xs font-medium">Reincidência: João P.</span></div>
-                          <span className="text-xs text-[#2B2C33]/50">Agora</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2"><Info className="w-3 h-3 text-[#0052CC]" /><span className="text-[#2B2C33]/90 text-xs font-medium">Elogio Art.50: Maria T.</span></div>
-                          <span className="text-xs text-[#2B2C33]/50">10 min</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <img src="https://i.postimg.cc/3NJ4xPyy/image.png" alt="Dashboard Executivo" className="w-full h-auto rounded-2xl border border-[#2B2C33]/5" />
                 </div>
               </div>
             </div>
@@ -507,7 +468,6 @@ export default function LandingPage2() {
                   </button>
                 </form>
               )}
-              <p className="text-xs text-[#2B2C33]/50 font-mono mt-6 text-center" style={{ fontFamily: 'Geist Mono, monospace' }}>Versão atual: 25.05.26.08:31 · Sem spam · Dados protegidos</p>
             </div>
           </div>
         </section>
@@ -517,7 +477,7 @@ export default function LandingPage2() {
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex flex-col md:flex-row justify-between items-start mb-12">
               <div className="mb-8 md:mb-0">
-                <img src="https://i.postimg.cc/rwTsT0rf/LOGO-SIGMILITAR.jpg" alt="SIGMILITAR" className="h-16 md:h-20 w-auto object-contain rounded-xl mb-4" />
+                <img src="https://i.postimg.cc/Nj086jsf/LOGO-SIGMILITAR.png" alt="SIGMILITAR" className="h-16 md:h-20 w-auto object-contain rounded-xl mb-4" />
                 <p className="text-[#2B2C33]/70 text-sm max-w-xs leading-relaxed mt-4">
                   Sistema Integrado de Gestão Cívico Militar. Automação, segurança e eficiência.
                 </p>
@@ -536,7 +496,7 @@ export default function LandingPage2() {
                   <ul className="space-y-2 text-sm text-[#2B2C33]/70">
                     <li><a className="hover:text-[#0052CC] transition-colors" href="#">Suporte</a></li>
                     <li><a className="hover:text-[#0052CC] transition-colors" href="#cta">Implantação</a></li>
-                    <li><a className="hover:text-[#0052CC] transition-colors" href="/login">Acessar Sistema</a></li>
+                    <li><a className="hover:text-[#0052CC] transition-colors" href="#">Acessar Sistema</a></li>
                   </ul>
                 </div>
               </div>
