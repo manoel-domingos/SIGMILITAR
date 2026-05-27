@@ -242,8 +242,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [summons, setSummons] = useState<Summons[]>([]);
   const [conductTerms, setConductTerms] = useState<ConductTerm[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [staffMembers, setStaffMembers] = useState<StaffMember[]>(INITIAL_STAFF);
-  const [appUsers, setAppUsers] = useState<AppUser[]>(INITIAL_APP_USERS);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [appUsers, setAppUsers] = useState<AppUser[]>([]);
   const [permissions, setPermissions] = useState<Record<AppUserRole, Record<string, boolean>>>(DEFAULT_PERMISSIONS);
   const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
   const [user, setUser] = useState<any | null>(null);
@@ -424,8 +424,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             { data: staffData },
           ] = await Promise.all([
             bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
-            supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
-            supabase!.from('user_profiles').select('*'),
+            bySchool(supabase!.from('audit_logs').select('*').order('date', { ascending: false })),
+            bySchool(supabase!.from('user_profiles').select('*')),
             bySchool(supabase!.from('staff_members').select('*').order('name', { ascending: true }))
           ]);
 
@@ -1135,8 +1135,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         bySchool(supabase!.from('praises').select('*').order('date', { ascending: false })),
         bySchool(supabase!.from('summons').select('*').order('date', { ascending: false })),
         bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
-        supabase!.from('audit_logs').select('*').order('date', { ascending: false }),
-        bySchool(supabase!.from('staff_members').select('*').order('name', { ascending: true }))
+        bySchool(supabase!.from('audit_logs').select('*').order('date', { ascending: false })),
+        bySchool(supabase!.from('staff_members').select('*').order('name', { ascending: true })),
+        bySchool(supabase!.from('user_profiles').select('*'))
       ]);
       
       const [
@@ -1147,7 +1148,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { data: summonsData },
         { data: conductTermsData },
         { data: auditLogsData },
-        { data: staffData }
+        { data: staffData },
+        { data: appUsersData }
       ] = responses;
 
       if (studentsData) setStudents(studentsData.map((s: any) => ({ ...s, points: 8 })));
@@ -1183,6 +1185,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (conductTermsData) setConductTerms(conductTermsData.map((t: any) => ({...t, studentId: t.student_id, registeredBy: t.registered_by, guardianName: t.guardian_name})));
       if (auditLogsData) setAuditLogs(auditLogsData.map((l: any) => ({...l, entityName: l.entity_name, entityId: l.entity_id, userEmail: l.user_email})));
       if (staffData) setStaffMembers(staffData.map((s: any) => ({ id: s.id, name: s.name, role: s.role })));
+      
+      if (appUsersData && appUsersData.length > 0) {
+        setAppUsers(appUsersData
+          .filter((u: any) => u.email?.toLowerCase() !== 'system_permissions@system.local')
+          .map((u: any) => ({
+            id: u.id,
+            name: u.name || '',
+            email: u.email || '',
+            role: normalizeDbRole(u.role, u.email),
+            school_id: u.school_id || '',
+          }))
+        );
+      }
       
     } catch (err) {
       console.error("Refresh failed", err);
