@@ -5,8 +5,6 @@ import type { NextRequest } from 'next/server';
 const hostToTenant: Record<string, string> = {
   'eecmheliodoro.vercel.app': 'eecmheliodoro',
   'eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
-  'eecmheliodoro.kallyteros.com.br': 'eecmheliodoro',
-  'eecmprofjoaobatista.kallyteros.com.br': 'eecmprofjoaobatista',
 };
 
 // ── Rate Limiting Store (in-memory por instancia Edge) ───────────────────────
@@ -94,6 +92,8 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const ip = getClientIP(request);
 
+  const isCentralDomain = host === 'sigmilitar.com.br' || host.endsWith('.sigmilitar.com.br') || host.includes('vercel.app') || host === 'localhost';
+
   // ─── 1. Rate Limiting ────────────────────────────────────────────────────
   const rule = getRuleForPath(pathname);
   const rateLimitKey = ip + ':' + pathname.split('/').slice(0, 3).join('/');
@@ -118,8 +118,7 @@ export function middleware(request: NextRequest) {
   // ─── 2. LOGICA DRE (mantida intacta) ────────────────────────────────────
   const isDreDomain =
     host.startsWith('dre.') ||
-    host === 'dretga.kallyteros.com.br' ||
-    host === 'www.dretga.kallyteros.com.br';
+    host === 'dre.sigmilitar.com.br';
 
   if (isDreDomain) {
     if (pathname === '/dre-login' || pathname.startsWith('/dre')) {
@@ -165,10 +164,7 @@ export function middleware(request: NextRequest) {
     tenant = hostToTenant[host];
   }
 
-  // Prioridade 4: Subdomínio de *.kallyteros.com.br
-  if (!tenant && host.endsWith('.kallyteros.com.br')) {
-    tenant = host.replace('.kallyteros.com.br', '');
-  }
+  // Prioridade 4: Subdomínio de *.kallyteros.com.br (Removida)
 
   // ─── 4. REWRITE PARA ROTAS LEGADAS OU REDIRECIONAMENTO DE CENTRAL ─────────
   if (tenant && validTenants.includes(tenant)) {

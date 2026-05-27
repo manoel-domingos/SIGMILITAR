@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase, isSupabaseReady } from '@/lib/supabase';
 import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
-import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight } from 'lucide-react';
+import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight, Building2, ShieldCheck } from 'lucide-react';
 import versionData from '@/lib/version.json';
 import { SCHOOL_SUBTITLE } from '@/lib/school';
 
 export default function Login() {
   const router = useRouter();
-  const { user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored } = useAppContext();
+  const { 
+    user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored,
+    showContextModal, setShowContextModal, contextSchools, setActiveSchoolContext, openContextModal
+  } = useAppContext();
   const { logoLogin, schoolName, tenantId } = useTenantConfig();
 
   const [username, setUsername] = useState('');
@@ -21,10 +24,28 @@ export default function Login() {
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [isCentral, setIsCentral] = useState(false);
 
+  function resolveSchoolPath(schoolId: string): string {
+    const slug =
+      schoolId === 'joaobatista' ? 'eecmprofjoaobatista' :
+      schoolId === 'heliodoro'   ? 'eecmheliodoro'        :
+      schoolId;
+    return `/${slug}/`;
+  }
+
+  const handleSchoolSelect = (schoolId: string) => {
+    setActiveSchoolContext(schoolId);
+    setShowContextModal(false);
+    if (schoolId === 'DRE') {
+      router.push('/dre');
+    } else {
+      router.push(resolveSchoolPath(schoolId));
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname.toLowerCase();
-      setIsCentral(hostname.includes('sigmilitar') || hostname.includes('localhost') || hostname.includes('vercel.app'));
+      setIsCentral(hostname === 'sigmilitar.com.br' || hostname.endsWith('.sigmilitar.com.br') || hostname === 'localhost' || hostname.includes('vercel.app'));
     }
   }, []);
 
@@ -55,12 +76,13 @@ export default function Login() {
     if ((user || isGuest) && isAuthRestored) {
       if (typeof window !== 'undefined') {
         const hostname = window.location.hostname.toLowerCase();
-        const isCentralDomain = hostname.includes('sigmilitar') || hostname.includes('localhost') || hostname.includes('vercel.app');
+        const isCentralDomain = hostname === 'sigmilitar.com.br' || hostname.endsWith('.sigmilitar.com.br') || hostname === 'localhost' || hostname.includes('vercel.app');
 
         if (isCentralDomain) {
           // No domínio central: redireciona para a rota com slug da escola do usuário
           if (currentUserRole === 'admin_global') {
-            router.push('/dre');
+            // admin_global vê o modal de seleção de escola antes de prosseguir
+            openContextModal();
             return;
           }
 
@@ -72,26 +94,14 @@ export default function Login() {
             router.push(targetPath);
             return;
           }
-        } else {
-          // No domínio legado (kallyteros): redireciona para o hostname canônico se necessário
-          if (currentUserSchoolId && currentUserSchoolId !== 'DRE') {
-            const canonicalHost = currentUserSchoolId === 'heliodoro' 
-              ? 'eecmheliodoro.kallyteros.com.br' 
-              : 'eecmprofjoaobatista.kallyteros.com.br';
-              
-            if (hostname !== canonicalHost) {
-              console.log(`[REDIRECT] Usuário pertence à escola ${currentUserSchoolId}. Redirecionando para ${canonicalHost}...`);
-              window.location.href = `https://${canonicalHost}/`;
-              return;
-            }
-          }
         }
       }
 
       // Fallback
-      router.push(currentUserRole === 'admin_global' ? '/dre' : currentUserRole === 'PROFESSOR' ? '/registro-disciplinar' : '/');
+      const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
+      router.push(currentUserRole === 'admin_global' ? '/dre' : currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`);
     }
-  }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router]);
+  }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router, openContextModal]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,7 +206,7 @@ export default function Login() {
     );
   }
 
-  if (user || isGuest) return null;
+  if ((user || isGuest) && !showContextModal) return null;
 
   return (
     <div className="h-[100dvh] w-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-blue-900 relative overflow-hidden">
@@ -359,6 +369,40 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      {showContextModal && (
+        <div
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowContextModal(false); }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto">
+              <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Qual painel deseja ver?</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Você pode alternar a qualquer momento pelo botão Trocar Escola.</p>
+            </div>
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={() => handleSchoolSelect('DRE')}
+                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <Building2 className="w-4 h-4" /> Painel DRE — Visão Consolidada
+              </button>
+              {contextSchools.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => handleSchoolSelect(s.id)}
+                  className="w-full py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4 text-amber-500" /> {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
