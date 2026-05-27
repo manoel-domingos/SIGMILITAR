@@ -364,7 +364,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function initAuthAndData() {
-      if (!supabase) {
+      if (!isSupabaseReady()) {
         setIsAuthRestored(true);
         return;
       }
@@ -374,7 +374,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
       const fetchData = async (schoolId?: string) => {
-        if (!supabase) return;
+        if (!isSupabaseReady()) return;
 
         // Cancela qualquer fetch em andamento antes de iniciar um novo
         if (currentFetchAbort) {
@@ -778,7 +778,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/' + DRIVE_FOLDER_ID;
 
   const uploadFile = async (file: File, studentId: string): Promise<string | null> => {
-    if (!supabase) {
+    if (!isSupabaseReady()) {
       console.error("[v0] Supabase não inicializado");
       return null;
     }
@@ -1124,7 +1124,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshData = async () => {
-    if (!supabase || !isSupabaseConnected) return;
+    if (!isSupabaseReady() || !isSupabaseConnected) return;
     const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
     const sid = envSchoolId ?? activeSchoolContextRef.current;
     const dbSchoolId = getDbSchoolId(sid);
