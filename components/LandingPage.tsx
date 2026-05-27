@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ArrowRight, ShieldCheck, Cpu, FileText, Clock, MessageSquareDashed, 
-  Zap, BarChart2, Award, Gavel, Bot, TrendingUp, Shield, Users, Star, 
+import {
+  ArrowRight, ShieldCheck, Cpu, FileText, Clock, MessageSquareDashed,
+  Zap, BarChart2, Award, Gavel, Bot, TrendingUp, Shield, Users, Star,
   CheckCircle, X, AlertTriangle, Info, Building2
 } from 'lucide-react';
 
@@ -34,14 +34,14 @@ export default function LandingPage() {
       if (!hero3dRef.current) return;
       const x = (window.innerWidth / 2 - e.pageX) / 40;
       const y = (window.innerHeight / 2 - e.pageY) / 40;
-      
+
       document.querySelectorAll('.hero-card').forEach((el) => {
         const card = el as HTMLElement;
         const depth = parseFloat(card.getAttribute('data-depth') || '1');
         const baseX = parseFloat(card.getAttribute('data-base-x') || '0');
         const baseY = parseFloat(card.getAttribute('data-base-y') || '0');
         const baseZ = parseFloat(card.getAttribute('data-base-z') || '0');
-        
+
         card.style.transform = `translateX(${baseX + x * depth}px) translateY(${baseY + y * depth}px) translateZ(${baseZ}px) rotateY(${-15 + x * 0.5}deg) rotateX(${10 - y * 0.5}deg)`;
       });
     };
@@ -66,7 +66,8 @@ export default function LandingPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&display=swap');
 
@@ -196,7 +197,7 @@ export default function LandingPage() {
       `}} />
 
       <div className="bg-[#050505] text-white overflow-x-hidden font-sans antialiased min-h-screen">
-        
+
         {/* NAVBAR */}
         <nav className="ds-nav">
           <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -228,7 +229,7 @@ export default function LandingPage() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[180px] opacity-[0.06] bg-[#2563eb] pointer-events-none"></div>
 
           <div className="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-12 items-center w-full">
-            
+
             {/* LADO ESQUERDO: TEXTOS (ALINHADOS À ESQUERDA) */}
             <div className="text-left flex flex-col items-start z-20">
               <div className="inline-flex animate-reveal text-xs font-medium text-[#2563eb] tracking-wide bg-[#3b82f6]/5 border-[#3b82f6]/30 border rounded-full mb-8 pt-1 pr-4 pb-1 pl-4 items-center gap-2">
@@ -240,7 +241,7 @@ export default function LandingPage() {
               </div>
 
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-medium tracking-tight text-white mb-6 leading-[1.1] animate-reveal delay-100">
-                Controle <span className="bg-clip-text text-transparent bg-gradient-to-br from-[#2563eb] to-[#3b82f6]">Inteligente</span> e<br/>Monitoramento Escolar
+                Controle <span className="bg-clip-text text-transparent bg-gradient-to-br from-[#2563eb] to-[#3b82f6]">Inteligente</span> e<br />Monitoramento Escolar
               </h1>
 
               <p className="text-lg md:text-xl text-white/60 font-light mb-10 max-w-2xl leading-relaxed animate-reveal delay-200">
@@ -274,9 +275,9 @@ export default function LandingPage() {
                 {/* Top Row: 2 Cards */}
                 <div className="grid grid-cols-2 gap-4">
                   {/* Card 3 (Top Left - Ocorrências) */}
-                  <div className="hero-card bg-[#050505]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl transition-transform duration-200 ease-out opacity-0 anim-slide-up-2" 
-                       data-depth="0.3" data-base-x="0" data-base-y="0" data-base-z="0" 
-                       style={{ transform: 'rotateY(-10deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
+                  <div className="hero-card bg-[#050505]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl transition-transform duration-200 ease-out opacity-0 anim-slide-up-2"
+                    data-depth="0.3" data-base-x="0" data-base-y="0" data-base-z="0"
+                    style={{ transform: 'rotateY(-10deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
                     <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3 px-2">
                       <span className="text-xs font-mono text-white/50 tracking-wider" style={{ fontFamily: 'Geist Mono, monospace' }}># OCORRÊNCIAS</span>
                       <span className="text-[10px] text-gray-400 font-mono tracking-widest" style={{ fontFamily: 'Geist Mono, monospace' }}>[SYNC]</span>
@@ -286,9 +287,9 @@ export default function LandingPage() {
                   </div>
 
                   {/* Card 2 (Top Right - ARIA) */}
-                  <div className="hero-card bg-[#0A0A0A]/90 backdrop-blur-xl border border-[#2563eb]/30 rounded-2xl p-3 shadow-[0_0_40px_rgba(37,99,235,0.15)] transition-transform duration-200 ease-out opacity-0 anim-slide-up-1" 
-                       data-depth="0.4" data-base-x="0" data-base-y="0" data-base-z="0" 
-                       style={{ transform: 'rotateY(-10deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
+                  <div className="hero-card bg-[#0A0A0A]/90 backdrop-blur-xl border border-[#2563eb]/30 rounded-2xl p-3 shadow-[0_0_40px_rgba(37,99,235,0.15)] transition-transform duration-200 ease-out opacity-0 anim-slide-up-1"
+                    data-depth="0.4" data-base-x="0" data-base-y="0" data-base-z="0"
+                    style={{ transform: 'rotateY(-10deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
                     <div className="flex items-center justify-between border-b border-[#2563eb]/20 pb-2 mb-3 px-2 relative">
                       <div className="absolute bottom-0 left-0 h-px w-1/3 bg-gradient-to-r from-[#2563eb] to-transparent"></div>
                       <span className="text-xs font-mono text-white/70 tracking-wider" style={{ fontFamily: 'Geist Mono, monospace' }}># ARIA_NODE</span>
@@ -300,9 +301,9 @@ export default function LandingPage() {
                 </div>
 
                 {/* Bottom Row: Dashboard */}
-                <div className="hero-card w-full bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl transition-transform duration-200 ease-out z-10 opacity-0 anim-slide-down" 
-                     data-depth="0.5" data-base-x="0" data-base-y="0" data-base-z="0" 
-                     style={{ transform: 'rotateY(-10deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
+                <div className="hero-card w-full bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl transition-transform duration-200 ease-out z-10 opacity-0 anim-slide-down"
+                  data-depth="0.5" data-base-x="0" data-base-y="0" data-base-z="0"
+                  style={{ transform: 'rotateY(-10deg) rotateX(5deg)', transformStyle: 'preserve-3d' }}>
                   <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3 px-2">
                     <span className="text-xs font-mono text-white tracking-wider" style={{ fontFamily: 'Geist Mono, monospace' }}># DASHBOARD_EXECUTIVO</span>
                     <span className="text-[10px] text-green-400 font-mono tracking-widest" style={{ fontFamily: 'Geist Mono, monospace' }}>[LIVE]</span>
@@ -359,7 +360,7 @@ export default function LandingPage() {
                 <span className="text-xs font-mono text-[#2563eb] uppercase tracking-widest mb-4 block" style={{ fontFamily: 'Geist Mono, monospace' }}>Inteligência Acadêmica</span>
                 <h2 className="text-3xl md:text-5xl font-medium tracking-tight text-white mb-6">Controle Total e Inteligência a Seu Favor</h2>
                 <p className="text-lg text-white/60 font-light mb-8">O <strong className="orbitron text-white">SIGMILITAR</strong> resolve cada um desses desafios integrando funcionalidades de alta tecnologia desenhadas exclusivamente para a rotina Cívico-Militar.</p>
-                
+
                 <ul className="space-y-6">
                   <li className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-1">
@@ -402,7 +403,7 @@ export default function LandingPage() {
                       </div>
                       <span className="text-[10px] font-mono text-[#2563eb] border border-[#2563eb]/30 px-2 py-1 rounded" style={{ fontFamily: 'Geist Mono, monospace' }}>LIVE</span>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
                         <div className="text-[10px] font-mono text-white/40 mb-1 uppercase" style={{ fontFamily: 'Geist Mono, monospace' }}>Ocorrências Mês</div>
@@ -453,7 +454,7 @@ export default function LandingPage() {
                 <h3 className="text-xl font-medium text-white mb-3">Registro Disciplinar Completo</h3>
                 <p className="text-white/60 text-sm font-light">Cadastro de infrações por turmas, atenuantes e detecção instantânea de multi-infratores baseado no regimento interno.</p>
               </div>
-              
+
               {/* Modulo 2 */}
               <div className="showcase-card group scroll-reveal delay-100">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -524,7 +525,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="scroll-reveal delay-200">
                 <div className="bg-[#121212] p-8 rounded-3xl border border-white/5 relative shadow-xl">
                   <div className="absolute -top-4 right-8 bg-[#2563eb] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
@@ -565,7 +566,7 @@ export default function LandingPage() {
 
             <div className="relative">
               <div className="absolute left-[23px] md:left-1/2 top-0 bottom-0 w-px bg-white/10 md:-translate-x-1/2"></div>
-              
+
               <div className="space-y-16">
                 {/* Passo 1 */}
                 <div className="relative flex flex-col md:flex-row items-start md:justify-between scroll-reveal">
@@ -671,14 +672,14 @@ export default function LandingPage() {
         <section id="cta" className="relative py-32 border-t border-white/5 overflow-hidden">
           <div className="absolute inset-0 bg-[#2563eb]/5"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full radar-sweep-anim opacity-10 pointer-events-none"></div>
-          
+
           <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
             <h2 className="text-4xl md:text-6xl font-medium tracking-tight text-white mb-8">Eleve a <span className="font-bold text-[#3b82f6]">disciplina</span> e <span className="font-bold text-[#3b82f6]">gestão</span> da sua instituição hoje.</h2>
-            
+
             <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 max-w-2xl mx-auto shadow-2xl scroll-reveal">
               <h3 className="text-xl font-medium text-white mb-2">Solicite sua implantação guiada</h3>
               <p className="text-white/50 text-sm mb-8">Nossa equipe realizará o setup do sistema, integração dos alunos e treinamento do seu corpo docente.</p>
-              
+
               {submitted ? (
                 <div className="bg-[#2563eb]/10 border border-[#2563eb]/20 rounded-2xl p-6 text-center space-y-3 animate-in zoom-in-95 duration-300">
                   <CheckCircle className="w-12 h-12 text-[#2563eb] mx-auto" />
@@ -689,15 +690,15 @@ export default function LandingPage() {
                 <form onSubmit={handleSubmit} className="space-y-4 text-left">
                   <div>
                     <label className="text-xs font-mono text-white/40 uppercase tracking-widest mb-2 block" style={{ fontFamily: 'Geist Mono, monospace' }}>Nome da Instituição</label>
-                    <input type="text" value={form.school} onChange={e => setForm(v => ({...v, school: e.target.value}))} placeholder="Ex: EECM Prof. João Batista" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm placeholder-white/30 focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/30 transition-colors" required />
+                    <input type="text" value={form.school} onChange={e => setForm(v => ({ ...v, school: e.target.value }))} placeholder="Ex: EECM Prof. João Batista" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm placeholder-white/30 focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/30 transition-colors" required />
                   </div>
                   <div>
                     <label className="text-xs font-mono text-white/40 uppercase tracking-widest mb-2 block" style={{ fontFamily: 'Geist Mono, monospace' }}>E-mail Profissional</label>
-                    <input type="email" value={form.email} onChange={e => setForm(v => ({...v, email: e.target.value}))} placeholder="gestao@escola.com.br" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm placeholder-white/30 focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/30 transition-colors" required />
+                    <input type="email" value={form.email} onChange={e => setForm(v => ({ ...v, email: e.target.value }))} placeholder="gestao@escola.com.br" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm placeholder-white/30 focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/30 transition-colors" required />
                   </div>
                   <div>
                     <label className="text-xs font-mono text-white/40 uppercase tracking-widest mb-2 block" style={{ fontFamily: 'Geist Mono, monospace' }}>Telefone / WhatsApp</label>
-                    <input type="tel" value={form.phone} onChange={e => setForm(v => ({...v, phone: e.target.value}))} placeholder="(00) 00000-0000" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm placeholder-white/30 focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/30 transition-colors" required />
+                    <input type="tel" value={form.phone} onChange={e => setForm(v => ({ ...v, phone: e.target.value }))} placeholder="(00) 00000-0000" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3.5 text-white text-sm placeholder-white/30 focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/30 transition-colors" required />
                   </div>
                   <button type="submit" disabled={loading} className="w-full py-4 mt-4 rounded-xl text-white font-medium text-lg hover:bg-[#60a5fa] transition-colors shadow-[0_0_20px_rgba(59,130,246,0.3)] bg-[#2563eb] flex items-center justify-center gap-2">
                     {loading ? 'Processando...' : 'Agendar Reunião de Implantação'}
@@ -739,10 +740,9 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-white/30 text-xs font-mono" style={{ fontFamily: 'Geist Mono, monospace' }}>© 2026 <strong className="orbitron text-white">SIGMILITAR</strong>. Todos os direitos reservados. · v.25.05.26.08:31</p>
+              <p className="text-white/30 text-xs font-mono" style={{ fontFamily: 'Geist Mono, monospace' }}>© 2026 <strong className="orbitron text-white">SIGMILITAR</strong>. Todos os direitos reservados.</p>
               <div className="flex items-center gap-4 text-white/30">
                 <Shield className="w-4 h-4" />
-                <span className="text-xs font-mono" style={{ fontFamily: 'Geist Mono, monospace' }}>SECURED BY SUPABASE</span>
               </div>
             </div>
           </div>
