@@ -217,7 +217,7 @@ export default function OcorrenciaForm({ mode, id }: OcorrenciaFormProps) {
 
       const payload: Omit<Ocorrencia, 'id'> = {
         school_id: activeSchoolContext,
-        data_notificacao,
+        data_notificacao: dataNotificacao,
         municipio: municipio.trim(),
         uf,
         escola_nome: escolaNome.trim(),
