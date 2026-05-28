@@ -254,3 +254,111 @@ export const INITIAL_OCCURRENCES: Occurrence[] = [
 
 export const INITIAL_ACCIDENTS: Accident[] = [];
 export const INITIAL_PRAISES: Praise[] = [];
+
+// --- MÓDULO PSICOSSOCIAL ---
+export interface OcorrenciaEstudante {
+  nome: string;
+  serie: string;
+  turma: string;
+  idade: number;
+  situacao: string;
+}
+
+export interface OcorrenciaResponsavel {
+  nome: string;
+  telefone: string;
+  parentesco: string;
+}
+
+export interface OcorrenciaTestemunha {
+  nome: string;
+}
+
+export interface Ocorrencia {
+  id: string;
+  school_id: string;
+  data_notificacao: string;
+  municipio?: string;
+  uf?: string;
+  escola_nome?: string;
+  estudantes: OcorrenciaEstudante[];
+  responsaveis: OcorrenciaResponsavel[];
+  tipos_violencia: string[];
+  relato: string;
+  testemunhas?: OcorrenciaTestemunha[];
+  procedimento_executado?: string;
+  responsaveis_acionados?: string;
+  motivo_nao_acionamento?: string;
+  conversa_registrada_ata: boolean;
+  responsaveis_concordaram: boolean;
+  motivo_discordancia?: string;
+  orientados_bo: boolean;
+  motivo_sem_bo?: string;
+  historico_estudante: boolean;
+  historico_descricao?: string;
+  quem_preencheu?: string;
+  assinatura_gestao?: string;
+  status: 'aberto' | 'em_acompanhamento' | 'encerrado';
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+}
+
+export interface FichaNotificacao {
+  id: string;
+  school_id: string;
+  ocorrencia_id?: string;
+  data_notificacao: string;
+  municipio_notificacao?: string;
+  uf?: string;
+  escola_nome?: string;
+  endereco_escola?: string;
+  nome_estudante: string;
+  data_nascimento?: string;
+  idade?: number;
+  sexo?: string;
+  cartao_sus?: string;
+  escolaridade?: string;
+  deficiencia?: string;
+  responsaveis?: OcorrenciaResponsavel[];
+  endereco_responsavel?: string;
+  telefone?: string;
+  cep?: string;
+  tipo_violacao: string[];
+  informacoes_complementares?: string;
+  nome_diretor?: string;
+  assinatura_diretor?: string;
+  ficha_enviada_em?: string;
+  ficha_enviada_para?: string[];
+  created_at?: string;
+  created_by?: string;
+}
+
+export interface Acompanhamento {
+  id: string;
+  school_id: string;
+  ocorrencia_id: string;
+  data_registro: string;
+  descricao: string;
+  tipo_acao?: string;
+  responsavel?: string;
+  created_by?: string;
+  created_at?: string;
+}
+
+export interface AgendaPreventiva {
+  id: string;
+  school_id: string;
+  titulo: string;
+  descricao?: string;
+  tematica?: string;
+  eixo?: 'prevencao' | 'acao_intervencao' | 'pos_violencia';
+  data_inicio?: string;
+  data_fim?: string;
+  periodicidade?: string;
+  publico_alvo?: string;
+  status: 'planejado' | 'em_andamento' | 'realizado' | 'cancelado';
+  created_by?: string;
+  created_at?: string;
+}
+

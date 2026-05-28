@@ -14,7 +14,7 @@ import {
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   ChevronDown, ChevronRight,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
-  Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle,
+  Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle, Heart,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -75,10 +75,23 @@ const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
       { href: '/pedagogico/clima-escolar', label: '5. Clima Escolar', icon: Activity },
     ],
   },
+  {
+    label: 'Psicossocial', icon: Heart,
+    children: [
+      { href: '/psicossocial', label: 'Dashboard Psicossocial', icon: LayoutDashboard },
+      { href: '/psicossocial/ocorrencias', label: 'Registro de Ocorrências', icon: AlertTriangle },
+      { href: '/psicossocial/notificacoes', label: 'Notificação de Violação', icon: FileText },
+      { href: '/psicossocial/agenda', label: 'Agenda Preventiva', icon: Clock },
+      { href: '/psicossocial/relatorios', label: 'Relatórios', icon: BarChart },
+    ],
+  },
 ];
 
 function isRouteAllowed(href: string, role: string, permissions?: Record<string, Record<string, boolean>>): boolean {
   if (role === 'admin_global') return true;
+  if (href.startsWith('/psicossocial')) {
+    return role === 'admin_global' || role === 'GESTOR' || role === 'COORD';
+  }
   if (!permissions || !permissions[role]) return true;
 
   const mapping: Record<string, string> = {
