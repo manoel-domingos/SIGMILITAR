@@ -293,7 +293,7 @@ export default function OscarPage() {
                 <p className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono">
                   {scoreMetrics.processosObtida} <span className="text-xs text-slate-400 font-normal">/ {scoreMetrics.processosMaxima} pts</span>
                 </p>
-                <ProgressBar value={(scoreMetrics.processosObtida / scoreMetrics.processosMaxima) * 100} size="xs" showText={true} />
+                <ProgressBar value={(scoreMetrics.processosObtida / scoreMetrics.processosMaxima) * 100} size="sm" showText={true} />
               </div>
 
               {/* Resultados */}
@@ -305,7 +305,7 @@ export default function OscarPage() {
                 <p className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono">
                   {scoreMetrics.resultadosObtida} <span className="text-xs text-slate-400 font-normal">/ {scoreMetrics.resultadosMaxima} pts</span>
                 </p>
-                <ProgressBar value={(scoreMetrics.resultadosObtida / scoreMetrics.resultadosMaxima) * 100} size="xs" showText={true} />
+                <ProgressBar value={(scoreMetrics.resultadosObtida / scoreMetrics.resultadosMaxima) * 100} size="sm" showText={true} />
               </div>
             </div>
           </div>
@@ -393,7 +393,7 @@ export default function OscarPage() {
                             <span>Conformidade</span>
                             <span>{bd.percentual}%</span>
                           </div>
-                          <ProgressBar value={bd.percentual} size="xs" showText={false} />
+                          <ProgressBar value={bd.percentual} size="sm" showText={false} />
                         </div>
                       </td>
                       <td className="p-4 pr-6 text-right">
@@ -471,7 +471,7 @@ export default function OscarPage() {
                       <span>Conformidade</span>
                       <span>{bd.percentual}%</span>
                     </div>
-                    <ProgressBar value={bd.percentual} size="xs" showText={false} />
+                    <ProgressBar value={bd.percentual} size="sm" showText={false} />
                   </div>
 
                   <button
