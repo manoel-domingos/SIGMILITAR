@@ -323,6 +323,22 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    if (!pathname) return;
+    const cleanPath = pathname.toLowerCase();
+    const isPedagogico = cleanPath.includes('/pedagogico') || cleanPath.includes('/psicossocial');
+    if (isPedagogico) {
+      if (activePanelModule !== 'pedagogico') {
+        setActivePanelModule('pedagogico');
+      }
+    } else {
+      if (activePanelModule !== 'civico-militar') {
+        setActivePanelModule('civico-militar');
+      }
+    }
+  }, [pathname, activePanelModule, setActivePanelModule]);
+
+
+  useEffect(() => {
     const initStorage = () => {
       const storedTheme = localStorage.getItem('theme');
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;

@@ -13,6 +13,7 @@ import {
   GraduationCap, ClipboardCheck, Award, Info
 } from 'lucide-react';
 import Link from 'next/link';
+import { getDbSchoolId } from '@/lib/useTenantConfig';
 
 export default function FasePage() {
   const router = useRouter();
@@ -33,6 +34,8 @@ export default function FasePage() {
   const [checklistData, setChecklistData] = useState<any[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
 
+  const resolvedSchoolId = getDbSchoolId(schoolSlug);
+
   // Resolve Axis and Phase
   const rawEixo = MEG_EIXOS.find(e => e.slug === eixoSlug);
   const eixo = rawEixo ? {
@@ -43,7 +46,7 @@ export default function FasePage() {
   const fase = MEG_FASES.find(f => f.slug === faseSlug);
 
   // Mapped school name
-  const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
+  const currentSchool = contextSchools.find(s => s.id === resolvedSchoolId);
   const schoolName = currentSchool?.name || 'EECM';
 
   // Filter static evidences belonging to this eixo and fase
@@ -54,11 +57,11 @@ export default function FasePage() {
   // Fetch school checklist records
   const fetchChecklist = async () => {
     try {
-      if (!activeSchoolContext) return;
+      if (!resolvedSchoolId) return;
       const { data, error } = await supabase
         .from('meg_checklist')
         .select('*')
-        .eq('school_id', activeSchoolContext);
+        .eq('school_id', resolvedSchoolId);
 
       if (error) throw error;
       setChecklistData(data || []);
@@ -77,7 +80,7 @@ export default function FasePage() {
     }
 
     initFetch();
-  }, [activeSchoolContext, isAuthRestored, eixo, fase]);
+  }, [resolvedSchoolId, isAuthRestored, eixo, fase]);
 
   // Determine read-only state based on approved roles: admin_global, GESTOR, and COORD are allowed to write/edit
   const isReadonly = 
@@ -222,7 +225,7 @@ export default function FasePage() {
                   key={ev.id}
                   evidencia={ev}
                   checklist={check}
-                  schoolId={activeSchoolContext}
+                  schoolId={resolvedSchoolId}
                   eixoNome={eixo!.nome}
                   faseNome={fase!.nome}
                   currentUser={user}

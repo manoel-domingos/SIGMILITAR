@@ -12,6 +12,7 @@ import {
   HelpCircle, AlertTriangle, CheckCircle, BookOpen 
 } from 'lucide-react';
 import Link from 'next/link';
+import { getDbSchoolId } from '@/lib/useTenantConfig';
 
 export default function EixoPage() {
   const router = useRouter();
@@ -29,6 +30,8 @@ export default function EixoPage() {
   const [checklistData, setChecklistData] = useState<any[]>([]);
   const [faseMetrics, setFaseMetrics] = useState<Record<string, { percent: number; status: string; completed: number; total: number }>>({});
 
+  const resolvedSchoolId = getDbSchoolId(schoolSlug);
+
   // Resolve active Eixo
   const rawEixo = MEG_EIXOS.find(e => e.slug === eixoSlug);
   const eixo = rawEixo ? {
@@ -38,7 +41,7 @@ export default function EixoPage() {
   } : null;
 
   // Mapped school name
-  const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
+  const currentSchool = contextSchools.find(s => s.id === resolvedSchoolId);
   const schoolName = currentSchool?.name || 'EECM';
 
   // Fetch checklist records
@@ -51,7 +54,7 @@ export default function EixoPage() {
         const { data, error } = await supabase
           .from('meg_checklist')
           .select('*')
-          .eq('school_id', activeSchoolContext);
+          .eq('school_id', resolvedSchoolId);
 
         if (error) throw error;
         setChecklistData(data || []);
@@ -63,7 +66,7 @@ export default function EixoPage() {
     }
 
     fetchChecklist();
-  }, [activeSchoolContext, isAuthRestored, eixo]);
+  }, [resolvedSchoolId, isAuthRestored, eixo]);
 
   // Calculate metrics for each of the 5 phases
   useEffect(() => {

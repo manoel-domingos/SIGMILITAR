@@ -14,6 +14,7 @@ import {
   GraduationCap, ClipboardCheck, Award, Info, RefreshCw, Clipboard, ListTodo
 } from 'lucide-react';
 import Link from 'next/link';
+import { getDbSchoolId } from '@/lib/useTenantConfig';
 
 export default function OscarPage() {
   const router = useRouter();
@@ -37,21 +38,23 @@ export default function OscarPage() {
   const [activeChecklistEixoNome, setActiveChecklistEixoNome] = useState<string>('');
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
 
+  const resolvedSchoolId = getDbSchoolId(schoolSlug);
+
   // Mapped school name
-  const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
+  const currentSchool = contextSchools.find(s => s.id === resolvedSchoolId);
   const schoolName = currentSchool?.name || 'EECM';
 
   // Fetch checklist (processos) and avaliacoes (resultados) records
   const fetchAllData = async () => {
     try {
-      if (!activeSchoolContext) return;
+      if (!resolvedSchoolId) return;
       setLoading(true);
 
       // 1. Fetch checklist items
       const { data: checks, error: err1 } = await supabase
         .from('meg_checklist')
         .select('*')
-        .eq('school_id', activeSchoolContext);
+        .eq('school_id', resolvedSchoolId);
       if (err1) throw err1;
       setChecklistData(checks || []);
 
@@ -59,7 +62,7 @@ export default function OscarPage() {
       const { data: res, error: err2 } = await supabase
         .from('meg_avaliacao_resultados')
         .select('*')
-        .eq('school_id', activeSchoolContext);
+        .eq('school_id', resolvedSchoolId);
       if (err2) throw err2;
       setResultadosData(res || []);
 
@@ -73,7 +76,7 @@ export default function OscarPage() {
   useEffect(() => {
     if (!isAuthRestored) return;
     fetchAllData();
-  }, [activeSchoolContext, isAuthRestored]);
+  }, [resolvedSchoolId, isAuthRestored]);
 
   const isReadonly = 
     currentUserRole !== 'admin_global' && 
@@ -518,7 +521,7 @@ export default function OscarPage() {
             <div className="p-6 overflow-y-auto flex-1">
               <MegChecklist
                 eixoId={activeChecklistEixo}
-                schoolId={activeSchoolContext}
+                schoolId={resolvedSchoolId}
                 readonly={isReadonly}
                 onSaveSuccess={(msg) => {
                   showToast(msg, 'ok');

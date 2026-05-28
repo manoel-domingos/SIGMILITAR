@@ -13,6 +13,8 @@ import {
   TrendingUp, Award, Calendar, BookOpen 
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTenantConfig, getLinkHref, getDbSchoolId } from '@/lib/useTenantConfig';
+import { usePathname } from 'next/navigation';
 
 export default function PedagogicoDashboard() {
   const router = useRouter();
@@ -32,8 +34,10 @@ export default function PedagogicoDashboard() {
   const [progressByEixo, setProgressByEixo] = useState<Record<string, number>>({});
   const [overallProgress, setOverallProgress] = useState<number>(0);
 
+  const resolvedSchoolId = getDbSchoolId(schoolSlug);
+
   // Mapped school name
-  const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
+  const currentSchool = contextSchools.find(s => s.id === resolvedSchoolId);
   const schoolName = currentSchool?.name || 'EECM';
 
   // Fetch checklist records
@@ -46,7 +50,7 @@ export default function PedagogicoDashboard() {
         const { data, error } = await supabase
           .from('meg_checklist')
           .select('*')
-          .eq('school_id', activeSchoolContext);
+          .eq('school_id', resolvedSchoolId);
 
         if (error) throw error;
         setChecklistData(data || []);
@@ -58,7 +62,7 @@ export default function PedagogicoDashboard() {
     }
 
     fetchChecklist();
-  }, [activeSchoolContext, isAuthRestored]);
+  }, [resolvedSchoolId, isAuthRestored]);
 
   // Calculate percentages and metrics
   useEffect(() => {
