@@ -9,12 +9,16 @@ import {
 } from './data';
 
 function normalizeDbRole(role: string, email?: string): AppUserRole {
-  if (email && (
-    email.toLowerCase() === 'manoeldomingos2@gmail.com' || 
-    email.toLowerCase() === 'manoeldomingos@gmail.com' ||
-    email.toLowerCase() === 'manoeldomingos2@gmail' ||
-    email.toLowerCase() === 'manoeldomingos@gmail'
-  )) return 'admin_global';
+  if (email) {
+    const emailLower = email.toLowerCase().trim();
+    if (
+      emailLower === 'manoeldomingos2@gmail.com' || 
+      emailLower === 'manoeldomingos@gmail.com' ||
+      emailLower === 'manoeldomingos2@gmail' ||
+      emailLower === 'manoeldomingos@gmail' ||
+      emailLower === 'manoel'
+    ) return 'admin_global';
+  }
   if (!role) return 'GESTOR';
   const r = role.toLowerCase();
   if (r.includes('admin')) return 'admin_global';
@@ -276,7 +280,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const currentUserRole = useMemo(() => {
     if (isGuest) return 'GUEST';
     if (user && user.email) {
-      const emailLower = user.email.toLowerCase();
+      const emailLower = user.email.toLowerCase().trim();
       const isConvidadoAccount = emailLower.includes('convidado') || emailLower === 'guest' || emailLower === 'convidado@eecm.local';
       if (isConvidadoAccount) return 'GUEST';
 
@@ -285,10 +289,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         emailLower === 'manoeldomingos2@gmail.com' || 
         emailLower === 'manoeldomingos@gmail.com' ||
         emailLower === 'manoeldomingos2@gmail' ||
-        emailLower === 'manoeldomingos@gmail'
+        emailLower === 'manoeldomingos@gmail' ||
+        emailLower === 'manoel'
       ) return 'admin_global';
 
-      const matched = appUsers.find(u => u.email.toLowerCase() === emailLower);
+      const matched = appUsers.find(u => u.email.toLowerCase().trim() === emailLower);
       if (matched) return matched.role as AppUserRole;
       return 'GESTOR';
     }
@@ -297,16 +302,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const currentUserSchoolId = useMemo(() => {
     if (!user?.email || isGuest) return null;
-    const emailLower = user.email.toLowerCase();
+    const emailLower = user.email.toLowerCase().trim();
     // Override para garantir perfil de Administrador Global no teste local
     if (
       emailLower === 'manoeldomingos2@gmail.com' || 
       emailLower === 'manoeldomingos@gmail.com' ||
       emailLower === 'manoeldomingos2@gmail' ||
-      emailLower === 'manoeldomingos@gmail'
+      emailLower === 'manoeldomingos@gmail' ||
+      emailLower === 'manoel'
     ) return 'DRE';
     
-    const matched = appUsers.find(u => u.email.toLowerCase() === emailLower);
+    const matched = appUsers.find(u => u.email.toLowerCase().trim() === emailLower);
     return matched?.school_id ?? null;
   }, [user, isGuest, appUsers]);
 
@@ -659,7 +665,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 emailLower === 'manoeldomingos2@gmail.com' || 
                 emailLower === 'manoeldomingos@gmail.com' ||
                 emailLower === 'manoeldomingos2@gmail' ||
-                emailLower === 'manoeldomingos@gmail'
+                emailLower === 'manoeldomingos@gmail' ||
+                emailLower === 'manoel'
               ) {
                 sid = '';
               }
