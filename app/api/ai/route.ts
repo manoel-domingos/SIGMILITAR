@@ -278,6 +278,7 @@ export async function POST(req: NextRequest) {
 
   // Modelos nativos DeepSeek — fallback automatico se o primeiro nao responder
   const MODEL_CHAIN = [
+    'deepseek-v4-flash', // DeepSeek-V4-Flash — modelo flash rápido
     'deepseek-chat',    // DeepSeek-V3 — principal, mais rapido
     'deepseek-reasoner', // DeepSeek-R1 — fallback mais robusto
   ];
