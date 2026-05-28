@@ -38,7 +38,7 @@ export default function AgendaPage() {
   const [dataFim, setDataFim] = useState(new Date().toISOString().split('T')[0]);
   const [periodicidade, setPeriodicidade] = useState('eventual');
   const [publicoAlvo, setPublicoAlvo] = useState('todos');
-  const [status, setStatus] = useState('planejado');
+  const [status, setStatus] = useState<AgendaPreventiva['status']>('planejado');
 
   useEffect(() => {
     if (!isAuthRestored) return;
