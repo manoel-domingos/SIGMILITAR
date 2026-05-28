@@ -196,9 +196,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     });
   }, [user]);
 
-  // Abre automaticamente o modal de contexto para admin_global uma vez por sessão
+  // Abre automaticamente o modal de contexto para admin_global, gestores e coordenadores uma vez por sessão
   useEffect(() => {
-    if (currentUserRole !== 'admin_global' || !user) return;
+    if (!user) return;
+    const isAllowed = currentUserRole === 'admin_global' || currentUserRole === 'GESTOR' || currentUserRole === 'COORD';
+    if (!isAllowed) return;
     const key = 'dre_context_chosen_' + new Date().toDateString();
     if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
       openContextModal();
@@ -217,9 +219,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const handleCommonUserContext = (module: 'civico-militar' | 'pedagogico') => {
     setActivePanelModule(module);
     setShowContextModal(false);
-    // Mantém o school context do usuário, apenas muda o módulo
-    // Por ora, ambos os módulos apontam para a rota base da escola
-    // quando 'pedagogico' for criado, mudar para `/{slug}/pedagogico`
+    const key = 'dre_context_chosen_' + new Date().toDateString();
+    if (typeof window !== 'undefined') sessionStorage.setItem(key, 'common_' + module);
+
+    const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
+    if (slug) {
+      router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
+    }
   };
 
   const handleAdminSelection = (schoolId: string, module: 'civico-militar' | 'pedagogico') => {
