@@ -2152,12 +2152,5 @@ function NotificationBell() {
       )}
     </div>
   );
-}e="text-[10px] text-slate-400 uppercase tracking-widest font-bold">EECM Monitoramento Escolar</span>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
 }
 
