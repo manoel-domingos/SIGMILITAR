@@ -182,7 +182,7 @@ export default function Dashboard() {
   });
 
   const graveCount = occurrencesWithSeverity.filter(o => o.severity === 'Grave').length;
-  const mediaCount = occurrencesWithSeverity.filter(o => o.severity === 'Media' || o.severity === 'Média').length;
+  const mediaCount = occurrencesWithSeverity.filter(o => (o.severity as string) === 'Media' || (o.severity as string) === 'Média').length;
   const leveCount = occurrencesWithSeverity.filter(o => o.severity === 'Leve').length;
   
   const gravePercent = totalOccurrences > 0 ? Math.round((graveCount / totalOccurrences) * 100) : 0;
