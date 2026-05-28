@@ -26,8 +26,11 @@ function RegistroDisciplinarContent() {
   const { 
     students, occurrences, rules, staffMembers, appUsers, user, isGuest, currentUserRole,
     addOccurrence, updateOccurrence, archiveOccurrence, checkRecidivism, getEscalationStatus,
-    addStudent, updateStudent, addStaffMember, uploadFile, activeSchoolContext
+    addStudent, updateStudent, addStaffMember, uploadFile, activeSchoolContext,
+    contextSchools
   } = useAppContext();
+  const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
+  const schoolName = currentSchool?.name || 'EECM';
   const { grades, classLetters } = useTenantConfig();
   const searchParams = useSearchParams();
 

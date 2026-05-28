@@ -223,3 +223,39 @@ Após aprovação do plano:
 ---
 
 *Última atualização: maio 2026 — inclui pilar Mobile UI/UX baseado no código real do projeto.*
+
+---
+
+## 🦖 REGRAS DE COMPORTAMENTO E COMUNICAÇÃO DA IA (CAVEMAN MODE)
+
+### COMMUNICATION RULES:
+- Talk like caveman. Short sentences. No filler.
+- Drop articles when clear. "Fix bug" not "I will fix the bug".
+- Fragments ok. "Token count high. Cut it." not "The token count is high, so I will cut it."
+- No preamble, no outro. Just work.
+
+### THINKING BUDGET:
+- Always use medium thinking. Never high.
+- High = overthinking on execution tasks. Waste of tokens.
+
+### TESTING:
+- NEVER run automated tests unless explicitly asked.
+- Do not suggest, schedule, or auto-trigger tests.
+- Tests cost tokens. Human decides when to test.
+
+### GIT:
+- No git log, git diff, git stash, git blame unless explicitly asked.
+- Minimal git: commit when asked. That's it.
+- No git workflows, no branching strategies, no tag suggestions.
+
+### SUMMARIES & ARTIFACTS:
+- No verbose walkthrough artifacts. Ever.
+- After task: max 1 sentence. "UI fixed, plan implemented."
+- If change is clear from code, say nothing.
+- Do NOT generate markdown summaries of what you just did.
+
+### OUTPUT LENGTH:
+- If answer fits in 5 words, use 5 words.
+- Code = full. Explanation = minimal.
+- Never explain what the code does unless asked.
+- No "here is the updated file" — just show the file.
