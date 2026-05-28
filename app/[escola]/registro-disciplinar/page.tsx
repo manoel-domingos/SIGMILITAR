@@ -55,11 +55,20 @@ function RegistroDisciplinarContent() {
     appUsers
       .filter(u => u.role === 'PROFESSOR' && (!u.school_id || u.school_id === resolvedSchoolId))
       .forEach(u => {
-        const key = 'Professor ' + u.name;
-        unique.set(key, { value: key, label: key });
+        const name = 'Professor ' + u.name;
+        unique.set(name, { value: name, label: name });
       });
     return Array.from(unique.values());
   }, [appUsers, resolvedSchoolId]);
+
+  // Lista ordenada cronologicamente (do mais antigo para o mais novo) para garantir a numeração estável das ATAs/ocorrências
+  const occurrencesChronological = React.useMemo(() => {
+    return [...occurrences].sort((a, b) => {
+      const dateDiff = a.date.localeCompare(b.date);
+      if (dateDiff !== 0) return dateDiff;
+      return (a.hour || '').localeCompare(b.hour || '');
+    });
+  }, [occurrences]);
   const searchParams = useSearchParams();
 
   const paramMonth = searchParams.get('month');
@@ -662,7 +671,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
     // Usa o número fixo da ATA armazenado no banco; fallback pela posição na lista total
-    const _pIdx = occurrences.findIndex((x: any) => x.id === o.id);
+    const _pIdx = occurrencesChronological.findIndex((x: any) => x.id === o.id);
     const occurrenceNum = o.ataNumber ?? (_pIdx >= 0 ? _pIdx + 1 : '—');
 
     const rule = rules.find(r => r.code === o.ruleCode);
@@ -1275,7 +1284,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
 
   const handleExport = (o: Occurrence) => {
     // Usa o número fixo da ATA armazenado no banco; fallback pela posição na lista total
-    const _eIdx = occurrences.findIndex((x: any) => x.id === o.id);
+    const _eIdx = occurrencesChronological.findIndex((x: any) => x.id === o.id);
     const occurrenceNum = o.ataNumber ?? (_eIdx >= 0 ? _eIdx + 1 : '—');
 
     const relatedStudents = o.studentIds && o.studentIds.length > 0
@@ -1591,7 +1600,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           >
                             <td className="px-4 py-4 text-center">
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
-                                {(() => { const i = occurrences.findIndex((x: any) => x.id === o.id); return o.ataNumber ?? (i >= 0 ? i + 1 : '—'); })()}
+                                {(() => { const i = occurrencesChronological.findIndex((x: any) => x.id === o.id); return o.ataNumber ?? (i >= 0 ? i + 1 : '—'); })()}
                               </span>
                             </td>
                             <td className="px-6 py-4">
