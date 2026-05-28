@@ -162,7 +162,7 @@ export default function Dashboard() {
     const monthIndex = parseInt(o.date.split('-')[1]) - 1; 
     const month = months[monthIndex] || months[defaultDate.getMonth()];
     
-    const student = students.find(s => s.id === o.studentId);
+    const student = students.find(s => String(s.id) === String(o.studentId));
     const className = student?.class || '';
     const shift = student?.shift || '';
 
@@ -182,7 +182,7 @@ export default function Dashboard() {
   });
 
   const graveCount = occurrencesWithSeverity.filter(o => o.severity === 'Grave').length;
-  const mediaCount = occurrencesWithSeverity.filter(o => o.severity === 'Media').length;
+  const mediaCount = occurrencesWithSeverity.filter(o => o.severity === 'Media' || o.severity === 'Média').length;
   const leveCount = occurrencesWithSeverity.filter(o => o.severity === 'Leve').length;
   
   const gravePercent = totalOccurrences > 0 ? Math.round((graveCount / totalOccurrences) * 100) : 0;
@@ -202,6 +202,24 @@ export default function Dashboard() {
     { name: 'Média', value: mediaCount, color: '#f59e0b' }, // yellow
     { name: 'Grave', value: graveCount, color: '#ef4444' } // red
   ];
+
+  // Praise (elogios) filtering
+  const filteredPraises = praises.filter(p => {
+    const defaultDate = new Date(p.date);
+    const monthIndex = parseInt(p.date.split('-')[1]) - 1; 
+    const month = months[monthIndex] || months[defaultDate.getMonth()];
+    
+    const student = students.find(s => String(s.id) === String(p.studentId));
+    const className = student?.class || '';
+    const shift = student?.shift || '';
+
+    const matchMonth = selectedMonth === 'Selecionar...' || selectedMonth === '' || month.toLowerCase() === selectedMonth.toLowerCase();
+    const matchClass = selectedClass === 'Todas as turmas' || selectedClass === '' || className.toLowerCase() === selectedClass.toLowerCase();
+    const matchShift = selectedShift === 'Todos' || shift.toLowerCase() === selectedShift.toLowerCase();
+    const matchYear = p.date.startsWith(selectedYear);
+    
+    return matchMonth && matchClass && matchShift && matchYear;
+  });
 
   // Dummy monthly data for the chart based on occurrences
   const monthlyData = months.map((m, i) => {
@@ -386,7 +404,7 @@ export default function Dashboard() {
         {/* Row 1: KPI Cards */}
         {isVisible('kpis') && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Link 
-            href={'/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
+            href={getLinkHref('/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass), tenantId, rawPathname)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-blue-200/50 dark:border-blue-500/20 bg-blue-50/60 dark:bg-blue-500/5 hover:bg-blue-100/80 dark:hover:bg-blue-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -402,7 +420,7 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            href={'/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&severity=Grave&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
+            href={getLinkHref('/registro-disciplinar?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&severity=Grave&shift=' + (selectedShift === 'Todos' ? '' : selectedShift) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass), tenantId, rawPathname)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-red-200/50 dark:border-red-500/20 bg-red-50/60 dark:bg-red-500/5 hover:bg-red-100/80 dark:hover:bg-red-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -418,7 +436,7 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            href={'/comportamento?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
+            href={getLinkHref('/comportamento?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass), tenantId, rawPathname)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-purple-200/50 dark:border-purple-500/20 bg-purple-50/60 dark:bg-purple-500/5 hover:bg-purple-100/80 dark:hover:bg-purple-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -434,7 +452,7 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            href={'/comportamento?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass)}
+            href={getLinkHref('/comportamento?year=' + selectedYear + '&month=' + (selectedMonth === 'Selecionar...' ? '' : selectedMonth) + '&class=' + (selectedClass === 'Todas as turmas' ? '' : selectedClass), tenantId, rawPathname)}
             className="p-5 flex flex-col justify-between h-36 rounded-2xl border border-emerald-200/50 dark:border-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-500/5 hover:bg-emerald-100/80 dark:hover:bg-emerald-500/15 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md group cursor-pointer"
           >
             <div className="w-9 h-9 bg-white dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center shadow-sm">
@@ -537,7 +555,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Link 
-                href={'/registro-disciplinar?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass}
+                href={getLinkHref('/registro-disciplinar?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass, tenantId, rawPathname)}
                 className="bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-3 py-1.5 rounded-lg text-blue-600 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all hover:bg-blue-100 dark:hover:bg-blue-500/20"
               >
                 Ver tudo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -580,7 +598,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Link 
-                href={'/elogios?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass}
+                href={getLinkHref('/elogios?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass, tenantId, rawPathname)}
                 className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
               >
                 Ver tudo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -589,21 +607,21 @@ export default function Dashboard() {
             
             <div className="grid grid-cols-3 gap-2 flex-1 items-center">
               <div className="bg-slate-50 dark:bg-[#202832] p-3 rounded-xl flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{praises?.length || 0}</span>
+                <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{filteredPraises.length}</span>
                 <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Total</span>
               </div>
               <div className="bg-slate-50 dark:bg-[#1e2a24] p-3 rounded-xl flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">0</span>
+                <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{new Set(filteredPraises.map(p => p.studentId)).size}</span>
                 <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Alunos</span>
               </div>
               <div className="bg-slate-50 dark:bg-[#1f2430] p-3 rounded-xl flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">0</span>
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Média/ST</span>
+                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{students.length > 0 ? (filteredPraises.length / students.length).toFixed(2) : '0'}</span>
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-1">Média/AL</span>
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/60 flex justify-center items-center text-xs">
-              <span className="text-slate-500 dark:text-slate-400">{praises?.length > 0 ? praises.length + ' elogios no per\u00edodo' : 'Nenhum elogio no per\u00edodo'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{filteredPraises.length > 0 ? filteredPraises.length + ' elogios no período' : 'Nenhum elogio no período'}</span>
             </div>
           </div>}
 
@@ -620,7 +638,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Link 
-                href={'/acidentes?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass}
+                href={getLinkHref('/acidentes?year=' + selectedYear + '&month=' + selectedMonth + '&shift=' + selectedShift + '&class=' + selectedClass, tenantId, rawPathname)}
                 className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 px-3 py-1.5 rounded-lg text-orange-600 dark:text-orange-400 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-all hover:bg-orange-100 dark:hover:bg-orange-500/20"
               >
                 Ver tudo <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
@@ -628,7 +646,23 @@ export default function Dashboard() {
             </div>
             
             {(() => {
-              const filteredAccidents = accidents.filter(a => !a.archived && a.date?.startsWith(selectedYear));
+              const filteredAccidents = accidents.filter(a => {
+                if (a.archived) return false;
+                const defaultDate = new Date(a.date);
+                const monthIndex = parseInt(a.date.split('-')[1]) - 1; 
+                const month = months[monthIndex] || months[defaultDate.getMonth()];
+                
+                const student = students.find(s => String(s.id) === String(a.studentId));
+                const className = student?.class || '';
+                const shift = student?.shift || '';
+
+                const matchMonth = selectedMonth === 'Selecionar...' || selectedMonth === '' || month.toLowerCase() === selectedMonth.toLowerCase();
+                const matchClass = selectedClass === 'Todas as turmas' || selectedClass === '' || className.toLowerCase() === selectedClass.toLowerCase();
+                const matchShift = selectedShift === 'Todos' || shift.toLowerCase() === selectedShift.toLowerCase();
+                const matchYear = a.date.startsWith(selectedYear);
+                
+                return matchMonth && matchClass && matchShift && matchYear;
+              });
               const totalAcc = filteredAccidents.length;
               const withColleges = filteredAccidents.filter(a => a.parentsNotified).length;
               const withMedic = filteredAccidents.filter(a => a.medicForwarded).length;

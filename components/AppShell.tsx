@@ -198,7 +198,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Abre automaticamente o modal de contexto para admin_global, gestores e coordenadores uma vez por sessão
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAuthRestored) return;
     const isAllowed = currentUserRole === 'admin_global' || currentUserRole === 'GESTOR' || currentUserRole === 'COORD';
     if (!isAllowed) return;
     
@@ -210,7 +210,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
       openContextModal();
     }
-  }, [currentUserRole, user]);
+  }, [currentUserRole, user, isAuthRestored]);
 
   const chooseContext = (schoolId: string) => {
     setActiveSchoolContext(schoolId);
