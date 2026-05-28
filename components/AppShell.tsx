@@ -201,7 +201,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (!user) return;
     const isAllowed = currentUserRole === 'admin_global' || currentUserRole === 'GESTOR' || currentUserRole === 'COORD';
     if (!isAllowed) return;
-    const key = 'dre_context_chosen_' + new Date().toDateString();
+    
+    const isGlobal = currentUserRole === 'admin_global';
+    const key = isGlobal 
+      ? 'dre_context_chosen_' + new Date().toDateString()
+      : 'module_choice_chosen_' + new Date().toDateString();
+
     if (typeof window !== 'undefined' && !sessionStorage.getItem(key)) {
       openContextModal();
     }
@@ -219,7 +224,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const handleCommonUserContext = (module: 'civico-militar' | 'pedagogico') => {
     setActivePanelModule(module);
     setShowContextModal(false);
-    const key = 'dre_context_chosen_' + new Date().toDateString();
+    const key = 'module_choice_chosen_' + new Date().toDateString();
     if (typeof window !== 'undefined') sessionStorage.setItem(key, 'common_' + module);
 
     const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
