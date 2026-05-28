@@ -474,7 +474,7 @@ export default function AgendaPage() {
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Status</label>
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    onChange={(e) => setStatus(e.target.value as AgendaPreventiva['status'])}
                     className="glass-input w-full text-xs bg-transparent dark:bg-slate-900"
                   >
                     <option value="planejado">Planejado</option>
