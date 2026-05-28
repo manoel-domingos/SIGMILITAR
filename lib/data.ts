@@ -69,6 +69,7 @@ export interface StaffMember {
   id: string;
   name: string;
   role: 'Monitor' | 'Professor' | 'Coord.' | 'Diretora' | 'G1' | 'G2';
+  school_id?: string;
 }
 
 export interface Accident {

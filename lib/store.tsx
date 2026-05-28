@@ -503,7 +503,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
 
           if (staffData) {
-            setStaffMembers(staffData.map((s: any) => ({ id: s.id, name: s.name, role: s.role })));
+            setStaffMembers(staffData.map((s: any) => ({ id: s.id, name: s.name, role: s.role, school_id: s.school_id })));
           }
 
           if (studentsData) {
@@ -1161,12 +1161,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      setStaffMembers(prev => [...prev, { ...s, id: data.id }]);
+      setStaffMembers(prev => [...prev, { ...s, id: data.id, school_id: data.school_id }]);
       logAction('CREATE', 'Membro Equipe', data.id, 'Adicionado membro: ' + s.role + ' ' + s.name);
     } else {
       // Fallback local
       const newId = 'ST' + (staffMembers.length + 1);
-      setStaffMembers(prev => [...prev, { ...s, id: newId }]);
+      const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
+      setStaffMembers(prev => [...prev, { ...s, id: newId, school_id: dbSchoolId }]);
       logAction('CREATE', 'Membro Equipe', newId, 'Adicionado membro: ' + s.role + ' ' + s.name);
     }
   };
@@ -1235,7 +1236,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (summonsData) setSummons(summonsData.map((s: any) => ({...s, studentId: s.student_id, registeredBy: s.registered_by})));
       if (conductTermsData) setConductTerms(conductTermsData.map((t: any) => ({...t, studentId: t.student_id, registeredBy: t.registered_by, guardianName: t.guardian_name})));
       if (auditLogsData) setAuditLogs(auditLogsData.map((l: any) => ({...l, entityName: l.entity_name, entityId: l.entity_id, userEmail: l.user_email})));
-      if (staffData) setStaffMembers(staffData.map((s: any) => ({ id: s.id, name: s.name, role: s.role })));
+      if (staffData) setStaffMembers(staffData.map((s: any) => ({ id: s.id, name: s.name, role: s.role, school_id: s.school_id })));
       
       if (appUsersData && appUsersData.length > 0) {
         setAppUsers(appUsersData

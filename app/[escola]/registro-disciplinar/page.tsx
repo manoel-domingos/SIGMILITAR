@@ -10,9 +10,9 @@ import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS, markdownBo
 import AtaEditor from '@/components/AtaEditor';
 import { getLocalDateString, getLocalTimeString, formatDate, formatPhoneForWhatsApp } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
-import { useTenantConfig } from '@/lib/useTenantConfig';
+import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
 import { ClassSelector } from '@/components/ClassSelector';
 import OccurrenceChecklist, {
   OccurrenceTask,
@@ -32,6 +32,34 @@ function RegistroDisciplinarContent() {
   const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
   const schoolName = currentSchool?.name || 'EECM';
   const { grades, classLetters } = useTenantConfig();
+
+  const params = useParams();
+  const schoolSlug = params?.escola as string;
+  const resolvedSchoolId = getDbSchoolId(schoolSlug);
+
+  // Filtra e de-duplica membros da equipe por school_id
+  const staffOptions = React.useMemo(() => {
+    const unique = new Map<string, { value: string; label: string }>();
+    staffMembers
+      .filter(s => !s.school_id || s.school_id === resolvedSchoolId)
+      .forEach(s => {
+        const key = s.role + ' ' + s.name;
+        unique.set(key, { value: key, label: key });
+      });
+    return Array.from(unique.values());
+  }, [staffMembers, resolvedSchoolId]);
+
+  // Filtra e de-duplica professores por school_id
+  const professorOptions = React.useMemo(() => {
+    const unique = new Map<string, { value: string; label: string }>();
+    appUsers
+      .filter(u => u.role === 'PROFESSOR' && (!u.school_id || u.school_id === resolvedSchoolId))
+      .forEach(u => {
+        const key = 'Professor ' + u.name;
+        unique.set(key, { value: key, label: key });
+      });
+    return Array.from(unique.values());
+  }, [appUsers, resolvedSchoolId]);
   const searchParams = useSearchParams();
 
   const paramMonth = searchParams.get('month');
@@ -1965,7 +1993,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-slate-600 mb-1">Localizado por</label>
                     <SearchableSelect
-                      options={staffMembers.map(s => ({ value: s.role + ' ' + s.name, label: s.role + ' ' + s.name }))}
+                      options={staffOptions}
                       value={locatedBy}
                       onChange={setLocatedBy}
                       placeholder="Quem localizou a infração?"
@@ -1984,9 +2012,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-1">Professor Vinculado</label>
                   <SearchableSelect
-                    options={appUsers
-                      .filter(u => u.role === 'PROFESSOR')
-                      .map(u => ({ value: 'Professor ' + u.name, label: 'Professor ' + u.name }))}
+                    options={professorOptions}
                     value={linkedProfessor}
                     onChange={setLinkedProfessor}
                     placeholder="Professor da aula ou turma?"
