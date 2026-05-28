@@ -2134,7 +2134,7 @@ function NotificationBell() {
                     <div className="space-y-1 pl-1">
                       <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">TL;DR Resumo:</p>
                       <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-                        {u.commits.map((c, i) => <li key={i}>{c}</li>)}
+                        {u.commits.map((c: string, i: number) => <li key={i}>{c}</li>)}
                       </ul>
                     </div>
                   </div>
