@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { MEG_EIXOS, MEG_FASES, MEG_EVIDENCIAS } from '@/lib/meg-data';
+import { MEG_EIXOS, MEG_FASES, MEG_EVIDENCIAS, MEG_AXIS_CONFIGS } from '@/lib/meg-data';
 import EvidenciaItem from '@/components/meg/EvidenciaItem';
 import ProgressBar from '@/components/meg/ProgressBar';
 import { supabase } from '@/lib/supabase';
@@ -34,7 +34,12 @@ export default function FasePage() {
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
 
   // Resolve Axis and Phase
-  const eixo = MEG_EIXOS.find(e => e.slug === eixoSlug);
+  const rawEixo = MEG_EIXOS.find(e => e.slug === eixoSlug);
+  const eixo = rawEixo ? {
+    ...rawEixo,
+    nome: MEG_AXIS_CONFIGS[rawEixo.id]?.nome || rawEixo.nome,
+    numero: MEG_AXIS_CONFIGS[rawEixo.id]?.numero || rawEixo.numero
+  } : null;
   const fase = MEG_FASES.find(f => f.slug === faseSlug);
 
   // Mapped school name

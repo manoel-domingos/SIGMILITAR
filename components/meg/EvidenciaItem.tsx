@@ -4,9 +4,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   CheckCircle, AlertTriangle, HelpCircle, Loader2, Paperclip, 
-  Trash2, FileText, ExternalLink, RefreshCw 
+  Trash2, FileText, ExternalLink, RefreshCw, X
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { EVIDENCIA_FORM_MAP } from '@/lib/meg-data';
+import MegFormulario from './MegFormulario';
 
 interface EvidenciaItemProps {
   evidencia: {
@@ -48,7 +50,10 @@ export default function EvidenciaItem({
   
   const [loading, setLoading] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [showFormModal, setShowFormModal] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const formConfig = EVIDENCIA_FORM_MAP[evidencia.id];
 
   // Sync state when props change
   useEffect(() => {
@@ -353,6 +358,17 @@ export default function EvidenciaItem({
 
           {/* Attachment Management */}
           <div className="flex items-center gap-2">
+            {formConfig && (
+              <button
+                onClick={() => setShowFormModal(true)}
+                className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:hover:bg-blue-500/30 px-3 py-1.5 rounded-lg transition font-bold text-blue-600 dark:text-blue-400 border border-blue-500/20 active:scale-95 text-[10px]"
+                title="Preencher Formulário Digital Regulamentar"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Preencher Formulário
+              </button>
+            )}
+
             {arquivoUrl ? (
               <div className="flex items-center gap-1.5 bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-lg">
                 <FileText className="w-3.5 h-3.5 text-blue-500" />
@@ -412,6 +428,42 @@ export default function EvidenciaItem({
           </div>
         </div>
       </div>
+
+      {/* Dynamic Form Modal */}
+      {showFormModal && formConfig && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowFormModal(false); }}
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl">
+              <div>
+                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Formulário Digital Regulamentar</span>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight mt-0.5">{formConfig.label}</h3>
+              </div>
+              <button 
+                onClick={() => setShowFormModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              <MegFormulario
+                tipo={formConfig.tipo}
+                evidenciaId={evidencia.id}
+                schoolId={schoolId}
+                readonly={readonly}
+                onClose={() => setShowFormModal(false)}
+                onSaveSuccess={(msg) => {
+                  onSaveSuccess(msg);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

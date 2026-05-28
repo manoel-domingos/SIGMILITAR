@@ -172,7 +172,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [currentUserRole, permissions, activePanelModule]);
 
   // Modal de seleção de contexto — estado vive no store
-  const { showContextModal, setShowContextModal, contextSchools, activePanelModule, setActivePanelModule } = useAppContext();
+  const { showContextModal, setShowContextModal, contextSchools, setActivePanelModule } = useAppContext();
   const [expandedSchool, setExpandedSchool] = useState<string | null>(null);
   // Lista de escolas para o título dinâmico no header
   const [schools, setSchools] = useState<{id: string; name: string}[]>([]);
