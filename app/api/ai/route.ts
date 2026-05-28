@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
                 { role: 'system', content: system },
                 { role: 'user', content: user },
               ],
-              temperature: cfg.temperature,
+              temperature: model === 'deepseek-reasoner' ? undefined : cfg.temperature,
               stream: true,
             },
             { signal: abort.signal }
