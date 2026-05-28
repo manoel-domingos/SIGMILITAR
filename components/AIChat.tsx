@@ -70,7 +70,7 @@ export async function streamAI(
 
   const logId = addLog({
     type,
-    model: 'deepseek-v4-flash',
+    model: 'deepseek-v4-pro',
     httpStatus: null,
     input: inputSummary,
     output: '',
@@ -370,7 +370,7 @@ export default function AIChat() {
               <div>
                 <p className="text-sm font-bold leading-none">ARIA</p>
                 <p className="text-[10px] text-blue-200 leading-none mt-0.5">
-                  deepseek-v4-flash
+                  deepseek-v4-pro
                   {streamingCount > 0 && <span className="ml-1 text-amber-300 animate-pulse">· processando...</span>}
                 </p>
               </div>
