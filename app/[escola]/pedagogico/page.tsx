@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { MEG_EIXOS, MEG_EVIDENCIAS } from '@/lib/meg-data';
+import { MEG_EIXOS, MEG_EVIDENCIAS, MEG_AXIS_CONFIGS } from '@/lib/meg-data';
 import EixoCard from '@/components/meg/EixoCard';
 import ProgressBar from '@/components/meg/ProgressBar';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +12,7 @@ import {
   GraduationCap, ClipboardCheck, AlertTriangle, ShieldCheck, 
   TrendingUp, Award, Calendar, BookOpen 
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function PedagogicoDashboard() {
   const router = useRouter();
@@ -128,11 +129,11 @@ export default function PedagogicoDashboard() {
     <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
       
       {/* Premium Gradient Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-blue-700 p-6 sm:p-8 text-white shadow-lg border border-blue-500/20 dark:border-slate-800">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-blue-700 p-6 sm:p-8 text-white shadow-lg border border-blue-500/20 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         
-        <div className="relative z-10 space-y-4 max-w-4xl">
+        <div className="relative z-10 space-y-4 max-w-3xl">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-wide">
             <GraduationCap className="w-4 h-4 text-cyan-300" />
             MEG EDUCAÇÃO — SEDUC-MT
@@ -147,6 +148,14 @@ export default function PedagogicoDashboard() {
             </p>
           </div>
         </div>
+
+        <Link
+          href={`/${schoolSlug}/pedagogico/oscar`}
+          className="relative z-10 bg-white text-blue-700 hover:bg-blue-50 active:scale-95 px-5 py-3 rounded-2xl text-sm font-extrabold shadow-lg transition flex items-center justify-center gap-2 shrink-0 self-start md:self-auto border border-white/20 active:scale-95"
+        >
+          <Award className="w-4 h-4 text-amber-500" />
+          Oscar da Educação 🏆
+        </Link>
       </div>
 
       {/* KPI Cards Panel */}
@@ -229,6 +238,7 @@ export default function PedagogicoDashboard() {
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4 pt-4 border-t border-slate-100 dark:border-slate-700/30">
           {MEG_EIXOS.map(e => {
             const pct = Math.round(progressByEixo[e.id] || 0);
+            const eixoConfig = MEG_AXIS_CONFIGS[e.id] || { nome: e.nome, numero: e.numero };
             
             // Determine tiny color
             let barColor = 'bg-rose-500';
@@ -238,8 +248,8 @@ export default function PedagogicoDashboard() {
             return (
               <div key={e.id} className="space-y-1.5 min-w-0">
                 <div className="flex justify-between gap-2 text-[10px] sm:text-xs">
-                  <span className="text-slate-500 dark:text-slate-400 truncate font-semibold" title={e.nome}>
-                    Eixo {e.numero}
+                  <span className="text-slate-500 dark:text-slate-400 truncate font-semibold" title={eixoConfig.nome}>
+                    Eixo {eixoConfig.numero}
                   </span>
                   <span className="font-extrabold text-slate-700 dark:text-slate-200 font-mono">{pct}%</span>
                 </div>
@@ -265,14 +275,21 @@ export default function PedagogicoDashboard() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MEG_EIXOS.map(e => (
-            <EixoCard
-              key={e.id}
-              eixo={e}
-              progresso={progressByEixo[e.id] || 0}
-              onClick={() => handleEixoClick(e.slug)}
-            />
-          ))}
+          {MEG_EIXOS.map(e => {
+            const eixoConfig = MEG_AXIS_CONFIGS[e.id] || { nome: e.nome, numero: e.numero };
+            return (
+              <EixoCard
+                key={e.id}
+                eixo={{
+                  ...e,
+                  nome: eixoConfig.nome,
+                  numero: eixoConfig.numero
+                }}
+                progresso={progressByEixo[e.id] || 0}
+                onClick={() => handleEixoClick(e.slug)}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

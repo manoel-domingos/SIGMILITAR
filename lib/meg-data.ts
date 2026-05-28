@@ -324,3 +324,76 @@ export const MEG_EVIDENCIAS: MegEvidencia[] = [
     ordem: 1
   }
 ];
+
+export const EVIDENCIA_FORM_MAP: Record<string, { tipo: string; label: string }> = {
+  // Eixo 4 - Patrimonio (Gestão de Recursos e Patrimônio) -> Eixo 1: Patrimônio Mobiliário e Imobiliário
+  'e4_f5_1': { tipo: 'cronograma_patrimonial', label: 'Cronograma Patrimonial' },
+  'e4_f1_2': { tipo: 'dfd_pcr', label: 'Documento de Formalização de Demanda (DFD)' },
+  'e4_f2_1': { tipo: 'ficha_cadastral_imovel', label: 'Ficha Cadastral Imobiliária' },
+  'e4_f2_2': { tipo: 'checklist_tti', label: 'Checklist de Transferência Interna (TTI)' },
+
+  // Eixo 2 - Liderança (Gestão de Pessoas e Liderança) -> Eixo 2: Alimentação Escolar
+  'e2_f1_1': { tipo: 'lancamento_nota_fiscal', label: 'Lançamento de Nota Fiscal no GPO' },
+  'e2_f2_1': { tipo: 'relatorio_ean', label: 'Relatório de Ações de Educação Alimentar (EAN)' },
+  'e2_f5_1': { tipo: 'pesquisa_satisfacao_alimentacao', label: 'Pesquisa de Satisfação da Alimentação' },
+
+  // Eixo 3 - Pedagogico (Gestão de Processos Pedagógicos) -> Eixo 3: Limpeza e Organização
+  'e3_f1_1': { tipo: 'controle_recursos_limpeza', label: 'Controle de Recursos de Limpeza' },
+  'e3_f2_1': { tipo: 'cronograma_verificacao_limpeza', label: 'Cronograma de Verificação de Limpeza' },
+  'e3_f3_1': { tipo: 'registro_ocorrencia_limpeza', label: 'Registro de Ocorrências de Limpeza' },
+  'e3_f5_1': { tipo: 'pesquisa_percepcao_limpeza', label: 'Pesquisa de Percepção de Limpeza' },
+
+  // Eixo 1 - Gestão Escolar (Planejamento Estratégico e Gestão Escolar) -> Eixo 4: Manutenção e Conservação
+  'e1_f1_1': { tipo: 'cronograma_inspecoes', label: 'Cronograma de Inspeções Prediais' },
+  'e1_f2_1': { tipo: 'checklist_intervencoes', label: 'Checklist de Intervenções' },
+  'e1_f4_1': { tipo: 'justificativa_pendencias', label: 'Justificativa de Pendências' },
+
+  // Eixo 5 - Clima Escolar (Gestão de Resultados e Clima Escolar) -> Eixo 5: Gestão Escolar e Pedagógica
+  'e5_f3_1': { tipo: 'indicadores_busca_ativa', label: 'Indicadores de Busca Ativa' },
+  'e5_f5_1': { tipo: 'gestao_financeira', label: 'Gestão Financeira (PDDE e Recursos)' }
+};
+
+export const MEG_AXIS_CONFIGS: Record<string, {
+  nome: string;
+  maxProcessos: number;
+  maxResultados: number;
+  slug: string;
+  numero: number;
+}> = {
+  'patrimonio': {
+    nome: 'Patrimônio Mobiliário e Imobiliário',
+    maxProcessos: 75,
+    maxResultados: 110,
+    slug: 'patrimonio',
+    numero: 1
+  },
+  'lideranca': {
+    nome: 'Alimentação Escolar',
+    maxProcessos: 75,
+    maxResultados: 110,
+    slug: 'lideranca',
+    numero: 2
+  },
+  'pedagogico': {
+    nome: 'Limpeza e Organização',
+    maxProcessos: 75,
+    maxResultados: 110,
+    slug: 'pedagogico',
+    numero: 3
+  },
+  'gestao-escolar': {
+    nome: 'Manutenção e Conservação',
+    maxProcessos: 75,
+    maxResultados: 110,
+    slug: 'gestao-escolar',
+    numero: 4
+  },
+  'clima-escolar': {
+    nome: 'Gestão Escolar e Pedagógica',
+    maxProcessos: 100,
+    maxResultados: 160,
+    slug: 'clima-escolar',
+    numero: 5
+  }
+};
+
