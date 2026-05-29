@@ -660,9 +660,67 @@ function TabStatus() {
 
 // ─── Tab: Assistente ARIA ────────────────────────────────────────────────────
 function TabAria() {
+  const [model, setModel] = useState('deepseek-v4-pro');
+  const [apiKey, setApiKey] = useState('');
+  const [apiUrl, setApiUrl] = useState('https://api.deepseek.com');
+  const [showKey, setShowKey] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ t: 'ok' | 'err'; m: string } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedModel = localStorage.getItem('aria_active_model') || 'deepseek-v4-pro';
+      const savedKey = localStorage.getItem('aria_api_key') || '';
+      const savedUrl = localStorage.getItem('aria_api_url') || 'https://api.deepseek.com';
+      setModel(savedModel);
+      setApiKey(savedKey);
+      setApiUrl(savedUrl);
+    }
+  }, []);
+
+  const handleSaveAndTest = async () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aria_active_model', model);
+      localStorage.setItem('aria_api_key', apiKey);
+      localStorage.setItem('aria_api_url', apiUrl);
+    }
+
+    setTesting(true);
+    setTestResult(null);
+
+    try {
+      const { streamAI } = await import('@/components/AIChat');
+      const response = await streamAI('chat', { message: 'Diga exatamente: "Conexão OK!"' }, () => {});
+      
+      if (response && response.toLowerCase().includes('ok')) {
+        setTestResult({ t: 'ok', m: `Sucesso! Resposta da IA: "${response}"` });
+      } else if (response) {
+        setTestResult({ t: 'ok', m: `Sucesso! Resposta da IA: "${response}"` });
+      } else {
+        throw new Error('Nenhum dado retornado.');
+      }
+    } catch (err: any) {
+      setTestResult({ t: 'err', m: `Falha na conexão: ${err.message || err}` });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const getModelLabel = (m: string) => {
+    switch(m) {
+      case 'deepseek-v4-pro': return 'DeepSeek V4 Pro';
+      case 'deepseek-v4-flash': return 'DeepSeek V4 Flash';
+      case 'gemini-1.5-pro': return 'Gemini 1.5 Pro';
+      case 'gemini-1.5-flash': return 'Gemini 1.5 Flash';
+      case 'gemini-2.0-flash': return 'Gemini 2.0 Flash';
+      case 'gpt-4o': return 'GPT-4o';
+      default: return m;
+    }
+  };
+
   const stats = [
-    { label: 'Modelo ativo',       value: 'GPT-4o / Claude 3.5', icon: Brain,        color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
-    { label: 'Gateway',            value: 'Vercel AI Gateway',    icon: Zap,          color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: 'Modelo ativo',       value: getModelLabel(model), icon: Brain,        color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
+    { label: 'Gateway / API Base', value: apiUrl.replace('https://', '').replace('http://', ''),    icon: Zap,          color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
     { label: 'Conversas (sessao)', value: '—',                    icon: MessageSquare, color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'Latencia media',     value: '~1.2s',                icon: Activity,     color: 'text-emerald-500',bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
     { label: 'Tokens (estimado)',  value: '—',                    icon: BarChart2,    color: 'text-rose-500',   bg: 'bg-rose-50 dark:bg-rose-900/20' },
@@ -682,7 +740,7 @@ function TabAria() {
       {/* Cards de status */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {stats.map(s => (
-          <div key={s.label} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 flex items-center gap-3">
+          <div key={s.label} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 flex items-center gap-3 animate-in fade-in duration-200">
             <div className={`w-9 h-9 ${s.bg} rounded-xl flex items-center justify-center shrink-0`}>
               <s.icon className={`w-4 h-4 ${s.color}`} />
             </div>
@@ -692,6 +750,64 @@ function TabAria() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Formulário de Configuração */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-5">
+        <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
+          <div className="w-10 h-10 bg-violet-50 dark:bg-violet-900/20 rounded-xl flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5 text-violet-500" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Credenciais da API do Assistente</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Personalize o modelo de IA e as chaves de conexão.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Versão da IA (Modelo)</label>
+            <select className={SELECT} value={model} onChange={e => setModel(e.target.value)} disabled={testing}>
+              <option value="deepseek-v4-pro">DeepSeek V4 Pro (Padrão)</option>
+              <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              <option value="gpt-4o">GPT-4o</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">URL Base da API (Endpoint)</label>
+            <input className={INPUT} value={apiUrl} onChange={e => setApiUrl(e.target.value)} placeholder="https://api.deepseek.com" disabled={testing} />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Chave de API (API Key)</label>
+          <div className="relative">
+            <input type={showKey ? 'text' : 'password'} className={INPUT + ' pr-10'} value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Insira a API Key para o modelo selecionado..." disabled={testing} />
+            <button type="button" onClick={() => setShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        <button onClick={handleSaveAndTest} disabled={testing || !apiKey} className="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-semibold shadow-sm transition flex items-center justify-center gap-2 active:scale-95 animate-in fade-in duration-200">
+          {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          {testing ? 'Testando Conexão...' : 'Testar e Salvar Conexão'}
+        </button>
+
+        {testResult && (
+          <div className={`flex items-start gap-2.5 text-xs sm:text-sm p-4 rounded-xl border animate-in fade-in duration-200 ${
+            testResult.t === 'ok' 
+              ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30' 
+              : 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-450 border-rose-100 dark:border-rose-900/30'
+          }`}>
+            <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
+            <p className="font-semibold leading-relaxed">{testResult.m}</p>
+          </div>
+        )}
       </div>
 
       {/* Descricao */}

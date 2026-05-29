@@ -210,14 +210,13 @@ function deepseekErrorMessage(status: number, rawMessage: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.DEEPSEEK_API_KEY) {
-    return new Response(
-      JSON.stringify({ error: deepseekErrorMessage(401, 'DEEPSEEK_API_KEY não configurada.') }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
-  let body: { type: string; payload: Record<string, any> };
+  let body: { 
+    type: string; 
+    payload: Record<string, any>; 
+    customApiKey?: string;
+    customBaseUrl?: string;
+    customModel?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -227,7 +226,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { type, payload } = body;
+  const { type, payload, customApiKey, customBaseUrl, customModel } = body;
+
+  const activeApiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
+  if (!activeApiKey) {
+    return new Response(
+      JSON.stringify({ error: deepseekErrorMessage(401, 'API Key do Assistente não configurada.') }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const activeBaseUrl = customBaseUrl || 'https://api.deepseek.com';
+
   const cfg = CONFIGS[type];
   if (!cfg) {
     return new Response(
@@ -277,12 +287,18 @@ export async function POST(req: NextRequest) {
   const { system, user } = buildPrompts(type, payload, school);
 
   // Modelos nativos DeepSeek — fallback automatico se o primeiro nao responder
-  const MODEL_CHAIN = [
-    'deepseek-v4-pro', // DeepSeek-V4-Pro — modelo principal robusto
-    'deepseek-chat',    // DeepSeek-V3 — principal, mais rapido
-    'deepseek-reasoner', // DeepSeek-R1 — fallback mais robusto
-  ];
+  const MODEL_CHAIN = customModel
+    ? [customModel]
+    : [
+        'deepseek-v4-pro',   // DeepSeek V4 Pro
+        'deepseek-v4-flash', // DeepSeek V4 Flash
+      ];
   const FIRST_CHUNK_TIMEOUT_MS = 20000; // 20s sem nenhum chunk = timeout
+
+  const client = new OpenAI({
+    apiKey: activeApiKey,
+    baseURL: activeBaseUrl,
+  });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -307,14 +323,14 @@ export async function POST(req: NextRequest) {
         }, FIRST_CHUNK_TIMEOUT_MS);
 
         try {
-          const completion = await getClient().chat.completions.create(
+          const completion = await client.chat.completions.create(
             {
               model,
               messages: [
                 { role: 'system', content: system },
                 { role: 'user', content: user },
               ],
-              temperature: model === 'deepseek-reasoner' ? undefined : cfg.temperature,
+              temperature: model === 'deepseek-reasoner' || model === 'deepseek-v4-flash' || model === 'deepseek-v4-pro' ? undefined : cfg.temperature,
               stream: true,
             },
             { signal: abort.signal }

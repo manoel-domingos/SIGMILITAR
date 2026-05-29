@@ -68,9 +68,19 @@ export async function streamAI(
     ? payload.message
     : Object.entries(payload).map(([k, v]) => `${k}: ${String(v).slice(0, 60)}`).join(' | ');
 
+  let customApiKey = '';
+  let customBaseUrl = '';
+  let customModel = '';
+
+  if (typeof window !== 'undefined') {
+    customApiKey = localStorage.getItem('aria_api_key') || '';
+    customBaseUrl = localStorage.getItem('aria_api_url') || '';
+    customModel = localStorage.getItem('aria_active_model') || '';
+  }
+
   const logId = addLog({
     type,
-    model: 'deepseek-v4-pro',
+    model: customModel || 'deepseek-v4-pro',
     httpStatus: null,
     input: inputSummary,
     output: '',
@@ -88,7 +98,13 @@ export async function streamAI(
     res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, payload }),
+      body: JSON.stringify({ 
+        type, 
+        payload,
+        customApiKey: customApiKey || undefined,
+        customBaseUrl: customBaseUrl || undefined,
+        customModel: customModel || undefined
+      }),
       signal,
     });
   } catch (err: any) {
