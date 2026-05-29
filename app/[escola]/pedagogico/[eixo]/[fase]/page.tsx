@@ -80,7 +80,7 @@ export default function FasePage() {
     }
 
     initFetch();
-  }, [resolvedSchoolId, isAuthRestored, eixo, fase]);
+  }, [resolvedSchoolId, isAuthRestored, eixo?.id, fase?.id]);
 
   // Determine read-only state based on approved roles: admin_global, GESTOR, and COORD are allowed to write/edit
   const isReadonly = 

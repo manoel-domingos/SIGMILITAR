@@ -66,7 +66,7 @@ export default function EixoPage() {
     }
 
     fetchChecklist();
-  }, [resolvedSchoolId, isAuthRestored, eixo]);
+  }, [resolvedSchoolId, isAuthRestored, eixo?.id]);
 
   // Calculate metrics for each of the 5 phases
   useEffect(() => {
@@ -118,7 +118,7 @@ export default function EixoPage() {
     });
 
     setFaseMetrics(metrics);
-  }, [checklistData, eixo]);
+  }, [checklistData, eixo?.id]);
 
   // Invalid Axis Guard
   if (isAuthRestored && !eixo) {
