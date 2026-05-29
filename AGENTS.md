@@ -191,7 +191,7 @@ Após aprovação do plano:
 2. Ao adicionar campo novo ao banco → **sempre** criar a migration em `supabase/migrations/` com `IF NOT EXISTS`.
 3. Ao adicionar campo novo à interface `Occurrence`, `Student`, `AppUser` etc. → **atualizar** `lib/data.ts`.
 4. Ao mapear campo do banco → **verificar os dois blocos** de fetch em `lib/store.tsx` (`fetchData` e `refreshData`).
-5. Após implementar, listar explicitamente o que **não** foi alterado (para garantir que domínios/fluxos paralelos como `kallyteros.com.br` continuam intocados).
+5. Após implementar, listar explicitamente o que **não** foi alterado (para garantir que fluxos paralelos continuam intocados).
 
 ---
 
@@ -202,7 +202,7 @@ Após aprovação do plano:
 | Framework | Next.js 14 App Router |
 | Auth + Banco | Supabase |
 | Estilo | Tailwind CSS |
-| Domínio legado | `kallyteros.com.br` (não alterar) |
+| Domínio legado | (Removido) |
 | Domínio novo | `sigmilitar.com.br` |
 | Estrutura de rotas | `app/[escola]/[pagina]/page.tsx` |
 | Resolução de tenant | hostname + pathname slug via `lib/useTenantConfig.ts` |

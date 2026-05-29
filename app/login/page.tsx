@@ -45,7 +45,7 @@ export default function Login() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname.toLowerCase();
-      setIsCentral(hostname === 'sigmilitar.com.br' || hostname.endsWith('.sigmilitar.com.br') || hostname === 'localhost' || hostname.includes('vercel.app'));
+      setIsCentral(hostname === 'sigmilitar.com.br' || hostname.endsWith('.sigmilitar.com.br') || hostname === 'localhost');
     }
   }, []);
 
@@ -76,7 +76,7 @@ export default function Login() {
     if ((user || isGuest) && isAuthRestored) {
       if (typeof window !== 'undefined') {
         const hostname = window.location.hostname.toLowerCase();
-        const isCentralDomain = hostname === 'sigmilitar.com.br' || hostname.endsWith('.sigmilitar.com.br') || hostname === 'localhost' || hostname.includes('vercel.app');
+        const isCentralDomain = hostname === 'sigmilitar.com.br' || hostname.endsWith('.sigmilitar.com.br') || hostname === 'localhost';
 
         if (isCentralDomain) {
           // No domínio central: redireciona para a rota com slug da escola do usuário

@@ -236,7 +236,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const activeBaseUrl = customBaseUrl || 'https://api.deepseek.com';
+  const rawBaseUrl = customBaseUrl || 'https://api.deepseek.com';
+  const activeBaseUrl = rawBaseUrl.replace(/\/+$/, '');
 
   const cfg = CONFIGS[type];
   if (!cfg) {
@@ -330,10 +331,13 @@ export async function POST(req: NextRequest) {
                 { role: 'system', content: system },
                 { role: 'user', content: user },
               ],
-              temperature: model === 'deepseek-reasoner' || model === 'deepseek-v4-flash' || model === 'deepseek-v4-pro' ? undefined : cfg.temperature,
+              temperature: cfg.temperature,
               stream: true,
             },
-            { signal: abort.signal }
+            {
+              signal: abort.signal,
+              body: { thinking: { type: 'disabled' } },
+            }
           );
 
           let full = '';

@@ -118,10 +118,9 @@ export default function DrePage() {
     if (typeof window === 'undefined') return '/';
     const hostname = window.location.hostname.toLowerCase();
     const isCentral = hostname.includes('sigmilitar') ||
-                      hostname.includes('localhost') ||
-                      hostname.includes('vercel.app');
+                      hostname.includes('localhost');
 
-    if (!isCentral) return '/'; // kallyteros: sem slug, comportamento atual
+    if (!isCentral) return '/';
 
     // Mapeia o schoolId para o slug da URL
     const slug =

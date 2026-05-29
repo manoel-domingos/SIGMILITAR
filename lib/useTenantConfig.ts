@@ -16,20 +16,18 @@ export function TenantProvider({ tenantId, children }: { tenantId: string; child
  */
 export const TENANT_MAP: Record<string, string> = {
   // João Batista
-  'eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
-  'www.eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
-  'eecmprofjoaobatista.kallyteros.com.br': 'eecmprofjoaobatista',
-  'www.eecmprofjoaobatista.kallyteros.com.br': 'eecmprofjoaobatista',
-  'joaobatista.vercel.app': 'eecmprofjoaobatista',
+  'joaobatista.sigmilitar.com.br': 'eecmprofjoaobatista',
+  'www.joaobatista.sigmilitar.com.br': 'eecmprofjoaobatista',
   'localhost': 'eecmprofjoaobatista',
   'localhost:3000': 'eecmprofjoaobatista',
 
   // Heliodoro Capistrano
-  'eecmheliodoro.vercel.app': 'eecmheliodoro',
-  'www.eecmheliodoro.vercel.app': 'eecmheliodoro',
-  'eecmheliodoro.kallyteros.com.br': 'eecmheliodoro',
-  'www.eecmheliodoro.kallyteros.com.br': 'eecmheliodoro',
-  'heliodoro.vercel.app': 'eecmheliodoro',
+  'heliodoro.sigmilitar.com.br': 'eecmheliodoro',
+  'www.heliodoro.sigmilitar.com.br': 'eecmheliodoro',
+
+  // Tangará
+  'tangara.sigmilitar.com.br': 'eecmtangara',
+  'www.tangara.sigmilitar.com.br': 'eecmtangara',
 
   // Central Domain
   'sigmilitar.com.br': 'central',

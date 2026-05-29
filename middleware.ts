@@ -3,8 +3,9 @@ import type { NextRequest } from 'next/server';
 
 // ── Mapa de hostnames de producao para tenants ───────────────────────────────
 const hostToTenant: Record<string, string> = {
-  'eecmheliodoro.vercel.app': 'eecmheliodoro',
-  'eecmprofjoaobatista.vercel.app': 'eecmprofjoaobatista',
+  'heliodoro.sigmilitar.com.br': 'eecmheliodoro',
+  'joaobatista.sigmilitar.com.br': 'eecmprofjoaobatista',
+  'tangara.sigmilitar.com.br': 'eecmtangara',
 };
 
 // ── Rate Limiting Store (in-memory por instancia Edge) ───────────────────────
@@ -92,7 +93,7 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const ip = getClientIP(request);
 
-  const isCentralDomain = host === 'sigmilitar.com.br' || host.endsWith('.sigmilitar.com.br') || host.includes('vercel.app') || host === 'localhost';
+  const isCentralDomain = host === 'sigmilitar.com.br' || host.endsWith('.sigmilitar.com.br') || host === 'localhost';
 
   // ─── 1. Rate Limiting ────────────────────────────────────────────────────
   const rule = getRuleForPath(pathname);
@@ -164,7 +165,7 @@ export function middleware(request: NextRequest) {
     tenant = hostToTenant[host];
   }
 
-  // Prioridade 4: Subdomínio de *.kallyteros.com.br (Removida)
+  // Prioridade 4: Subdomínio removido
 
   // ─── 4. REWRITE PARA ROTAS LEGADAS OU REDIRECIONAMENTO DE CENTRAL ─────────
   if (tenant && validTenants.includes(tenant)) {
