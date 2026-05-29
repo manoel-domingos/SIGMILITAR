@@ -333,11 +333,9 @@ export async function POST(req: NextRequest) {
               ],
               temperature: cfg.temperature,
               stream: true,
-            },
-            {
-              signal: abort.signal,
-              body: { thinking: { type: 'disabled' } },
-            }
+              thinking: { type: 'disabled' },
+            } as any,
+            { signal: abort.signal }
           );
 
           let full = '';
