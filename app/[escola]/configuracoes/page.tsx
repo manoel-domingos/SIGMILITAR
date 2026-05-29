@@ -1071,20 +1071,7 @@ function ConfiguracoesInner() {
           )}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto scrollbar-hide">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${activeTab === tab.id ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-              {tab.id === 'users' && <span className="ml-0.5 text-xs text-slate-400 dark:text-slate-500 font-normal">({users.length})</span>}
-            </button>
-          ))}
-        </div>
+
 
         <style>{`
           @keyframes rollOutUp {
