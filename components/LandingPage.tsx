@@ -499,6 +499,7 @@ export default function LandingPage2() {
                 <div>
                   <h4 className="text-[#2B2C33] font-bold mb-4 text-sm">Contato</h4>
                   <ul className="space-y-2 text-sm text-[#2B2C33]/70">
+                    <li><a className="hover:text-[#0052CC] transition-colors" href="mailto:contato@sigmilitar.com.br">contato@sigmilitar.com.br</a></li>
                     <li><a className="hover:text-[#0052CC] transition-colors" href="#">Suporte</a></li>
                     <li><a className="hover:text-[#0052CC] transition-colors" href="#cta">Implantação</a></li>
                     <li><a className="hover:text-[#0052CC] transition-colors" href="#">Acessar Sistema</a></li>
