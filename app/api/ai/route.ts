@@ -342,7 +342,7 @@ export async function POST(req: NextRequest) {
           let totalTokens = 0;
           let promptTokens = 0;
           let completionTokens = 0;
-          for await (const chunk of completion) {
+          for await (const chunk of completion as any) {
             if (!firstChunkReceived) {
               firstChunkReceived = true;
               clearTimeout(timeoutId);
