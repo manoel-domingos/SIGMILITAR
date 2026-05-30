@@ -850,6 +850,34 @@ function TopbarLayout({
   const rawPathname = usePathname();
   const searchParams = useSearchParams();
 
+  const [megOpen, setMegOpen] = useState(false);
+  const megRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (megRef.current && !megRef.current.contains(e.target as Node)) {
+        setMegOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const MEG_SUBMENU = [
+    { href: '/pedagogico/gestao-escolar', label: '1. Gestão Escolar',  icon: FileText },
+    { href: '/pedagogico/lideranca',      label: '2. Liderança',        icon: Users },
+    { href: '/pedagogico/pedagogico',     label: '3. Pedagógico',       icon: GraduationCap },
+    { href: '/pedagogico/patrimonio',     label: '4. Patrimônio',        icon: Building2 },
+    { href: '/pedagogico/clima-escolar',  label: '5. Clima Escolar',    icon: Activity },
+  ];
+
+  const navPillClass = (active: boolean) =>
+    `shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 cursor-pointer
+     ${active
+       ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+       : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500'
+     }`;
+
   return (
     <>
       <header className="z-30 px-4 pt-2 pb-1 space-y-2 pointer-events-none">
@@ -947,30 +975,64 @@ function TopbarLayout({
               });
             })()
           ) : pathname.includes('/pedagogico') || pathname.includes('/psicossocial') ? (
-            (() => {
-              const pedagogicoLinks = [
-                { href: '/pedagogico',              label: 'Dashboard',           icon: LayoutDashboard },
-                { href: '/pedagogico/gestao-escolar', label: '1. Gestão Escolar', icon: FileText },
-                { href: '/pedagogico/lideranca',    label: '2. Liderança',        icon: Users },
-                { href: '/pedagogico/pedagogico',   label: '3. Pedagógico',       icon: GraduationCap },
-                { href: '/pedagogico/patrimonio',   label: '4. Patrimônio',        icon: Building2 },
-                { href: '/pedagogico/clima-escolar',label: '5. Clima Escolar',    icon: Activity },
-              ];
-              return pedagogicoLinks.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(item.href + '/');
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={getLinkHref(item.href, tenantId, rawPathname)}
-                    className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
-                  >
-                    <Icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
-                    <span className="whitespace-nowrap">{item.label}</span>
-                  </Link>
-                );
-              });
-            })()
+            <>
+              {/* Dashboard */}
+              <Link
+                href={getLinkHref('/pedagogico', tenantId, rawPathname)}
+                className={navPillClass(pathname === '/pedagogico' || pathname.endsWith('/pedagogico'))}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Dashboard</span>
+              </Link>
+
+              {/* MEG (GR) — com dropdown */}
+              <div className="relative" ref={megRef}>
+                <button
+                  onClick={() => setMegOpen(prev => !prev)}
+                  className={navPillClass(pathname.includes('/pedagogico') && pathname !== '/pedagogico') + ' gap-1.5'}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>MEG (GR)</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-150 ${megOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {/* Dropdown */}
+                {megOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 z-50 min-w-[200px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-lg py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100">
+                    {MEG_SUBMENU.map((item) => {
+                      const active = pathname.includes(item.href);
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={getLinkHref(item.href, tenantId, rawPathname)}
+                          onClick={() => setMegOpen(false)}
+                          className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold transition-colors duration-100
+                            ${active
+                              ? 'bg-blue-600 text-white font-extrabold'
+                              : 'text-slate-700 dark:text-slate-250 hover:bg-slate-50 dark:hover:bg-slate-850'
+                            }`}
+                        >
+                          <Icon className="w-4 h-4 shrink-0" />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Psicossocial */}
+              <Link
+                href={getLinkHref('/psicossocial', tenantId, rawPathname)}
+                className={navPillClass(pathname.includes('/psicossocial'))}
+              >
+                <Heart className="w-4 h-4" />
+                <span>Psicossocial</span>
+              </Link>
+            </>
           ) : (
             menuGroups.map((group) => (
               <GroupPill
