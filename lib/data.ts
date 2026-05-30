@@ -57,6 +57,7 @@ export interface Occurrence {
 }
 
 export const AVAILABLE_MEASURES = [
+  'Parecer do gestor',
   'Advertência Oral',
   'Advertência Escrita',
   'Acionar os pais',

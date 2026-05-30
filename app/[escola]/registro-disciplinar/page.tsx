@@ -66,7 +66,9 @@ function RegistroDisciplinarContent() {
     return [...occurrences].sort((a, b) => {
       const dateDiff = a.date.localeCompare(b.date);
       if (dateDiff !== 0) return dateDiff;
-      return (a.hour || '').localeCompare(b.hour || '');
+      const hourDiff = (a.hour || '').localeCompare(b.hour || '');
+      if (hourDiff !== 0) return hourDiff;
+      return a.id.localeCompare(b.id);
     });
   }, [occurrences]);
   const searchParams = useSearchParams();
@@ -142,61 +144,9 @@ function RegistroDisciplinarContent() {
   const [measureOverride, setMeasureOverride] = useState<string | null>(null);
   const [measurePanelOpen, setMeasurePanelOpen] = useState<Record<string, boolean>>({});
   const [selectedMeasures, setSelectedMeasures] = useState<string[]>([]);
+  const [simulatedRole, setSimulatedRole] = useState<string | null>(null);
+  const effectiveRole = simulatedRole || currentUserRole;
 
-  // Efeito de rotacao sutil ao rolar a tabela
-  const tableWrapperRef = useRef<HTMLDivElement>(null);
-  const tableRotationRef = useRef<HTMLDivElement>(null);
-  const lastScrollY = useRef(0);
-  const tiltFrame = useRef<number | null>(null);
-  const currentTilt = useRef(0);
-
-  useEffect(() => {
-    const wrapper = tableWrapperRef.current;
-    const inner = tableRotationRef.current;
-    if (!wrapper || !inner) return;
-
-    let decayTimer: ReturnType<typeof setInterval>;
-    let fallbackTimeout: ReturnType<typeof setTimeout>;
-
-    const applyTilt = (val: number) => {
-      inner.style.transform = 'perspective(1200px) rotateX(' + val.toFixed(3) + 'deg)';
-    };
-
-    const startDecay = () => {
-      clearInterval(decayTimer);
-      decayTimer = setInterval(() => {
-        currentTilt.current *= 0.78;
-        if (Math.abs(currentTilt.current) < 0.05) {
-          currentTilt.current = 0;
-          clearInterval(decayTimer);
-        }
-        applyTilt(currentTilt.current);
-      }, 16);
-    };
-
-    const onScroll = () => {
-      if (tiltFrame.current) cancelAnimationFrame(tiltFrame.current);
-      clearTimeout(fallbackTimeout);
-      tiltFrame.current = requestAnimationFrame(() => {
-        const scrollY = wrapper.scrollTop;
-        const delta = scrollY - lastScrollY.current;
-        lastScrollY.current = scrollY;
-        const targetTilt = Math.max(-2.5, Math.min(2.5, delta * 0.25));
-        currentTilt.current = currentTilt.current * 0.6 + targetTilt * 0.4;
-        applyTilt(currentTilt.current);
-        fallbackTimeout = setTimeout(startDecay, 80);
-      });
-    };
-
-    wrapper.addEventListener('scroll', onScroll, { passive: true });
-
-    return () => {
-      wrapper.removeEventListener('scroll', onScroll);
-      clearInterval(decayTimer);
-      clearTimeout(fallbackTimeout);
-      if (tiltFrame.current) cancelAnimationFrame(tiltFrame.current);
-    };
-  }, []);
   const [isImproving, setIsImproving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState('');
@@ -428,7 +378,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
   };
 
   const getLoggedProfessor = (): string => {
-    if (currentUserRole !== 'PROFESSOR') return '';
+    if (effectiveRole !== 'PROFESSOR') return '';
     const match = appUsers.find(u =>
       u.role === 'PROFESSOR' &&
       (u.email === user?.email || u.name.toLowerCase() === getLoggedUserName().toLowerCase())
@@ -488,7 +438,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     if (o.archived) return false;
 
     // Filtro de visibilidade para professores
-    if (currentUserRole === 'PROFESSOR') {
+    if (effectiveRole === 'PROFESSOR') {
       const appUser = appUsers.find(u => u.role === 'PROFESSOR' && u.email === user?.email);
       if (!appUser) return false;
 
@@ -1515,10 +1465,19 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-800">Registro Disciplinar</h1>
-            <p className="text-slate-500 text-sm">Gerenciamento de ocorrências dos alunos.</p>
+            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+              Registro Disciplinar
+              <button 
+                onClick={() => setSimulatedRole(p => p === 'GESTOR' ? null : 'GESTOR')}
+                className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider transition border ${simulatedRole === 'GESTOR' ? 'bg-amber-500 text-white border-amber-600' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'}`}
+                title="Simular visualização de Gestor"
+              >
+                {simulatedRole === 'GESTOR' ? 'Modo Gestor ATIVO' : 'Simular Gestor'}
+              </button>
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Gerenciamento de ocorrências dos alunos.</p>
           </div>
-          {currentUserRole !== 'GUEST' && (
+          {effectiveRole !== 'GUEST' && (
             <button 
               onClick={openAddModal}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition"
@@ -1585,14 +1544,10 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           </div>
           
           <div
-            ref={tableWrapperRef}
             className="overflow-x-auto overflow-y-auto -mx-4 sm:mx-0 px-4 sm:px-0 scroll-smooth-mobile"
             style={{ maxHeight: '70vh' }}
           >
-            <div
-              ref={tableRotationRef}
-              style={{ transition: 'transform 0.05s linear', willChange: 'transform', transformOrigin: 'center top' }}
-            >
+            <div>
             <table className="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
               <thead className="bg-white border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold">
                 <tr>
@@ -1849,9 +1804,19 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           : { isEscalated: false, reason: '', measure: r.measure, severity: r.severity };
 
                         const isPanelOpen = !!measurePanelOpen[ruleCode];
+                        
+                        let highestSelectedMeasure: string | null = null;
+                        if (selectedMeasures.length > 0) {
+                          const highestIndex = Math.max(...selectedMeasures.map(m => AVAILABLE_MEASURES.indexOf(m as any)));
+                          if (highestIndex >= 0) {
+                            highestSelectedMeasure = AVAILABLE_MEASURES[highestIndex];
+                          }
+                        }
+
                         // Para infrações graves, usa graveMeasureType em vez da medida padrão
-                        const activeMeasure = measureOverride ?? (escalation.severity === 'Grave' ? graveMeasureType : escalation.measure);
-                        const isOverriding = !!measureOverride || (escalation.severity === 'Grave' && graveMeasureType !== 'Suspensão Escolar');
+                        const defaultMeasure = escalation.severity === 'Grave' ? graveMeasureType : escalation.measure;
+                        const activeMeasure = measureOverride ?? highestSelectedMeasure ?? defaultMeasure;
+                        const isOverriding = !!measureOverride || !!highestSelectedMeasure || (escalation.severity === 'Grave' && graveMeasureType !== 'Suspensão Escolar');
 
                         const ALTERNATIVE_MEASURES = [
                           { label: 'Atividade Pedagógica', color: 'emerald' },
@@ -3062,7 +3027,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                 )}
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {currentUserRole !== 'GUEST' && (
+                  {effectiveRole !== 'GUEST' && (
                     <button
                       onClick={(e) => { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); setShowPrintBanner(false); openEditModal(e, _vo); }}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition text-sm font-semibold"
@@ -3084,7 +3049,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                   >
                     <Printer className="w-3.5 h-3.5" /> Imprimir
                   </button>
-                  {currentUserRole !== 'GUEST' && (
+                  {effectiveRole !== 'GUEST' && (
                     <button
                       onClick={(e) => { setViewOccurrence(null); handleArchive(e, _vo.id); }}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 transition text-sm font-semibold"
