@@ -508,46 +508,58 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* ══ FLUXO A: Usuário Comum ══ */}
             {currentUserRole !== 'admin_global' && (
-              <div className="flex flex-col gap-2 pt-1 text-center">
-                {/* Header de escola — não clicável, apenas informativo */}
+              <div className="flex flex-col gap-2 pt-1 text-center w-full animate-in fade-in duration-200">
                 {!isAuthRestored ? (
-                  <div className="w-full py-3 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse text-transparent text-sm select-none">
-                    Carregando escola...
-                  </div>
-                ) : (
-                  <div className="w-full py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold flex items-center justify-center gap-2 opacity-90 shadow-sm">
-                    <Building2 className="w-4 h-4" />
-                    {contextSchools.find(s => s.id === currentUserSchoolId)?.name ?? 'Minha Escola'}
-                  </div>
-                )}
+                  <div className="w-full h-32 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+                ) : (() => {
+                  const mySchool = contextSchools.find(s => s.id === currentUserSchoolId) || contextSchools.find(s => s.id === activeSchoolContext) || contextSchools[0];
+                  if (!mySchool) return null;
+                  return (
+                    <div className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-slate-900/60">
+                      {/* Header da escola */}
+                      <div className="w-full py-3 px-4 text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+                        <div className="flex items-center gap-2 truncate">
+                          <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                          <span className="truncate">{mySchool.name}</span>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                      </div>
 
-                {currentUserSchoolId && currentUserSchoolId !== 'DRE' && (
-                  <>
-                    <button
-                      onClick={() => handleCommonUserContext('civico-militar')}
-                      className={`w-full py-3 rounded-xl border text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 animate-in slide-in-from-top-1 fade-in duration-150 ${
-                        activePanelModule === 'civico-militar'
-                          ? 'border-amber-400 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                          : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <ShieldCheck className="w-4 h-4 text-amber-500" /> Gestão Cívico Militar
-                      {activePanelModule === 'civico-militar' && <span className="text-[9px] font-bold uppercase tracking-wider ml-auto text-amber-500">Ativo</span>}
-                    </button>
+                      {/* Opções expandidas */}
+                      <div className="bg-slate-50/30 dark:bg-slate-950/20 px-3 pb-3 pt-2 space-y-1.5">
+                        <button
+                          onClick={() => handleCommonUserContext('civico-militar')}
+                          className={`w-full py-2.5 px-4 rounded-xl border text-xs font-semibold transition-all active:scale-95 flex items-center justify-between gap-2 ${
+                            activePanelModule === 'civico-militar'
+                              ? 'border-amber-400 bg-amber-50/80 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold'
+                              : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 bg-white dark:bg-slate-900/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                            <span>Gestão Cívico Militar</span>
+                          </div>
+                          {activePanelModule === 'civico-militar' && <span className="text-[8px] font-extrabold uppercase tracking-wider text-amber-500 bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 rounded shrink-0">Ativo</span>}
+                        </button>
 
-                    <button
-                      onClick={() => handleCommonUserContext('pedagogico')}
-                      className={`w-full py-3 rounded-xl border text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 animate-in slide-in-from-top-1 fade-in duration-150 ${
-                        activePanelModule === 'pedagogico'
-                          ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400'
-                          : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <BookOpen className="w-4 h-4 text-blue-500" /> Gestão Pedagógica
-                      {activePanelModule === 'pedagogico' && <span className="text-[9px] font-bold uppercase tracking-wider ml-auto text-blue-500">Ativo</span>}
-                    </button>
-                  </>
-                )}
+                        <button
+                          onClick={() => handleCommonUserContext('pedagogico')}
+                          className={`w-full py-2.5 px-4 rounded-xl border text-xs font-semibold transition-all active:scale-95 flex items-center justify-between gap-2 ${
+                            activePanelModule === 'pedagogico'
+                              ? 'border-blue-400 bg-blue-50/80 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold'
+                              : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 bg-white dark:bg-slate-900/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-blue-500 shrink-0" />
+                            <span>Gestão Pedagógica</span>
+                          </div>
+                          {activePanelModule === 'pedagogico' && <span className="text-[8px] font-extrabold uppercase tracking-wider text-blue-500 bg-blue-100 dark:bg-blue-500/20 px-1.5 py-0.5 rounded shrink-0">Ativo</span>}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
