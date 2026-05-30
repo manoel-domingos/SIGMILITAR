@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users } from 'lucide-react';
+import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS, markdownBoldToHtml } from '@/lib/print-header';
@@ -103,7 +103,7 @@ function RegistroDisciplinarContent() {
   const [guardianIgnoredWarning, setGuardianIgnoredWarning] = useState(false);
   const guardianPhoneRef = useRef<HTMLInputElement>(null);
   const [viewOccurrence, setViewOccurrence] = useState<Occurrence | null>(null);
-  const [voTab, setVoTab] = useState<'detalhes' | 'documentos' | 'responsaveis'>('detalhes');
+  const [voTab, setVoTab] = useState<'status' | 'detalhes' | 'documentos' | 'responsaveis'>('status');
   const [voUploadingDoc, setVoUploadingDoc] = useState(false);
   const [voUploadingEv, setVoUploadingEv] = useState(false);
   const [editingOccurrence, setEditingOccurrence] = useState<string | null>(null);
@@ -2597,8 +2597,9 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
 
         const totalContacts = voStudents.reduce((sum, s) => sum + (s.contacts?.length ?? 0), 0);
 
-        type TabDef = { id: 'detalhes' | 'documentos' | 'responsaveis'; label: string; count?: number };
+        type TabDef = { id: 'status' | 'detalhes' | 'documentos' | 'responsaveis'; label: string; count?: number };
         const tabs: TabDef[] = [
+          { id: 'status',       label: 'Status' },
           { id: 'detalhes',     label: 'Detalhes' },
           { id: 'responsaveis', label: 'Responsaveis', count: totalContacts || undefined },
           { id: 'documentos',   label: 'Documentos', count: (docList.length + videoList.length) || undefined },
@@ -2659,6 +2660,54 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
 
               {/* ── Corpo com scroll ── */}
               <div className="flex-1 overflow-y-auto">
+
+                {/* Tab: Status */}
+                {voTab === 'status' && (
+                  <div className="p-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-4">Progresso da Ocorrência</p>
+                      <div className="flex items-center gap-2 mb-8 relative z-10">
+                        {['iniciada', 'em tratamento', 'resolvida'].map((step, idx) => {
+                          const statusList = ['iniciada', 'em tratamento', 'resolvida'];
+                          const currentIdx = statusList.indexOf(_vo.status || 'iniciada');
+                          const isActive = idx <= currentIdx;
+                          const isCurrent = idx === currentIdx;
+                          return (
+                            <div key={step} className="flex-1 flex flex-col items-center relative">
+                              {idx > 0 && (
+                                <div className={`absolute top-4 left-[-50%] w-full h-1 -z-10 transition-colors duration-500 ${isActive ? 'bg-blue-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                              )}
+                              <button 
+                                onClick={() => {
+                                  updateOccurrence(_vo.id, { status: step as any });
+                                  setViewOccurrence({ ..._vo, status: step as any });
+                                }}
+                                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all border-2 shadow-sm ${isActive ? 'bg-blue-600 border-blue-600 text-white scale-110' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-400 hover:border-blue-400'}`}
+                              >
+                                {isActive ? <Check className="w-5 h-5" /> : (idx + 1)}
+                              </button>
+                              <span className={`text-[10px] mt-3 font-bold uppercase tracking-wider transition-colors duration-300 ${isCurrent ? 'text-blue-600 dark:text-blue-400' : (isActive ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400')}`}>
+                                {step}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-700">
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Solução / Ação Tomada</label>
+                        <textarea
+                          value={_vo.solucao_acao || ''}
+                          onChange={(e) => setViewOccurrence({..._vo, solucao_acao: e.target.value})}
+                          onBlur={(e) => updateOccurrence(_vo.id, { solucao_acao: e.target.value })}
+                          className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 min-h-[150px] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          placeholder="Descreva a ação tomada ou a solução para esta ocorrência..."
+                        />
+                        <p className="text-xs text-slate-400 flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Salvo automaticamente ao sair do campo.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Tab: Detalhes */}
                 {voTab === 'detalhes' && (

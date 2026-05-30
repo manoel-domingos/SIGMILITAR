@@ -565,6 +565,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 observations: o.observations,
                 videoUrls: o.video_urls || (o.video_url ? [o.video_url] : []),
                 signedDocUrls: o.signed_doc_urls || (o.signed_doc_url ? [o.signed_doc_url] : []),
+                status: o.status,
+                solucao_acao: o.solucao_acao,
                 archived: o.archived || false,
                 createdAt: o.created_at
               };
@@ -1222,6 +1224,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           observations: o.observations,
           videoUrls: o.video_urls || (o.video_url ? [o.video_url] : []),
           signedDocUrls: o.signed_doc_urls || (o.signed_doc_url ? [o.signed_doc_url] : []),
+          status: o.status,
+          solucao_acao: o.solucao_acao,
           archived: o.archived || false,
           createdAt: o.created_at
         };
@@ -1304,6 +1308,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         observations: o.observations || null,
         video_urls: o.videoUrls || [],
         signed_doc_urls: o.signedDocUrls || [],
+        status: o.status || 'iniciada',
+        solucao_acao: o.solucao_acao || null,
         archived: o.archived || false,
         school_id: dbSchoolId
       };
@@ -1366,6 +1372,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             measures: o.measures || [],
             resolved: o.resolved || false,
             resolvedAt: o.resolvedAt,
+            status: data.status || 'iniciada',
+            solucao_acao: data.solucao_acao || null,
             durationDays: o.durationDays,
             archived: data.archived || false
           }, ...prev]);
@@ -1382,7 +1390,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } else {
       // Fallback local (sem Supabase)
       const finalId = 'O' + (occurrences.length + 1);
-      setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false }, ...prev]);
+      setOccurrences(prev => [{ ...o, id: finalId, measures: o.measures || [], resolved: o.resolved || false, status: o.status || 'iniciada', solucao_acao: o.solucao_acao || null }, ...prev]);
       logAction('CREATE', 'Ocorrência', finalId, 'Adicionada ocorrência (LOCAL) para ' + (o.studentIds?.length || 1) + ' alunos (Art. ' + o.ruleCode + ')');
       return { id: finalId };
     }
@@ -1421,6 +1429,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (o.videoUrls) dbPayload.video_urls = o.videoUrls;
       if (o.signedDocUrls) dbPayload.signed_doc_urls = o.signedDocUrls;
+      if (o.status !== undefined) dbPayload.status = o.status;
+      if (o.solucao_acao !== undefined) dbPayload.solucao_acao = o.solucao_acao;
       if (o.archived !== undefined) dbPayload.archived = o.archived;
       
       try {

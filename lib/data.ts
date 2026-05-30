@@ -49,6 +49,8 @@ export interface Occurrence {
   measures?: string[];     // Múltiplas medidas aplicadas (novo)
   resolved?: boolean;      // Se a ocorrência foi marcada como cumprida
   resolvedAt?: string;     // Timestamp da resolução
+  status?: 'iniciada' | 'em_tratamento' | 'resolvida';
+  solucao_acao?: string;
   attenuatingFactors?: string[];
   aggravatingFactors?: string[];
   createdAt?: string;      // Timestamp do servidor (para ordenação real)
