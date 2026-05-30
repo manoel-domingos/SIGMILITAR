@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDbSchoolId } from '@/lib/useTenantConfig';
+import AppShell from '@/components/AppShell';
 
 export default function FasePage() {
   const router = useRouter();

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDbSchoolId } from '@/lib/useTenantConfig';
+import AppShell from '@/components/AppShell';
 
 export default function EixoPage() {
   const router = useRouter();
@@ -154,90 +155,92 @@ export default function EixoPage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
-      
-      {/* Navigation Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 dark:text-slate-500">
-        <Link href={`/${schoolSlug}/pedagogico`} className="hover:text-blue-500 transition-colors">
-          Gestão Pedagógica
-        </Link>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="font-semibold text-slate-600 dark:text-slate-300">
-          Eixo {eixo!.numero}
-        </span>
-      </div>
+    <AppShell>
+      <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
+        
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 dark:text-slate-500">
+          <Link href={`/${schoolSlug}/pedagogico`} className="hover:text-blue-500 transition-colors">
+            Gestão Pedagógica
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="font-semibold text-slate-600 dark:text-slate-300">
+            Eixo {eixo!.numero}
+          </span>
+        </div>
 
-      {/* Axis Information Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-6">
-        <div className="space-y-2">
-          <button
-            onClick={() => router.push(`/${schoolSlug}/pedagogico`)}
-            className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline font-bold"
-          >
-            <ArrowLeft className="w-3 h-3" /> Voltar ao Painel
-          </button>
-          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
-            Eixo {eixo!.numero}: {eixo!.nome}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500">
-            Acompanhamento das 5 fases estratégicas na escola <span className="font-semibold text-slate-500 dark:text-slate-400">{schoolName}</span>
-          </p>
+        {/* Axis Information Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-6">
+          <div className="space-y-2">
+            <button
+              onClick={() => router.push(`/${schoolSlug}/pedagogico`)}
+              className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline font-bold"
+            >
+              <ArrowLeft className="w-3 h-3" /> Voltar ao Painel
+            </button>
+            <h1 className="text-xl sm:text-3xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+              Eixo {eixo!.numero}: {eixo!.nome}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500">
+              Acompanhamento das 5 fases estratégicas na escola <span className="font-semibold text-slate-500 dark:text-slate-400">{schoolName}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Grid containing the 5 Phases */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {MEG_FASES.map(f => {
+            const metrics = faseMetrics[f.id] || { percent: 0, status: 'Não Iniciado', completed: 0, total: 0 };
+            
+            let statusBadgeColor = 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800/30 dark:text-slate-500 dark:border-slate-700/50';
+            let StatusIcon = HelpCircle;
+            
+            if (metrics.status === 'Concluído') {
+              statusBadgeColor = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
+              StatusIcon = CheckCircle;
+            } else if (metrics.status === 'Em Andamento') {
+              statusBadgeColor = 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400';
+              StatusIcon = AlertTriangle;
+            }
+
+            return (
+              <button
+                key={f.id}
+                onClick={() => router.push(`/${schoolSlug}/pedagogico/${eixoSlug}/${f.slug}`)}
+                className="w-full text-left p-5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.99] transition-all duration-300 flex flex-col justify-between gap-5 shadow-sm hover:shadow-md group relative overflow-hidden"
+                title={`Acessar fase ${f.numero}: ${f.nome}`}
+              >
+                {/* Header with Title and Status Badge */}
+                <div className="flex items-start justify-between gap-3 w-full">
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-extrabold text-slate-400 dark:text-slate-500 tracking-wider font-mono">
+                      Fase {f.numero}
+                    </span>
+                    <h4 className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 leading-snug group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
+                      {f.nome}
+                    </h4>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded border text-[10px] font-bold shrink-0 ${statusBadgeColor}`}>
+                    <StatusIcon className="w-3 h-3" />
+                    {metrics.status}
+                  </span>
+                </div>
+
+                {/* Progress Summary and Bar */}
+                <div className="space-y-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800/30">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400 dark:text-slate-500">
+                    <span>Evidências validadas</span>
+                    <span className="font-bold font-mono text-slate-600 dark:text-slate-300">
+                      {metrics.completed} de {metrics.total}
+                    </span>
+                  </div>
+                  <ProgressBar value={metrics.percent} size="sm" showText={false} />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
-
-      {/* Grid containing the 5 Phases */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {MEG_FASES.map(f => {
-          const metrics = faseMetrics[f.id] || { percent: 0, status: 'Não Iniciado', completed: 0, total: 0 };
-          
-          let statusBadgeColor = 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800/30 dark:text-slate-500 dark:border-slate-700/50';
-          let StatusIcon = HelpCircle;
-          
-          if (metrics.status === 'Concluído') {
-            statusBadgeColor = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
-            StatusIcon = CheckCircle;
-          } else if (metrics.status === 'Em Andamento') {
-            statusBadgeColor = 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400';
-            StatusIcon = AlertTriangle;
-          }
-
-          return (
-            <button
-              key={f.id}
-              onClick={() => router.push(`/${schoolSlug}/pedagogico/${eixoSlug}/${f.slug}`)}
-              className="w-full text-left p-5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.99] transition-all duration-300 flex flex-col justify-between gap-5 shadow-sm hover:shadow-md group relative overflow-hidden"
-              title={`Acessar fase ${f.numero}: ${f.nome}`}
-            >
-              {/* Header with Title and Status Badge */}
-              <div className="flex items-start justify-between gap-3 w-full">
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-extrabold text-slate-400 dark:text-slate-500 tracking-wider font-mono">
-                    Fase {f.numero}
-                  </span>
-                  <h4 className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 leading-snug group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
-                    {f.nome}
-                  </h4>
-                </div>
-                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded border text-[10px] font-bold shrink-0 ${statusBadgeColor}`}>
-                  <StatusIcon className="w-3 h-3" />
-                  {metrics.status}
-                </span>
-              </div>
-
-              {/* Progress Summary and Bar */}
-              <div className="space-y-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800/30">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-400 dark:text-slate-500">
-                  <span>Evidências validadas</span>
-                  <span className="font-bold font-mono text-slate-600 dark:text-slate-300">
-                    {metrics.completed} de {metrics.total}
-                  </span>
-                </div>
-                <ProgressBar value={metrics.percent} size="sm" showText={false} />
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    </AppShell>
   );
 }
