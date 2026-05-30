@@ -3,6 +3,7 @@ import './globals.css';
 import { AppProvider } from '@/lib/store';
 import { TenantProvider } from '@/lib/useTenantConfig';
 import { headers } from 'next/headers';
+import { Analytics } from '@vercel/analytics/next';
 
 const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? 'EECM Prof. João Batista';
 
@@ -42,6 +43,7 @@ export default async function RootLayout({children}: {children: React.ReactNode}
             {children}
           </AppProvider>
         </TenantProvider>
+        <Analytics />
       </body>
     </html>
   );
