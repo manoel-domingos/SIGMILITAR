@@ -764,23 +764,16 @@ function TabAria() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Versão da IA (Modelo)</label>
-            <select className={SELECT} value={model} onChange={e => setModel(e.target.value)} disabled={testing}>
-              <option value="deepseek-v4-pro">DeepSeek V4 Pro (Padrão)</option>
-              <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-              <option value="gpt-4o">GPT-4o</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">URL Base da API (Endpoint)</label>
-            <input className={INPUT} value={apiUrl} onChange={e => setApiUrl(e.target.value)} placeholder="https://api.deepseek.com" disabled={testing} />
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Versão da IA (Modelo)</label>
+          <select className={SELECT} value={model} onChange={e => setModel(e.target.value)} disabled={testing}>
+            <option value="deepseek-v4-pro">DeepSeek V4 Pro (Padrão)</option>
+            <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            <option value="gpt-4o">GPT-4o</option>
+          </select>
         </div>
 
         <div className="space-y-1.5">

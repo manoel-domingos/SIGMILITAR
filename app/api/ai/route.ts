@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
 import { REGIMENTO_CORPUS, HIERARQUIA_FONTES } from '@/lib/regimento';
 import { getTenantServer } from '@/lib/getTenantServer';
-import { getDbSchoolId } from '@/lib/useTenantConfig';
 import { createClient } from '@supabase/supabase-js';
 
 export const maxDuration = 60;
@@ -28,6 +27,13 @@ const CONFIGS: Record<string, { temperature: number }> = {
   chat:      { temperature: 0.5 },
   sugestao:  { temperature: 0.3 },
 };
+
+function getDbSchoolId(tenantId: string): string {
+  if (tenantId === 'eecmprofjoaobatista') return 'joaobatista';
+  if (tenantId === 'eecmheliodoro') return 'heliodoro';
+  if (tenantId === 'eecmtangara') return 'tangara';
+  return tenantId;
+}
 
 function buildPrompts(type: string, payload: Record<string, any>, school: { id: string; name: string }): { system: string; user: string } {
   const schoolContext = [
@@ -226,180 +232,189 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { type, payload, customApiKey, customBaseUrl, customModel } = body;
+  try {
+    const { type, payload, customApiKey, customBaseUrl, customModel } = body;
 
-  const activeApiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
-  if (!activeApiKey) {
+    const activeApiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
+    if (!activeApiKey) {
+      return new Response(
+        JSON.stringify({ error: deepseekErrorMessage(401, 'API Key do Assistente não configurada.') }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const rawBaseUrl = customBaseUrl || 'https://api.deepseek.com';
+    const activeBaseUrl = rawBaseUrl.replace(/\/+$/, '');
+
+    const cfg = CONFIGS[type];
+    if (!cfg) {
+      return new Response(
+        JSON.stringify({ error: deepseekErrorMessage(422, `Tipo "${type}" não reconhecido.`) }),
+        { status: 400 }
+      );
+    }
+
+    // Resolve o tenant ativo a partir dos headers / sessão do servidor
+    const tenantId = await getTenantServer();
+    const dbSchoolId = getDbSchoolId(tenantId);
+
+    // Inicializa o cliente do Supabase para buscar o nome correto da escola
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const keyToUse = supabaseServiceKey || supabaseAnonKey;
+    
+    const FALLBACK_SCHOOL_NAMES: Record<string, string> = {
+      joaobatista: 'E.E. Cívico-Militar Prof. João Batista',
+      heliodoro: 'E.E. Cívico-Militar Heliodoro Capistrano',
+      tangara: 'E.E. Cívico-Militar Tangará',
+    };
+    const fallbackName = FALLBACK_SCHOOL_NAMES[dbSchoolId] || 'E.E. Cívico-Militar Heliodoro Capistrano';
+    let school = { id: dbSchoolId, name: fallbackName };
+
+    if (supabaseUrl && keyToUse) {
+      try {
+        let url = supabaseUrl;
+        if (!url.startsWith('http')) url = `https://${url}`;
+        const supabaseAdmin = createClient(url, keyToUse, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        });
+        const { data } = await supabaseAdmin
+          .from('schools')
+          .select('*')
+          .eq('id', dbSchoolId)
+          .single();
+        if (data && data.name) {
+          school = { id: data.id, name: data.name };
+        }
+      } catch (err) {
+        console.error('[AI API] Falha ao recuperar dados da escola:', err);
+      }
+    }
+
+    const { system, user } = buildPrompts(type, payload, school);
+
+    // Modelos nativos DeepSeek — fallback automatico se o primeiro nao responder
+    const MODEL_CHAIN = customModel
+      ? [customModel]
+      : [
+          'deepseek-v4-pro',   // DeepSeek V4 Pro
+          'deepseek-v4-flash', // DeepSeek V4 Flash
+        ];
+    const FIRST_CHUNK_TIMEOUT_MS = 20000; // 20s sem nenhum chunk = timeout
+
+    const client = new OpenAI({
+      apiKey: activeApiKey,
+      baseURL: activeBaseUrl,
+    });
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (data: object) => {
+          try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`)); } catch { /* fechado */ }
+        };
+
+        let lastError: { httpStatus: number; rawMsg: string } | null = null;
+
+        for (const model of MODEL_CHAIN) {
+          send({ meta: { model, attempt: MODEL_CHAIN.indexOf(model) + 1 } });
+
+          // AbortController para timeout do primeiro chunk
+          const abort = new AbortController();
+          let firstChunkReceived = false;
+          const timeoutId = setTimeout(() => {
+            if (!firstChunkReceived) {
+              console.error('[v0] Timeout ' + FIRST_CHUNK_TIMEOUT_MS + 'ms sem resposta do modelo ' + model);
+              abort.abort();
+            }
+          }, FIRST_CHUNK_TIMEOUT_MS);
+
+          try {
+            const completion = await client.chat.completions.create(
+              {
+                model,
+                messages: [
+                  { role: 'system', content: system },
+                  { role: 'user', content: user },
+                ],
+                temperature: cfg.temperature,
+                stream: true,
+                thinking: { type: 'disabled' },
+              } as any,
+              { signal: abort.signal }
+            );
+
+            let full = '';
+            let totalTokens = 0;
+            let promptTokens = 0;
+            let completionTokens = 0;
+            for await (const chunk of completion as any) {
+              if (!firstChunkReceived) {
+                firstChunkReceived = true;
+                clearTimeout(timeoutId);
+                send({ meta: { model, firstChunkMs: Date.now() } });
+              }
+              const delta = chunk.choices[0]?.delta?.content;
+              if (delta) {
+                full += delta;
+                send({ delta, model });
+              }
+              // Captura tokens do último chunk (DeepSeek envia usage no final)
+              if (chunk.usage) {
+                promptTokens = chunk.usage.prompt_tokens || 0;
+                completionTokens = chunk.usage.completion_tokens || 0;
+                totalTokens = chunk.usage.total_tokens || (promptTokens + completionTokens);
+              }
+            }
+            clearTimeout(timeoutId);
+            
+            // Log de tokens no console do servidor
+            console.log('[AI] Modelo: ' + model + ' | Tokens: ' + totalTokens + ' (prompt: ' + promptTokens + ', completion: ' + completionTokens + ')');
+            
+            send({ done: true, result: full.trim(), model, usage: { totalTokens, promptTokens, completionTokens } });
+            controller.close();
+            return; // sucesso — sai do loop
+          } catch (err: any) {
+            clearTimeout(timeoutId);
+            const isTimeout = err?.name === 'AbortError' || err?.code === 'ETIMEDOUT';
+            const httpStatus: number = isTimeout ? 504 : (err?.status ?? 500);
+            const rawMsg: string = isTimeout
+              ? 'Modelo ' + model + ' nao respondeu em ' + (FIRST_CHUNK_TIMEOUT_MS / 1000) + 's'
+              : (err?.message ?? 'Erro desconhecido.');
+
+            lastError = { httpStatus, rawMsg };
+            console.error('[v0] Erro modelo ' + model + ':', httpStatus, rawMsg);
+
+            const isLastModel = model === MODEL_CHAIN[MODEL_CHAIN.length - 1];
+            if (!isLastModel) {
+              const nextModel = MODEL_CHAIN[MODEL_CHAIN.indexOf(model) + 1];
+              send({ meta: { fallback: true, from: model, to: nextModel, reason: rawMsg } });
+              continue; // tenta proximo modelo
+            }
+
+            // Todos os modelos falharam
+            const friendlyMsg = deepseekErrorMessage(httpStatus, rawMsg);
+            send({ error: friendlyMsg, httpStatus, raw: rawMsg });
+          }
+        }
+
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+  } catch (error: any) {
+    console.error('[AI API ERROR]:', error);
     return new Response(
-      JSON.stringify({ error: deepseekErrorMessage(401, 'API Key do Assistente não configurada.') }),
+      JSON.stringify({ error: deepseekErrorMessage(500, error?.message || 'Erro inesperado no servidor.') }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
-
-  const rawBaseUrl = customBaseUrl || 'https://api.deepseek.com';
-  const activeBaseUrl = rawBaseUrl.replace(/\/+$/, '');
-
-  const cfg = CONFIGS[type];
-  if (!cfg) {
-    return new Response(
-      JSON.stringify({ error: deepseekErrorMessage(422, `Tipo "${type}" não reconhecido.`) }),
-      { status: 400 }
-    );
-  }
-
-  // Resolve o tenant ativo a partir dos headers / sessão do servidor
-  const tenantId = await getTenantServer();
-  const dbSchoolId = getDbSchoolId(tenantId);
-
-  // Inicializa o cliente do Supabase para buscar o nome correto da escola
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  const keyToUse = supabaseServiceKey || supabaseAnonKey;
-  
-  const FALLBACK_SCHOOL_NAMES: Record<string, string> = {
-    joaobatista: 'E.E. Cívico-Militar Prof. João Batista',
-    heliodoro: 'E.E. Cívico-Militar Heliodoro Capistrano',
-    tangara: 'E.E. Cívico-Militar Tangará',
-  };
-  const fallbackName = FALLBACK_SCHOOL_NAMES[dbSchoolId] || 'E.E. Cívico-Militar Heliodoro Capistrano';
-  let school = { id: dbSchoolId, name: fallbackName };
-
-  if (supabaseUrl && keyToUse) {
-    try {
-      let url = supabaseUrl;
-      if (!url.startsWith('http')) url = `https://${url}`;
-      const supabaseAdmin = createClient(url, keyToUse, {
-        auth: { autoRefreshToken: false, persistSession: false }
-      });
-      const { data } = await supabaseAdmin
-        .from('schools')
-        .select('*')
-        .eq('id', dbSchoolId)
-        .single();
-      if (data && data.name) {
-        school = { id: data.id, name: data.name };
-      }
-    } catch (err) {
-      console.error('[AI API] Falha ao recuperar dados da escola:', err);
-    }
-  }
-
-  const { system, user } = buildPrompts(type, payload, school);
-
-  // Modelos nativos DeepSeek — fallback automatico se o primeiro nao responder
-  const MODEL_CHAIN = customModel
-    ? [customModel]
-    : [
-        'deepseek-v4-pro',   // DeepSeek V4 Pro
-        'deepseek-v4-flash', // DeepSeek V4 Flash
-      ];
-  const FIRST_CHUNK_TIMEOUT_MS = 20000; // 20s sem nenhum chunk = timeout
-
-  const client = new OpenAI({
-    apiKey: activeApiKey,
-    baseURL: activeBaseUrl,
-  });
-
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (data: object) => {
-        try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`)); } catch { /* fechado */ }
-      };
-
-      let lastError: { httpStatus: number; rawMsg: string } | null = null;
-
-      for (const model of MODEL_CHAIN) {
-        send({ meta: { model, attempt: MODEL_CHAIN.indexOf(model) + 1 } });
-
-        // AbortController para timeout do primeiro chunk
-        const abort = new AbortController();
-        let firstChunkReceived = false;
-        const timeoutId = setTimeout(() => {
-          if (!firstChunkReceived) {
-            console.error('[v0] Timeout ' + FIRST_CHUNK_TIMEOUT_MS + 'ms sem resposta do modelo ' + model);
-            abort.abort();
-          }
-        }, FIRST_CHUNK_TIMEOUT_MS);
-
-        try {
-          const completion = await client.chat.completions.create(
-            {
-              model,
-              messages: [
-                { role: 'system', content: system },
-                { role: 'user', content: user },
-              ],
-              temperature: cfg.temperature,
-              stream: true,
-              thinking: { type: 'disabled' },
-            } as any,
-            { signal: abort.signal }
-          );
-
-          let full = '';
-          let totalTokens = 0;
-          let promptTokens = 0;
-          let completionTokens = 0;
-          for await (const chunk of completion as any) {
-            if (!firstChunkReceived) {
-              firstChunkReceived = true;
-              clearTimeout(timeoutId);
-              send({ meta: { model, firstChunkMs: Date.now() } });
-            }
-            const delta = chunk.choices[0]?.delta?.content;
-            if (delta) {
-              full += delta;
-              send({ delta, model });
-            }
-            // Captura tokens do último chunk (DeepSeek envia usage no final)
-            if (chunk.usage) {
-              promptTokens = chunk.usage.prompt_tokens || 0;
-              completionTokens = chunk.usage.completion_tokens || 0;
-              totalTokens = chunk.usage.total_tokens || (promptTokens + completionTokens);
-            }
-          }
-          clearTimeout(timeoutId);
-          
-          // Log de tokens no console do servidor
-          console.log('[AI] Modelo: ' + model + ' | Tokens: ' + totalTokens + ' (prompt: ' + promptTokens + ', completion: ' + completionTokens + ')');
-          
-          send({ done: true, result: full.trim(), model, usage: { totalTokens, promptTokens, completionTokens } });
-          return; // sucesso — sai do loop
-        } catch (err: any) {
-          clearTimeout(timeoutId);
-          const isTimeout = err?.name === 'AbortError' || err?.code === 'ETIMEDOUT';
-          const httpStatus: number = isTimeout ? 504 : (err?.status ?? 500);
-          const rawMsg: string = isTimeout
-            ? 'Modelo ' + model + ' nao respondeu em ' + (FIRST_CHUNK_TIMEOUT_MS / 1000) + 's'
-            : (err?.message ?? 'Erro desconhecido.');
-
-          lastError = { httpStatus, rawMsg };
-          console.error('[v0] Erro modelo ' + model + ':', httpStatus, rawMsg);
-
-          const isLastModel = model === MODEL_CHAIN[MODEL_CHAIN.length - 1];
-          if (!isLastModel) {
-            const nextModel = MODEL_CHAIN[MODEL_CHAIN.indexOf(model) + 1];
-            send({ meta: { fallback: true, from: model, to: nextModel, reason: rawMsg } });
-            continue; // tenta proximo modelo
-          }
-
-          // Todos os modelos falharam
-          const friendlyMsg = deepseekErrorMessage(httpStatus, rawMsg);
-          send({ error: friendlyMsg, httpStatus, raw: rawMsg });
-        }
-      }
-
-      controller.close();
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    },
-  });
 }
