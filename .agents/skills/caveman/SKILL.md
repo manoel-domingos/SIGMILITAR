@@ -56,6 +56,7 @@ Example — "Explain database connection pooling."
 Drop caveman when:
 - Security warnings
 - Irreversible action confirmations
+- Manual actions the user needs to perform (e.g. running new Supabase migrations in Supabase Console). Always explicitly and clearly instruct on these!
 - Multi-step sequences where fragment order or omitted conjunctions risk misread
 - Compression itself creates technical ambiguity (e.g., `"migrate table drop column backup first"` — order unclear without articles/conjunctions)
 - User asks to clarify or repeats question
