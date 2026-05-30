@@ -5,15 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase, isSupabaseReady } from '@/lib/supabase';
 import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
-import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight, Building2, ShieldCheck } from 'lucide-react';
+import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight, Building2 } from 'lucide-react';
 import versionData from '@/lib/version.json';
 import { SCHOOL_SUBTITLE } from '@/lib/school';
 
 export default function Login() {
   const router = useRouter();
   const {
-    user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored,
-    showContextModal, setShowContextModal, contextSchools, setActiveSchoolContext, openContextModal
+    user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored
   } = useAppContext();
   const { logoLogin, schoolName, tenantId } = useTenantConfig();
 
@@ -23,24 +22,6 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [isCentral, setIsCentral] = useState(false);
-
-  function resolveSchoolPath(schoolId: string): string {
-    const slug =
-      schoolId === 'joaobatista' ? 'eecmprofjoaobatista' :
-        schoolId === 'heliodoro' ? 'eecmheliodoro' :
-          schoolId;
-    return `/${slug}/`;
-  }
-
-  const handleSchoolSelect = (schoolId: string) => {
-    setActiveSchoolContext(schoolId);
-    setShowContextModal(false);
-    if (schoolId === 'DRE') {
-      router.push('/dre');
-    } else {
-      router.push(resolveSchoolPath(schoolId));
-    }
-  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -81,8 +62,7 @@ export default function Login() {
         if (isCentralDomain) {
           // No domínio central: redireciona para a rota com slug da escola do usuário
           if (currentUserRole === 'admin_global') {
-            // admin_global vê o modal de seleção de escola antes de prosseguir
-            openContextModal();
+            router.push('/dre');
             return;
           }
 
@@ -101,7 +81,7 @@ export default function Login() {
       const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
       router.push(currentUserRole === 'admin_global' ? '/dre' : currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`);
     }
-  }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router, openContextModal]);
+  }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -335,36 +315,6 @@ export default function Login() {
         </div>
       </div>
 
-      {showContextModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white border border-[#2B2C33]/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5">
-            <div className="w-16 h-16 bg-[#0052CC]/10 rounded-2xl flex items-center justify-center mx-auto border border-[#0052CC]/20">
-              <Building2 className="w-8 h-8 text-[#0052CC]" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-xl font-bold text-[#2B2C33] tracking-tight">Qual painel deseja ver?</h3>
-              <p className="text-sm text-[#2B2C33]/60 font-light">Você pode alternar a qualquer momento pelo botão Trocar Escola.</p>
-            </div>
-            <div className="flex flex-col gap-2 pt-1">
-              <button
-                onClick={() => handleSchoolSelect('DRE')}
-                className="w-full py-3 rounded-xl bg-[#0052CC] hover:bg-[#0052CC]/90 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
-              >
-                <Building2 className="w-4 h-4" /> Painel DRE — Visão Consolidada
-              </button>
-              {contextSchools.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => handleSchoolSelect(s.id)}
-                  className="w-full py-3 rounded-xl border border-[#2B2C33]/10 text-sm font-bold text-[#2B2C33] hover:bg-[#F4F5F7] transition-colors flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <ShieldCheck className="w-4 h-4 text-[#2B2C33]/50" /> {s.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
