@@ -227,7 +227,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const key = 'module_choice_chosen_' + new Date().toDateString();
     if (typeof window !== 'undefined') sessionStorage.setItem(key, 'common_' + module);
 
-    const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
+    const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId === 'tangara' ? 'eecmtangara' : currentUserSchoolId;
     if (slug) {
       router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
     }
@@ -237,13 +237,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Valida se a escola existe na lista antes de prosseguir (Segurança)
     const schoolExists = contextSchools.some(s => s.id === schoolId);
     if (!schoolExists) return;
+    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
     setActivePanelModule(module);
     setActiveSchoolContext(schoolId);
     const key = 'dre_context_chosen_' + new Date().toDateString();
     if (typeof window !== 'undefined') sessionStorage.setItem(key, schoolId);
     setShowContextModal(false);
     setExpandedSchool(null);
-    router.push('/' + schoolId + (module === 'pedagogico' ? '/pedagogico' : ''));
+    router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
   };
 
   const toggleSchool = (id: string) =>
