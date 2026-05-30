@@ -138,7 +138,7 @@ function RegistroDisciplinarContent() {
   const [durationDays, setDurationDays] = useState(1);
   const [attenuatingFactors, setAttenuatingFactors] = useState<string[]>([]);
   const [aggravatingFactors, setAggravatingFactors] = useState<string[]>([]);
-  const [graveMeasureType, setGraveMeasureType] = useState<'Suspensão Escolar' | 'Suspensão de Recreação' | 'Ação Educativa' | 'Transferência Educativa'>('Suspensão Escolar');
+  const [graveMeasureType, setGraveMeasureType] = useState<'Parecer do gestor' | 'Suspensão Escolar' | 'Suspensão de Recreação' | 'Ação Educativa' | 'Transferência Educativa'>('Parecer do gestor');
   const [measureOverride, setMeasureOverride] = useState<string | null>(null);
   const [measurePanelOpen, setMeasurePanelOpen] = useState<Record<string, boolean>>({});
   const [selectedMeasures, setSelectedMeasures] = useState<string[]>([]);
@@ -1979,9 +1979,10 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                             <label className="block text-[11px] font-bold text-blue-700 uppercase mb-2 tracking-wider">Tipo de Resposta Educativa (Grave)</label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {[
-                                'Suspensão Escolar',
-                                'Suspensão de Recreação',
+                                'Parecer do gestor',
                                 'Ação Educativa',
+                                'Suspensão de Recreação',
+                                'Suspensão Escolar',
                                 'Transferência Educativa'
                               ].map(type => (
                                 <button
@@ -1999,7 +2000,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                             </div>
                           </div>
 
-                          {graveMeasureType === 'Suspensão Escolar' && (
+                          {(graveMeasureType === 'Suspensão Escolar' || graveMeasureType === 'Suspensão de Recreação') && (
                             <div className="animate-in fade-in slide-in-from-top-1">
                               <label className="block text-[10px] font-bold text-blue-700 uppercase mb-2">Duração (Dias Letivos)</label>
                               <div className="flex items-center gap-4">
