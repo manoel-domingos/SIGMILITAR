@@ -4,6 +4,7 @@ ALTER TABLE occurrences ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'iniciada';
 ALTER TABLE occurrences ADD COLUMN IF NOT EXISTS solucao_acao TEXT;
 
 -- Adiciona validacao de dominio para o status
+ALTER TABLE occurrences DROP CONSTRAINT IF EXISTS chk_occurrence_status;
 ALTER TABLE occurrences ADD CONSTRAINT chk_occurrence_status CHECK (status IN ('iniciada', 'em tratamento', 'resolvida'));
 
 -- Atualiza registros existentes

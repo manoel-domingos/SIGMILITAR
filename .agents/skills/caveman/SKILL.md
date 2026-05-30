@@ -73,3 +73,7 @@ Example — destructive op:
 ## Boundaries
 
 Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert. Level persist until changed or session end.
+
+## Canny Integration
+
+Auto-count git pushes. Filter last 15 commits for top 3 IMPORTANT changes (ignore typos/formatting/chores, focus on features/fixes/migrations). Send to Canny in Portuguese automatically upon 3 pushes.

@@ -115,10 +115,42 @@ function translateCommit(msg) {
   return translated;
 }
 
+function isImportantCommit(msg) {
+  if (!msg) return false;
+  const msgLower = msg.toLowerCase();
+  
+  // Ignore purely minor chores/formatting/merges/lockfiles
+  const minorKeywords = ['eslint', 'cleanup', 'formatting', 'typo', 'merge branch', 'merge remote', 'package-lock.json', '.gitignore', 'yarn.lock'];
+  if (minorKeywords.some(kw => msgLower.includes(kw))) {
+    return false;
+  }
+  
+  // Important markers or features
+  const importantKeywords = [
+    'feat', 'fix', 'refactor', 'migration', 'database', 'banco', 'sql',
+    'psicossocial', 'canny', 'status', 'medida', 'aluno', 'escola',
+    'simulador', 'xerife', 'responsavel', 'guardian', 'ata', 'imprimir',
+    'auditoria', 'import', 'api', 'pedagogico', 'registro', 'comportamento'
+  ];
+  
+  return importantKeywords.some(kw => msgLower.includes(kw));
+}
+
 function getCommitLogs() {
   try {
-    const output = execSync('git log -n 3 --pretty=format:"%s (%h)"').toString().trim();
-    return output.split('\n').filter(Boolean);
+    // Fetch last 15 commits to have a rich pool of history
+    const output = execSync('git log -n 15 --pretty=format:"%s (%h)"').toString().trim();
+    const rawCommits = output.split('\n').filter(Boolean);
+    
+    // Filter out minor commits, keeping only the important ones
+    const importantCommits = rawCommits.filter(c => isImportantCommit(c));
+    
+    // Fallback if we don't have enough important commits in the log pool
+    if (importantCommits.length > 0) {
+      return importantCommits.slice(0, 3);
+    }
+    
+    return rawCommits.slice(0, 3);
   } catch (err) {
     console.error('Erro ao ler logs do git:', err.message);
     return ['Ajustes e melhorias no sistema'];
