@@ -144,8 +144,7 @@ function RegistroDisciplinarContent() {
   const [measureOverride, setMeasureOverride] = useState<string | null>(null);
   const [measurePanelOpen, setMeasurePanelOpen] = useState<Record<string, boolean>>({});
   const [selectedMeasures, setSelectedMeasures] = useState<string[]>([]);
-  const [simulatedRole, setSimulatedRole] = useState<string | null>(null);
-  const effectiveRole = simulatedRole || currentUserRole;
+  const effectiveRole = currentUserRole;
 
   const [isImproving, setIsImproving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -1467,19 +1466,6 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
               Registro Disciplinar
-              <select 
-                value={simulatedRole || ''}
-                onChange={(e) => setSimulatedRole(e.target.value || null)}
-                className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider transition border outline-none ${simulatedRole ? 'bg-amber-500 text-white border-amber-600' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'}`}
-                title="Simular visualização"
-              >
-                <option value="">Simulador: OFF</option>
-                <option value="GESTOR">Gestor</option>
-                <option value="COORD">Coord.</option>
-                <option value="PROFESSOR">Professor</option>
-                <option value="MONITOR">Monitor</option>
-                <option value="admin_global">Admin</option>
-              </select>
             </h1>
             <p className="text-slate-500 text-sm mt-1">Gerenciamento de ocorrências dos alunos.</p>
           </div>
@@ -1624,7 +1610,11 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          {allOccRules.map((r: any) => <div key={r.code} className="text-xs">{r.measure}</div>)}
+                          <div className="text-xs">
+                            {Array.isArray(o.measures) && o.measures.length > 0
+                              ? o.measures.join(' / ')
+                              : (o.measure || allOccRules.map((r: any) => r.measure).filter(Boolean).join(' / ') || 'A definir')}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <button

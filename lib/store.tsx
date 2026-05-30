@@ -590,6 +590,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 status: o.status,
                 solucao_acao: o.solucao_acao,
                 archived: o.archived || false,
+                measures: o.measures || [],
+                measure: o.measures && o.measures.length > 0 ? o.measures[0] : null,
                 createdAt: o.created_at
               };
             }));
@@ -1249,6 +1251,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: o.status,
           solucao_acao: o.solucao_acao,
           archived: o.archived || false,
+          measures: o.measures || [],
+          measure: o.measures && o.measures.length > 0 ? o.measures[0] : null,
           createdAt: o.created_at
         };
       }));
@@ -1333,7 +1337,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         status: o.status || 'iniciada',
         solucao_acao: o.solucao_acao || null,
         archived: o.archived || false,
-        school_id: dbSchoolId
+        school_id: dbSchoolId,
+        measures: o.measures || []
       };
 
       // Handle optional fields that might be missing from schema by 
@@ -1434,6 +1439,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dbPayload.rule_code = [o.ruleCode];
       }
       if (o.registeredBy) dbPayload.registered_by = o.registeredBy;
+      if (o.measures !== undefined) dbPayload.measures = o.measures;
       
       // Handle observations with optional fields
       if (o.observations !== undefined || o.measure || o.durationDays || o.attenuatingFactors || o.aggravatingFactors) {

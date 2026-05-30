@@ -845,7 +845,7 @@ function TopbarLayout({
   menuGroups: MenuGroup[];
 }) {
   const currentInfo = findGroupForPath(pathname);
-  const { currentUserRole, activeSchoolContext } = useAppContext();
+  const { currentUserRole, activeSchoolContext, activePanelModule } = useAppContext();
   const { logoDash, schoolName, tenantId } = useTenantConfig();
   const rawPathname = usePathname();
   const searchParams = useSearchParams();
@@ -918,16 +918,30 @@ function TopbarLayout({
                 Disciplina e Monitoramento Escolar
               </p>
             </div>
-            {currentUserRole === 'admin_global' && onOpenContextModal && (
+            {onOpenContextModal && (
               <button
                 onClick={onOpenContextModal}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ml-2
-                  bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400
-                  hover:bg-blue-100 dark:hover:bg-blue-500/20"
-                title="Trocar contexto de escola"
+                className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ml-2 ${
+                  activeSchoolContext === 'DRE'
+                    ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
+                    : activePanelModule === 'pedagogico'
+                    ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20'
+                    : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20'
+                }`}
+                title="Trocar módulo de gestão"
               >
-                <Building2 className="w-3.5 h-3.5" />
-                {activeSchoolContext === 'DRE' ? 'DRE' : activeSchoolContext}
+                {activeSchoolContext === 'DRE' ? (
+                  <Building2 className="w-3.5 h-3.5" />
+                ) : activePanelModule === 'pedagogico' ? (
+                  <BookOpen className="w-3.5 h-3.5" />
+                ) : (
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                )}
+                {activeSchoolContext === 'DRE'
+                  ? 'Painel DRE'
+                  : activePanelModule === 'pedagogico'
+                  ? 'Gestão Pedagógica'
+                  : 'Gestão Cívico-Militar'}
               </button>
             )}
           </div>
