@@ -140,121 +140,123 @@ export default function FasePage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
-      
-      {/* Navigation Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 dark:text-slate-500 flex-wrap">
-        <Link href={`/${schoolSlug}/pedagogico`} className="hover:text-blue-500 transition-colors">
-          Gestão Pedagógica
-        </Link>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <Link href={`/${schoolSlug}/pedagogico/${eixoSlug}`} className="hover:text-blue-500 transition-colors">
-          Eixo {eixo!.numero}
-        </Link>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[200px]">
-          Fase {fase!.numero}
-        </span>
-      </div>
-
-      {/* Header section with titles and navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-6">
-        <div className="space-y-2">
-          <button
-            onClick={() => router.push(`/${schoolSlug}/pedagogico/${eixoSlug}`)}
-            className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline font-bold"
-          >
-            <ArrowLeft className="w-3 h-3" /> Voltar ao Eixo
-          </button>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
-            Fase {fase!.numero}: {fase!.nome}
-          </h1>
-          <p className="text-xs text-slate-400 dark:text-slate-500">
-            Preenchimento de evidências e upload de documentos regulamentares da escola: 
-            <span className="font-semibold text-slate-500 dark:text-slate-400 ml-1">{schoolName}</span>
-          </p>
+    <AppShell>
+      <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
+        
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 dark:text-slate-500 flex-wrap">
+          <Link href={`/${schoolSlug}/pedagogico`} className="hover:text-blue-500 transition-colors">
+            Gestão Pedagógica
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <Link href={`/${schoolSlug}/pedagogico/${eixoSlug}`} className="hover:text-blue-500 transition-colors">
+            Eixo {eixo!.numero}
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[200px]">
+            Fase {fase!.numero}
+          </span>
         </div>
-      </div>
 
-      {/* Progress tracking banner */}
-      <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
-            <ClipboardCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="font-bold text-slate-700 dark:text-slate-200 text-sm">
-              Progresso da Fase
-            </h4>
+        {/* Header section with titles and navigation */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-6">
+          <div className="space-y-2">
+            <button
+              onClick={() => router.push(`/${schoolSlug}/pedagogico/${eixoSlug}`)}
+              className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline font-bold"
+            >
+              <ArrowLeft className="w-3 h-3" /> Voltar ao Eixo
+            </button>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+              Fase {fase!.numero}: {fase!.nome}
+            </h1>
             <p className="text-xs text-slate-400 dark:text-slate-500">
-              {completedEvidences} de {totalEvidences} evidências entregues
+              Preenchimento de evidências e upload de documentos regulamentares da escola: 
+              <span className="font-semibold text-slate-500 dark:text-slate-400 ml-1">{schoolName}</span>
             </p>
           </div>
         </div>
-        <div className="w-full sm:w-80">
-          <ProgressBar value={phaseProgress} size="sm" showText={true} />
-        </div>
-      </div>
 
-      {/* Evidences list */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <Award className="w-4 h-4" />
-            <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-              Lista de Evidências Regulatórias
-            </h3>
+        {/* Progress tracking banner */}
+        <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
+              <ClipboardCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-700 dark:text-slate-200 text-sm">
+                Progresso da Fase
+              </h4>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                {completedEvidences} de {totalEvidences} evidências entregues
+              </p>
+            </div>
           </div>
-          {isReadonly && (
-            <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">
-              <Info className="w-3 h-3" />
-              Somente Leitura
+          <div className="w-full sm:w-80">
+            <ProgressBar value={phaseProgress} size="sm" showText={true} />
+          </div>
+        </div>
+
+        {/* Evidences list */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <Award className="w-4 h-4" />
+              <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                Lista de Evidências Regulatórias
+              </h3>
+            </div>
+            {isReadonly && (
+              <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">
+                <Info className="w-3 h-3" />
+                Somente Leitura
+              </div>
+            )}
+          </div>
+
+          {evidencesList.length === 0 ? (
+            <div className="p-12 text-center border border-dashed rounded-2xl border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-sm">
+              Nenhuma evidência cadastrada para esta fase.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {evidencesList.map(ev => {
+                const check = checklistData.find(c => c.evidencia_id === ev.id);
+                return (
+                  <EvidenciaItem
+                    key={ev.id}
+                    evidencia={ev}
+                    checklist={check}
+                    schoolId={resolvedSchoolId}
+                    eixoNome={eixo!.nome}
+                    faseNome={fase!.nome}
+                    currentUser={user}
+                    readonly={isReadonly}
+                    onSaveSuccess={(msg) => showToast(msg, 'ok')}
+                    onSaveError={(msg) => showToast(msg, 'err')}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
 
-        {evidencesList.length === 0 ? (
-          <div className="p-12 text-center border border-dashed rounded-2xl border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-sm">
-            Nenhuma evidência cadastrada para esta fase.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-5">
-            {evidencesList.map(ev => {
-              const check = checklistData.find(c => c.evidencia_id === ev.id);
-              return (
-                <EvidenciaItem
-                  key={ev.id}
-                  evidencia={ev}
-                  checklist={check}
-                  schoolId={resolvedSchoolId}
-                  eixoNome={eixo!.nome}
-                  faseNome={fase!.nome}
-                  currentUser={user}
-                  readonly={isReadonly}
-                  onSaveSuccess={(msg) => showToast(msg, 'ok')}
-                  onSaveError={(msg) => showToast(msg, 'err')}
-                />
-              );
-            })}
+        {/* Dynamic Toast Alert Notification */}
+        {toast && (
+          <div className={`fixed bottom-5 right-5 z-50 text-xs sm:text-sm px-4 py-3.5 rounded-xl shadow-xl border flex items-center gap-2 animate-in slide-in-from-bottom-5 duration-200 ${
+            toast.type === 'err' 
+              ? 'bg-rose-600 border-rose-500/20 text-white' 
+              : 'bg-slate-900 border-slate-800 text-white dark:bg-slate-850 dark:border-slate-800'
+          }`}>
+            {toast.type === 'ok' ? (
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <X className="w-4 h-4 text-white shrink-0" />
+            )} 
+            <span className="font-semibold">{toast.msg}</span>
           </div>
         )}
       </div>
-
-      {/* Dynamic Toast Alert Notification */}
-      {toast && (
-        <div className={`fixed bottom-5 right-5 z-50 text-xs sm:text-sm px-4 py-3.5 rounded-xl shadow-xl border flex items-center gap-2 animate-in slide-in-from-bottom-5 duration-200 ${
-          toast.type === 'err' 
-            ? 'bg-rose-600 border-rose-500/20 text-white' 
-            : 'bg-slate-900 border-slate-800 text-white dark:bg-slate-850 dark:border-slate-800'
-        }`}>
-          {toast.type === 'ok' ? (
-            <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          ) : (
-            <X className="w-4 h-4 text-white shrink-0" />
-          )} 
-          <span className="font-semibold">{toast.msg}</span>
-        </div>
-      )}
-    </div>
+    </AppShell>
   );
 }
