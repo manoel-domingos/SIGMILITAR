@@ -1497,6 +1497,7 @@ function ProfileMenu({
   currentUserRole, logout, setIsChatOpen, layoutMode, toggleLayout,
 }: ProfileMenuProps) {
   const { tenantId } = useTenantConfig();
+  const { simulatedRole, setSimulatedRole, actualUserRole } = useAppContext();
   const rawPathname = usePathname();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -1735,6 +1736,25 @@ function ProfileMenu({
             <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{userName}</p>
             <p className="text-slate-500 dark:text-slate-400 text-xs truncate">{user?.email || 'Sem e-mail'}</p>
           </div>
+
+          {actualUserRole === 'admin_global' && (
+            <div className="px-4 py-2 border-b border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-500/5">
+              <label className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider mb-1.5 block">
+                Modo Função (Simulador)
+              </label>
+              <select 
+                value={simulatedRole || ''}
+                onChange={(e) => setSimulatedRole(e.target.value || null)}
+                className="w-full text-xs px-2 py-1.5 rounded-md bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700/50 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-amber-500/20"
+              >
+                <option value="">Off (Real)</option>
+                <option value="GESTOR">Gestor</option>
+                <option value="COORD">Coord.</option>
+                <option value="PROFESSOR">Professor</option>
+                <option value="MONITOR">Monitor</option>
+              </select>
+            </div>
+          )}
 
           <div className="py-2">
             {currentUserRole === 'admin_global' && (

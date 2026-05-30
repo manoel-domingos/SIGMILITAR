@@ -7,9 +7,35 @@ import { ShieldAlert, Search, Database } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 
 export default function AuditoriaPage() {
-  const { auditLogs } = useAppContext();
+  const { auditLogs, students, occurrences, appUsers, rules, currentUserRole, activeSchoolContext, setActiveSchoolContext, contextSchools } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState('ALL');
+
+  const enrichDetails = (details: string) => {
+    let newDetails = details;
+    const uuidRegex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi;
+    const matches = details.match(uuidRegex);
+    if (matches) {
+      matches.forEach(uuid => {
+        const student = students.find(s => s.id === uuid);
+        if (student) {
+          newDetails = newDetails.replace(uuid, student.name);
+          return;
+        }
+        const occurrence = occurrences.find(o => o.id === uuid);
+        if (occurrence) {
+          newDetails = newDetails.replace(uuid, `Nº ${occurrence.ataNumber ?? occurrence.id.slice(0, 4)}`);
+          return;
+        }
+        const user = appUsers.find(u => u.id === uuid);
+        if (user) {
+          newDetails = newDetails.replace(uuid, user.name || user.email);
+          return;
+        }
+      });
+    }
+    return newDetails;
+  };
 
   const filteredLogs = auditLogs.filter(log => {
     const matchesSearch = 
@@ -39,8 +65,25 @@ export default function AuditoriaPage() {
             <ShieldAlert className="w-4 h-4" />
             <span className="text-xs font-semibold uppercase tracking-wider">Segurança</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">Auditoria de Ações</h1>
-          <p className="text-slate-500 text-sm">Registro completo de todas as ações realizadas no sistema.</p>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+            Auditoria de Ações
+            {/* Seletor de Escola */}
+            <div className="flex items-center gap-2">
+              <select
+                value={activeSchoolContext}
+                onChange={(e) => setActiveSchoolContext(e.target.value)}
+                disabled={currentUserRole !== 'admin_global'}
+                className="text-xs border border-slate-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
+              >
+                {contextSchools.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">Registro completo de todas as ações realizadas no sistema.</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -106,7 +149,7 @@ export default function AuditoriaPage() {
                         {log.entityName}
                       </td>
                       <td className="px-6 py-4 text-slate-500">
-                        {log.details}
+                        {enrichDetails(log.details)}
                       </td>
                     </tr>
                   ))

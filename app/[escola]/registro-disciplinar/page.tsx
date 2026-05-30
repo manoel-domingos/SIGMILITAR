@@ -1467,13 +1467,19 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
               Registro Disciplinar
-              <button 
-                onClick={() => setSimulatedRole(p => p === 'GESTOR' ? null : 'GESTOR')}
-                className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider transition border ${simulatedRole === 'GESTOR' ? 'bg-amber-500 text-white border-amber-600' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'}`}
-                title="Simular visualização de Gestor"
+              <select 
+                value={simulatedRole || ''}
+                onChange={(e) => setSimulatedRole(e.target.value || null)}
+                className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider transition border outline-none ${simulatedRole ? 'bg-amber-500 text-white border-amber-600' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'}`}
+                title="Simular visualização"
               >
-                {simulatedRole === 'GESTOR' ? 'Modo Gestor ATIVO' : 'Simular Gestor'}
-              </button>
+                <option value="">Simulador: OFF</option>
+                <option value="GESTOR">Gestor</option>
+                <option value="COORD">Coord.</option>
+                <option value="PROFESSOR">Professor</option>
+                <option value="MONITOR">Monitor</option>
+                <option value="admin_global">Admin</option>
+              </select>
             </h1>
             <p className="text-slate-500 text-sm mt-1">Gerenciamento de ocorrências dos alunos.</p>
           </div>
@@ -1883,7 +1889,12 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                               <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 animate-in fade-in slide-in-from-top-1 duration-150">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Medidas aplicadas (pode selecionar várias)</p>
                                 <div className="space-y-1.5">
-                                  {AVAILABLE_MEASURES.map((label) => {
+                                  {AVAILABLE_MEASURES.filter((label) => {
+                                    if (effectiveRole === 'PROFESSOR') {
+                                      return ['Advertência Oral', 'Advertência Escrita', 'Acionar os pais'].includes(label);
+                                    }
+                                    return true;
+                                  }).map((label) => {
                                     const isChecked = selectedMeasures.includes(label);
                                     const isRecommended = label === escalation.measure;
                                     return (

@@ -55,6 +55,9 @@ interface AppState {
   contextSchools: { id: string; name: string }[];
   activePanelModule: 'civico-militar' | 'pedagogico';
   setActivePanelModule: (module: 'civico-militar' | 'pedagogico') => void;
+  simulatedRole: string | null;
+  setSimulatedRole: (role: string | null) => void;
+  actualUserRole: AppUserRole | 'GUEST';
   isAuthRestored: boolean;
   isDebugMode: boolean;
   geminiApiKey: string;
@@ -276,8 +279,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem('active_panel_module', module);
     }
   }, []);
+  const [simulatedRole, setSimulatedRoleState] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('simulated_role') || null;
+    }
+    return null;
+  });
 
-  const currentUserRole = useMemo(() => {
+  const setSimulatedRole = React.useCallback((role: string | null) => {
+    setSimulatedRoleState(role);
+    if (typeof window !== 'undefined') {
+      if (role) sessionStorage.setItem('simulated_role', role);
+      else sessionStorage.removeItem('simulated_role');
+    }
+  }, []);
+
+  const actualUserRole = useMemo(() => {
     if (isGuest) return 'GUEST';
     if (user && user.email) {
       const emailLower = user.email.toLowerCase().trim();
@@ -300,6 +317,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return 'GUEST';
   }, [user, isGuest, appUsers]);
 
+  const currentUserRole = simulatedRole && actualUserRole === 'admin_global' ? (simulatedRole as AppUserRole) : actualUserRole;
+
   const currentUserSchoolId = useMemo(() => {
     if (!user?.email || isGuest) return null;
     const emailLower = user.email.toLowerCase().trim();
@@ -319,9 +338,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Contexto de escola ativa — inicializa pelo domínio para filtrar dados desde o primeiro fetch.
   // admin_global pode alternar depois; demais usuários seguem seu school_id.
   const [activeSchoolContext, setActiveSchoolContextState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('active_school_context');
+      if (saved) return saved;
+    }
     const tenantId = contextTenantId ?? getTenantIdFromHost();
-    const dbSchoolId = getDbSchoolId(tenantId);
-    return dbSchoolId !== 'joaobatista' ? dbSchoolId : '';
+    return getDbSchoolId(tenantId);
   });
   // Ref para acesso sem closure stale dentro de fetchData/refreshData
   const activeSchoolContextRef = React.useRef(activeSchoolContext);
@@ -431,7 +453,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
         const sid = envSchoolId ?? (schoolId ?? activeSchoolContextRef.current);
         const dbSchoolId = getDbSchoolId(sid);
-        const bySchool = (q: any) => dbSchoolId && dbSchoolId !== 'DRE' ? q.eq('school_id', dbSchoolId) : q;
+        const bySchool = (q: any) => !dbSchoolId || dbSchoolId === 'DRE' ? q : (dbSchoolId === 'joaobatista' ? q.or('school_id.eq.joaobatista,school_id.is.null') : q.eq('school_id', dbSchoolId));
         setIsSyncing(true);
         try {
           // Busca tabelas sequencialmente em grupos para evitar sobrecarga de locks no Safari
@@ -707,7 +729,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Prioridade: (1) perfil do Supabase → (2) domínio atual → (3) sem filtro (admin_global)
       const domainTenantId = getTenantIdFromHost();
       const domainDbSchoolId = getDbSchoolId(domainTenantId);
-      let bootSchoolId = domainDbSchoolId !== 'joaobatista' ? domainDbSchoolId : '';
+      let bootSchoolId = domainDbSchoolId;
 
       const hasOAuthCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('code');
       
@@ -1179,7 +1201,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
     const sid = envSchoolId ?? activeSchoolContextRef.current;
     const dbSchoolId = getDbSchoolId(sid);
-    const bySchool = (q: any) => dbSchoolId && dbSchoolId !== 'DRE' ? q.eq('school_id', dbSchoolId) : q;
+    const bySchool = (q: any) => !dbSchoolId || dbSchoolId === 'DRE' ? q : (dbSchoolId === 'joaobatista' ? q.or('school_id.eq.joaobatista,school_id.is.null') : q.eq('school_id', dbSchoolId));
     setIsSyncing(true);
     try {
       const responses = await Promise.all([
@@ -1992,7 +2014,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       students, occurrences, accidents, praises, rules, summons, conductTerms, auditLogs, staffMembers, appUsers, isSupabaseConnected, isSyncing,
-      user, isGuest, currentUserRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
+      user, isGuest, currentUserRole, actualUserRole, simulatedRole, setSimulatedRole, currentUserSchoolId, activeSchoolContext, setActiveSchoolContext, openContextModal, setOpenContextModal, isAuthRestored, isDebugMode, setIsDebugMode,
       showContextModal, setShowContextModal, contextSchools,
       activePanelModule, setActivePanelModule,
       geminiApiKey, setGeminiApiKey, groqApiKey, setGroqApiKey,
