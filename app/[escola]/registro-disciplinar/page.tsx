@@ -102,6 +102,13 @@ function RegistroDisciplinarContent() {
   const [newGuardianPhone, setNewGuardianPhone] = useState('');
   const [guardianIgnoredWarning, setGuardianIgnoredWarning] = useState(false);
   const guardianPhoneRef = useRef<HTMLInputElement>(null);
+  
+  // States para o fluxo de resolução e impressão
+  const [showPrintBanner, setShowPrintBanner] = useState(false);
+  const [showResolucaoModal, setShowResolucaoModal] = useState(false);
+  const [resolucaoText, setResolucaoText] = useState('');
+  const [resolucaoSaving, setResolucaoSaving] = useState(false);
+  
   const [viewOccurrence, setViewOccurrence] = useState<Occurrence | null>(null);
   const [voTab, setVoTab] = useState<'status' | 'detalhes' | 'documentos' | 'responsaveis'>('status');
   const [voUploadingDoc, setVoUploadingDoc] = useState(false);
@@ -667,6 +674,29 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
       </tr>
     </table>`;
 
+  const handleResolver = async () => {
+    if (!_vo || resolucaoText.length < 20) return;
+    setResolucaoSaving(true);
+    try {
+      await updateOccurrence(_vo.id, { 
+        status: 'resolvida', 
+        solucao_acao: resolucaoText,
+        resolved: true,
+        resolvedAt: new Date().toISOString()
+      });
+      setViewOccurrence({ ..._vo, status: 'resolvida', solucao_acao: resolucaoText });
+      setShowResolucaoModal(false);
+      setResolucaoText('');
+      // Abre direto o painel de exportar
+      setIsPrintPanelOpen(true);
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao salvar resolução.');
+    } finally {
+      setResolucaoSaving(false);
+    }
+  };
+
   const handlePrint = (o: any) => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
@@ -898,7 +928,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
         if (newStudentIds.length > 0) {
           console.log('[v0] Criando ocorrências clonadas para novos alunos:', newStudentIds);
           for (const studentId of newStudentIds) {
-            await addOccurrence({
+            const result = await addOccurrence({
               studentId,
               studentIds: [studentId],
               date,
@@ -916,8 +946,12 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               signedDocUrls,
               durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
               attenuatingFactors,
-              aggravatingFactors
+              aggravatingFactors,
+              status: 'iniciada'
             });
+            if (result && result.id) {
+              await updateOccurrence(result.id, { status: 'em tratamento' });
+            }
           }
           console.log('[v0] Ocorrências clonadas criadas com sucesso para', newStudentIds.length, 'aluno(s)');
         }
@@ -952,11 +986,14 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
             signedDocUrls,
             durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
             attenuatingFactors,
-            aggravatingFactors
+            aggravatingFactors,
+            status: 'iniciada'
           });
           if (result && result.id) {
             savedIds.push(result.id);
             if (!ataNumber && result.ataNumber) ataNumber = result.ataNumber;
+            // Avança status automático após submit final
+            await updateOccurrence(result.id, { status: 'em tratamento' });
           }
         }
 
@@ -2608,7 +2645,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
         return (
           <div
             className="fixed inset-0 glass-overlay z-[9990] flex items-center justify-center p-4 animate-in fade-in duration-200"
-            onMouseDown={(e) => { if (e.target === e.currentTarget) { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); } }}
+            onMouseDown={(e) => { if (e.target === e.currentTarget) { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); setShowPrintBanner(false); } }}
           >
             <div className="bg-white dark:bg-slate-900 w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 fade-in duration-300">
 
@@ -2629,7 +2666,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                   </div>
                 </div>
                 <button
-                  onClick={() => { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); }}
+                  onClick={() => { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); setShowPrintBanner(false); }}
                   className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 shrink-0"
                 >
                   <X className="w-4 h-4" />
@@ -2996,7 +3033,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
 
               {/* ── Footer ── */}
               <div className="border-t border-slate-200 dark:border-slate-700 px-6 py-4 bg-slate-50 dark:bg-slate-800/60 shrink-0">
-                {isPrintPanelOpen && (
+                {isPrintPanelOpen && !showPrintBanner && (
                   <div className="flex items-center gap-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl mb-3">
                     <span className="text-xs text-slate-500 font-medium mr-auto">Exportar como:</span>
                     <button onClick={() => { handleExport(_vo); setIsPrintPanelOpen(false); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white transition text-xs font-semibold">
@@ -3007,18 +3044,42 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                     </button>
                   </div>
                 )}
+                
+                {showPrintBanner && (
+                  <div className="flex items-center flex-wrap gap-3 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl mb-3 animate-in slide-in-from-bottom-2">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium text-sm mr-auto">
+                      <AlertTriangle className="w-4 h-4" />
+                      Ocorrência ainda não foi resolvida
+                    </div>
+                    <button onClick={() => { setShowPrintBanner(false); setIsPrintPanelOpen(true); }} className="px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-500/50 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 transition text-xs font-semibold">
+                      Só imprimir
+                    </button>
+                    <button onClick={() => { setShowPrintBanner(false); setShowResolucaoModal(true); setResolucaoText(_vo.solucao_acao || ''); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow transition text-xs font-bold">
+                      <Check className="w-3.5 h-3.5" /> Resolver e Imprimir
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 flex-wrap">
                   {currentUserRole !== 'GUEST' && (
                     <button
-                      onClick={(e) => { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); openEditModal(e, _vo); }}
+                      onClick={(e) => { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); setShowPrintBanner(false); openEditModal(e, _vo); }}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition text-sm font-semibold"
                     >
                       <Edit2 className="w-3.5 h-3.5" /> Editar
                     </button>
                   )}
                   <button
-                    onClick={() => setIsPrintPanelOpen(v => !v)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition text-sm font-semibold border ${isPrintPanelOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                    onClick={() => {
+                      if (_vo.status !== 'resolvida') {
+                        setIsPrintPanelOpen(false);
+                        setShowPrintBanner(v => !v);
+                      } else {
+                        setShowPrintBanner(false);
+                        setIsPrintPanelOpen(v => !v);
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition text-sm font-semibold border ${isPrintPanelOpen || showPrintBanner ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                   >
                     <Printer className="w-3.5 h-3.5" /> Imprimir
                   </button>
@@ -3031,7 +3092,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                     </button>
                   )}
                   <button
-                    onClick={() => { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); }}
+                    onClick={() => { setViewOccurrence(null); setIsGuardianListOpen(false); setIsPrintPanelOpen(false); setShowPrintBanner(false); }}
                     className="ml-auto px-4 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition text-sm font-medium"
                   >
                     Fechar
@@ -3042,6 +3103,46 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           </div>
         );
       })()}
+
+      {/* Modal Resolução (Resolver e Imprimir) */}
+      {showResolucaoModal && viewOccurrence && (
+        <div className="fixed inset-0 z-[9995] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowResolucaoModal(false); }}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Check className="w-5 h-5 text-emerald-500" /> Resolver Ocorrência
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Descreva a solução ou ação tomada para finalizar este registro antes de imprimir.
+            </p>
+            <textarea 
+              value={resolucaoText}
+              onChange={(e) => setResolucaoText(e.target.value)}
+              className="w-full min-h-[120px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              placeholder="Digite a resolução (mínimo de 20 caracteres)..."
+            />
+            <div className="flex justify-between items-center text-xs">
+              <span className={`${resolucaoText.length < 20 ? 'text-rose-500' : 'text-emerald-500'} font-medium`}>
+                {resolucaoText.length} / 20 caracteres
+              </span>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button 
+                onClick={() => setShowResolucaoModal(false)}
+                className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleResolver}
+                disabled={resolucaoText.length < 20 || resolucaoSaving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition disabled:opacity-50"
+              >
+                {resolucaoSaving ? 'Salvando...' : 'Confirmar e Imprimir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Add Quick Guardian */}
       {isAddGuardianModalOpen && (
