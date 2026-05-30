@@ -945,6 +945,31 @@ function TopbarLayout({
                 );
               });
             })()
+          ) : pathname.includes('/pedagogico') || pathname.includes('/psicossocial') ? (
+            (() => {
+              const pedagogicoLinks = [
+                { href: '/pedagogico',              label: 'Dashboard',           icon: LayoutDashboard },
+                { href: '/pedagogico/gestao-escolar', label: '1. Gestão Escolar', icon: FileText },
+                { href: '/pedagogico/lideranca',    label: '2. Liderança',        icon: Users },
+                { href: '/pedagogico/pedagogico',   label: '3. Pedagógico',       icon: GraduationCap },
+                { href: '/pedagogico/patrimonio',   label: '4. Patrimônio',        icon: Building2 },
+                { href: '/pedagogico/clima-escolar',label: '5. Clima Escolar',    icon: Activity },
+              ];
+              return pedagogicoLinks.map((item) => {
+                const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={getLinkHref(item.href, tenantId, rawPathname)}
+                    className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
+                  >
+                    <Icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
+                    <span className="whitespace-nowrap">{item.label}</span>
+                  </Link>
+                );
+              });
+            })()
           ) : (
             menuGroups.map((group) => (
               <GroupPill
