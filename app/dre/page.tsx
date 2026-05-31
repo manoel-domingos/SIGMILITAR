@@ -11,7 +11,7 @@ import {
   Shield, ShieldCheck, Award, Zap, AlertCircle, ChevronRight, ChevronDown,
   BarChart3, LayoutDashboard, GripVertical,
   ToggleLeft, ToggleRight, X, CheckCircle2, Trophy, FileWarning,
-  Moon, Sun, LogOut, Settings, CloudCheck, CloudOff,
+  Moon, Sun, LogOut, Settings, CloudCheck, CloudOff, BookOpen,
 } from 'lucide-react';
 import DreDashboard, { type SleepData } from '@/components/DreDashboard';
 import AIChat from '@/components/AIChat';
@@ -118,8 +118,6 @@ export default function DrePage() {
     isSupabaseConnected, isSyncing, refreshData, isAuthRestored,
     activePanelModule, setActivePanelModule
   } = useAppContext();
-
-  const [expandedSchool, setExpandedSchool] = useState<string | null>(null);
 
   const handleAdminSelection = (schoolId: string, module: 'civico-militar' | 'pedagogico') => {
     const schoolExists = contextSchools.some(s => s.id === schoolId);
