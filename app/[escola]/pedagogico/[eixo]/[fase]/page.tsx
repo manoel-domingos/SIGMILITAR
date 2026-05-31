@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { getDbSchoolId } from '@/lib/useTenantConfig';
 import AppShell from '@/components/AppShell';
+import { DrivePanel } from '@/components/drive/DrivePanel';
 
 export default function FasePage() {
   const router = useRouter();
@@ -286,30 +287,11 @@ export default function FasePage() {
               )}
             </div>
 
-            {/* Right Column: Google Drive Iframe (Col span 7) */}
-            <div className="lg:col-span-7 bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 rounded-3xl p-5 shadow-sm sticky top-8 flex flex-col gap-4 animate-in slide-in-from-bottom-4 duration-300">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                  <span className="text-xs font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
-                    Repositório Google Drive
-                  </span>
-                </div>
-                <a
-                  href={`https://drive.google.com/drive/folders/${driveFolderId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-500 hover:text-blue-600 font-bold hover:underline flex items-center gap-1 transition-colors"
-                >
-                  Abrir no Drive <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-              <iframe
-                src={`https://drive.google.com/embeddedfolderview?id=${driveFolderId}#list`}
-                className="w-full border-0 rounded-2xl shadow-inner bg-slate-50 dark:bg-slate-900/50"
-                style={{ height: '720px' }}
-                title="Painel Integrado do Google Drive"
-                allow="autoplay"
+            {/* Right Column: Integrated Google Drive Panel (Col span 7) */}
+            <div className="lg:col-span-7 bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 rounded-3xl p-1 shadow-sm sticky top-8 flex flex-col gap-4 animate-in slide-in-from-bottom-4 duration-300">
+              <DrivePanel 
+                initialFolderId={driveFolderId} 
+                title="Repositório Google Drive"
               />
             </div>
 
@@ -375,38 +357,25 @@ export default function FasePage() {
             className="fixed inset-0 z-[9995] flex justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
             onMouseDown={(e) => { if (e.target === e.currentTarget) setIsDrawerOpen(false); }}
           >
-            <div className="w-full sm:w-[50vw] bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col p-6 animate-in slide-in-from-right duration-300 border-l border-slate-200 dark:border-slate-800">
-              
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+            <div className="w-full sm:w-[50vw] bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col p-1 animate-in slide-in-from-right duration-300 border-l border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between px-6 pt-6 pb-2">
                 <div>
-                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Painel Lateral</span>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight mt-0.5">Arquivos da Pasta</h3>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Painel Lateral</span>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight mt-0.5">Gerenciador de Arquivos</h3>
                 </div>
-                <div className="flex items-center gap-3">
-                  <a
-                    href={`https://drive.google.com/drive/folders/${driveFolderId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-500 hover:text-blue-600 font-bold hover:underline flex items-center gap-1 transition-colors"
-                  >
-                    Abrir no Drive <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                  <button
-                    onClick={() => setIsDrawerOpen(false)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
-                    title="Fechar painel"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
+                  title="Fechar painel"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-
-              <iframe
-                src={`https://drive.google.com/embeddedfolderview?id=${driveFolderId}#list`}
-                className="w-full border-0 rounded-2xl shadow-inner bg-slate-50 dark:bg-slate-900/50 flex-1"
-                title="Painel Lateral do Google Drive"
-                allow="autoplay"
-              />
+              <div className="flex-1 overflow-y-auto flex flex-col">
+                <DrivePanel 
+                  initialFolderId={driveFolderId} 
+                />
+              </div>
             </div>
           </div>
         )}
