@@ -7,3 +7,6 @@ coverage/
 !.env.example
 
 .vercel
+
+# Google service account keys
+eecm-494223-*.json

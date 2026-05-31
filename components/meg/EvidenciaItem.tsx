@@ -160,7 +160,7 @@ export default function EvidenciaItem({
     }
   };
 
-  // Handle uploading files into Supabase Storage
+  // Handle uploading files into Google Drive via backend API
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (readonly || uploading || !file) return;
@@ -168,28 +168,29 @@ export default function EvidenciaItem({
     try {
       setUploading(true);
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${schoolId}/${evidencia.id}-${Date.now()}.${fileExt}`;
-      const filePath = `evidencias/${fileName}`;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('schoolId', schoolId);
+      formData.append('evidenciaId', evidencia.id);
 
-      // Upload file to the 'meg-evidencias' storage bucket
-      const { data, error: uploadError } = await supabase.storage
-        .from('meg-evidencias')
-        .upload(filePath, file, {
-          upsert: true
-        });
+      // Upload file directly to Google Drive via server-side API route
+      const response = await fetch('/api/pedagogico/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP ${response.status}`);
+      }
 
-      // Get Public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('meg-evidencias')
-        .getPublicUrl(filePath);
+      const resData = await response.json();
+      const publicUrl = resData.url;
 
       const previousUrl = arquivoUrl;
       setArquivoUrl(publicUrl);
 
-      // Save checklist record with the new file url
+      // Save checklist record with the new Google Drive file url
       const { error: upsertError } = await supabase
         .from('meg_checklist')
         .upsert({
@@ -214,10 +215,10 @@ export default function EvidenciaItem({
         detail: { school: schoolId, eixo: eixoNome, fase: faseNome }
       }));
 
-      onSaveSuccess('Arquivo anexado com sucesso.');
+      onSaveSuccess('Arquivo anexado e salvo no Google Drive com sucesso.');
 
     } catch (err: any) {
-      onSaveError(`Falha no upload do arquivo: ${err.message || err}`);
+      onSaveError(`Falha no upload para o Google Drive: ${err.message || err}`);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
