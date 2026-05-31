@@ -116,7 +116,14 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  // ─── 2. LOGICA DRE (mantida intacta) ────────────────────────────────────
+  // ─── 2. ROTAS PUBLICAS DE ONBOARDING ────────────────────────────────────
+  const isPublicOnboarding =
+    pathname.startsWith('/dretga') ||
+    pathname.startsWith('/api/onboarding');
+
+  if (isPublicOnboarding) return NextResponse.next();
+
+  // ─── 3. LOGICA DRE (mantida intacta) ────────────────────────────────────
   const isDreDomain =
     host.startsWith('dre.') ||
     host === 'dre.sigmilitar.com.br';
