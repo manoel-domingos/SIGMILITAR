@@ -48,6 +48,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   // Adiciona headers de seguranca em todas as rotas
   async headers() {
     return [

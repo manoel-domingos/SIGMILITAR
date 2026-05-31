@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadStudentOccurrenceFile } from '@/lib/google-drive';
 
+// Allow uploads up to 50MB
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
