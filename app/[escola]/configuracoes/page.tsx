@@ -1890,6 +1890,7 @@ function TabPermissions() {
 
   const panelsList: { key: string; label: string; category: string; description: string }[] = [
     { key: 'dashboard', label: 'Início (Dashboard)', category: 'Geral', description: 'Acesso à tela principal com gráficos e estatísticas consolidadas.' },
+    { key: 'canny_ideias', label: 'Quadro de Ideias (Canny)', category: 'Geral', description: 'Acesso ao Quadro de Melhorias e Sugestões para contribuir com feedbacks.' },
     { key: 'alunos_lista', label: 'Lista de Alunos', category: 'Alunos', description: 'Visualizar a listagem e fotos de alunos cadastrados.' },
     { key: 'alunos_ficha', label: 'Ficha Disciplinar', category: 'Alunos', description: 'Consultar pontuação e histórico de medidas do aluno.' },
     { key: 'alunos_xerife', label: 'Xerife', category: 'Alunos', description: 'Acesso à gestão de xerifes escolares da semana.' },

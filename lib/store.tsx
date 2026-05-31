@@ -144,6 +144,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const DEFAULT_PERMISSIONS: Record<AppUserRole, Record<string, boolean>> = {
   admin_global: {
     dashboard: true,
+    canny_ideias: true,
     alunos_lista: true,
     alunos_ficha: true,
     alunos_xerife: true,
@@ -163,6 +164,7 @@ export const DEFAULT_PERMISSIONS: Record<AppUserRole, Record<string, boolean>> =
   },
   GESTOR: {
     dashboard: true,
+    canny_ideias: true,
     alunos_lista: true,
     alunos_ficha: true,
     alunos_xerife: true,
@@ -182,6 +184,7 @@ export const DEFAULT_PERMISSIONS: Record<AppUserRole, Record<string, boolean>> =
   },
   COORD: {
     dashboard: true,
+    canny_ideias: true,
     alunos_lista: true,
     alunos_ficha: true,
     alunos_xerife: true,
@@ -201,6 +204,7 @@ export const DEFAULT_PERMISSIONS: Record<AppUserRole, Record<string, boolean>> =
   },
   MONITOR: {
     dashboard: true,
+    canny_ideias: true,
     alunos_lista: true,
     alunos_ficha: false,
     alunos_xerife: true,
@@ -220,6 +224,7 @@ export const DEFAULT_PERMISSIONS: Record<AppUserRole, Record<string, boolean>> =
   },
   PROFESSOR: {
     dashboard: false,
+    canny_ideias: true,
     alunos_lista: true,
     alunos_ficha: false,
     alunos_xerife: false,

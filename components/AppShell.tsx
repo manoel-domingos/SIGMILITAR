@@ -14,11 +14,12 @@ import {
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   ChevronDown, ChevronRight,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
-  Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle, Heart,
+  Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle, Heart, Lightbulb,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
 import AIChat from '@/components/AIChat';
+import CannyKanbanModal from '@/components/meg/CannyKanbanModal';
 
 type MenuItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 type MenuGroup = { label: string; icon: React.ComponentType<{ className?: string }>; href?: string; children?: MenuItem[] };
@@ -163,6 +164,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('topbar');
+  const [isCannyModalOpen, setIsCannyModalOpen] = useState(false);
+
+  const hasCannyPermission = useMemo(() => {
+    if (currentUserRole === 'admin_global') return true;
+    if (!currentUserRole || !permissions) return true;
+    const rolePerms = (permissions as any)[currentUserRole];
+    if (!rolePerms) return true; // Habilita por padrão se não encontrar a role
+    return rolePerms['canny_ideias'] ?? false;
+  }, [currentUserRole, permissions]);
 
   const filteredMenu = useMemo(() => {
     const activeGroups = activePanelModule === 'pedagogico' ? PEDAGOGICO_MENU_GROUPS : MENU_GROUPS;
@@ -442,6 +452,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       setIsChatOpen={setIsChatOpen}
       layoutMode={layoutMode}
       toggleLayout={toggleLayout}
+      onOpenCanny={() => setIsCannyModalOpen(true)}
+      hasCannyPermission={hasCannyPermission}
     />
   );
 
@@ -680,6 +692,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </p>
           </div>
         </div>
+      )}
+
+      {isCannyModalOpen && (
+        <CannyKanbanModal
+          isOpen={isCannyModalOpen}
+          onClose={() => setIsCannyModalOpen(false)}
+          currentUser={user}
+          currentUserRole={currentUserRole || 'GUEST'}
+        />
       )}
     </div>
   );
@@ -1434,6 +1455,8 @@ type RightControlsProps = {
   setIsChatOpen: (v: boolean) => void;
   layoutMode: LayoutMode;
   toggleLayout: () => void;
+  onOpenCanny: () => void;
+  hasCannyPermission: boolean;
 };
 
 function RightControls(props: RightControlsProps) {
@@ -1441,6 +1464,7 @@ function RightControls(props: RightControlsProps) {
     isSupabaseConnected, isSyncing, refreshData, isDarkMode, toggleTheme,
     isProfileOpen, setIsProfileOpen, user, userName, userInitials, userRole,
     currentUserRole, logout, setIsChatOpen, layoutMode, toggleLayout,
+    onOpenCanny, hasCannyPermission,
   } = props;
   const { tenantId } = useTenantConfig();
   const rawPathname = usePathname();
@@ -1475,6 +1499,17 @@ function RightControls(props: RightControlsProps) {
       </button>
 
       <NotificationBell />
+
+      {hasCannyPermission && (
+        <button
+          onClick={onOpenCanny}
+          className="w-10 h-10 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-amber-500 hover:text-amber-600 bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 active:bg-amber-500/20 transition shadow-sm"
+          title="Quadro de Ideias e Sugestões"
+          aria-label="Quadro de Ideias e Sugestões"
+        >
+          <Lightbulb className="w-4 h-4" />
+        </button>
+      )}
 
       <Link
         href={getLinkHref('/configuracoes', tenantId, rawPathname)}

@@ -77,3 +77,82 @@ export async function createFolder(parentId: string, name: string) {
   });
   return data;
 }
+
+export async function findFolderByName(parentId: string, name: string): Promise<string | null> {
+  const drive = getDriveClient();
+  const { data } = await drive.files.list({
+    q: `'${parentId}' in parents and name = '${name.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: 'files(id)',
+    pageSize: 1,
+  });
+  return data.files && data.files.length > 0 ? (data.files[0].id ?? null) : null;
+}
+
+export async function createFolderIfNotExist(parentId: string, name: string): Promise<{ id: string; created: boolean }> {
+  const existingId = await findFolderByName(parentId, name);
+  if (existingId) {
+    return { id: existingId, created: false };
+  }
+  const newFolder = await createFolder(parentId, name);
+  if (!newFolder.id) {
+    throw new Error(`Failed to create folder ${name}`);
+  }
+  return { id: newFolder.id, created: true };
+}
+
+export async function createFile(parentId: string, name: string, mimeType: string, content: string): Promise<any> {
+  const drive = getDriveClient();
+  const { data } = await drive.files.create({
+    requestBody: {
+      name,
+      parents: [parentId],
+    },
+    media: {
+      mimeType,
+      body: Readable.from(Buffer.from(content, 'utf-8')),
+    },
+    fields: 'id,name',
+  });
+  return data;
+}
+
+export async function uploadStudentOccurrenceFile(
+  schoolFolderId: string,
+  studentName: string,
+  occurrenceNumber: string,
+  fileName: string,
+  mimeType: string,
+  buffer: Buffer
+): Promise<{ file: any; isAlunosCreated: boolean }> {
+  // 1. Resolve SISTEMA folder
+  const sistema = await createFolderIfNotExist(schoolFolderId, 'SISTEMA');
+  
+  // 2. Resolve Alunos folder
+  const alunos = await createFolderIfNotExist(sistema.id, 'Alunos');
+  
+  // 3. If Alunos folder was newly created, put safety Na_apagar.txt file inside it
+  if (alunos.created) {
+    const docContent = `ATENÇÃO: NÃO APAGUE ESTA PASTA!
+Esta é a pasta centralizadora de documentos, ocorrências, termos de conduta e fotos de alunos do MEG.
+A remoção de pastas deste diretório comprometerá a integridade do histórico do aluno no sistema.`;
+    await createFile(alunos.id, 'Nao apagar.txt', 'text/plain', docContent);
+  }
+
+  // 4. Resolve [studentName] folder
+  const student = await createFolderIfNotExist(alunos.id, studentName);
+
+  // 5. Resolve Ocorrencias folder
+  const ocorrencias = await createFolderIfNotExist(student.id, 'Ocorrencias');
+
+  // 6. Resolve Ocorrencia_[occurrenceNumber] folder
+  const folderKey = `Ocorrencia_${occurrenceNumber}`;
+  const targetFolder = await createFolderIfNotExist(ocorrencias.id, folderKey);
+
+  // 7. Upload final file inside target occurrence folder
+  const file = await uploadFile(targetFolder.id, fileName, mimeType, buffer);
+
+  return {
+    file,
+    isAlunosCreated: alunos.created,
+  };
+}

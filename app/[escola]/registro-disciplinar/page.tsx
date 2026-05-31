@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
@@ -183,6 +184,63 @@ function RegistroDisciplinarContent() {
     ataNumber?: number;
   } | null>(null);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+
+  const uploadToDrive = async (file: File, studentId: string): Promise<string | null> => {
+    try {
+      const student = students.find(s => s.id === studentId);
+      const studentName = student ? student.name : 'Aluno_Desconhecido';
+      
+      // Resolve o occurrenceNumber
+      const occurrenceNumber = editingOccurrence 
+        ? editingOccurrence.slice(0, 8) 
+        : `nova_${Date.now()}`;
+        
+      // Pasta raiz da escola no Drive
+      const customId = typeof window !== 'undefined' ? localStorage.getItem(`drive_folder_id_${resolvedSchoolId}`) : null;
+      const schoolFolderId = customId || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('studentName', studentName);
+      formData.append('occurrenceNumber', occurrenceNumber);
+      formData.append('schoolFolderId', schoolFolderId);
+
+      const response = await fetch('/api/drive/student-upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Erro no upload');
+      }
+
+      const data = await response.json();
+      
+      // Se a pasta Alunos foi criada agora, exibe o toast/alerta especial premium
+      if (data.isAlunosCreated) {
+        toast.success('Repositório "SISTEMA -> Alunos" provisionado no Google Drive! Arquivo de segurança "Nao apagar.txt" gerado com sucesso.', {
+          duration: 8000,
+          position: 'top-right',
+          style: {
+            background: '#0f172a',
+            color: '#f8fafc',
+            border: '1px solid #334155',
+          }
+        });
+      }
+
+      if (data.file && data.file.id) {
+        return `https://drive.google.com/file/d/${data.file.id}/view`;
+      }
+      
+      return null;
+    } catch (error: any) {
+      console.error('Erro no upload para o Drive:', error);
+      toast.error('Erro ao enviar arquivo para o Google Drive: ' + (error.message || error));
+      return null;
+    }
+  };
 
   const handleGenerateAta = () => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -2207,7 +2265,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                             if (!file || selectedStudents.length === 0) return;
                             setUploadingVideo(true);
                             console.log("[v0] Iniciando upload de vídeo/foto:", file.name);
-                            const url = await uploadFile(file, selectedStudents[0]);
+                            const url = await uploadToDrive(file, selectedStudents[0]);
                             console.log("[v0] Upload concluído, URL:", url);
                             if (url) {
                               setVideoUrls(prev => [...prev, url]);
@@ -2260,7 +2318,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                             if (!file || selectedStudents.length === 0) return;
                             setUploadingDoc(true);
                             console.log("[v0] Iniciando upload de documento:", file.name);
-                            const url = await uploadFile(file, selectedStudents[0]);
+                            const url = await uploadToDrive(file, selectedStudents[0]);
                             console.log("[v0] Upload concluído, URL:", url);
                             if (url) {
                               setSignedDocUrls(prev => [...prev, url]);
@@ -2934,7 +2992,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                               if (!file) return;
                               setVoUploadingEv(true);
                               const studentId = _vo.studentIds?.[0] ?? _vo.studentId ?? '';
-                              const url = await uploadFile(file, studentId);
+                              const url = await uploadToDrive(file, studentId);
                               if (url) {
                                 updateOccurrence(_vo.id, { videoUrls: [...videoList, url] });
                                 setViewOccurrence({ ..._vo, videoUrls: [...videoList, url] });
@@ -2995,7 +3053,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                               if (!file) return;
                               setVoUploadingDoc(true);
                               const studentId = _vo.studentIds?.[0] ?? _vo.studentId ?? '';
-                              const url = await uploadFile(file, studentId);
+                              const url = await uploadToDrive(file, studentId);
                               if (url) {
                                 updateOccurrence(_vo.id, { signedDocUrls: [...docList, url] });
                                 setViewOccurrence({ ..._vo, signedDocUrls: [...docList, url] });
