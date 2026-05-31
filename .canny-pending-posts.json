@@ -1,17 +1,5 @@
 [
   {
-    "title": "Bug resolvido: painel de pendências sobreposto pelo botão ARIA",
-    "details": "Corrigido problema visual onde o painel de tarefas pendentes era renderizado atrás do botão flutuante e do menu do assistente ARIA, impedindo a interação com as pendências da escola."
-  },
-  {
-    "title": "Melhoria: Tela de login limpa com modal de escolha para Administrador",
-    "details": "Administrador global agora permanece em uma tela limpa de login com o modal de contexto rico ao autenticar, permitindo direcionamento direto para a escola e tipo de gestão desejada sem poluição visual ou múltiplos popups."
-  },
-  {
-    "title": "Melhoria: Seleção rica de escola e tipo de gestão no painel DRE",
-    "details": "Enriquecido o modal de contexto da DRE com a árvore expansível de escolas e botões de Gestão Cívico Militar / Gestão Pedagógica, integrando também com os cliques de cards no painel."
-  },
-  {
     "title": "Bug resolvido: Redirecionamento quebrado ao simular cargos como Admin",
     "details": "Corrigida falha que tentava direcionar o admin global para caminhos inválidos como '/DRE/pedagogico' ao simular cargos como GESTOR ou COORD. Ajustado para usar o contexto ativo da escola atual."
   }
