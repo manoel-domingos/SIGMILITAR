@@ -237,7 +237,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const key = 'module_choice_chosen_' + new Date().toDateString();
     if (typeof window !== 'undefined') sessionStorage.setItem(key, 'common_' + module);
 
-    const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId === 'tangara' ? 'eecmtangara' : currentUserSchoolId;
+    const schoolId = (currentUserSchoolId === 'DRE' || !currentUserSchoolId) ? activeSchoolContext : currentUserSchoolId;
+    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
     if (slug) {
       router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
     }

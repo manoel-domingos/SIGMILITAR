@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase, isSupabaseReady } from '@/lib/supabase';
 import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
-import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight, Building2 } from 'lucide-react';
+import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight, Building2, ShieldCheck, BookOpen, ChevronDown, ChevronRight, X } from 'lucide-react';
 import versionData from '@/lib/version.json';
 import { SCHOOL_SUBTITLE } from '@/lib/school';
 
 export default function Login() {
   const router = useRouter();
   const {
-    user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored
+    user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored,
+    showContextModal, setShowContextModal, contextSchools, setActivePanelModule, setActiveSchoolContext, activeSchoolContext
   } = useAppContext();
   const { logoLogin, schoolName, tenantId } = useTenantConfig();
 
@@ -22,6 +23,38 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [isCentral, setIsCentral] = useState(false);
+  const [expandedSchool, setExpandedSchool] = useState<string | null>(null);
+
+  const handleAdminSelection = (schoolId: string, module: 'civico-militar' | 'pedagogico') => {
+    const schoolExists = contextSchools.some(s => s.id === schoolId);
+    if (!schoolExists) return;
+    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
+    setActivePanelModule(module);
+    setActiveSchoolContext(schoolId);
+    
+    // Salva sessionStorage
+    const key = 'dre_context_chosen_' + new Date().toDateString();
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(key, schoolId);
+    }
+    
+    setShowContextModal(false);
+    setExpandedSchool(null);
+    router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
+  };
+
+  const chooseContext = (schoolId: string) => {
+    setActiveSchoolContext(schoolId);
+    const key = 'dre_context_chosen_' + new Date().toDateString();
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(key, schoolId);
+    }
+    setShowContextModal(false);
+    setExpandedSchool(null);
+    if (schoolId === 'DRE') {
+      router.push('/dre');
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,13 +95,23 @@ export default function Login() {
         if (isCentralDomain) {
           // No domínio central: redireciona para a rota com slug da escola do usuário
           if (currentUserRole === 'admin_global') {
-            router.push('/dre');
+            const chosen = sessionStorage.getItem('dre_context_chosen_' + new Date().toDateString());
+            if (chosen) {
+              if (chosen === 'DRE') {
+                router.push('/dre');
+              } else {
+                const slug = chosen === 'joaobatista' ? 'eecmprofjoaobatista' : chosen === 'heliodoro' ? 'eecmheliodoro' : chosen === 'tangara' ? 'eecmtangara' : chosen;
+                router.push(`/${slug}`);
+              }
+              return;
+            }
+            setShowContextModal(true);
             return;
           }
 
           if (currentUserSchoolId && currentUserSchoolId !== 'DRE') {
             // Mapeia schoolId para o tenant slug
-            const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
+            const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId === 'tangara' ? 'eecmtangara' : currentUserSchoolId;
             const targetPath = currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`;
             console.log(`[CENTRAL REDIRECT] Redirecionando para ${targetPath}...`);
             router.push(targetPath);
@@ -78,10 +121,21 @@ export default function Login() {
       }
 
       // Fallback
-      const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId;
-      router.push(currentUserRole === 'admin_global' ? '/dre' : currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`);
+      const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId === 'tangara' ? 'eecmtangara' : currentUserSchoolId;
+      
+      if (currentUserRole === 'admin_global') {
+        const chosen = typeof window !== 'undefined' ? sessionStorage.getItem('dre_context_chosen_' + new Date().toDateString()) : null;
+        if (chosen) {
+          if (chosen === 'DRE') router.push('/dre');
+          else router.push(`/${chosen === 'joaobatista' ? 'eecmprofjoaobatista' : chosen === 'heliodoro' ? 'eecmheliodoro' : chosen === 'tangara' ? 'eecmtangara' : chosen}`);
+        } else {
+          setShowContextModal(true);
+        }
+      } else {
+        router.push(currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`);
+      }
     }
-  }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router]);
+  }, [user, isGuest, currentUserRole, currentUserSchoolId, isAuthRestored, router, setShowContextModal]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -314,6 +368,65 @@ export default function Login() {
           </a>
         </div>
       </div>
+
+      {/* Modal de seleção de contexto para Admin Global no Login */}
+      {showContextModal && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowContextModal(false); setExpandedSchool(null); } }}>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center space-y-5 animate-in zoom-in-95 fade-in duration-200">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto">
+              <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Qual painel deseja ver?</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Selecione uma escola e a gestão correspondente ou visualize o painel consolidado da DRE.</p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={() => chooseContext('DRE')}
+                className="w-full py-3 rounded-xl bg-[#0052cc] hover:bg-blue-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 active:scale-95 shadow-md"
+              >
+                <Building2 className="w-4 h-4" /> Painel DRE — Visão Consolidada
+              </button>
+
+              {contextSchools.map(s => {
+                const isExpanded = expandedSchool === s.id;
+                return (
+                  <div key={s.id} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-all duration-200">
+                    <button
+                      onClick={() => setExpandedSchool(prev => prev === s.id ? null : s.id)}
+                      className="w-full py-3 px-4 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                        <span className="text-left">{s.name}</span>
+                      </div>
+                      <ChevronRight className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="bg-slate-50 dark:bg-slate-950/40 px-3 pb-3 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-1 animate-in slide-in-from-top-1 fade-in duration-150">
+                        <button
+                          onClick={() => handleAdminSelection(s.id, 'civico-militar')}
+                          className="w-full py-2.5 px-4 rounded-lg hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-2 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 text-amber-500" /> Gestão Cívico Militar
+                        </button>
+                        <button
+                          onClick={() => handleAdminSelection(s.id, 'pedagogico')}
+                          className="w-full py-2.5 px-4 rounded-lg hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-2 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-blue-500" /> Gestão Pedagógica
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
