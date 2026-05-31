@@ -41,7 +41,7 @@ function RegistroDisciplinarContent() {
   const staffOptions = React.useMemo(() => {
     const unique = new Map<string, { value: string; label: string }>();
     staffMembers
-      .filter(s => !s.school_id || s.school_id === resolvedSchoolId)
+      .filter(s => s.school_id === resolvedSchoolId || (!s.school_id && resolvedSchoolId === 'joaobatista'))
       .forEach(s => {
         const key = s.role + ' ' + s.name;
         unique.set(key, { value: key, label: key });
@@ -53,7 +53,7 @@ function RegistroDisciplinarContent() {
   const professorOptions = React.useMemo(() => {
     const unique = new Map<string, { value: string; label: string }>();
     appUsers
-      .filter(u => u.role === 'PROFESSOR' && (!u.school_id || u.school_id === resolvedSchoolId))
+      .filter(u => u.role === 'PROFESSOR' && (u.school_id === resolvedSchoolId || (!u.school_id && resolvedSchoolId === 'joaobatista')))
       .forEach(u => {
         const name = 'Professor ' + u.name;
         unique.set(name, { value: name, label: name });
@@ -1578,7 +1578,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                         return (
                           <tr 
                             key={o.id} 
-                            onClick={() => { setViewOccurrence(o); setIsPrintPanelOpen(false); setVoTab('detalhes'); }}
+                            onClick={() => { setViewOccurrence(o); setIsPrintPanelOpen(false); setVoTab('status'); }}
                             className="hover:bg-slate-50 transition cursor-pointer"
                             title="Clique para ver os detalhes ou exportar"
                           >
@@ -1736,15 +1736,19 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                     <label className="block text-sm font-medium text-slate-600 mb-1.5 flex items-center gap-2">
                       <MapPin className="w-4 h-4" /> LOCAL
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      list="locations-list"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Ex: Pátio, Sala, Quadra..."
                       className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 sm:py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
-                    >
+                    />
+                    <datalist id="locations-list">
                       {locations.map(loc => (
-                        <option key={loc} value={loc}>{loc}</option>
+                        <option key={loc} value={loc} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                 </div>
 
@@ -1895,13 +1899,25 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                                         <input
                                           type="checkbox"
                                           checked={isChecked}
-                                          onChange={() =>
-                                            setSelectedMeasures(prev =>
-                                              prev.includes(label)
-                                                ? prev.filter(m => m !== label)
-                                                : [...prev, label]
-                                            )
-                                          }
+                                          onChange={() => {
+                                            const wasChecked = selectedMeasures.includes(label);
+                                            const nextMeasures = wasChecked
+                                              ? selectedMeasures.filter(m => m !== label)
+                                              : [...selectedMeasures, label];
+                                            
+                                            setSelectedMeasures(nextMeasures);
+
+                                            const graveOptions = [
+                                              'Parecer do gestor',
+                                              'Ação Educativa',
+                                              'Suspensão de Recreação',
+                                              'Suspensão Escolar',
+                                              'Transferência Educativa'
+                                            ];
+                                            if (!wasChecked && graveOptions.includes(label)) {
+                                              setGraveMeasureType(label as any);
+                                            }
+                                          }}
                                           className="w-3.5 h-3.5 accent-blue-600"
                                         />
                                         {label}
@@ -1955,8 +1971,20 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                                   key={type}
                                   type="button"
                                   onClick={() => {
-                                    if (type === 'Transferência Educativa' && !confirm('⚠️ A Transferência Educativa é uma medida extrema que exige aprova��ão do Conselho de Ensino Disciplinar. Deseja prosseguir com a solicitação?')) return;
+                                    if (type === 'Transferência Educativa' && !confirm('⚠️ A Transferência Educativa é uma medida extrema que exige aprovação do Conselho de Ensino Disciplinar. Deseja prosseguir com a solicitação?')) return;
                                     setGraveMeasureType(type as any);
+                                    
+                                    const graveOptions = [
+                                      'Parecer do gestor',
+                                      'Ação Educativa',
+                                      'Suspensão de Recreação',
+                                      'Suspensão Escolar',
+                                      'Transferência Educativa'
+                                    ];
+                                    setSelectedMeasures(prev => {
+                                      const filtered = prev.filter(m => !graveOptions.includes(m));
+                                      return [...filtered, type];
+                                    });
                                   }}
                                   className={'px-3 py-2 rounded-lg text-xs font-medium border transition-all ' + (graveMeasureType === type ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-blue-100 text-blue-600 hover:bg-blue-50')}
                                 >
@@ -2604,7 +2632,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
         type TabDef = { id: 'status' | 'detalhes' | 'documentos' | 'responsaveis'; label: string; count?: number };
         const tabs: TabDef[] = [
           { id: 'status',       label: 'Status' },
-          { id: 'detalhes',     label: 'Detalhes' },
+          { id: 'detalhes',     label: 'Ocorrência' },
           { id: 'responsaveis', label: 'Responsaveis', count: totalContacts || undefined },
           { id: 'documentos',   label: 'Documentos', count: (docList.length + videoList.length) || undefined },
         ];

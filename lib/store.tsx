@@ -11,13 +11,7 @@ import {
 function normalizeDbRole(role: string, email?: string): AppUserRole {
   if (email) {
     const emailLower = email.toLowerCase().trim();
-    if (
-      emailLower === 'manoeldomingos2@gmail.com' || 
-      emailLower === 'manoeldomingos@gmail.com' ||
-      emailLower === 'manoeldomingos2@gmail' ||
-      emailLower === 'manoeldomingos@gmail' ||
-      emailLower === 'manoel'
-    ) return 'admin_global';
+    if (emailLower === 'manoeldomingos2@gmail.com') return 'admin_global';
   }
   if (!role) return 'GESTOR';
   const r = role.toLowerCase();
@@ -302,13 +296,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isConvidadoAccount) return 'GUEST';
 
       // Override de segurança para Administrador Global
-      if (
-        emailLower === 'manoeldomingos2@gmail.com' || 
-        emailLower === 'manoeldomingos@gmail.com' ||
-        emailLower === 'manoeldomingos2@gmail' ||
-        emailLower === 'manoeldomingos@gmail' ||
-        emailLower === 'manoel'
-      ) return 'admin_global';
+      if (emailLower === 'manoeldomingos2@gmail.com') return 'admin_global';
 
       const matched = appUsers.find(u => u.email.toLowerCase().trim() === emailLower);
       if (matched) return matched.role as AppUserRole;
@@ -323,13 +311,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user?.email || isGuest) return null;
     const emailLower = user.email.toLowerCase().trim();
     // Override para garantir perfil de Administrador Global no teste local
-    if (
-      emailLower === 'manoeldomingos2@gmail.com' || 
-      emailLower === 'manoeldomingos@gmail.com' ||
-      emailLower === 'manoeldomingos2@gmail' ||
-      emailLower === 'manoeldomingos@gmail' ||
-      emailLower === 'manoel'
-    ) return 'DRE';
+    if (emailLower === 'manoeldomingos2@gmail.com') return 'DRE';
     
     const matched = appUsers.find(u => u.email.toLowerCase().trim() === emailLower);
     return matched?.school_id ?? null;
@@ -370,8 +352,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activeSchoolContextRef.current = currentUserSchoolId;
       setActiveSchoolContextState(currentUserSchoolId);
       isFirstContextLoad.current = false;
+    } else if (currentUserSchoolId === 'DRE' && user?.email) {
+      const emailLower = user.email.toLowerCase().trim();
+      if (emailLower === 'manoeldomingos2@gmail.com') {
+        // Se for o admin manoel, inicializa como joaobatista se ainda não houver contexto salvo
+        const saved = typeof window !== 'undefined' ? sessionStorage.getItem('active_school_context') : null;
+        if (!saved) {
+          activeSchoolContextRef.current = 'joaobatista';
+          setActiveSchoolContextState('joaobatista');
+          isFirstContextLoad.current = false;
+        }
+      }
     }
-  }, [currentUserSchoolId]);
+  }, [currentUserSchoolId, user?.email]);
   // Estado do modal de seleção de escola — controlado direto no store
   const [showContextModal, setShowContextModal] = useState(false);
   const [contextSchools, setContextSchools] = useState<{id: string; name: string}[]>([]);
@@ -687,13 +680,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
               // Override para garantir que o seu e-mail de administrador global
               // inicialize sempre no contexto do DRE (vazio), independente do banco no teste local
-              if (
-                emailLower === 'manoeldomingos2@gmail.com' || 
-                emailLower === 'manoeldomingos@gmail.com' ||
-                emailLower === 'manoeldomingos2@gmail' ||
-                emailLower === 'manoeldomingos@gmail' ||
-                emailLower === 'manoel'
-              ) {
+              if (emailLower === 'manoeldomingos2@gmail.com') {
                 sid = '';
               }
 
@@ -768,6 +755,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               if (profile?.school_id && profile.school_id !== 'DRE') {
                 bootSchoolId = profile.school_id;
                 console.log("[OAUTH] Definindo escola de boot pós-troca:", bootSchoolId);
+              } else if (userEmail === 'manoeldomingos2@gmail.com') {
+                const saved = typeof window !== 'undefined' ? sessionStorage.getItem('active_school_context') : null;
+                if (!saved) bootSchoolId = 'joaobatista';
               }
             }
           }
@@ -793,7 +783,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             if (profile?.school_id && profile.school_id !== 'DRE') {
               bootSchoolId = profile.school_id;
               console.log("[AUTH] Definindo escola de boot:", bootSchoolId);
-            }
+            } else if (session.user.email) {
+               const emailLower = session.user.email.toLowerCase().trim();
+               if (emailLower === 'manoeldomingos2@gmail.com') {
+                 const saved = typeof window !== 'undefined' ? sessionStorage.getItem('active_school_context') : null;
+                 if (!saved) bootSchoolId = 'joaobatista';
+               }
+             }
           } else {
             console.log("[AUTH] Nenhuma sessão ativa encontrada.");
             setIsAuthRestored(true);
