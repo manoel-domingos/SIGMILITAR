@@ -159,3 +159,72 @@ A remoção de pastas deste diretório comprometerá a integridade do histórico
     isAlunosCreated: alunos.created,
   };
 }
+
+// ── Resumable Upload (bypasses Vercel 4.5MB body limit) ──────────────────────
+// Server creates a resumable session URI → client uploads file directly to Google
+
+export async function getAccessToken(): Promise<string> {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  let key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (key && key.startsWith('"') && key.endsWith('"')) {
+    key = key.substring(1, key.length - 1);
+  }
+
+  if (!email || !key) {
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY must be set');
+  }
+
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: email,
+      private_key: key,
+    },
+    scopes: ['https://www.googleapis.com/auth/drive'],
+  });
+
+  const client = await auth.getClient();
+  const tokenResponse = await client.getAccessToken();
+  const token = typeof tokenResponse === 'string' ? tokenResponse : tokenResponse?.token;
+  if (!token) {
+    throw new Error('Failed to obtain Google access token');
+  }
+  return token;
+}
+
+export async function createResumableUploadSession(
+  folderId: string,
+  fileName: string,
+  mimeType: string
+): Promise<string> {
+  const token = await getAccessToken();
+
+  const metadata = {
+    name: fileName,
+    parents: [folderId],
+  };
+
+  const res = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify(metadata),
+    }
+  );
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Google Drive resumable session failed (${res.status}): ${errorText}`);
+  }
+
+  const location = res.headers.get('Location');
+  if (!location) {
+    throw new Error('Google Drive did not return a resumable upload URI');
+  }
+
+  return location;
+}
+

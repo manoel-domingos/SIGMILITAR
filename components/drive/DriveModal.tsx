@@ -104,13 +104,28 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
     setErrorAlert(null);
     try {
       for (const file of Array.from(fileList)) {
-        const form = new FormData();
-        form.append('file', file);
-        form.append('folderId', currentFolder.id);
+        // 1. Obter URI de upload resumível do servidor
+        const sessionRes = await fetch('/api/drive/upload-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            folderId: currentFolder.id,
+            fileName: file.name,
+            mimeType: file.type || 'application/octet-stream'
+          })
+        });
 
+        if (!sessionRes.ok) {
+          const errData = await sessionRes.json().catch(() => ({}));
+          throw new Error(errData.error || `Falha ao iniciar sessão de upload (${sessionRes.status})`);
+        }
+
+        const { uploadUri } = await sessionRes.json();
+
+        // 2. Upload direto para o Google Drive via PUT
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', '/api/drive/upload', true);
+          xhr.open('PUT', uploadUri, true);
 
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
@@ -128,12 +143,12 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
             if (xhr.status >= 200 && xhr.status < 300) {
               resolve();
             } else {
-              reject(new Error(`Erro HTTP ${xhr.status}: ${xhr.statusText || 'Erro interno no upload'}`));
+              reject(new Error(`Erro HTTP ${xhr.status}: ${xhr.statusText || 'Erro interno no upload direto'}`));
             }
           };
 
-          xhr.onerror = () => reject(new Error('Erro de conexão com o servidor'));
-          xhr.send(form);
+          xhr.onerror = () => reject(new Error('Erro de conexão com o servidor do Google'));
+          xhr.send(file);
         });
       }
       toast.success('Upload concluído!');
