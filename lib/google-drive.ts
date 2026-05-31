@@ -3,7 +3,10 @@ import { Readable } from 'stream';
 
 function getDriveClient() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  let key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (key && key.startsWith('"') && key.endsWith('"')) {
+    key = key.substring(1, key.length - 1);
+  }
 
   if (!email || !key) {
     throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY must be set');

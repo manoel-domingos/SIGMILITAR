@@ -14,7 +14,10 @@ import {
   Loader2, 
   ArrowRight,
   FolderOpen,
-  ExternalLink
+  ExternalLink,
+  RefreshCw,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -47,18 +50,27 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
     total: number;
     percentage: number;
   } | null>(null);
+  const [errorAlert, setErrorAlert] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
 
   const currentFolder = breadcrumbs[breadcrumbs.length - 1];
 
   const loadFiles = useCallback(async (folderId: string) => {
     setLoading(true);
+    setErrorAlert(null);
     try {
       const res = await fetch(`/api/drive/files?folderId=${folderId}`);
-      if (!res.ok) throw new Error('Falha ao obter lista');
+      if (!res.ok) throw new Error('Falha ao obter lista de arquivos do servidor');
       const data = await res.json();
       setFiles(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorAlert({
+        title: 'Erro de Sincronização',
+        message: error.message || 'Não foi possível carregar os arquivos do Google Drive.'
+      });
       toast.error('Erro ao carregar arquivos');
     } finally {
       setLoading(false);
@@ -80,6 +92,7 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
   const handleUpload = async (fileList: FileList | null) => {
     if (!fileList?.length) return;
     setUploading(true);
+    setErrorAlert(null);
     try {
       for (const file of Array.from(fileList)) {
         const form = new FormData();
@@ -106,11 +119,11 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
             if (xhr.status >= 200 && xhr.status < 300) {
               resolve();
             } else {
-              reject(new Error(`Erro: ${xhr.statusText}`));
+              reject(new Error(`Erro HTTP ${xhr.status}: ${xhr.statusText || 'Erro interno no upload'}`));
             }
           };
 
-          xhr.onerror = () => reject(new Error('Erro na conexão com o servidor'));
+          xhr.onerror = () => reject(new Error('Erro de conexão com o servidor'));
           xhr.send(form);
         });
       }
@@ -118,6 +131,10 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
       loadFiles(currentFolder.id);
     } catch (error: any) {
       console.error(error);
+      setErrorAlert({
+        title: 'Falha no Upload',
+        message: error.message || 'Ocorreu um erro ao subir um ou mais arquivos. Verifique a credencial do Google Drive.'
+      });
       toast.error(error.message || 'Erro no upload');
     } finally {
       setUploading(false);
@@ -132,18 +149,23 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
       return;
     }
     const toastId = toast.loading('Renomeando item...');
+    setErrorAlert(null);
     try {
       const res = await fetch('/api/drive/rename', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId: renaming.id, newName: renaming.name }),
       });
-      if (!res.ok) throw new Error('Falha ao renomear');
+      if (!res.ok) throw new Error('Não foi possível renomear o item no Google Drive');
       toast.success('Renomeado com sucesso!', { id: toastId });
       setRenaming(null);
       loadFiles(currentFolder.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorAlert({
+        title: 'Falha ao Renomear',
+        message: error.message || 'Não foi possível alterar o nome do arquivo.'
+      });
       toast.error('Erro ao renomear arquivo', { id: toastId });
     }
   };
@@ -151,17 +173,22 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
   const handleDelete = async (file: DriveFile) => {
     if (!confirm(`Deletar permanentemente "${file.name}"?`)) return;
     const toastId = toast.loading('Deletando item...');
+    setErrorAlert(null);
     try {
       const res = await fetch('/api/drive/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId: file.id }),
       });
-      if (!res.ok) throw new Error('Falha ao deletar');
+      if (!res.ok) throw new Error('Falha ao excluir o item no Google Drive');
       toast.success('Item deletado com sucesso!', { id: toastId });
       loadFiles(currentFolder.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorAlert({
+        title: 'Falha ao Excluir',
+        message: error.message || 'Ocorreu um erro ao tentar apagar o arquivo do Google Drive.'
+      });
       toast.error('Erro ao deletar arquivo', { id: toastId });
     }
   };
@@ -169,6 +196,7 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
   const handleMove = async (targetFolderId: string) => {
     if (!moving) return;
     const toastId = toast.loading('Movendo item...');
+    setErrorAlert(null);
     try {
       const res = await fetch('/api/drive/move', {
         method: 'PATCH',
@@ -179,12 +207,16 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
           oldParentId: currentFolder.id,
         }),
       });
-      if (!res.ok) throw new Error('Falha ao mover');
+      if (!res.ok) throw new Error('Falha ao mover o item no Google Drive');
       toast.success('Item movido com sucesso!', { id: toastId });
       setMoving(null);
       loadFiles(currentFolder.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorAlert({
+        title: 'Falha ao Mover',
+        message: error.message || 'Ocorreu um erro ao tentar mover o arquivo.'
+      });
       toast.error('Erro ao mover arquivo', { id: toastId });
     }
   };
@@ -193,17 +225,22 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
     const name = prompt('Nome da nova pasta:');
     if (!name) return;
     const toastId = toast.loading('Criando pasta...');
+    setErrorAlert(null);
     try {
       const res = await fetch('/api/drive/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parentId: currentFolder.id, name }),
       });
-      if (!res.ok) throw new Error('Falha ao criar pasta');
+      if (!res.ok) throw new Error('Falha ao criar pasta no Google Drive');
       toast.success('Pasta criada com sucesso!', { id: toastId });
       loadFiles(currentFolder.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setErrorAlert({
+        title: 'Falha ao Criar Pasta',
+        message: error.message || 'Não foi possível criar a pasta no Google Drive.'
+      });
       toast.error('Erro ao criar pasta', { id: toastId });
     }
   };
@@ -242,6 +279,15 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
         
         {/* Actions buttons */}
         <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+          <button
+            onClick={() => loadFiles(currentFolder.id)}
+            disabled={loading}
+            className="flex items-center justify-center p-2 rounded-xl bg-slate-105 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40 shadow-sm cursor-pointer"
+            title="Atualizar pasta"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+
           <button 
             onClick={handleNewFolder} 
             className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40"
@@ -526,6 +572,44 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
               <span>
                 Faltam: {((uploadProgress.total - uploadProgress.loaded) / (1024 * 1024)).toFixed(2)} MB
               </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error alert indicator - bottom left */}
+      <AnimatePresence>
+        {errorAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="absolute bottom-6 left-6 z-50 bg-red-950/95 text-white rounded-2xl p-4 shadow-2xl border border-red-800/80 flex flex-col gap-3 min-w-[300px] max-w-[350px] select-none backdrop-blur-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="text-red-400 shrink-0" size={18} />
+                <span className="text-xs font-bold text-red-200 uppercase tracking-wider">
+                  {errorAlert.title}
+                </span>
+              </div>
+              <button 
+                onClick={() => setErrorAlert(null)}
+                className="text-red-400 hover:text-red-200 transition-colors p-0.5 rounded-lg hover:bg-red-900/30"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <p className="text-[11px] text-red-200 leading-relaxed font-medium">
+              {errorAlert.message}
+            </p>
+            <div className="flex justify-end gap-2 mt-1">
+              <button
+                onClick={() => setErrorAlert(null)}
+                className="px-3 py-1 bg-red-900/50 hover:bg-red-900 text-red-200 rounded-lg text-[10px] font-bold transition-all border border-red-800/40 cursor-pointer"
+              >
+                Fechar
+              </button>
             </div>
           </motion.div>
         )}
