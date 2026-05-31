@@ -57,10 +57,22 @@ export default function FasePage() {
   const schoolName = currentSchool?.name || 'EECM';
 
   // Select the Drive Folder ID dynamically depending on the active tenant
-  const driveFolderId = 
-    resolvedSchoolId === 'joaobatista' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' :
-    resolvedSchoolId === 'heliodoro' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' : 
-    '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA'; // Fallback
+  const [driveFolderId, setDriveFolderId] = useState<string>('1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && resolvedSchoolId) {
+      const customId = localStorage.getItem(`drive_folder_id_${resolvedSchoolId}`);
+      if (customId) {
+        setDriveFolderId(customId);
+      } else {
+        const defaultId = 
+          resolvedSchoolId === 'joaobatista' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' :
+          resolvedSchoolId === 'heliodoro' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' : 
+          '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA'; // Fallback
+        setDriveFolderId(defaultId);
+      }
+    }
+  }, [resolvedSchoolId]);
 
   // Filter static evidences belonging to this eixo and fase
   const evidencesList = MEG_EVIDENCIAS.filter(

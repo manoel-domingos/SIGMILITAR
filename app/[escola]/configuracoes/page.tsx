@@ -13,6 +13,8 @@ import {
   BarChart2, Cpu, MessageSquare, User, KeyRound,
   FileText, CheckSquare, Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import AppShell from '@/components/AppShell';
@@ -579,6 +581,33 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
 function TabStatus() {
   const [ping, setPing] = useState<'idle'|'ok'|'err'>('idle');
   const [pingMs, setPingMs] = useState<number|null>(null);
+  
+  // Custom Google Drive folders state
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  const [folders, setFolders] = useState({
+    joaobatista: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
+    heliodoro: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
+    documentos: '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk'
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const jb = localStorage.getItem('drive_folder_id_joaobatista') || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+      const hd = localStorage.getItem('drive_folder_id_heliodoro') || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+      const doc = localStorage.getItem('drive_folder_id_documentos') || '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
+      setFolders({ joaobatista: jb, heliodoro: hd, documentos: doc });
+    }
+  }, []);
+
+  const saveDriveFolders = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('drive_folder_id_joaobatista', folders.joaobatista);
+      localStorage.setItem('drive_folder_id_heliodoro', folders.heliodoro);
+      localStorage.setItem('drive_folder_id_documentos', folders.documentos);
+      toast.success('Pastas do Google Drive atualizadas!');
+      setShowDriveModal(false);
+    }
+  };
 
   const testSupabase = async () => {
     setPing('idle'); setPingMs(null);
@@ -597,7 +626,7 @@ function TabStatus() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="grid sm:grid-cols-3 gap-4">
         {integrations.map(i => (
           <div key={i.name} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-3">
@@ -615,6 +644,66 @@ function TabStatus() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Google Drive Status Section */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 rounded-2xl flex items-center justify-center shrink-0">
+            <Server className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">Integração Google Drive (Service Account)</h4>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-lg">
+              Conexão via conta de serviço segura para bypassar iframes em branco e possibilitar upload nativo direto no painel MEG.
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded">
+                sigmilitar@eecm-494223.iam.gserviceaccount.com
+              </span>
+            </div>
+          </div>
+        </div>
+        <button 
+          onClick={() => setShowDriveModal(true)}
+          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md shadow-indigo-500/10 whitespace-nowrap self-start md:self-auto"
+        >
+          Configurar Pastas do Drive
+        </button>
+      </div>
+
+      {/* Google Drive Tutorial Card */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-700">
+          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Tutorial de Compartilhamento</h4>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-6 text-xs text-slate-650 dark:text-slate-400 leading-relaxed">
+          <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/40">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold">1</span>
+            <p className="font-bold text-slate-800 dark:text-slate-200">Crie ou Acesse a Pasta</p>
+            <p>Acesse seu Google Drive e escolha a pasta que servirá de repositório para a escola ou coordenação.</p>
+          </div>
+          
+          <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/40">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold">2</span>
+            <p className="font-bold text-slate-800 dark:text-slate-200">Compartilhe como Editor</p>
+            <p>Compartilhe a pasta com o e-mail da nossa conta de serviço como <strong>Editor</strong>:</p>
+            <p className="font-mono text-[9px] bg-white dark:bg-slate-950 p-1 border rounded break-all select-all font-semibold">
+              sigmilitar@eecm-494223.iam.gserviceaccount.com
+            </p>
+          </div>
+
+          <div className="space-y-2 p-4 bg-slate-50/50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/40">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold">3</span>
+            <p className="font-bold text-slate-800 dark:text-slate-200">Copie o ID da Pasta</p>
+            <p>Copie o ID do final da URL do seu navegador:</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1 font-semibold">
+              folders/<span className="text-indigo-500 font-bold underline">1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA</span>
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Teste de conexão */}
@@ -646,6 +735,8 @@ function TabStatus() {
         {[
           { k: 'NEXT_PUBLIC_SUPABASE_URL',      v: process.env.NEXT_PUBLIC_SUPABASE_URL },
           { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
+          { k: 'GOOGLE_SERVICE_ACCOUNT_EMAIL',  v: 'sigmilitar@eecm-494223.iam.gserviceaccount.com' },
+          { k: 'GOOGLE_PROJECT_ID',             v: 'eecm-494223' },
         ].map(({ k, v }) => (
           <div key={k} className="flex items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0">
             <span className={`w-2 h-2 rounded-full shrink-0 ${v ? 'bg-emerald-400' : 'bg-rose-400'}`} />
@@ -654,6 +745,76 @@ function TabStatus() {
           </div>
         ))}
       </div>
+
+      {/* Drive folders manager modal */}
+      <AnimatePresence>
+        {showDriveModal && (
+          <div className="fixed inset-0 z-[9995] flex items-center justify-center p-4 backdrop-blur-md bg-slate-900/60 animate-in fade-in duration-200">
+            <div className="absolute inset-0 cursor-default" onClick={() => setShowDriveModal(false)} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl overflow-hidden flex flex-col"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h3 className="font-extrabold text-slate-850 dark:text-slate-100 text-sm">Pastas do Google Drive</h3>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Defina as pastas compartilhadas para cada Tenant.</p>
+                </div>
+                <button onClick={() => setShowDriveModal(false)} className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 flex-1">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">E.E.C.M. João Batista (ID da Pasta)</label>
+                  <input 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200"
+                    value={folders.joaobatista}
+                    onChange={e => setFolders({ ...folders, joaobatista: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">E.E.C.M. Heliodoro (ID da Pasta)</label>
+                  <input 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200"
+                    value={folders.heliodoro}
+                    onChange={e => setFolders({ ...folders, heliodoro: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Pasta Disciplinar (documentos)</label>
+                  <input 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200"
+                    value={folders.documentos}
+                    onChange={e => setFolders({ ...folders, documentos: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex gap-3">
+                <button 
+                  onClick={() => setShowDriveModal(false)}
+                  className="flex-1 py-2 text-xs font-semibold border rounded-xl hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-600 dark:text-slate-300 transition"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={saveDriveFolders}
+                  className="flex-1 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition"
+                >
+                  Salvar Pastas
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

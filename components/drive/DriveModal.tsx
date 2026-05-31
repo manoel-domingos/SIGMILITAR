@@ -49,6 +49,12 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
   const [menuFile, setMenuFile] = useState<DriveFile | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [moving, setMoving] = useState<DriveFile | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{
+    fileName: string;
+    loaded: number;
+    total: number;
+    percentage: number;
+  } | null>(null);
 
   const currentFolder = breadcrumbs[breadcrumbs.length - 1];
 
@@ -84,25 +90,48 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
   const handleUpload = async (fileList: FileList | null) => {
     if (!fileList?.length) return;
     setUploading(true);
-    const toastId = toast.loading('Fazendo upload de arquivos...');
     try {
       for (const file of Array.from(fileList)) {
         const form = new FormData();
         form.append('file', file);
         form.append('folderId', currentFolder.id);
-        const res = await fetch('/api/drive/upload', {
-          method: 'POST',
-          body: form,
+
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/drive/upload', true);
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percentage = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress({
+                fileName: file.name,
+                loaded: event.loaded,
+                total: event.total,
+                percentage,
+              });
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Erro: ${xhr.statusText}`));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error('Erro na conexão com o servidor'));
+          xhr.send(form);
         });
-        if (!res.ok) throw new Error(`Falha no upload do arquivo ${file.name}`);
       }
-      toast.success('Upload concluído com sucesso!', { id: toastId });
+      toast.success('Upload concluído!');
       loadFiles(currentFolder.id);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.message || 'Erro ao realizar upload', { id: toastId });
+      toast.error(error.message || 'Erro no upload');
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -473,6 +502,48 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
                 >
                   Cancelar
                 </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Upload progress indicator - bottom left of the modal */}
+        <AnimatePresence>
+          {uploadProgress && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.9 }}
+              className="absolute bottom-6 left-6 z-50 bg-slate-900 dark:bg-slate-950 text-white rounded-2xl p-4 shadow-2xl border border-slate-850 dark:border-slate-800 flex flex-col gap-3 min-w-[280px] max-w-[320px] select-none"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <Loader2 className="animate-spin text-indigo-400 shrink-0" size={14} />
+                  <span className="text-[11px] font-bold truncate max-w-[180px]">
+                    {uploadProgress.fileName}
+                  </span>
+                </div>
+                <span className="text-[11px] font-extrabold text-indigo-400">
+                  {uploadProgress.percentage}%
+                </span>
+              </div>
+
+              {/* Progress bar container */}
+              <div className="w-full bg-slate-800 dark:bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className="bg-indigo-500 h-1.5 rounded-full transition-all duration-150"
+                  style={{ width: `${uploadProgress.percentage}%` }}
+                />
+              </div>
+
+              {/* Megabytes detail */}
+              <div className="flex items-center justify-between text-[9px] text-slate-400 font-semibold">
+                <span>
+                  {(uploadProgress.loaded / (1024 * 1024)).toFixed(2)} MB de {(uploadProgress.total / (1024 * 1024)).toFixed(2)} MB
+                </span>
+                <span>
+                  Faltam: {((uploadProgress.total - uploadProgress.loaded) / (1024 * 1024)).toFixed(2)} MB
+                </span>
               </div>
             </motion.div>
           )}
