@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 const https = require('https');
 
 // Configuration
@@ -8,7 +7,7 @@ const CANNY_API_KEY = "dbaba358-a925-2c7b-1f48-0abb577688dd";
 const CANNY_BOARD_ID = "6a1b2105dad3883c255b666c";
 const CANNY_AUTHOR_ID = "6a1b1c9c86d7b8843b6d467f"; // Gestor user
 
-const counterFile = path.join(__dirname, '..', '.canny-counter.json');
+const pendingFile = path.join(__dirname, '..', '.canny-pending-posts.json');
 
 function makeRequest(apiPath, payload) {
   return new Promise((resolve, reject) => {
@@ -36,199 +35,76 @@ function makeRequest(apiPath, payload) {
   });
 }
 
-function translateCommit(msg) {
-  if (!msg) return '';
-  
-  // 1. Map prefixes
-  let translated = msg;
-  const prefixes = [
-    { regex: /^feat(ure)?:\s*/i, repl: 'Nova Funcionalidade: ' },
-    { regex: /^fix:\s*/i, repl: 'Correção: ' },
-    { regex: /^chore:\s*/i, repl: 'Ajuste: ' },
-    { regex: /^docs:\s*/i, repl: 'Documentação: ' },
-    { regex: /^refactor:\s*/i, repl: 'Refatoração: ' },
-    { regex: /^style:\s*/i, repl: 'Estilo Visual: ' },
-    { regex: /^test:\s*/i, repl: 'Testes: ' }
-  ];
-  
-  for (const p of prefixes) {
-    if (p.regex.test(translated)) {
-      translated = translated.replace(p.regex, p.repl);
-      break;
-    }
-  }
-  
-  // 2. Map verbs and common terms case-insensitively
-  const dictionary = [
-    { from: /\bimplement\b/gi, to: 'implementar' },
-    { from: /\bimplemented\b/gi, to: 'implementado' },
-    { from: /\badd\b/gi, to: 'adicionar' },
-    { from: /\badded\b/gi, to: 'adicionado' },
-    { from: /\bcreate\b/gi, to: 'criar' },
-    { from: /\bcreated\b/gi, to: 'criado' },
-    { from: /\bfix\b/gi, to: 'corrigir' },
-    { from: /\bfixed\b/gi, to: 'corrigido' },
-    { from: /\bremove\b/gi, to: 'remover' },
-    { from: /\bremoved\b/gi, to: 'removido' },
-    { from: /\bupdate\b/gi, to: 'atualizar' },
-    { from: /\bupdated\b/gi, to: 'atualizado' },
-    { from: /\badjust\b/gi, to: 'ajustar' },
-    { from: /\badjusted\b/gi, to: 'ajustado' },
-    { from: /\bdelete\b/gi, to: 'excluir' },
-    { from: /\bdeleted\b/gi, to: 'excluído' },
-    { from: /\bclean\b/gi, to: 'limpar' },
-    { from: /\bcleaned\b/gi, to: 'limpo' },
-    { from: /\brefactor\b/gi, to: 'refatorar' },
-    { from: /\brefactored\b/gi, to: 'refatorado' },
-    { from: /\bchange\b/gi, to: 'alterar' },
-    { from: /\bchanged\b/gi, to: 'alterado' },
-    { from: /\bcomponent\b/gi, to: 'componente' },
-    { from: /\bcomponents\b/gi, to: 'componentes' },
-    { from: /\bpage\b/gi, to: 'página' },
-    { from: /\bpages\b/gi, to: 'páginas' },
-    { from: /\bintegration\b/gi, to: 'integração' },
-    { from: /\bdisciplinary record\b/gi, to: 'registro disciplinar' },
-    { from: /\bdisciplinary records\b/gi, to: 'registros disciplinares' },
-    { from: /\boccurrence\b/gi, to: 'ocorrência' },
-    { from: /\boccurrences\b/gi, to: 'ocorrências' },
-    { from: /\btable\b/gi, to: 'tabela' },
-    { from: /\bdashboard\b/gi, to: 'painel' },
-    { from: /\bsimulator\b/gi, to: 'simulador' },
-    { from: /\brole\b/gi, to: 'função' },
-    { from: /\buser\b/gi, to: 'usuário' },
-    { from: /\busers\b/gi, to: 'usuários' },
-    { from: /\bschool\b/gi, to: 'escola' },
-    { from: /\bschools\b/gi, to: 'escolas' },
-    { from: /\btracking\b/gi, to: 'rastreamento' },
-    { from: /\bdatabase\b/gi, to: 'banco de dados' },
-    { from: /\bbuild\b/gi, to: 'compilação' },
-    { from: /\bwith\b/gi, to: 'com' },
-    { from: /\band\b/gi, to: 'e' },
-    { from: /\bto\b/gi, to: 'para' },
-    { from: /\bfrom\b/gi, to: 'de' }
-  ];
-  
-  for (const item of dictionary) {
-    translated = translated.replace(item.from, item.to);
-  }
-  
-  return translated;
-}
-
-function isImportantCommit(msg) {
-  if (!msg) return false;
-  const msgLower = msg.toLowerCase();
-  
-  // Ignore purely minor chores/formatting/merges/lockfiles
-  const minorKeywords = ['eslint', 'cleanup', 'formatting', 'typo', 'merge branch', 'merge remote', 'package-lock.json', '.gitignore', 'yarn.lock'];
-  if (minorKeywords.some(kw => msgLower.includes(kw))) {
-    return false;
-  }
-  
-  // Important markers or features
-  const importantKeywords = [
-    'feat', 'fix', 'refactor', 'migration', 'database', 'banco', 'sql',
-    'psicossocial', 'canny', 'status', 'medida', 'aluno', 'escola',
-    'simulador', 'xerife', 'responsavel', 'guardian', 'ata', 'imprimir',
-    'auditoria', 'import', 'api', 'pedagogico', 'registro', 'comportamento'
-  ];
-  
-  return importantKeywords.some(kw => msgLower.includes(kw));
-}
-
-function getCommitLogs() {
-  try {
-    // Fetch last 15 commits to have a rich pool of history
-    const output = execSync('git log -n 15 --pretty=format:"%s (%h)"').toString().trim();
-    const rawCommits = output.split('\n').filter(Boolean);
-    
-    // Filter out minor commits, keeping only the important ones
-    const importantCommits = rawCommits.filter(c => isImportantCommit(c));
-    
-    // Fallback if we don't have enough important commits in the log pool
-    if (importantCommits.length > 0) {
-      return importantCommits.slice(0, 3);
-    }
-    
-    return rawCommits.slice(0, 3);
-  } catch (err) {
-    console.error('Erro ao ler logs do git:', err.message);
-    return ['Ajustes e melhorias no sistema'];
-  }
-}
-
 async function main() {
-  // Load counter
-  let counterData = { count: 0 };
-  if (fs.existsSync(counterFile)) {
+  let pendingPosts = [];
+  
+  if (fs.existsSync(pendingFile)) {
     try {
-      counterData = JSON.parse(fs.readFileSync(counterFile, 'utf8'));
+      pendingPosts = JSON.parse(fs.readFileSync(pendingFile, 'utf8'));
+      if (!Array.isArray(pendingPosts)) {
+        pendingPosts = [];
+      }
     } catch (e) {
-      // fallback
+      pendingPosts = [];
     }
   }
 
-  // Increment counter
-  counterData.count += 1;
-  console.log(`[Canny Push Tracker] Push ${counterData.count}/3 detectado.`);
+  console.log(`[Canny Push Tracker] ${pendingPosts.length}/3 pendências documentadas localmente.`);
 
-  if (counterData.count >= 3) {
-    console.log('[Canny Push Tracker] Criando tarefa no Canny...');
-    const commits = getCommitLogs();
+  if (pendingPosts.length >= 3) {
+    console.log('[Canny Push Tracker] Enviando postagens para o Canny...');
     
-    // Use the latest commit as the title
-    const latestCommitMsg = commits[0] ? commits[0].replace(/\s*\([a-f0-9]+\)$/, '') : 'Melhorias no sistema';
-    const translatedLatest = translateCommit(latestCommitMsg);
-    
-    // Capitalize first letter
-    const title = translatedLatest.charAt(0).toUpperCase() + translatedLatest.slice(1);
-    
-    // Details summary of last 3 commits
-    const details = `Atualizações implementadas recentemente nas últimas 3 ações:
+    // Obter as 3 primeiras postagens da fila
+    const toPost = pendingPosts.slice(0, 3);
+    const remaining = pendingPosts.slice(3);
 
-${commits.map(c => `• ${translateCommit(c)}`).join('\n')}`;
+    for (const post of toPost) {
+      try {
+        console.log(`[Canny] Criando postagem: "${post.title}"`);
+        
+        // 1. Criar Post
+        const createRes = await makeRequest('/api/v1/posts/create', {
+          apiKey: CANNY_API_KEY,
+          boardID: CANNY_BOARD_ID,
+          authorID: CANNY_AUTHOR_ID,
+          title: post.title,
+          details: post.details
+        });
 
-    try {
-      // 1. Create Post
-      const createRes = await makeRequest('/api/v1/posts/create', {
-        apiKey: CANNY_API_KEY,
-        boardID: CANNY_BOARD_ID,
-        authorID: CANNY_AUTHOR_ID,
-        title: title,
-        details: details
-      });
+        if (createRes.statusCode !== 200) {
+          throw new Error(`Falha ao criar post (Status: ${createRes.statusCode}): ${createRes.body}`);
+        }
 
-      if (createRes.statusCode !== 200) {
-        throw new Error(`Falha ao criar post (Status: ${createRes.statusCode}): ${createRes.body}`);
+        const createdPost = JSON.parse(createRes.body);
+        console.log(`[Canny] Post criado com sucesso! ID: ${createdPost.id}`);
+
+        // 2. Mudar Status para Completo
+        const statusRes = await makeRequest('/api/v1/posts/change_status', {
+          apiKey: CANNY_API_KEY,
+          postID: createdPost.id,
+          status: 'complete',
+          changerID: CANNY_AUTHOR_ID,
+          shouldNotifyVoters: false
+        });
+
+        if (statusRes.statusCode !== 200) {
+          throw new Error(`Falha ao alterar status (Status: ${statusRes.statusCode}): ${statusRes.body}`);
+        }
+
+        console.log('[Canny] Post marcado como completo com sucesso!');
+      } catch (err) {
+        console.error('[Canny Error]', err.message);
+        // Em caso de erro, re-adiciona na fila para não perder o post
+        remaining.unshift(post);
       }
-
-      const post = JSON.parse(createRes.body);
-      console.log(`[Canny] Post criado com sucesso! ID: ${post.id}`);
-
-      // 2. Change Status to Complete
-      const statusRes = await makeRequest('/api/v1/posts/change_status', {
-        apiKey: CANNY_API_KEY,
-        postID: post.id,
-        status: 'complete',
-        changerID: CANNY_AUTHOR_ID,
-        shouldNotifyVoters: false
-      });
-
-      if (statusRes.statusCode !== 200) {
-        throw new Error(`Falha ao alterar status (Status: ${statusRes.statusCode}): ${statusRes.body}`);
-      }
-
-      console.log('[Canny] Post marcado como completo com sucesso!');
-      
-      // Reset counter
-      counterData.count = 0;
-    } catch (err) {
-      console.error('[Canny Error]', err.message);
     }
-  }
 
-  // Save counter back
-  fs.writeFileSync(counterFile, JSON.stringify(counterData, null, 2), 'utf8');
+    // Salvar o estado atualizado
+    fs.writeFileSync(pendingFile, JSON.stringify(remaining, null, 2), 'utf8');
+    console.log(`[Canny] Envio concluído. Fila restante: ${remaining.length} posts.`);
+  } else {
+    console.log('[Canny Push Tracker] Fila menor que 3. Aguardando mais modificações.');
+  }
 }
 
 main();

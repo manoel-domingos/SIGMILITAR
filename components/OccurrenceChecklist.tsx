@@ -143,7 +143,7 @@ export default function OccurrenceChecklist({ userId, tasks, onUpdate, autoOpen 
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-[70] w-80 max-h-[80vh] flex flex-col"
+      className="fixed bottom-4 right-4 z-[110] w-80 max-h-[80vh] flex flex-col"
       role="complementary"
       aria-label="Pendências de ocorrências"
     >

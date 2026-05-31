@@ -1,0 +1,6 @@
+[
+  {
+    "title": "Bug resolvido: painel de pendências sobreposto pelo botão ARIA",
+    "details": "Corrigido problema visual onde o painel de tarefas pendentes era renderizado atrás do botão flutuante e do menu do assistente ARIA, impedindo a interação com as pendências da escola."
+  }
+]
