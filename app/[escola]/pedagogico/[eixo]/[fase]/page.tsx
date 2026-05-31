@@ -10,7 +10,8 @@ import ProgressBar from '@/components/meg/ProgressBar';
 import { supabase } from '@/lib/supabase';
 import { 
   ChevronRight, Calendar, ArrowLeft, Check, X,
-  GraduationCap, ClipboardCheck, Award, Info
+  GraduationCap, ClipboardCheck, Award, Info,
+  Columns, PanelRight, ExternalLink, FolderOpen
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDbSchoolId } from '@/lib/useTenantConfig';
@@ -34,6 +35,10 @@ export default function FasePage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [checklistData, setChecklistData] = useState<any[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
+  
+  // Dual-layout mode states
+  const [layoutMode, setLayoutMode] = useState<'split' | 'drawer'>('split');
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   const resolvedSchoolId = getDbSchoolId(schoolSlug);
 
@@ -49,6 +54,12 @@ export default function FasePage() {
   // Mapped school name
   const currentSchool = contextSchools.find(s => s.id === resolvedSchoolId);
   const schoolName = currentSchool?.name || 'EECM';
+
+  // Select the Drive Folder ID dynamically depending on the active tenant
+  const driveFolderId = 
+    resolvedSchoolId === 'joaobatista' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' :
+    resolvedSchoolId === 'heliodoro' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' : 
+    '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA'; // Fallback
 
   // Filter static evidences belonging to this eixo and fase
   const evidencesList = MEG_EVIDENCIAS.filter(
@@ -158,7 +169,7 @@ export default function FasePage() {
           </span>
         </div>
 
-        {/* Header section with titles and navigation */}
+        {/* Header section with layout selector */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-6">
           <div className="space-y-2">
             <button
@@ -174,6 +185,36 @@ export default function FasePage() {
               Preenchimento de evidências e upload de documentos regulamentares da escola: 
               <span className="font-semibold text-slate-500 dark:text-slate-400 ml-1">{schoolName}</span>
             </p>
+          </div>
+
+          {/* Premium Layout Toggle Button (Split vs Panel) */}
+          <div className="flex items-center bg-white/60 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 rounded-full p-0.5 gap-0.5 shadow-sm self-start sm:self-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => setLayoutMode('split')}
+              title="Lado a Lado — visualização integrada"
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                layoutMode === 'split' 
+                  ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              <Columns className="w-3.5 h-3.5" />
+              Lado a Lado
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLayoutMode('drawer'); setIsDrawerOpen(false); }}
+              title="Painel Lateral — visualização sob demanda"
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                layoutMode === 'drawer' 
+                  ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              <PanelRight className="w-3.5 h-3.5" />
+              Painel Lateral
+            </button>
           </div>
         </div>
 
@@ -197,49 +238,178 @@ export default function FasePage() {
           </div>
         </div>
 
-        {/* Evidences list */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-1.5 text-slate-400">
-              <Award className="w-4 h-4" />
-              <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                Lista de Evidências Regulatórias
-              </h3>
+        {/* Dual Layout Rendering */}
+        {layoutMode === 'split' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Column: Evidences list (Col span 5) */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <Award className="w-4 h-4" />
+                  <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                    Lista de Evidências Regulatórias
+                  </h3>
+                </div>
+                {isReadonly && (
+                  <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">
+                    <Info className="w-3 h-3" />
+                    Somente Leitura
+                  </div>
+                )}
+              </div>
+
+              {evidencesList.length === 0 ? (
+                <div className="p-12 text-center border border-dashed rounded-2xl border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-sm">
+                  Nenhuma evidência cadastrada para esta fase.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-5">
+                  {evidencesList.map(ev => {
+                    const check = checklistData.find(c => c.evidencia_id === ev.id);
+                    return (
+                      <EvidenciaItem
+                        key={ev.id}
+                        evidencia={ev}
+                        checklist={check}
+                        schoolId={resolvedSchoolId}
+                        eixoNome={eixo!.nome}
+                        faseNome={fase!.nome}
+                        currentUser={user}
+                        readonly={isReadonly}
+                        onSaveSuccess={(msg) => showToast(msg, 'ok')}
+                        onSaveError={(msg) => showToast(msg, 'err')}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {isReadonly && (
-              <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">
-                <Info className="w-3 h-3" />
-                Somente Leitura
+
+            {/* Right Column: Google Drive Iframe (Col span 7) */}
+            <div className="lg:col-span-7 bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 rounded-3xl p-5 shadow-sm sticky top-8 flex flex-col gap-4 animate-in slide-in-from-bottom-4 duration-300">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-xs font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                    Repositório Google Drive
+                  </span>
+                </div>
+                <a
+                  href={`https://drive.google.com/drive/folders/${driveFolderId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-500 hover:text-blue-600 font-bold hover:underline flex items-center gap-1 transition-colors"
+                >
+                  Abrir no Drive <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+              <iframe
+                src={`https://drive.google.com/embeddedfolderview?id=${driveFolderId}#list`}
+                className="w-full border-0 rounded-2xl shadow-inner bg-slate-50 dark:bg-slate-900/50"
+                style={{ height: '720px' }}
+                title="Painel Integrado do Google Drive"
+                allow="autoplay"
+              />
+            </div>
+
+          </div>
+        ) : (
+          // Layout 2: Full Width List
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Award className="w-4 h-4" />
+                <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                  Lista de Evidências Regulatórias
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsDrawerOpen(true)}
+                  className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 dark:bg-blue-500/20 px-3.5 py-1.5 rounded-xl border border-blue-500/20 text-xs font-extrabold transition-all active:scale-95 shadow-sm"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  Abrir Pasta do Drive
+                </button>
+                {isReadonly && (
+                  <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">
+                    <Info className="w-3 h-3" />
+                    Somente Leitura
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {evidencesList.length === 0 ? (
+              <div className="p-12 text-center border border-dashed rounded-2xl border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-sm">
+                Nenhuma evidência cadastrada para esta fase.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {evidencesList.map(ev => {
+                  const check = checklistData.find(c => c.evidencia_id === ev.id);
+                  return (
+                    <EvidenciaItem
+                      key={ev.id}
+                      evidencia={ev}
+                      checklist={check}
+                      schoolId={resolvedSchoolId}
+                      eixoNome={eixo!.nome}
+                      faseNome={fase!.nome}
+                      currentUser={user}
+                      readonly={isReadonly}
+                      onSaveSuccess={(msg) => showToast(msg, 'ok')}
+                      onSaveError={(msg) => showToast(msg, 'err')}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
+        )}
 
-          {evidencesList.length === 0 ? (
-            <div className="p-12 text-center border border-dashed rounded-2xl border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-sm">
-              Nenhuma evidência cadastrada para esta fase.
+        {/* Dynamic sliding side Drawer for Google Drive */}
+        {layoutMode === 'drawer' && isDrawerOpen && (
+          <div 
+            className="fixed inset-0 z-[9995] flex justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onMouseDown={(e) => { if (e.target === e.currentTarget) setIsDrawerOpen(false); }}
+          >
+            <div className="w-full sm:w-[50vw] bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col p-6 animate-in slide-in-from-right duration-300 border-l border-slate-200 dark:border-slate-800">
+              
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+                <div>
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Painel Lateral</span>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight mt-0.5">Arquivos da Pasta</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`https://drive.google.com/drive/folders/${driveFolderId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-500 hover:text-blue-600 font-bold hover:underline flex items-center gap-1 transition-colors"
+                  >
+                    Abrir no Drive <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                  <button
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
+                    title="Fechar painel"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <iframe
+                src={`https://drive.google.com/embeddedfolderview?id=${driveFolderId}#list`}
+                className="w-full border-0 rounded-2xl shadow-inner bg-slate-50 dark:bg-slate-900/50 flex-1"
+                title="Painel Lateral do Google Drive"
+                allow="autoplay"
+              />
             </div>
-          ) : (
-            <div className="flex flex-col gap-5">
-              {evidencesList.map(ev => {
-                const check = checklistData.find(c => c.evidencia_id === ev.id);
-                return (
-                  <EvidenciaItem
-                    key={ev.id}
-                    evidencia={ev}
-                    checklist={check}
-                    schoolId={resolvedSchoolId}
-                    eixoNome={eixo!.nome}
-                    faseNome={fase!.nome}
-                    currentUser={user}
-                    readonly={isReadonly}
-                    onSaveSuccess={(msg) => showToast(msg, 'ok')}
-                    onSaveError={(msg) => showToast(msg, 'err')}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Dynamic Toast Alert Notification */}
         {toast && (
