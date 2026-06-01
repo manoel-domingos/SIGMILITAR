@@ -2,7 +2,7 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const connectionString = 'postgresql://postgres:IkMF3EoXEKtrkL9zvnuov5Vn4gbbCSRt@bd.sigmilitar.com.br:7881/postgres';
+const connectionString = 'postgresql://postgres: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@db.imprdimqcjbndqewioyt.supabase.co:5432/postgres';
 
 const client = new Client({
   connectionString,

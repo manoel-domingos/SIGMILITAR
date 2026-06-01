@@ -2,7 +2,7 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const connectionString = 'postgresql://postgres:0U833Rm5lpgOssHjVaVna3k0TRBK6FcF@bd.sigmilitar.com.br:5432/postgres';
+const connectionString = 'postgresql://postgres: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@db.imprdimqcjbndqewioyt.supabase.co:5432/postgres';
 
 const migrationsDir = path.join(__dirname, '..', 'supabase', 'migrations');
 
@@ -10,7 +10,7 @@ async function run() {
   const client = new Client({ connectionString });
   try {
     await client.connect();
-    console.log('Connected to VPS Postgres Database successfully!');
+    console.log('Connected to Cloud Postgres Database successfully!');
 
     // 1. Create schema_migrations table if not exists
     await client.query(`

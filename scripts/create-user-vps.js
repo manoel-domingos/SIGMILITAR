@@ -20,7 +20,7 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const supabaseUrl = 'https://bd.sigmilitar.com.br:8443'; // Force use port 8443 (HTTPS)
+const supabaseUrl = 'https://imprdimqcjbndqewioyt.supabase.co';
 const supabaseServiceRole = env['SUPABASE_SERVICE_ROLE_KEY'];
 
 if (!supabaseServiceRole) {
