@@ -548,14 +548,16 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     
     return anyNameMatch || obsMatch || false;
   }).sort((a, b) => {
-    // Ordenar pelo createdAt do servidor (mais recente primeiro) para refletir ordem real de criação
+    // Ordenar primariamente por data e horário do fato (mais recente primeiro)
+    const dateTimeA = new Date(a.date + 'T' + (a.hour || '00:00')).getTime();
+    const dateTimeB = new Date(b.date + 'T' + (b.hour || '00:00')).getTime();
+    if (dateTimeB !== dateTimeA) return dateTimeB - dateTimeA;
+
+    // Se data e hora do fato forem iguais, desempata por createdAt do servidor
     if (a.createdAt && b.createdAt) {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
-    // Fallback: usar date + hour se createdAt não estiver disponível
-        const dateTimeA = new Date(a.date + 'T' + (a.hour || '00:00')).getTime();
-        const dateTimeB = new Date(b.date + 'T' + (b.hour || '00:00')).getTime();
-    if (dateTimeB !== dateTimeA) return dateTimeB - dateTimeA;
+
     // Se tudo mais for igual, por ID (mais recente ID primeiro)
     return b.id.localeCompare(a.id);
   });
@@ -682,7 +684,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     </table>`;
 
   const handleResolver = async () => {
-    if (!_vo || resolucaoText.length < 20) return;
+    if (!_vo || !resolucaoText.trim()) return;
     setResolucaoSaving(true);
     try {
       await updateOccurrence(_vo.id, { 
