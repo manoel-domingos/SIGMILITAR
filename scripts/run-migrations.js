@@ -2,7 +2,7 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const connectionString = 'postgresql://postgres:IkMF3EoXEKtrkL9zvnuov5Vn4gbbCSRt@bd.sigmilitar.com.br:7881/postgres';
+const connectionString = 'postgresql://postgres:0U833Rm5lpgOssHjVaVna3k0TRBK6FcF@bd.sigmilitar.com.br:5432/postgres';
 
 const migrationsDir = path.join(__dirname, '..', 'supabase', 'migrations');
 

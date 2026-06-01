@@ -1,7 +1,7 @@
 const { Client } = require('pg');
 
 const oldConnectionString = 'postgresql://postgres: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@db.imprdimqcjbndqewioyt.supabase.co:5432/postgres';
-const newConnectionString = 'postgresql://postgres:IkMF3EoXEKtrkL9zvnuov5Vn4gbbCSRt@bd.sigmilitar.com.br:7881/postgres';
+const newConnectionString = 'postgresql://postgres:0U833Rm5lpgOssHjVaVna3k0TRBK6FcF@bd.sigmilitar.com.br:5432/postgres';
 
 async function getNonGeneratedColumns(client, tableName, schema) {
   const res = await client.query(`
