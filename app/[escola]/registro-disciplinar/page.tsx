@@ -3171,13 +3171,8 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               value={resolucaoText}
               onChange={(e) => setResolucaoText(e.target.value)}
               className="w-full min-h-[120px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-              placeholder="Digite a resolução (mínimo de 20 caracteres)..."
+              placeholder="Digite a resolução..."
             />
-            <div className="flex justify-between items-center text-xs">
-              <span className={`${resolucaoText.length < 20 ? 'text-rose-500' : 'text-emerald-500'} font-medium`}>
-                {resolucaoText.length} / 20 caracteres
-              </span>
-            </div>
             <div className="flex gap-2 justify-end pt-2">
               <button 
                 onClick={() => setShowResolucaoModal(false)}
@@ -3187,7 +3182,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               </button>
               <button 
                 onClick={handleResolver}
-                disabled={resolucaoText.length < 20 || resolucaoSaving}
+                disabled={!resolucaoText.trim() || resolucaoSaving}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition disabled:opacity-50"
               >
                 {resolucaoSaving ? 'Salvando...' : 'Confirmar e Imprimir'}
