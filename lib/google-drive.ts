@@ -165,7 +165,8 @@ export async function getStudentOccurrenceUploadSession(
   studentName: string,
   occurrenceNumber: string,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  origin?: string
 ): Promise<{ uploadUri: string; isAlunosCreated: boolean }> {
   // 1. Resolve SISTEMA folder
   const sistema = await createFolderIfNotExist(schoolFolderId, 'SISTEMA');
@@ -192,7 +193,7 @@ A remoção de pastas deste diretório comprometerá a integridade do histórico
   const targetFolder = await createFolderIfNotExist(ocorrencias.id, folderKey);
 
   // 7. Get resumable upload session URI
-  const uploadUri = await createResumableUploadSession(targetFolder.id, fileName, mimeType);
+  const uploadUri = await createResumableUploadSession(targetFolder.id, fileName, mimeType, origin);
 
   return {
     uploadUri,
@@ -235,7 +236,8 @@ export async function getAccessToken(): Promise<string> {
 export async function createResumableUploadSession(
   folderId: string,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  origin?: string
 ): Promise<string> {
   const token = await getAccessToken();
 
@@ -244,14 +246,20 @@ export async function createResumableUploadSession(
     parents: [folderId],
   };
 
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json; charset=UTF-8',
+  };
+
+  if (origin) {
+    headers['Origin'] = origin;
+  }
+
   const res = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
     {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
+      headers,
       body: JSON.stringify(metadata),
     }
   );

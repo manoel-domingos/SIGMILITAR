@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const googleUploadUri = await createResumableUploadSession(folderId, fileName, mimeType);
+    const origin = req.headers.get('origin') || undefined;
+    const googleUploadUri = await createResumableUploadSession(folderId, fileName, mimeType, origin);
     return NextResponse.json({ uploadUri: googleUploadUri });
   } catch (error: any) {
     console.error('Error in POST /api/drive/upload-session:', error);

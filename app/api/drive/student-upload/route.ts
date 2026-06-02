@@ -16,12 +16,14 @@ export async function POST(req: NextRequest) {
 
     const resolvedSchoolFolderId = schoolFolderId ?? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
     
+    const origin = req.headers.get('origin') || undefined;
     const result = await getStudentOccurrenceUploadSession(
       resolvedSchoolFolderId,
       studentName,
       occurrenceNumber,
       fileName,
-      mimeType
+      mimeType,
+      origin
     );
 
     return NextResponse.json(result);
