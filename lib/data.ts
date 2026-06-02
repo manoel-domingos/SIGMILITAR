@@ -17,6 +17,8 @@ export interface Student {
   birthDate?: string;
   archived?: boolean;
   photoUrl?: string;
+  sobLaudoPaedCid?: string;
+  displayName?: string;
 }
 
 export interface DisciplineRule {

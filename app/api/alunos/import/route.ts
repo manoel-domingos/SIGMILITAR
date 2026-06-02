@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         const resp2Nome = String(row[7] || '').trim();
         const resp2Tel = String(row[8] || '').trim();
         const observacoes = String(row[9] || '').trim();
+        const sobLaudo = String(row[10] || '').trim();
 
         if (!nome) {
           results.errors.push(`Linha ${i + 2}: Nome é obrigatório`);
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
           contacts: contacts.length > 0 ? contacts : null,
           observation: observacoes || null,
           school_id: schoolId,
+          sob_laudo_paed_cid: sobLaudo || null,
         });
 
         if (error) {

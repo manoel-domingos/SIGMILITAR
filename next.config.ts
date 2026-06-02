@@ -7,7 +7,7 @@ import type {NextConfig} from 'next';
 // Todos esses casos foram convertidos para concatenacao de strings.
 
 // ── Security Headers ────────────────────────────────────────────────────────
-const SUPABASE_HOST = 'bd.sigmilitar.com.br';
+const SUPABASE_HOST = 'imprdimqcjbndqewioyt.supabase.co';
 
 const securityHeaders = [
   // Bloqueia iframes externos (clickjacking)
