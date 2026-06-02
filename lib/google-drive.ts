@@ -249,6 +249,7 @@ export async function createResumableUploadSession(
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json; charset=UTF-8',
+    'X-Upload-Content-Type': mimeType,
   };
 
   if (origin) {
