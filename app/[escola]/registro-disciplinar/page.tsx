@@ -188,7 +188,7 @@ function RegistroDisciplinarContent() {
   const uploadToDrive = async (file: File, studentId: string): Promise<string | null> => {
     try {
       const student = students.find(s => s.id === studentId);
-      const studentName = student ? student.name : 'Aluno_Desconhecido';
+      const studentName = student ? (student.displayName || student.name) : 'Aluno_Desconhecido';
       
       // Resolve o occurrenceNumber
       const occurrenceNumber = editingOccurrence 
@@ -1629,7 +1629,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           ? students.filter(s => o.studentIds?.includes(s.id))
                           : [students.find(s => s.id === o.studentId)].filter((s): s is Student => Boolean(s));
                         
-                        const names = relatedStudents.map(s => s.name).join(', ');
+                        const names = relatedStudents.map(s => s.displayName || s.name).join(', ');
                         const classes_occur = Array.from(new Set(relatedStudents.map(s => s.class))).join(', ');
                         const allOccRuleCodes = o.ruleCodes && o.ruleCodes.length > 0 ? o.ruleCodes : [o.ruleCode];
                         const allOccRules = allOccRuleCodes.map(rc => rules.find(r => r.code === rc)).filter(Boolean);
@@ -2415,7 +2415,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           return (
                              <div key={student.id} className="mb-2">
                                {selectedStudents.length > 1 && (
-                                 <p className="text-xs font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1">{student.name}</p>
+                                 <p className="text-xs font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1">{student.displayName || student.name}</p>
                                )}
                                <div className="space-y-1 mt-1">
                                   {student.contacts?.length ? (
@@ -2423,7 +2423,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                                       <button
                                         key={i}
                                         type="button"
-                                        onClick={() => handleWhatsAppRedirect(c.phone, student.name, student.id)}
+                                        onClick={() => handleWhatsAppRedirect(c.phone, student.displayName || student.name, student.id)}
                                         className="w-full flex items-center justify-between p-2 bg-slate-50 hover:bg-emerald-50 rounded-lg group transition border border-transparent hover:border-emerald-200 text-left"
                                       >
                                         <div>
@@ -2887,7 +2887,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{c.phone}</p>
                               </div>
                               <button
-                                onClick={() => handleWhatsAppRedirect(c.phone, _voStudent.name, _voStudent.id)}
+                                onClick={() => handleWhatsAppRedirect(c.phone, _voStudent.displayName || _voStudent.name, _voStudent.id)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 rounded-lg transition text-xs font-semibold"
                               >
                                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">
@@ -2915,12 +2915,12 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           {/* Cabeçalho do aluno */}
                           <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
                             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center shrink-0">
-                              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                                {student.name.charAt(0)}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-slate-800 dark:text-white leading-tight">{student.name}</p>
+                                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                  {(student.displayName || student.name).charAt(0)}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-slate-800 dark:text-white leading-tight">{student.displayName || student.name}</p>
                               <p className="text-[11px] text-slate-400 dark:text-slate-500">{student.class || '—'}</p>
                             </div>
                           </div>
@@ -2947,7 +2947,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                                   {c.phone && (
                                     <button
                                       type="button"
-                                      onClick={() => handleWhatsAppRedirect(c.phone, student.name, student.id)}
+                                      onClick={() => handleWhatsAppRedirect(c.phone, student.displayName || student.name, student.id)}
                                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors shrink-0"
                                     >
                                       <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">

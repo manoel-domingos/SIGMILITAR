@@ -104,6 +104,7 @@ export default function Alunos() {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [sobLaudoPaedCid, setSobLaudoPaedCid] = useState('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -163,6 +164,7 @@ export default function Alunos() {
     setRegistrationNumber('');
     setBirthDate('');
     setPhotoUrl('');
+    setSobLaudoPaedCid('');
     setIgnoredWarning(false);
     setIsModalOpen(true);
   };
@@ -179,6 +181,7 @@ export default function Alunos() {
     setRegistrationNumber(s.registrationNumber || '');
     setBirthDate(s.birthDate || '');
     setPhotoUrl(s.photoUrl || '');
+    setSobLaudoPaedCid(s.sobLaudoPaedCid || '');
     setIgnoredWarning(false);
     setActiveTab('atividades');
     setIsModalOpen(true);
@@ -281,7 +284,8 @@ export default function Alunos() {
         registrationNumber: registrationNumber || undefined,
         birthDate: birthDate || undefined,
         contacts: validContacts.length > 0 ? validContacts : undefined,
-        photoUrl: photoUrl || undefined
+        photoUrl: photoUrl || undefined,
+        sobLaudoPaedCid: sobLaudoPaedCid || undefined
       });
     } else {
       addStudent({
@@ -294,7 +298,8 @@ export default function Alunos() {
         cpf: cpf || undefined,
         registrationNumber: registrationNumber || undefined,
         birthDate: birthDate || undefined,
-        contacts: validContacts.length > 0 ? validContacts : undefined
+        contacts: validContacts.length > 0 ? validContacts : undefined,
+        sobLaudoPaedCid: sobLaudoPaedCid || undefined
       });
     }
 
@@ -308,6 +313,7 @@ export default function Alunos() {
     setCpf('');
     setRegistrationNumber('');
     setBirthDate('');
+    setSobLaudoPaedCid('');
     setEditingStudent(null);
   };
 
@@ -615,11 +621,6 @@ export default function Alunos() {
 
         const validShift = ['Matutino', 'Vespertino', 'Noturno'].includes(shift) ? shift as any : 'Matutino';
 
-        // Mescla laudo CID na observação
-        if (laudoCid && laudoCid !== '-') {
-          observation = observation ? `${observation} | Laudo: ${laudoCid}` : `Laudo: ${laudoCid}`;
-        }
-
           const extractPhones = (phoneStr: string) => {
              if (!phoneStr || phoneStr === '-') return [];
 
@@ -709,6 +710,7 @@ export default function Alunos() {
           registrationNumber: registrationNumber || undefined,
           observation: observation || undefined,
           contacts: contacts.length > 0 ? contacts : undefined,
+          sobLaudoPaedCid: (laudoCid && laudoCid !== '-') ? laudoCid : undefined,
           error: error.trim()
         };
       }).filter(Boolean) as any[];
@@ -1001,7 +1003,7 @@ export default function Alunos() {
                             <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 overflow-hidden flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-xs">
                               {s.photoUrl ? <img src={s.photoUrl} alt={s.name} className="w-full h-full object-cover" /> : s.name.charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-bold text-slate-800 dark:text-white text-sm">{s.name}</span>
+                            <span className="font-bold text-slate-800 dark:text-white text-sm">{s.displayName || s.name}</span>
                           </div>
                         </td>
                         <td className="px-4 py-4">
@@ -1100,7 +1102,7 @@ export default function Alunos() {
                       }
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate">{s.name}</p>
+                      <p className="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate">{s.displayName || s.name}</p>
                       {s.observation && (
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{s.observation}</p>
                       )}
@@ -1340,6 +1342,11 @@ export default function Alunos() {
                       <div>
                         <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">CPF</label>
                         <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Sob Laudo PAED/CID</label>
+                        <input type="text" value={sobLaudoPaedCid} onChange={(e) => setSobLaudoPaedCid(e.target.value)} placeholder="Ex: F90, CID 10, TDAH, etc."
                           className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                       </div>
                       <div>
@@ -1596,6 +1603,11 @@ export default function Alunos() {
                     <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00"
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">Sob Laudo PAED/CID</label>
+                  <input type="text" value={sobLaudoPaedCid} onChange={(e) => setSobLaudoPaedCid(e.target.value)} placeholder="Ex: F90, CID 10, TDAH, etc."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-600 mb-1">Observacoes</label>

@@ -17,6 +17,7 @@ export async function GET() {
         'Responsável 2 - Nome',
         'Responsável 2 - Telefone',
         'Observações',
+        'Sob Laudo PAED/CID',
       ],
       // Exemplo de linha
       [
@@ -30,6 +31,7 @@ export async function GET() {
         'Pedro Silva Santos',
         '(11) 97654-3210',
         'Aluno transferido de outra escola',
+        'F90 - TDAH',
       ],
     ]);
 
@@ -45,6 +47,7 @@ export async function GET() {
       { wch: 20 },
       { wch: 18 },
       { wch: 30 },
+      { wch: 20 },
     ];
 
     // Congelar primeira linha (header)

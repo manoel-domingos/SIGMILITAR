@@ -528,8 +528,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
           if (studentsData) {
             setIsSupabaseConnected(true);
-          setStudents(studentsData.map((s: any) => ({ ...s, points: 8, photoUrl: s.photo_url })));
-
+            setStudents(studentsData.map((s: any) => ({
+              ...s,
+              points: 8,
+              photoUrl: s.photo_url,
+              sobLaudoPaedCid: s.sob_laudo_paed_cid,
+              displayName: s.name + (s.sob_laudo_paed_cid ? ' - ATP' : '')
+            })));
           }
           
           if (rulesData) {
@@ -1036,7 +1041,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         cpf: s.cpf,
         contacts: s.contacts,
         archived: s.archived || false,
-        school_id: dbSchoolId
+        school_id: dbSchoolId,
+        sob_laudo_paed_cid: s.sobLaudoPaedCid || null
         // registration_number e birth_date comentados ate as colunas serem criadas no banco
       };
       try {
@@ -1048,7 +1054,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             points: 8,
             registrationNumber: data.registration_number,
             birthDate: data.birth_date,
-            photoUrl: data.photo_url
+            photoUrl: data.photo_url,
+            sobLaudoPaedCid: data.sob_laudo_paed_cid,
+            displayName: data.name + (data.sob_laudo_paed_cid ? ' - ATP' : '')
           }]);
           newId = data.id;
           logAction('CREATE', 'Aluno', newId, 'Adicionado aluno: ' + s.name);
@@ -1095,7 +1103,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             cpf: ns.cpf,
             contacts: ns.contacts,
             archived: ns.archived || false,
-            school_id: dbSchoolId
+            school_id: dbSchoolId,
+            sob_laudo_paed_cid: ns.sobLaudoPaedCid || null
           };
         });
 
@@ -1118,7 +1127,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    const mappedLocal = newStudents.map((s, idx) => ({ ...s, id: 'S' + Date.now() + '_' + idx }));
+    const mappedLocal = newStudents.map((s, idx) => ({ 
+      ...s, 
+      id: 'S' + Date.now() + '_' + idx,
+      displayName: s.name + (s.sobLaudoPaedCid ? ' - ATP' : '')
+    }));
     setStudents(prev => [...prev, ...mappedLocal]);
     logAction('SYSTEM', 'Aluno', 'LOTE', 'Importados ' + mappedLocal.length + ' alunos localmente');
   };
@@ -1134,6 +1147,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (s.address !== undefined) dbPayload.address = s.address;
       if (s.cpf !== undefined) dbPayload.cpf = s.cpf;
       if (s.contacts) dbPayload.contacts = s.contacts;
+      if (s.sobLaudoPaedCid !== undefined) dbPayload.sob_laudo_paed_cid = s.sobLaudoPaedCid;
       // registration_number comentado ate a coluna ser criada no banco
       // if (s.registrationNumber !== undefined) dbPayload.registration_number = s.registrationNumber;
       // birth_date comentado ate a coluna ser criada no banco
@@ -1148,7 +1162,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error("Update error:", err);
       }
     }
-    setStudents(prev => prev.map(item => item.id === id ? { ...item, ...s } : item));
+    setStudents(prev => prev.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, ...s };
+        const laudo = s.sobLaudoPaedCid !== undefined ? s.sobLaudoPaedCid : item.sobLaudoPaedCid;
+        const name = s.name !== undefined ? s.name : item.name;
+        updated.displayName = name + (laudo ? ' - ATP' : '');
+        return updated;
+      }
+      return item;
+    }));
     logAction('UPDATE', 'Aluno', id, 'Atualizado aluno: ' + (s.name || id));
   };
 
@@ -1231,7 +1254,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { data: appUsersData }
       ] = responses;
 
-      if (studentsData) setStudents(studentsData.map((s: any) => ({ ...s, points: 8 })));
+      if (studentsData) setStudents(studentsData.map((s: any) => ({
+        ...s,
+        points: 8,
+        sobLaudoPaedCid: s.sob_laudo_paed_cid,
+        displayName: s.name + (s.sob_laudo_paed_cid ? ' - ATP' : '')
+      })));
       if (occurrencesData) setOccurrences(occurrencesData.map((o: any) => {
         const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
         return {
