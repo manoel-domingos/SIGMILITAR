@@ -196,7 +196,7 @@ function RegistroDisciplinarContent() {
         : `nova_${Date.now()}`;
         
       // Pasta raiz da escola no Drive
-      let schoolFolderId = '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+      let schoolFolderId = process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
       if (supabase && resolvedSchoolId) {
         const { data, error } = await supabase
           .from('school_settings')

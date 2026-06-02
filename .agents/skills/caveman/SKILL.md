@@ -57,6 +57,7 @@ Drop caveman when:
 - Security warnings
 - Irreversible action confirmations
 - Manual actions the user needs to perform (e.g. running new Supabase migrations in Supabase Console). Always explicitly and clearly instruct on these!
+- ALERT FOR MANUAL ACTIONS: If agent cannot directly run or upload commands (e.g., Supabase SQL scripts), it MUST explicitly alert the user about manual actions needed / Sempre alertar o usuário sobre ações manuais necessárias (como executar scripts SQL no console do Supabase) caso o agente não consiga aplicar comandos diretamente.
 - Multi-step sequences where fragment order or omitted conjunctions risk misread
 - Compression itself creates technical ambiguity (e.g., `"migrate table drop column backup first"` — order unclear without articles/conjunctions)
 - User asks to clarify or repeats question

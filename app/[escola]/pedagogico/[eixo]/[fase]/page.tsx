@@ -57,7 +57,9 @@ export default function FasePage() {
   const schoolName = currentSchool?.name || 'EECM';
 
   // Select the Drive Folder ID dynamically depending on the active tenant
-  const [driveFolderId, setDriveFolderId] = useState<string>('1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
+  const [driveFolderId, setDriveFolderId] = useState<string>(
+    process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA'
+  );
 
   useEffect(() => {
     const fetchFolderId = async () => {
@@ -73,10 +75,12 @@ export default function FasePage() {
           setDriveFolderId(data.drive_folder_id);
         } else {
           // Fallback default
-          setDriveFolderId('1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
+          setDriveFolderId(process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
         }
       } catch (err) {
         console.error('Error fetching drive folder ID from settings:', err);
+        // Fallback default on error
+        setDriveFolderId(process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
       }
     };
     fetchFolderId();

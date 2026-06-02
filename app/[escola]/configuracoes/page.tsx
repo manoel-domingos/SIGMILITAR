@@ -588,8 +588,8 @@ function TabStatus() {
   // Custom Google Drive folders state
   const [showDriveModal, setShowDriveModal] = useState(false);
   const [folders, setFolders] = useState({
-    joaobatista: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
-    heliodoro: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
+    joaobatista: process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
+    heliodoro: process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
     documentos: '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk'
   });
 
@@ -600,15 +600,16 @@ function TabStatus() {
         .select('*');
       if (error) throw error;
       if (data) {
+        const defaultFolder = process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
         const foldersMap = {
-          joaobatista: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
-          heliodoro: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
+          joaobatista: defaultFolder,
+          heliodoro: defaultFolder,
           documentos: '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk'
         };
         data.forEach((row: any) => {
-          if (row.school_id === 'joaobatista') foldersMap.joaobatista = row.drive_folder_id;
-          if (row.school_id === 'heliodoro') foldersMap.heliodoro = row.drive_folder_id;
-          if (row.school_id === 'documentos') foldersMap.documentos = row.drive_folder_id;
+          if (row.school_id === 'joaobatista') foldersMap.joaobatista = row.drive_folder_id || defaultFolder;
+          if (row.school_id === 'heliodoro') foldersMap.heliodoro = row.drive_folder_id || defaultFolder;
+          if (row.school_id === 'documentos') foldersMap.documentos = row.drive_folder_id || '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
         });
         setFolders(foldersMap);
       }
