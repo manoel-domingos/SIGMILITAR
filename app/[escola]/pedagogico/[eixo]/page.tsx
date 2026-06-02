@@ -214,11 +214,16 @@ export default function EixoPage() {
                 <div className="flex items-start justify-between gap-3 w-full">
                   <div className="space-y-1">
                     <span className="text-[10px] uppercase font-extrabold text-slate-400 dark:text-slate-500 tracking-wider font-mono">
-                      Fase {f.numero}
+                      Fase {f.numero} {f.sigla ? `— ${f.sigla}` : ''}
                     </span>
                     <h4 className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 leading-snug group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
                       {f.nome}
                     </h4>
+                    {f.sinonimo && (
+                      <span className="text-xs text-slate-400 dark:text-slate-500 italic block mt-0.5">
+                        Ciclo: {f.sinonimo}
+                      </span>
+                    )}
                   </div>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded border text-[10px] font-bold shrink-0 ${statusBadgeColor}`}>
                     <StatusIcon className="w-3 h-3" />

@@ -15,6 +15,9 @@ interface EvidenciaItemProps {
     id: string;
     nome: string;
     descricao: string;
+    codigoPDF?: string;
+    documento?: string;
+    resultados?: Record<number, { status: any; nota: number }>;
   };
   checklist?: {
     status: string;
@@ -308,14 +311,49 @@ export default function EvidenciaItem({
 
       {/* Info details */}
       <div className="flex-1 min-w-0 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+          <div className="space-y-1">
             <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base leading-snug">
               {evidencia.nome}
             </h4>
-            <p className="text-xs text-slate-400 dark:text-slate-500 leading-normal mt-0.5">
+            <p className="text-xs text-slate-400 dark:text-slate-500 leading-normal">
               {evidencia.descricao}
             </p>
+            
+            {(evidencia.codigoPDF || evidencia.documento || evidencia.resultados?.[2025]) && (
+              <div className="mt-2.5 flex flex-wrap gap-1.5 items-center bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/80 p-2.5 rounded-xl">
+                {evidencia.codigoPDF && (
+                  <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25 px-1.5 py-0.5 rounded text-[9.5px] font-bold">
+                    Cód: {evidencia.codigoPDF}
+                  </span>
+                )}
+                {evidencia.documento && (
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                    <strong className="text-slate-600 dark:text-slate-350">Doc:</strong> {evidencia.documento}
+                  </span>
+                )}
+                {evidencia.resultados?.[2025] && (
+                  <div className="w-full mt-1.5 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/40 flex items-center justify-between text-[10px]">
+                    <span className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider text-[9px]">
+                      Avaliação 2025 (SEDUC-MT)
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-1.5 py-0.25 rounded text-[9px] font-bold border ${
+                        evidencia.resultados[2025].status === 'possui' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/25 dark:text-emerald-400' :
+                        evidencia.resultados[2025].status === 'incompleto' ? 'bg-amber-500/10 text-amber-600 border-amber-500/25 dark:text-amber-400' :
+                        'bg-rose-500/10 text-rose-600 border-rose-500/25 dark:text-rose-400'
+                      }`}>
+                        {evidencia.resultados[2025].status === 'possui' ? 'Possui' :
+                         evidencia.resultados[2025].status === 'incompleto' ? 'Incompleto' : 'Não Possui'}
+                      </span>
+                      <span className="font-extrabold text-slate-700 dark:text-slate-200 font-mono">
+                        Nota: {evidencia.resultados[2025].nota.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 w-fit ${currentStyle.badge}`}>
             {currentStyle.text}

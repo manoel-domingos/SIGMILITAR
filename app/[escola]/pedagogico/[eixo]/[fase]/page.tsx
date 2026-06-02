@@ -202,6 +202,11 @@ export default function FasePage() {
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
               Fase {fase!.numero}: {fase!.nome}
             </h1>
+            {fase!.sinonimo && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 italic mt-0.5">
+                Ciclo: {fase!.sinonimo}
+              </p>
+            )}
             <p className="text-xs text-slate-400 dark:text-slate-500">
               Preenchimento de evidências e upload de documentos regulamentares da escola: 
               <span className="font-semibold text-slate-500 dark:text-slate-400 ml-1">{schoolName}</span>

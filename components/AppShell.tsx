@@ -69,11 +69,11 @@ const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
   {
     label: 'Eixos MEG', icon: BookOpen,
     children: [
-      { href: '/pedagogico/gestao-escolar', label: '1. Gestão Escolar', icon: FileText },
-      { href: '/pedagogico/lideranca', label: '2. Liderança', icon: Users },
-      { href: '/pedagogico/pedagogico', label: '3. Processo Pedagógico', icon: GraduationCap },
-      { href: '/pedagogico/patrimonio', label: '4. Recursos e Patrimônio', icon: Building2 },
-      { href: '/pedagogico/clima-escolar', label: '5. Clima Escolar', icon: Activity },
+      { href: '/pedagogico/patrimonio', label: '1. Patrimônio Mobiliário e Imobiliário', icon: Building2 },
+      { href: '/pedagogico/lideranca', label: '2. Alimentação Escolar', icon: Users },
+      { href: '/pedagogico/pedagogico', label: '3. Limpeza e Organização', icon: GraduationCap },
+      { href: '/pedagogico/gestao-escolar', label: '4. Manutenção e Conservação', icon: FileText },
+      { href: '/pedagogico/clima-escolar', label: '5. Gestão Escolar e Pedagógica', icon: Activity },
     ],
   },
   {

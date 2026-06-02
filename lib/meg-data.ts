@@ -18,6 +18,8 @@ export interface MegFase {
   numero: number;
   nome: string;
   slug: string;
+  sigla?: string;
+  sinonimo?: string;
 }
 
 export type MegStatus2025 = 'possui' | 'nao_possui' | 'incompleto' | null;
@@ -110,19 +112,19 @@ export const MEG_TOTAIS_ANUAIS: Record<
 
 export const MEG_EIXOS: MegEixo[] = [
   {
-    id: 'gestao-escolar',
+    id: 'patrimonio',
     numero: 1,
-    nome: 'Planejamento Estratégico e Gestão Escolar',
-    slug: 'gestao-escolar',
-    icone: 'ClipboardList',
-    color: 'text-blue-500 dark:text-blue-400',
-    bgGradient: 'from-blue-500/10 to-cyan-500/10',
-    borderColor: 'border-blue-500/20 dark:border-blue-500/30',
+    nome: 'Patrimônio Mobiliário e Imobiliário',
+    slug: 'patrimonio',
+    icone: 'Building',
+    color: 'text-amber-500 dark:text-amber-400',
+    bgGradient: 'from-amber-500/10 to-orange-500/10',
+    borderColor: 'border-amber-500/20 dark:border-amber-500/30',
   },
   {
     id: 'lideranca',
     numero: 2,
-    nome: 'Gestão de Pessoas e Liderança',
+    nome: 'Alimentação Escolar',
     slug: 'lideranca',
     icone: 'Users',
     color: 'text-purple-500 dark:text-purple-400',
@@ -132,7 +134,7 @@ export const MEG_EIXOS: MegEixo[] = [
   {
     id: 'pedagogico',
     numero: 3,
-    nome: 'Gestão de Processos Pedagógicos',
+    nome: 'Limpeza e Organização',
     slug: 'pedagogico',
     icone: 'GraduationCap',
     color: 'text-emerald-500 dark:text-emerald-400',
@@ -140,19 +142,19 @@ export const MEG_EIXOS: MegEixo[] = [
     borderColor: 'border-emerald-500/20 dark:border-emerald-500/30',
   },
   {
-    id: 'patrimonio',
+    id: 'gestao-escolar',
     numero: 4,
-    nome: 'Gestão de Recursos e Patrimônio',
-    slug: 'patrimonio',
-    icone: 'Building',
-    color: 'text-amber-500 dark:text-amber-400',
-    bgGradient: 'from-amber-500/10 to-orange-500/10',
-    borderColor: 'border-amber-500/20 dark:border-amber-500/30',
+    nome: 'Manutenção e Conservação',
+    slug: 'gestao-escolar',
+    icone: 'ClipboardList',
+    color: 'text-blue-500 dark:text-blue-400',
+    bgGradient: 'from-blue-500/10 to-cyan-500/10',
+    borderColor: 'border-blue-500/20 dark:border-blue-500/30',
   },
   {
     id: 'clima-escolar',
     numero: 5,
-    nome: 'Gestão de Resultados e Clima Escolar',
+    nome: 'Gestão Escolar e Pedagógica',
     slug: 'clima-escolar',
     icone: 'LineChart',
     color: 'text-rose-500 dark:text-rose-400',
@@ -162,11 +164,11 @@ export const MEG_EIXOS: MegEixo[] = [
 ];
 
 export const MEG_FASES: MegFase[] = [
-  { id: 'planejamento', numero: 1, nome: 'Planejamento',                                      slug: 'planejamento' },
-  { id: 'execucao',     numero: 2, nome: 'Execução',                                          slug: 'execucao'     },
-  { id: 'controle',     numero: 3, nome: 'Controle e Avaliação de Qualidade e Eficiência',    slug: 'controle'     },
-  { id: 'melhorias',    numero: 4, nome: 'Implementação de Melhorias',                        slug: 'melhorias'    },
-  { id: 'resultados',   numero: 5, nome: 'Avaliação de Resultados',                           slug: 'resultados'   },
+  { id: 'planejamento', numero: 1, nome: 'Planejamento',                                      slug: 'planejamento', sigla: 'P', sinonimo: 'Planejamento (P)' },
+  { id: 'execucao',     numero: 2, nome: 'Execução',                                          slug: 'execucao',     sigla: 'D', sinonimo: 'Execução / Fazer (D)' },
+  { id: 'controle',     numero: 3, nome: 'Controle e Avaliação de Qualidade e Eficiência',    slug: 'controle',     sigla: 'C', sinonimo: 'Controle / Checar (C)' },
+  { id: 'melhorias',    numero: 4, nome: 'Implementação de Melhorias',                        slug: 'melhorias',    sigla: 'A', sinonimo: 'Melhorias / Agir (A)' },
+  { id: 'resultados',   numero: 5, nome: 'Avaliação de Resultados',                           slug: 'resultados',   sigla: 'R', sinonimo: 'Resultados (R)' },
 ];
 
 // ---------------------------------------------------------------------------
