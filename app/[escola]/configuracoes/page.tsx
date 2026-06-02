@@ -579,6 +579,9 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
 
 // ─── Tab: Status das Integrações ─────────────────────────────────────────────
 function TabStatus() {
+  const { user } = useAppContext();
+  const userEmail = user?.email || '';
+
   const [ping, setPing] = useState<'idle'|'ok'|'err'>('idle');
   const [pingMs, setPingMs] = useState<number|null>(null);
   
@@ -590,22 +593,52 @@ function TabStatus() {
     documentos: '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk'
   });
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const jb = localStorage.getItem('drive_folder_id_joaobatista') || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
-      const hd = localStorage.getItem('drive_folder_id_heliodoro') || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
-      const doc = localStorage.getItem('drive_folder_id_documentos') || '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
-      setFolders({ joaobatista: jb, heliodoro: hd, documentos: doc });
+  const fetchDriveFolders = async () => {
+    try {
+      const { data, error } = await supabase()
+        .from('school_settings')
+        .select('*');
+      if (error) throw error;
+      if (data) {
+        const foldersMap = {
+          joaobatista: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
+          heliodoro: '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
+          documentos: '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk'
+        };
+        data.forEach((row: any) => {
+          if (row.school_id === 'joaobatista') foldersMap.joaobatista = row.drive_folder_id;
+          if (row.school_id === 'heliodoro') foldersMap.heliodoro = row.drive_folder_id;
+          if (row.school_id === 'documentos') foldersMap.documentos = row.drive_folder_id;
+        });
+        setFolders(foldersMap);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar pastas do Drive no Supabase:', err);
     }
+  };
+
+  useEffect(() => {
+    fetchDriveFolders();
   }, []);
 
-  const saveDriveFolders = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('drive_folder_id_joaobatista', folders.joaobatista);
-      localStorage.setItem('drive_folder_id_heliodoro', folders.heliodoro);
-      localStorage.setItem('drive_folder_id_documentos', folders.documentos);
-      toast.success('Pastas do Google Drive atualizadas!');
+  const saveDriveFolders = async () => {
+    try {
+      const updates = [
+        { school_id: 'joaobatista', drive_folder_id: folders.joaobatista, updated_by: userEmail, updated_at: new Date().toISOString() },
+        { school_id: 'heliodoro', drive_folder_id: folders.heliodoro, updated_by: userEmail, updated_at: new Date().toISOString() },
+        { school_id: 'documentos', drive_folder_id: folders.documentos, updated_by: userEmail, updated_at: new Date().toISOString() }
+      ];
+
+      const { error } = await supabase()
+        .from('school_settings')
+        .upsert(updates, { onConflict: 'school_id' });
+
+      if (error) throw error;
+      toast.success('Pastas do Google Drive atualizadas no Supabase!');
       setShowDriveModal(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao salvar pastas no Supabase: ' + err.message);
     }
   };
 

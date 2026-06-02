@@ -60,18 +60,26 @@ export default function FasePage() {
   const [driveFolderId, setDriveFolderId] = useState<string>('1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && resolvedSchoolId) {
-      const customId = localStorage.getItem(`drive_folder_id_${resolvedSchoolId}`);
-      if (customId) {
-        setDriveFolderId(customId);
-      } else {
-        const defaultId = 
-          resolvedSchoolId === 'joaobatista' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' :
-          resolvedSchoolId === 'heliodoro' ? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA' : 
-          '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA'; // Fallback
-        setDriveFolderId(defaultId);
+    const fetchFolderId = async () => {
+      if (!resolvedSchoolId) return;
+      try {
+        const { data, error } = await supabase
+          .from('school_settings')
+          .select('drive_folder_id')
+          .eq('school_id', resolvedSchoolId)
+          .maybeSingle();
+        if (error) throw error;
+        if (data?.drive_folder_id) {
+          setDriveFolderId(data.drive_folder_id);
+        } else {
+          // Fallback default
+          setDriveFolderId('1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
+        }
+      } catch (err) {
+        console.error('Error fetching drive folder ID from settings:', err);
       }
-    }
+    };
+    fetchFolderId();
   }, [resolvedSchoolId]);
 
   // Filter static evidences belonging to this eixo and fase

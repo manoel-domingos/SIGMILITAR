@@ -196,8 +196,17 @@ function RegistroDisciplinarContent() {
         : `nova_${Date.now()}`;
         
       // Pasta raiz da escola no Drive
-      const customId = typeof window !== 'undefined' ? localStorage.getItem(`drive_folder_id_${resolvedSchoolId}`) : null;
-      const schoolFolderId = customId || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+      let schoolFolderId = '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+      if (supabase && resolvedSchoolId) {
+        const { data, error } = await supabase
+          .from('school_settings')
+          .select('drive_folder_id')
+          .eq('school_id', resolvedSchoolId)
+          .maybeSingle();
+        if (!error && data?.drive_folder_id) {
+          schoolFolderId = data.drive_folder_id;
+        }
+      }
 
       const formData = new FormData();
       formData.append('file', file);

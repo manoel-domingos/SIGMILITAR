@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Tag, Clock, Send, Award, Sparkles, Building2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 
 interface Idea {
   id: string;
@@ -115,31 +116,52 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
 
   const canManageStatus = currentUserRole === 'admin_global' || currentUserRole === 'GESTOR';
 
-  // Carrega do localStorage ou inicia com padrões
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('meg_canny_ideas');
-      if (stored) {
-        try {
-          // Garante a migração de status antigos
-          const parsed = JSON.parse(stored) as any[];
-          const migrated = parsed.map(item => {
-            let status = item.status;
-            if (status === 'Em Análise') status = 'Aberto';
-            if (status === 'Em Desenvolvimento') status = 'Em progresso';
-            if (status === 'Finalizado') status = 'Concluido';
-            return { ...item, status };
-          });
-          setIdeas(migrated);
-        } catch (e) {
-          setIdeas(DEFAULT_IDEAS);
-        }
-      } else {
-        setIdeas(DEFAULT_IDEAS);
-        localStorage.setItem('meg_canny_ideas', JSON.stringify(DEFAULT_IDEAS));
-      }
+  // Carrega do Supabase com sincronização em tempo real
+  const fetchIdeas = async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('meg_canny_ideas')
+      .select('*')
+      .order('votes', { ascending: false });
+    if (error) {
+      console.error(error);
+      return;
     }
-  }, []);
+    if (data) {
+      const mapped: Idea[] = data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description || '',
+        category: item.category as any,
+        status: item.status as any,
+        votes: item.votes || 0,
+        votedBy: item.voted_by || [],
+        createdBy: item.created_by,
+        createdByName: item.created_by_name || '',
+        createdSchool: item.created_school || '',
+        createdAt: item.created_at,
+      }));
+      setIdeas(mapped);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchIdeas();
+      
+      // Realtime subscription
+      const channel = supabase
+        .channel('meg_canny_ideas_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'meg_canny_ideas' }, () => {
+          fetchIdeas();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isOpen]);
 
   // Preenche dados padrão ao abrir
   useEffect(() => {
@@ -149,40 +171,45 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
     }
   }, [isOpen, currentUser, detectSchoolName]);
 
-  const saveIdeas = (updatedIdeas: Idea[]) => {
-    setIdeas(updatedIdeas);
-    localStorage.setItem('meg_canny_ideas', JSON.stringify(updatedIdeas));
-  };
+  const handleVote = async (ideaId: string) => {
+    const idea = ideas.find(i => i.id === ideaId);
+    if (!idea) return;
 
-  const handleVote = (ideaId: string) => {
-    const updated = ideas.map(idea => {
-      if (idea.id === ideaId) {
-        const hasVoted = idea.votedBy.includes(userEmail);
-        const votedBy = hasVoted 
-          ? idea.votedBy.filter(email => email !== userEmail)
-          : [...idea.votedBy, userEmail];
-        const votes = hasVoted ? idea.votes - 1 : idea.votes + 1;
-        
-        if (!hasVoted) {
-          toast.success('Sugestão apoiada com sucesso!');
-        }
-        
-        return { ...idea, votes, votedBy };
+    const hasVoted = idea.votedBy.includes(userEmail);
+    const votedBy = hasVoted 
+      ? idea.votedBy.filter(email => email !== userEmail)
+      : [...idea.votedBy, userEmail];
+    const votes = hasVoted ? idea.votes - 1 : idea.votes + 1;
+
+    // Optimistic update
+    setIdeas(prev => prev.map(i => i.id === ideaId ? { ...i, votes, votedBy } : i));
+
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('meg_canny_ideas')
+      .update({ votes, voted_by: votedBy })
+      .eq('id', ideaId);
+
+    if (error) {
+      toast.error('Erro ao registrar voto.');
+      fetchIdeas(); // revert
+    } else {
+      if (!hasVoted) {
+        toast.success('Sugestão apoiada com sucesso!');
       }
-      return idea;
-    });
-    saveIdeas(updated);
+    }
   };
 
-  const handleCreateIdea = (e: React.FormEvent) => {
+  const handleCreateIdea = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newDescription.trim() || !authorName.trim() || !authorSchool.trim()) {
       toast.error('Preencha todos os campos obrigatórios!');
       return;
     }
 
+    const ideaId = `idea-${Date.now()}`;
     const newIdea: Idea = {
-      id: `idea-${Date.now()}`,
+      id: ideaId,
       title: newTitle,
       description: newDescription,
       category: newCategory,
@@ -195,11 +222,36 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
       createdAt: new Date().toISOString(),
     };
 
-    saveIdeas([newIdea, ...ideas]);
+    // Optimistic update
+    setIdeas(prev => [newIdea, ...prev]);
     setNewTitle('');
     setNewDescription('');
     setNewCategory('Geral');
-    toast.success('Sua sugestão foi publicada com sucesso!');
+
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('meg_canny_ideas')
+      .insert({
+        id: ideaId,
+        school_id: activeSchoolContext || 'joaobatista',
+        title: newIdea.title,
+        description: newIdea.description,
+        category: newIdea.category,
+        status: newIdea.status,
+        votes: newIdea.votes,
+        voted_by: newIdea.votedBy,
+        created_by: newIdea.createdBy,
+        created_by_name: newIdea.createdByName,
+        created_school: newIdea.createdSchool,
+        created_at: newIdea.createdAt,
+      });
+
+    if (error) {
+      toast.error('Erro ao publicar sugestão.');
+      fetchIdeas(); // revert
+    } else {
+      toast.success('Sua sugestão foi publicada com sucesso!');
+    }
   };
 
   // Funções de HTML5 Drag and Drop para Admin
@@ -212,28 +264,50 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
     e.preventDefault();
   };
 
-  const handleDrop = (e: React.DragEvent, targetStatus: Idea['status']) => {
+  const handleDrop = async (e: React.DragEvent, targetStatus: Idea['status']) => {
     e.preventDefault();
     const id = e.dataTransfer.getData('text/plain');
     if (!id) return;
 
-    const updated = ideas.map(idea => {
-      if (idea.id === id) {
-        if (idea.status !== targetStatus) {
-          toast.info(`Status atualizado para: ${targetStatus}`);
-          return { ...idea, status: targetStatus };
-        }
-      }
-      return idea;
-    });
-    saveIdeas(updated);
+    const idea = ideas.find(i => i.id === id);
+    if (!idea) return;
+
+    if (idea.status === targetStatus) return;
+
+    // Optimistic update
+    setIdeas(prev => prev.map(i => i.id === id ? { ...i, status: targetStatus } : i));
+
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('meg_canny_ideas')
+      .update({ status: targetStatus })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Erro ao atualizar status.');
+      fetchIdeas(); // revert
+    } else {
+      toast.info(`Status atualizado para: ${targetStatus}`);
+    }
   };
 
-  const handleDeleteIdea = (ideaId: string) => {
+  const handleDeleteIdea = async (ideaId: string) => {
     if (confirm('Tem certeza que deseja remover esta sugestão?')) {
-      const filtered = ideas.filter(idea => idea.id !== ideaId);
-      saveIdeas(filtered);
-      toast.success('Sugestão removida.');
+      // Optimistic update
+      setIdeas(prev => prev.filter(i => i.id !== ideaId));
+
+      if (!supabase) return;
+      const { error } = await supabase
+        .from('meg_canny_ideas')
+        .delete()
+        .eq('id', ideaId);
+
+      if (error) {
+        toast.error('Erro ao remover sugestão.');
+        fetchIdeas(); // revert
+      } else {
+        toast.success('Sugestão removida.');
+      }
     }
   };
 

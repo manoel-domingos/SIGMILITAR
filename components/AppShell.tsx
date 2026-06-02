@@ -2072,138 +2072,163 @@ function NotificationBell() {
   const [activeTab, setActiveTab] = useState<'notifications' | 'updates'>('notifications');
   const [mounted, setMounted] = useState(false);
 
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [updates, setUpdates] = useState<any[]>([]);
+  const { user, activeSchoolContext } = useAppContext();
+  const userEmail = user?.email || '';
 
-  useEffect(() => { setMounted(true); }, []);
+  const fetchData = async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('system_notifications')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  const INITIAL_NOTIFICATIONS = [
-    { id: '1', title: 'Bem-vindo ao Novo EECM', desc: 'Painel multitenant integrado e sincronizado em tempo real.', date: 'Hoje', type: 'info' },
-    { id: '2', title: 'Modo Professor Liberado', desc: 'Professor agora possui acesso seguro e direto às suas ocorrências.', date: 'Ontem', type: 'success' },
-    { id: '3', title: 'Segurança de Whitelist Ativa', desc: 'Seu e-mail está cadastrado e validado com sucesso.', date: '2 dias atrás', type: 'warning' },
-  ];
-
-  const INITIAL_UPDATES = [
-    {
-      version: 'v1.2.6',
-      title: 'Notificações & TL;DR Changelog',
-      date: '25/05/2026',
-      commits: [
-        'Adicionado sino de notificações no cabeçalho com abas rápidas.',
-        'Desenvolvido changelog em tempo real com resumo TL;DR a cada 3 commits.',
-        'Aprimoramentos de design de cards nas abas de relatórios.'
-      ]
-    },
-    {
-      version: 'v1.2.5',
-      title: 'Transições de Abas & Painel do Professor',
-      date: '25/05/2026',
-      commits: [
-        'Adicionada transição vertical "subindo" (rolling animation, 300ms).',
-        'Liberada aba Alunos em modo leitura ampla para toda a escola.',
-        'Implementadas abas Faltas Disciplinares e Relatórios Estatísticos para Professores.'
-      ]
-    },
-    {
-      version: 'v1.2.4',
-      title: 'Supabase Sync & Google SSO',
-      date: '24/05/2026',
-      commits: [
-        'Reorganização da tela de login com animação expansiva de inputs.',
-        'Implementado login premium com Google SSO.',
-        'Casamento dinâmico de turmas na importação de planilhas.'
-      ]
+    if (error) {
+      console.error(error);
+      return;
     }
-  ];
 
-  // Initialize data from localStorage or use defaults
+    if (data) {
+      const filtered = data.filter((item: any) => 
+        !item.school_id || item.school_id === activeSchoolContext
+      );
+
+      const notifs = filtered
+        .filter((item: any) => !item.is_update && (!item.deleted_by || !item.deleted_by.includes(userEmail)))
+        .map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          desc: item.desc_content || '',
+          date: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : 'Hoje',
+          type: item.type || 'info',
+        }));
+
+      const upds = filtered
+        .filter((item: any) => item.is_update)
+        .map((item: any) => ({
+          version: item.version,
+          title: item.title,
+          date: item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '',
+          commits: item.commits || [],
+        }));
+
+      setNotifications(notifs);
+      setUpdates(upds);
+    }
+  };
+
   useEffect(() => {
-    if (mounted) {
-      const storedNotifs = localStorage.getItem('sigmilitar_notifications');
-      const storedUpdates = localStorage.getItem('sigmilitar_updates');
+    if (mounted && userEmail) {
+      fetchData();
 
-      if (storedNotifs) {
-        setNotifications(JSON.parse(storedNotifs));
-      } else {
-        localStorage.setItem('sigmilitar_notifications', JSON.stringify(INITIAL_NOTIFICATIONS));
-        setNotifications(INITIAL_NOTIFICATIONS);
-      }
+      // Realtime subscription
+      const channel = supabase
+        ?.channel('system_notifications_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'system_notifications' }, () => {
+          fetchData();
+        })
+        .subscribe();
 
-      if (storedUpdates) {
-        setUpdates(JSON.parse(storedUpdates));
-      } else {
-        localStorage.setItem('sigmilitar_updates', JSON.stringify(INITIAL_UPDATES));
-        setUpdates(INITIAL_UPDATES);
-      }
+      return () => {
+        if (channel && supabase) {
+          supabase.removeChannel(channel);
+        }
+      };
     }
-  }, [mounted]);
+  }, [mounted, userEmail, activeSchoolContext]);
 
   // Listen to 'meg-edit' events to count edits and trigger TL;DR every 3 edits
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !userEmail || !supabase) return;
 
-    function handleMegEdit(e: Event) {
+    const handleMegEdit = async (e: Event) => {
       const detail = (e as CustomEvent).detail || {};
-      const school = detail.school || 'escola';
+      const school = detail.school || activeSchoolContext || 'joaobatista';
       const eixo = detail.eixo || 'eixo';
       const fase = detail.fase || 'fase';
 
-      const currentCountStr = localStorage.getItem('sigmilitar_meg_edits_count') || '0';
-      const newCount = parseInt(currentCountStr, 10) + 1;
+      // 1. Fetch current tracker
+      let tracker = { edit_count: 0, recent_edits: [] as any[] };
+      const { data: existingTracker } = await supabase
+        .from('sigmilitar_edit_trackers')
+        .select('*')
+        .eq('email', userEmail)
+        .maybeSingle();
 
-      const recentEditsStr = localStorage.getItem('sigmilitar_meg_recent_edits') || '[]';
-      const recentEdits = JSON.parse(recentEditsStr);
-      recentEdits.push({ school, eixo, fase, time: new Date().toLocaleTimeString() });
-      localStorage.setItem('sigmilitar_meg_recent_edits', JSON.stringify(recentEdits));
+      if (existingTracker) {
+        tracker = {
+          edit_count: existingTracker.edit_count || 0,
+          recent_edits: existingTracker.recent_edits || []
+        };
+      }
+
+      // 2. Update count & recent edits
+      const newCount = tracker.edit_count + 1;
+      const recentEdits = [...tracker.recent_edits, { school, eixo, fase, time: new Date().toLocaleTimeString() }];
 
       if (newCount >= 3) {
-        localStorage.setItem('sigmilitar_meg_edits_count', '0');
+        // Reset tracker
+        await supabase
+          .from('sigmilitar_edit_trackers')
+          .upsert({
+            email: userEmail,
+            school_id: school,
+            edit_count: 0,
+            recent_edits: [],
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'email' });
 
-        // Create new Notification
-        const storedNotifs = localStorage.getItem('sigmilitar_notifications');
-        const notifsList = storedNotifs ? JSON.parse(storedNotifs) : [];
-        const newNotif = {
-          id: Date.now().toString(),
-          title: 'MEG: Gestão Pedagógica Atualizada',
-          desc: 'Mais 3 atualizações importantes cadastradas para o MEG Educação.',
-          date: 'Agora',
-          type: 'success'
-        };
-        const updatedNotifs = [newNotif, ...notifsList];
-        localStorage.setItem('sigmilitar_notifications', JSON.stringify(updatedNotifs));
-        setNotifications(updatedNotifs);
-
-        // Create new Update (dynamic TL;DR changelog)
-        const storedUpdates = localStorage.getItem('sigmilitar_updates');
-        const updatesList = storedUpdates ? JSON.parse(storedUpdates) : [];
+        // Generate notifications & updates
+        const notifId = `notif-${Date.now()}`;
+        await supabase
+          .from('system_notifications')
+          .insert({
+            id: notifId,
+            title: 'MEG: Gestão Pedagógica Atualizada',
+            desc_content: 'Mais 3 atualizações importantes cadastradas para o MEG Educação.',
+            type: 'success',
+            is_update: false,
+            school_id: school,
+            created_at: new Date().toISOString()
+          });
 
         const uniqueEdits = recentEdits.slice(-3).map((item: any) => 
           `Alteração concluída no eixo "${item.eixo}" (Fase: "${item.fase}") na unidade escolar.`
         );
 
-        const newUpdate = {
-          version: `v1.2.7-MEG-${Date.now().toString().slice(-4)}`,
-          title: 'Gestão Pedagógica — Resumo MEG',
-          date: new Date().toLocaleDateString('pt-BR'),
-          commits: uniqueEdits.length > 0 ? uniqueEdits : ['Resumo das evidências pedagógicas consolidadas com sucesso no sistema.']
-        };
-
-        const updatedUpdates = [newUpdate, ...updatesList];
-        localStorage.setItem('sigmilitar_updates', JSON.stringify(updatedUpdates));
-        setUpdates(updatedUpdates);
-
-        // Reset recent edits log
-        localStorage.setItem('sigmilitar_meg_recent_edits', '[]');
+        const updateId = `update-v1.2.7-MEG-${Date.now()}`;
+        await supabase
+          .from('system_notifications')
+          .insert({
+            id: updateId,
+            title: 'Gestão Pedagógica — Resumo MEG',
+            version: `v1.2.7-MEG-${Date.now().toString().slice(-4)}`,
+            commits: uniqueEdits.length > 0 ? uniqueEdits : ['Resumo das evidências pedagógicas consolidadas com sucesso no sistema.'],
+            is_update: true,
+            school_id: school,
+            created_at: new Date().toISOString()
+          });
       } else {
-        localStorage.setItem('sigmilitar_meg_edits_count', newCount.toString());
+        // Save tracker with incremented count
+        await supabase
+          .from('sigmilitar_edit_trackers')
+          .upsert({
+            email: userEmail,
+            school_id: school,
+            edit_count: newCount,
+            recent_edits: recentEdits,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'email' });
       }
-    }
+
+      // Refresh data
+      fetchData();
+    };
 
     window.addEventListener('meg-edit', handleMegEdit);
     return () => {
       window.removeEventListener('meg-edit', handleMegEdit);
     };
-  }, [mounted]);
+  }, [mounted, userEmail, activeSchoolContext]);
 
   // Position the portal relative to the trigger button
   useEffect(() => {
@@ -2238,11 +2263,31 @@ function NotificationBell() {
     };
   }, [isOpen]);
 
-  const handleDeleteNotif = (id: string, e: React.MouseEvent) => {
+  const handleDeleteNotif = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = notifications.filter(n => n.id !== id);
-    localStorage.setItem('sigmilitar_notifications', JSON.stringify(updated));
-    setNotifications(updated);
+    
+    // Optimistic update
+    setNotifications(prev => prev.filter(n => n.id !== id));
+
+    if (!supabase || !userEmail) return;
+
+    // Fetch current deleted_by list
+    const { data } = await supabase
+      .from('system_notifications')
+      .select('deleted_by')
+      .eq('id', id)
+      .maybeSingle();
+
+    const currentDeletedBy = data?.deleted_by || [];
+    if (!currentDeletedBy.includes(userEmail)) {
+      const newDeletedBy = [...currentDeletedBy, userEmail];
+      await supabase
+        .from('system_notifications')
+        .update({ deleted_by: newDeletedBy })
+        .eq('id', id);
+    }
+    
+    fetchData();
   };
 
   return (
