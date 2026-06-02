@@ -2071,6 +2071,12 @@ function NotificationBell() {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'notifications' | 'updates'>('notifications');
   const [mounted, setMounted] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [updates, setUpdates] = useState<any[]>([]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { user, activeSchoolContext } = useAppContext();
   const userEmail = user?.email || '';

@@ -208,26 +208,39 @@ function RegistroDisciplinarContent() {
         }
       }
 
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('studentName', studentName);
-      formData.append('occurrenceNumber', occurrenceNumber);
-      formData.append('schoolFolderId', schoolFolderId);
-
       const response = await fetch('/api/drive/student-upload', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          studentName,
+          occurrenceNumber,
+          schoolFolderId,
+        }),
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || 'Erro no upload');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao iniciar sessão de upload');
       }
 
-      const data = await response.json();
+      const { uploadUri, isAlunosCreated } = await response.json();
+
+      // Upload file directly to Google Drive resumable session URL
+      const uploadRes = await fetch(uploadUri, {
+        method: 'PUT',
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Erro HTTP no upload direto para o Google Drive: ${uploadRes.status}`);
+      }
+
+      const fileData = await uploadRes.json();
       
       // Se a pasta Alunos foi criada agora, exibe o toast/alerta especial premium
-      if (data.isAlunosCreated) {
+      if (isAlunosCreated) {
         toast.success('Repositório "SISTEMA -> Alunos" provisionado no Google Drive! Arquivo de segurança "Nao apagar.txt" gerado com sucesso.', {
           duration: 8000,
           position: 'top-right',
@@ -239,8 +252,8 @@ function RegistroDisciplinarContent() {
         });
       }
 
-      if (data.file && data.file.id) {
-        return `https://drive.google.com/file/d/${data.file.id}/view`;
+      if (fileData && fileData.id) {
+        return `https://drive.google.com/file/d/${fileData.id}/view`;
       }
       
       return null;

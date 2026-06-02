@@ -160,6 +160,47 @@ A remoção de pastas deste diretório comprometerá a integridade do histórico
   };
 }
 
+export async function getStudentOccurrenceUploadSession(
+  schoolFolderId: string,
+  studentName: string,
+  occurrenceNumber: string,
+  fileName: string,
+  mimeType: string
+): Promise<{ uploadUri: string; isAlunosCreated: boolean }> {
+  // 1. Resolve SISTEMA folder
+  const sistema = await createFolderIfNotExist(schoolFolderId, 'SISTEMA');
+  
+  // 2. Resolve Alunos folder
+  const alunos = await createFolderIfNotExist(sistema.id, 'Alunos');
+  
+  // 3. If Alunos folder was newly created, put safety Na_apagar.txt file inside it
+  if (alunos.created) {
+    const docContent = `ATENÇÃO: NÃO APAGUE ESTA PASTA!
+Esta é a pasta centralizadora de documentos, ocorrências, termos de conduta e fotos de alunos do MEG.
+A remoção de pastas deste diretório comprometerá a integridade do histórico do aluno no sistema.`;
+    await createFile(alunos.id, 'Nao apagar.txt', 'text/plain', docContent);
+  }
+
+  // 4. Resolve [studentName] folder
+  const student = await createFolderIfNotExist(alunos.id, studentName);
+
+  // 5. Resolve Ocorrencias folder
+  const ocorrencias = await createFolderIfNotExist(student.id, 'Ocorrencias');
+
+  // 6. Resolve Ocorrencia_[occurrenceNumber] folder
+  const folderKey = `Ocorrencia_${occurrenceNumber}`;
+  const targetFolder = await createFolderIfNotExist(ocorrencias.id, folderKey);
+
+  // 7. Get resumable upload session URI
+  const uploadUri = await createResumableUploadSession(targetFolder.id, fileName, mimeType);
+
+  return {
+    uploadUri,
+    isAlunosCreated: alunos.created,
+  };
+}
+
+
 // ── Resumable Upload (bypasses Vercel 4.5MB body limit) ──────────────────────
 // Server creates a resumable session URI → client uploads file directly to Google
 

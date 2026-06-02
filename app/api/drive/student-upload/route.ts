@@ -1,40 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { uploadStudentOccurrenceFile } from '@/lib/google-drive';
+import { getStudentOccurrenceUploadSession } from '@/lib/google-drive';
 
-// Allow uploads up to 50MB
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const form = await req.formData();
-    const file = form.get('file') as File;
-    if (!file) {
-      return NextResponse.json({ error: 'File is required' }, { status: 400 });
+    const { fileName, mimeType, studentName, occurrenceNumber, schoolFolderId } = await req.json();
+    if (!fileName || !mimeType || !studentName || !occurrenceNumber) {
+      return NextResponse.json(
+        { error: 'fileName, mimeType, studentName and occurrenceNumber are required' },
+        { status: 400 }
+      );
     }
 
-    const studentName = form.get('studentName') as string;
-    const occurrenceNumber = form.get('occurrenceNumber') as string;
+    const resolvedSchoolFolderId = schoolFolderId ?? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
     
-    if (!studentName || !occurrenceNumber) {
-      return NextResponse.json({ error: 'studentName and occurrenceNumber are required' }, { status: 400 });
-    }
-
-    const schoolFolderId = (form.get('schoolFolderId') as string) ?? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
-    const buffer = Buffer.from(await file.arrayBuffer());
-    
-    const result = await uploadStudentOccurrenceFile(
-      schoolFolderId,
+    const result = await getStudentOccurrenceUploadSession(
+      resolvedSchoolFolderId,
       studentName,
       occurrenceNumber,
-      file.name,
-      file.type,
-      buffer
+      fileName,
+      mimeType
     );
 
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error in POST /api/drive/student-upload:', error);
-    return NextResponse.json({ error: error.message || 'Error uploading file to student occurrences' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Error creating student occurrence upload session' }, { status: 500 });
   }
 }
+

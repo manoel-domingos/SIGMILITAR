@@ -14,11 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const googleUploadUri = await createResumableUploadSession(folderId, fileName, mimeType);
-    const urlObj = new URL(googleUploadUri);
-    const uploadId = urlObj.searchParams.get('upload_id');
-    const uploadUri = `/api/drive/upload-proxy?upload_id=${uploadId}`;
-
-    return NextResponse.json({ uploadUri });
+    return NextResponse.json({ uploadUri: googleUploadUri });
   } catch (error: any) {
     console.error('Error in POST /api/drive/upload-session:', error);
     return NextResponse.json(
