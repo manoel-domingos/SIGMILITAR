@@ -14,14 +14,67 @@ async function getNonGeneratedColumns(client, tableName, schema) {
   return res.rows;
 }
 
+async function getPrimaryKey(client, tableName, schema) {
+  try {
+    const res = await client.query(`
+      SELECT kcu.column_name
+      FROM information_schema.table_constraints tc
+      JOIN information_schema.key_column_usage kcu
+        ON tc.constraint_name = kcu.constraint_name
+        AND tc.table_schema = kcu.table_schema
+      WHERE tc.constraint_type = 'PRIMARY KEY'
+        AND tc.table_schema = $1
+        AND tc.table_name = $2;
+    `, [schema, tableName]);
+    return res.rows.length > 0 ? res.rows[0].column_name : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function syncTableSchema(oldClient, newClient, tableName, schema = 'public') {
   console.log(`Syncing schema for ${schema}.${tableName}...`);
   
+  const tableCheck = await newClient.query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.tables 
+      WHERE table_schema = $1 AND table_name = $2
+    );
+  `, [schema, tableName]);
+  const exists = tableCheck.rows[0].exists;
+
   const oldCols = await oldClient.query(`
     SELECT column_name, data_type, is_nullable, column_default
     FROM information_schema.columns 
     WHERE table_schema = $1 AND table_name = $2;
   `, [schema, tableName]);
+
+  if (!exists) {
+    console.log(` - Table ${schema}.${tableName} does not exist. Creating dynamically...`);
+    const pk = await getPrimaryKey(oldClient, tableName, schema);
+    
+    let colDefs = [];
+    for (const col of oldCols.rows) {
+      let def = `"${col.column_name}" ${col.data_type.toUpperCase()}`;
+      if (col.column_name === pk) {
+        def += ` PRIMARY KEY`;
+      }
+      if (col.is_nullable === 'NO' && col.column_name !== pk) {
+        def += ` NOT NULL`;
+      }
+      if (col.column_default) {
+        if (!col.column_default.includes('nextval') && !col.column_default.includes('uuid_generate') && !col.column_default.includes('now()')) {
+          def += ` DEFAULT ${col.column_default}`;
+        }
+      }
+      colDefs.push(def);
+    }
+    
+    const createQuery = `CREATE TABLE ${schema}.${tableName} (\n  ${colDefs.join(',\n  ')}\n);`;
+    await newClient.query(createQuery);
+    console.log(` - Created table ${schema}.${tableName}!`);
+    return;
+  }
 
   const newCols = await newClient.query(`
     SELECT column_name 
@@ -93,11 +146,9 @@ async function copyTable(oldClient, newClient, tableName, schema = 'public') {
 
         queryText += valuePlaceholders.join(', ');
 
-        const conflictTarget = tableName === 'rules' ? 'code' : 'id';
-        if (tableName === 'rules' || tableName === 'students' || tableName === 'occurrences' || tableName === 'accidents' || tableName === 'praises' || tableName === 'users') {
-          queryText += ` ON CONFLICT (${conflictTarget}) DO NOTHING`;
-        } else if (schema === 'auth') {
-          queryText += ` ON CONFLICT (id) DO NOTHING`;
+        const pk = await getPrimaryKey(newClient, tableName, schema);
+        if (pk) {
+          queryText += ` ON CONFLICT ("${pk}") DO NOTHING`;
         }
 
         await newClient.query(queryText, valueArray);
@@ -149,7 +200,16 @@ async function run() {
     await copyTable(oldClient, newClient, 'users', 'auth');
     await copyTable(oldClient, newClient, 'identities', 'auth');
 
-    const tables = ['students', 'rules', 'occurrences', 'accidents', 'praises'];
+    // Dynamically fetch all public tables from Cloud database
+    const tablesRes = await oldClient.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+      ORDER BY table_name;
+    `);
+    const tables = tablesRes.rows.map(r => r.table_name);
+    console.log(`\nFound ${tables.length} public tables in Cloud database to copy.`);
+
     for (const table of tables) {
       await copyTable(oldClient, newClient, table, 'public');
     }
