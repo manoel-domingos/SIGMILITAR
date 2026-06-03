@@ -252,8 +252,9 @@ export async function createResumableUploadSession(
     'X-Upload-Content-Type': mimeType,
   };
 
-  // Omit Origin header to avoid Google binding the session to a specific client origin.
-  // This allows proxying PUT requests through Vercel/Next.js backend successfully.
+  if (origin) {
+    headers['Origin'] = origin;
+  }
 
   const res = await fetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',

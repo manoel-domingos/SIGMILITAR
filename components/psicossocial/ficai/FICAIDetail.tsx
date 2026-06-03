@@ -13,8 +13,22 @@ interface FICAIDetailProps {
 
 export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) {
   const [addingContact, setAddingContact] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
 
   if (!entry) return null;
+
+  const formatPhone = (val: string) => {
+    let v = val.replace(/\D/g, '');
+    if (v.length > 11) v = v.slice(0, 11);
+    if (v.length > 0) {
+      if (v.length <= 2) return '(' + v;
+      if (v.length <= 6) return '(' + v.slice(0, 2) + ') ' + v.slice(2);
+      if (v.length <= 10) return '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+      return '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+    }
+    return v;
+  };
 
   const fields = [
     { label: '% Faltas Geral',    value: entry.faltasGeral !== null ? `${entry.faltasGeral}%` : '—' },
@@ -23,6 +37,8 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
     { label: 'FICAI',             value: entry.ficaiAberto ? entry.dataFicai : 'Não aberta' },
     { label: 'Encaminhamento',    value: entry.encaminhado ? entry.dataEncaminhamento : 'Não encaminhado' },
     { label: 'Match Supabase',    value: entry.matched ? `${Math.round(entry.matchScore * 100)}%` : 'Sem correspondência' },
+    { label: 'Código do Aluno',   value: entry.codAluno !== null ? String(entry.codAluno) : '—' },
+    { label: 'Cod. Matrícula',    value: entry.codMatricula !== null ? String(entry.codMatricula) : '—' },
   ]
 
   return (
@@ -48,7 +64,7 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
                 {entry.nomeAluno}
               </h2>
               <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
-                Turma: <span className="text-slate-500 dark:text-slate-450">{entry.turma}</span> · Turno: <span className="text-slate-500 dark:text-slate-450">{entry.turno}</span>
+                Turma: <span className="text-slate-500 dark:text-slate-450">{entry.turma}</span> · Turno: <span className="text-slate-500 dark:text-slate-450">{entry.turno}</span>{entry.codAluno !== null && ` · Código: ${entry.codAluno}`}
               </p>
             </div>
           </div>
@@ -138,15 +154,13 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
               <form 
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const name = formData.get('contactName') as string;
-                  const phone = formData.get('contactPhone') as string;
-                  if (!name.trim() || !phone.trim()) return;
+                  if (!contactName.trim() || !contactPhone.trim()) return;
 
                   setAddingContact(true);
                   try {
-                    await onAddContact(entry.alunoId!, name.trim(), phone.trim());
-                    e.currentTarget.reset();
+                    await onAddContact(entry.alunoId!, contactName.trim(), contactPhone.trim());
+                    setContactName('');
+                    setContactPhone('');
                   } finally {
                     setAddingContact(false);
                   }
@@ -154,11 +168,38 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
                 className="space-y-3 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-850"
               >
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Nome do Responsável</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Nome / Parentesco</label>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setContactName('Mãe')}
+                        className="text-[9px] font-extrabold uppercase bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md transition active:scale-95"
+                      >
+                        Mãe
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setContactName('Pai')}
+                        className="text-[9px] font-extrabold uppercase bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md transition active:scale-95"
+                      >
+                        Pai
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setContactName('Aluno')}
+                        className="text-[9px] font-black uppercase bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md transition active:scale-95 border border-blue-200 dark:border-blue-800"
+                      >
+                        Aluno
+                      </button>
+                    </div>
+                  </div>
                   <input
                     type="text"
                     name="contactName"
                     required
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
                     placeholder="Ex: Mãe, Pai, Responsável Legal..."
                     className="w-full h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 text-slate-800 dark:text-slate-200"
                   />
@@ -169,6 +210,8 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
                     type="text"
                     name="contactPhone"
                     required
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(formatPhone(e.target.value))}
                     placeholder="Ex: (65) 99999-9999"
                     className="w-full h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 text-slate-800 dark:text-slate-200"
                   />
