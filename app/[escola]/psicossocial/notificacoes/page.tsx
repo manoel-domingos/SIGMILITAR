@@ -67,7 +67,9 @@ export default function FichasLista() {
         <div className="h-96 w-full bg-slate-200 dark:bg-slate-800/50 rounded-3xl" />
       </div>
     );
-   return (
+  }
+
+  return (
     <AppShell>
       <div className="p-4 sm:p-8 space-y-6 min-h-screen pb-24 animate-in fade-in duration-300">
         

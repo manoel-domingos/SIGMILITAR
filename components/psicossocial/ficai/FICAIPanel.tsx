@@ -44,10 +44,11 @@ export function FICAIPanel() {
     toggleSelected,
     processFile,
     saveToDatabase,
-    reset,
     updateStatus,
+    addContactToStudent,
     hasData,
   } = useFICAIPanel()
+
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -170,6 +171,7 @@ export function FICAIPanel() {
             <FICAIDetail
               entry={selectedEntry}
               onClose={() => toggleSelected(selectedIdx!)}
+              onAddContact={addContactToStudent}
             />
           )}
         </>

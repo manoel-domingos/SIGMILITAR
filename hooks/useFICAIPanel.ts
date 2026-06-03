@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { processCSV, readFileAsText } from '@/lib/ficai/parser'
-import { fetchAlunosParaMatch, upsertFICAIImport, fetchSavedFICAIImports, updateFICAIImportStatus } from '@/lib/ficai/queries'
+import { fetchAlunosParaMatch, upsertFICAIImport, fetchSavedFICAIImports, updateFICAIImportStatus, updateStudentContacts } from '@/lib/ficai/queries'
 import type { FICAIEntry, FICAIFilterKey, FICAIStats } from '@/types/ficai'
 import { normalizeName, jaccardScore } from '@/lib/ficai/parser'
 import { useAppContext } from '@/lib/store'
@@ -176,6 +176,35 @@ export function useFICAIPanel() {
     }
   }, [entries, filteredEntries]);
 
+  const addContactToStudent = useCallback(async (studentId: string, contactName: string, contactPhone: string) => {
+    try {
+      const matchedEntry = entries.find(e => e.alunoId === studentId);
+      const currentContacts = matchedEntry?.contacts || [];
+      
+      const updatedContacts = [...currentContacts, { name: contactName, phone: contactPhone }];
+      
+      await updateStudentContacts(studentId, updatedContacts);
+      
+      setEntries(prev => prev.map(e => {
+        if (e.alunoId === studentId) {
+          return {
+            ...e,
+            telefone: contactPhone,
+            telefoneResponsavel: contactPhone,
+            nomeResponsavel: contactName,
+            contacts: updatedContacts
+          };
+        }
+        return e;
+      }));
+      
+      toast.success('Contato registrado com sucesso!');
+    } catch (err) {
+      console.error('[FICAI] Erro ao adicionar contato:', err);
+      toast.error('Erro ao salvar contato no banco de dados.');
+    }
+  }, [entries]);
+
   return {
     entries,
     filteredEntries,
@@ -193,6 +222,7 @@ export function useFICAIPanel() {
     saveToDatabase,
     reset,
     updateStatus,
+    addContactToStudent,
     hasData: entries.length > 0,
   }
 }

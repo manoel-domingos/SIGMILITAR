@@ -1,15 +1,19 @@
 'use client'
 
-import { X, User, MessageCircle } from 'lucide-react'
+import { useState } from 'react'
+import { X, User, MessageCircle, Loader2 } from 'lucide-react'
 import type { FICAIEntry } from '@/types/ficai'
 import { formatPhoneForWhatsApp } from '@/lib/utils'
 
 interface FICAIDetailProps {
   entry: FICAIEntry | null
   onClose: () => void
+  onAddContact: (studentId: string, name: string, phone: string) => Promise<void>
 }
 
-export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
+export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) {
+  const [addingContact, setAddingContact] = useState(false);
+
   if (!entry) return null;
 
   const fields = [
@@ -69,7 +73,7 @@ export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
               {fields.map(f => (
                 <div key={f.label} className="rounded-2xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-850 p-3.5 flex flex-col justify-between shadow-sm">
                   <p className="text-[9px] font-extrabold uppercase tracking-wide text-slate-400 dark:text-slate-500">{f.label}</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-350 mt-1 truncate">{f.value}</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-355 mt-1 truncate">{f.value}</p>
                 </div>
               ))}
             </div>
@@ -95,7 +99,7 @@ export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
                           <span className="text-[9px] font-extrabold uppercase tracking-wide text-slate-400 dark:text-slate-500 block">
                             {contact.name || `Responsável ${idx + 1}`}
                           </span>
-                          <p className="text-xs font-bold text-slate-700 dark:text-slate-350 mt-0.5">{contact.phone || 'Sem telefone'}</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-355 mt-0.5">{contact.phone || 'Sem telefone'}</p>
                         </div>
 
                         {contact.phone && waUrl && (
@@ -124,6 +128,69 @@ export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
             )}
           </div>
 
+          {/* Formulário de Adicionar Contato (Definitivo no Aluno) */}
+          {entry.matched && entry.alunoId && (
+            <div className="pt-5 border-t border-slate-100 dark:border-slate-800/80">
+              <p className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+                ➕ Adicionar Contato Definitivo
+              </p>
+              
+              <form 
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const name = formData.get('contactName') as string;
+                  const phone = formData.get('contactPhone') as string;
+                  if (!name.trim() || !phone.trim()) return;
+
+                  setAddingContact(true);
+                  try {
+                    await onAddContact(entry.alunoId!, name.trim(), phone.trim());
+                    e.currentTarget.reset();
+                  } finally {
+                    setAddingContact(false);
+                  }
+                }} 
+                className="space-y-3 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-850"
+              >
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Nome do Responsável</label>
+                  <input
+                    type="text"
+                    name="contactName"
+                    required
+                    placeholder="Ex: Mãe, Pai, Responsável Legal..."
+                    className="w-full h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Telefone (WhatsApp)</label>
+                  <input
+                    type="text"
+                    name="contactPhone"
+                    required
+                    placeholder="Ex: (65) 99999-9999"
+                    className="w-full h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/25 text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={addingContact}
+                  className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 transition active:scale-95"
+                >
+                  {addingContact ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Contato'
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
+
         </div>
 
         {/* Rodapé do Drawer */}
@@ -140,3 +207,4 @@ export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
     </>
   );
 }
+

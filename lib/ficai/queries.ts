@@ -147,3 +147,19 @@ export async function updateFICAIImportStatus(
 
   if (error) throw new Error(`Erro ao atualizar status do FICAI: ${error.message}`);
 }
+
+/**
+ * Atualiza o array de contatos (contacts) de um estudante específico no banco de dados.
+ */
+export async function updateStudentContacts(
+  studentId: string,
+  contacts: { name: string; phone: string }[]
+): Promise<void> {
+  const { error } = await supabase
+    .from('students')
+    .update({ contacts })
+    .eq('id', studentId);
+
+  if (error) throw new Error(`Erro ao atualizar contatos do estudante: ${error.message}`);
+}
+
