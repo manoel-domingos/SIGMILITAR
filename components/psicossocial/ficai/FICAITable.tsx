@@ -9,6 +9,7 @@ interface FICAITableProps {
   total: number
   selectedIdx: number | null
   onSelect: (idx: number) => void
+  onUpdateStatus: (idx: number, status: 'nao_aberta' | 'ficai_necessaria' | 'ficai_aberta' | 'encaminhado', date?: string) => void
 }
 
 function PctCell({ value }: { value: number | null }) {
@@ -26,17 +27,7 @@ function AlertIcon({ entry }: { entry: FICAIEntry }) {
   return <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
 }
 
-function FICAIBadge({ entry }: { entry: FICAIEntry }) {
-  if (entry.ficaiNecessaria)
-    return <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-rose-600 dark:text-rose-400 border border-rose-500/15">Necessária!</span>
-  if (entry.encaminhado)
-    return <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-600 dark:text-emerald-450 border border-emerald-500/15">Encaminhado</span>
-  if (entry.ficaiAberto)
-    return <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-600 dark:text-amber-400 border border-amber-500/15">{entry.dataFicai}</span>
-  return <span className="text-xs text-slate-400 dark:text-slate-600">Não aberta</span>
-}
-
-export function FICAITable({ entries, total, selectedIdx, onSelect }: FICAITableProps) {
+export function FICAITable({ entries, total, selectedIdx, onSelect, onUpdateStatus }: FICAITableProps) {
   if (entries.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center text-sm text-slate-450 dark:text-slate-650 bg-white/50 dark:bg-slate-900/10 border border-dashed rounded-2xl">
@@ -53,11 +44,11 @@ export function FICAITable({ entries, total, selectedIdx, onSelect }: FICAITable
             <tr className="border-b border-slate-100 dark:border-slate-850/60 bg-slate-50/50 dark:bg-slate-950/30 text-xs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider">
               <th className="px-5 py-3.5 text-left">Aluno</th>
               <th className="px-5 py-3.5 text-left">Turma</th>
-              <th className="px-5 py-3.5 text-left">Telefone</th>
+              <th className="px-5 py-3.5 text-left">Contato (Whats)</th>
               <th className="px-5 py-3.5 text-center">Geral</th>
               <th className="px-5 py-3.5 text-center">1°Bim</th>
               <th className="px-5 py-3.5 text-center">2°Bim</th>
-              <th className="px-5 py-3.5 text-left">FICAI</th>
+              <th className="px-5 py-3.5 text-left">Status FICAI</th>
             </tr>
           </thead>
           <tbody>
@@ -89,17 +80,9 @@ export function FICAITable({ entries, total, selectedIdx, onSelect }: FICAITable
                   <td className="px-5 py-3">
                     {entry.telefone ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <a
-                          href={`tel:${entry.telefone}`}
-                          onClick={e => e.stopPropagation()}
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline dark:text-blue-400 bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10 active:scale-95 transition-transform shrink-0"
-                        >
-                          <Phone className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                          {entry.telefone}
-                        </a>
                         {(() => {
                           const waUrl = formatPhoneForWhatsApp(entry.telefone || '', entry.nomeAluno);
-                          if (!waUrl) return null;
+                          if (!waUrl) return <span className="text-xs text-slate-450">{entry.telefone}</span>;
                           return (
                             <a
                               href={waUrl}
@@ -107,10 +90,10 @@ export function FICAITable({ entries, total, selectedIdx, onSelect }: FICAITable
                               rel="noopener noreferrer"
                               onClick={e => e.stopPropagation()}
                               className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:underline dark:text-emerald-450 bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10 active:scale-95 transition-transform shrink-0"
-                              title="Enviar mensagem no WhatsApp"
+                              title={`Enviar mensagem para ${entry.nomeResponsavel || entry.nomeAluno}`}
                             >
                               <MessageCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                              WhatsApp
+                              WhatsApp {entry.nomeResponsavel && `(${entry.nomeResponsavel})`}
                             </a>
                           );
                         })()}
@@ -122,7 +105,38 @@ export function FICAITable({ entries, total, selectedIdx, onSelect }: FICAITable
                   <td className="px-5 py-3 text-center text-sm font-semibold"><PctCell value={entry.faltasGeral} /></td>
                   <td className="px-5 py-3 text-center text-sm font-semibold"><PctCell value={entry.faltas1Bim} /></td>
                   <td className="px-5 py-3 text-center text-sm font-semibold"><PctCell value={entry.faltas2Bim} /></td>
-                  <td className="px-5 py-3"><FICAIBadge entry={entry} /></td>
+                  <td className="px-5 py-3">
+                    <select
+                      value={
+                        entry.encaminhado ? 'encaminhado'
+                        : entry.ficaiAberto ? 'ficai_aberta'
+                        : entry.ficaiNecessaria ? 'ficai_necessaria'
+                        : 'nao_aberta'
+                      }
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => {
+                        const val = e.target.value as any;
+                        let dateVal = '';
+                        if (val === 'ficai_aberta' || val === 'encaminhado') {
+                          const today = new Date().toLocaleDateString('pt-BR');
+                          dateVal = prompt(`Digite a data (DD/MM/AAAA) ou clique em OK para usar hoje:`, today) || today;
+                        }
+                        onUpdateStatus(idx, val, dateVal);
+                      }}
+                      className={cn(
+                        'bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-xl px-2.5 py-1 text-xs font-extrabold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-95 transition-all text-center',
+                        entry.encaminhado ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5'
+                        : entry.ficaiAberto ? 'text-amber-600 dark:text-amber-400 border-amber-500/20 bg-amber-500/5'
+                        : entry.ficaiNecessaria ? 'text-rose-600 dark:text-rose-400 border-rose-500/20 bg-rose-500/5'
+                        : 'text-slate-500 dark:text-slate-400'
+                      )}
+                    >
+                      <option value="nao_aberta">Não aberta</option>
+                      <option value="ficai_necessaria">⚠️ Necessária!</option>
+                      <option value="ficai_aberta">📝 Aberta {entry.dataFicai && `(${entry.dataFicai})`}</option>
+                      <option value="encaminhado">🚀 Encaminhado {entry.dataEncaminhamento && `(${entry.dataEncaminhamento})`}</option>
+                    </select>
+                  </td>
                 </tr>
               );
             })}

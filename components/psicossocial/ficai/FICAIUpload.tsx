@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils'
 interface FICAIUploadProps {
   onFile: (file: File) => void
   loading: boolean
+  compact?: boolean
 }
 
-export function FICAIUpload({ onFile, loading }: FICAIUploadProps) {
+export function FICAIUpload({ onFile, loading, compact = false }: FICAIUploadProps) {
   const [dragging, setDragging] = useState(false)
 
   const handleFile = useCallback(
@@ -27,6 +28,50 @@ export function FICAIUpload({ onFile, loading }: FICAIUploadProps) {
     },
     [handleFile]
   )
+
+  if (compact) {
+    return (
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={cn(
+          'flex flex-col sm:flex-row items-center justify-between gap-4 rounded-3xl border-2 border-dashed p-4 text-center sm:text-left transition-all duration-200 animate-in fade-in duration-300',
+          dragging
+            ? 'border-blue-500 bg-blue-500/5'
+            : 'border-slate-200 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-900/10 hover:border-slate-350 dark:hover:border-slate-700'
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-white dark:bg-slate-850 p-2.5 shadow-sm border border-slate-100 dark:border-slate-800 shrink-0">
+            <TableIcon className="h-5 w-5 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-xs font-black text-slate-800 dark:text-slate-200">Importar Planilha de Frequência DRE (CSV)</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+              Suba o novo arquivo para atualizar o status e as faltas dos alunos no painel
+            </p>
+          </div>
+        </div>
+
+        <label className={cn(
+          'inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-3.5 py-2 text-[11px] font-extrabold transition-all active:scale-95 shadow-sm shrink-0',
+          'border-slate-250 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300',
+          loading && 'pointer-events-none opacity-50'
+        )}>
+          <Upload className="h-3.5 w-3.5 text-slate-500" />
+          {loading ? 'Processando...' : 'Carregar nova planilha'}
+          <input
+            type="file"
+            accept=".csv"
+            className="sr-only"
+            disabled={loading}
+            onChange={e => handleFile(e.target.files?.[0])}
+          />
+        </label>
+      </div>
+    )
+  }
 
   return (
     <div

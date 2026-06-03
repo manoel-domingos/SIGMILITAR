@@ -116,7 +116,7 @@ export default function PsicossocialDashboard() {
     <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
       
       {/* Premium Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600/90 via-teal-600/95 to-emerald-700 p-6 sm:p-8 text-white shadow-xl border border-emerald-500/20 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600/90 via-teal-600/95 to-emerald-700 p-4 sm:py-5 sm:px-6 text-white shadow-xl border border-emerald-500/20 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         

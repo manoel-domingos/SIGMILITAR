@@ -76,3 +76,74 @@ export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string
     if (error) throw new Error(`Erro ao salvar importação (lote ${i}): ${error.message}`)
   }
 }
+
+/**
+ * Busca todos os registros salvos da tabela ficai_importacoes para a escola atual.
+ */
+export async function fetchSavedFICAIImports(schoolId: string): Promise<FICAIEntry[]> {
+  const { data, error } = await supabase
+    .from('ficai_importacoes')
+    .select('*, students(contacts)')
+    .eq('school_id', schoolId)
+    .order('nome_aluno');
+
+  if (error) throw new Error(`Erro ao buscar histórico: ${error.message}`);
+
+  return (data || []).map((d: any) => {
+    // Busca do contacts da relação students se existir
+    const contactsArray = d.students?.contacts && Array.isArray(d.students.contacts) ? d.students.contacts : [];
+    const firstContact = contactsArray.length > 0 ? contactsArray[0] : null;
+
+    const faltasGeral = d.perc_faltas_geral;
+    const ficaiAberto = d.ficai_aberto;
+    const alertaGrave = faltasGeral !== null && faltasGeral >= 25;
+    const ficaiNecessaria = alertaGrave && !ficaiAberto;
+
+    return {
+      nomeAluno: d.nome_aluno || '',
+      turma: d.turma || '',
+      turno: d.turno || '',
+      modalidade: d.modalidade || '',
+      codAluno: d.cod_aluno,
+      codMatricula: d.cod_matricula,
+      faltasGeral,
+      faltas1Bim: d.perc_faltas_1bim,
+      faltas2Bim: d.perc_faltas_2bim,
+      ficaiAberto,
+      dataFicai: d.data_ficai || '',
+      encaminhado: d.encaminhado,
+      dataEncaminhamento: d.data_encaminhamento || '',
+      alunoId: d.aluno_id,
+      telefone: firstContact?.phone || null,
+      nomeResponsavel: firstContact?.name || null,
+      telefoneResponsavel: firstContact?.phone || null,
+      contacts: contactsArray,
+      matchScore: d.match_score || 1.0,
+      matched: !!d.aluno_id,
+      alerta: d.perc_faltas_geral !== null && d.perc_faltas_geral >= 10,
+      alertaGrave,
+      ficaiNecessaria
+    };
+  });
+}
+
+/**
+ * Atualiza o status do FICAI de um aluno específico no banco de dados.
+ */
+export async function updateFICAIImportStatus(
+  codAluno: number,
+  ano: number,
+  updates: {
+    ficai_aberto: boolean;
+    data_ficai: string;
+    encaminhado: boolean;
+    data_encaminhamento: string;
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from('ficai_importacoes')
+    .update(updates)
+    .match({ cod_aluno: codAluno, ano });
+
+  if (error) throw new Error(`Erro ao atualizar status do FICAI: ${error.message}`);
+}
