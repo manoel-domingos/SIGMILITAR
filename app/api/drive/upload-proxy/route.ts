@@ -25,14 +25,20 @@ export async function PUT(req: NextRequest) {
     if (contentRange) headers['Content-Range'] = contentRange;
     if (contentLength) headers['Content-Length'] = contentLength;
 
-    // Stream the request body directly to Google Drive API
+    // Read request body as ArrayBuffer to bypass streaming/duplex issues on Vercel
+    const arrayBuffer = await req.arrayBuffer();
+
+    // Upload the request body directly to Google Drive API
     const response = await fetch(googleUrl, {
       method: 'PUT',
       headers,
-      body: req.body,
-      // @ts-ignore - duplex option is required by undici for streaming request bodies
-      duplex: 'half',
+      body: arrayBuffer,
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[GOOGLE DRIVE UPLOAD PROXY] Google returned status ${response.status}:`, errorText);
+    }
 
     const responseText = await response.text();
 
