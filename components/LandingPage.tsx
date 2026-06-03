@@ -91,14 +91,19 @@ export default function LandingPage2() {
               <a href="#modulos" className="hover:text-[#0052CC] transition-colors">Módulos</a>
               <a href="#diferenciais" className="hover:text-[#0052CC] transition-colors">Diferenciais</a>
             </div>
-            <div className="hidden md:flex items-center gap-4">
-              <a href="#cta" className="flex items-center gap-2 bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#0052CC]/90 transition-all duration-300">
-                Agendar Demonstração
-                <ArrowRight className="w-4 h-4" />
+            <div className="flex items-center gap-3">
+              <a href="/login" className="bg-[#0052CC] text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-[#0052CC]/90 transition-colors md:hidden shadow-sm active:scale-95 transition-all">
+                Acessar
               </a>
-              <a href="/login" className="flex items-center gap-2 bg-[#F4F5F7] border border-[#2B2C33]/10 text-[#2B2C33] px-5 py-2.5 rounded-full text-sm font-medium hover:bg-white transition-colors">
-                Acessar Sistema
-              </a>
+              <div className="hidden md:flex items-center gap-4">
+                <a href="#cta" className="flex items-center gap-2 bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-[#0052CC]/90 transition-all duration-300">
+                  Agendar Demonstração
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <a href="/login" className="flex items-center gap-2 bg-[#F4F5F7] border border-[#2B2C33]/10 text-[#2B2C33] px-5 py-2.5 rounded-full text-sm font-medium hover:bg-white transition-colors">
+                  Acessar Sistema
+                </a>
+              </div>
             </div>
           </div>
         </nav>

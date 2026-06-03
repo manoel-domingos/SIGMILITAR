@@ -838,10 +838,11 @@ function SidebarLayout({
       <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
         <header className="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 sm:px-8 shrink-0">
           <div className="flex items-center gap-3">
-            {/* Ocultado para favorecer Bottom Navigation */}
+            {/* Habilitado para acessar submenus no mobile */}
             <button
-              className="p-2 -ml-2 text-slate-500 dark:text-slate-400 hidden"
+              className="p-2 -ml-2 text-slate-500 dark:text-slate-400 flex md:hidden active:scale-95 transition-transform"
               onClick={openMobileMenu}
+              aria-label="Abrir menu"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -919,9 +920,9 @@ function TopbarLayout({
         {/* top row: logo + right controls */}
         <div className="pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-sm rounded-full flex items-center justify-between gap-4 px-4 md:px-6 py-1 max-w-[1600px] mx-auto">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {/* Ocultado para favorecer Bottom Navigation */}
+            {/* Habilitado para acessar submenus no mobile */}
             <button
-              className="w-11 h-11 -ml-1 flex items-center justify-center text-slate-500 dark:text-slate-400 hidden rounded-xl active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+              className="w-11 h-11 -ml-1 flex md:hidden items-center justify-center text-slate-500 dark:text-slate-400 rounded-xl active:bg-slate-100 dark:active:bg-slate-800 transition-colors active:scale-95 transition-transform"
               onClick={openMobileMenu}
               aria-label="Abrir menu"
             >
@@ -1226,8 +1227,20 @@ function MobileDrawer({
 }) {
   const { logoSidebar, tenantId } = useTenantConfig();
   const rawPathname = usePathname();
-  const { currentUserRole } = useAppContext();
+  const { currentUserRole, activePanelModule, setActivePanelModule, activeSchoolContext, currentUserSchoolId } = useAppContext();
   const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const handleModuleSwitch = (module: 'civico-militar' | 'pedagogico') => {
+    setActivePanelModule(module);
+    const schoolId = activeSchoolContext || currentUserSchoolId;
+    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
+    if (slug) {
+      router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
+    }
+    onClose();
+  };
+
   return (
     <aside
       className={'fixed inset-y-0 left-0 z-50 w-72 sm:w-80 bg-[#1E293B] flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out shadow-2xl md:hidden safe-area-inset ' + (open ? 'translate-x-0' : '-translate-x-full')}
@@ -1245,6 +1258,35 @@ function MobileDrawer({
           <X className="w-6 h-6" />
         </button>
       </div>
+
+      {/* Alternador de Módulos (Mobile) */}
+      {currentUserRole && (currentUserRole === 'admin_global' || currentUserRole === 'GESTOR' || currentUserRole === 'COORD') && (
+        <div className="px-4 py-3 border-b border-slate-800 bg-slate-900/30 flex flex-col gap-2 shrink-0">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Módulo de Gestão</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => handleModuleSwitch('civico-militar')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                activePanelModule !== 'pedagogico'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/10'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Cívico-Militar
+            </button>
+            <button
+              onClick={() => handleModuleSwitch('pedagogico')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                activePanelModule === 'pedagogico'
+                  ? 'bg-blue-500 text-white font-black shadow-lg shadow-blue-500/10'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Pedagógico
+            </button>
+          </div>
+        </div>
+      )}
       <nav className="flex-1 overflow-y-auto py-3 overscroll-contain">
         <ul className="space-y-3 px-2 sm:px-3">
           {pathname === '/configuracoes' ? (

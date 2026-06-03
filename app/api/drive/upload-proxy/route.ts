@@ -35,12 +35,11 @@ export async function PUT(req: NextRequest) {
       body: arrayBuffer,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[GOOGLE DRIVE UPLOAD PROXY] Google returned status ${response.status}:`, errorText);
-    }
-
     const responseText = await response.text();
+
+    if (!response.ok) {
+      console.error(`[GOOGLE DRIVE UPLOAD PROXY] Google returned status ${response.status}:`, responseText);
+    }
 
     const responseHeaders: Record<string, string> = {
       'Content-Type': response.headers.get('content-type') || 'application/json',
