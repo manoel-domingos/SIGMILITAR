@@ -1,3 +1,5 @@
+'use client';
+
 import { useFICAIPanel } from '@/hooks/useFICAIPanel'
 import { FICAIUpload }    from './FICAIUpload'
 import { FICAIStatsCards }from './FICAIStats'
@@ -184,7 +186,5 @@ export function FICAIPanel() {
         )
       )}
     </div>
-  )
-}  </div>
   )
 }
