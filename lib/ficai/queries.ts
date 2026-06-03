@@ -26,7 +26,8 @@ export async function fetchAlunosParaMatch(): Promise<AlunoRecord[]> {
       nome: d.name,
       telefone: firstContact?.phone || null,
       nome_responsavel: firstContact?.name || null,
-      telefone_responsavel: firstContact?.phone || null
+      telefone_responsavel: firstContact?.phone || null,
+      contacts: contactsArray
     };
   });
 }

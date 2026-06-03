@@ -12,9 +12,6 @@ export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
     { label: '% Faltas Geral',    value: entry.faltasGeral !== null ? `${entry.faltasGeral}%` : '—' },
     { label: '1° Bimestre',       value: entry.faltas1Bim  !== null ? `${entry.faltas1Bim}%`  : '—' },
     { label: '2° Bimestre',       value: entry.faltas2Bim  !== null ? `${entry.faltas2Bim}%`  : '—' },
-    { label: 'Telefone Aluno',    value: entry.telefone || 'Não cadastrado' },
-    { label: 'Responsável',       value: entry.nomeResponsavel || '—' },
-    { label: 'Tel. Responsável',  value: entry.telefoneResponsavel || '—' },
     { label: 'FICAI',             value: entry.ficaiAberto ? entry.dataFicai : 'Não aberta' },
     { label: 'Encaminhamento',    value: entry.encaminhado ? entry.dataEncaminhamento : 'Não encaminhado' },
     { label: 'Match Supabase',    value: entry.matched ? `${Math.round(entry.matchScore * 100)}%` : 'Sem correspondência' },
@@ -31,7 +28,7 @@ export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
             <p className="font-black text-slate-800 dark:text-slate-100 leading-tight text-sm sm:text-base">{entry.nomeAluno}</p>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
               Turma: <span className="text-slate-500 dark:text-slate-450">{entry.turma}</span> · Turno: <span className="text-slate-500 dark:text-slate-450">{entry.turno}</span>
-              {entry.nomeResponsavel && ` · Responsável: ${entry.nomeResponsavel}`}
+              {entry.nomeResponsavel && ` · Responsável Principal: ${entry.nomeResponsavel}`}
             </p>
           </div>
         </div>
@@ -45,43 +42,72 @@ export function FICAIDetail({ entry, onClose }: FICAIDetailProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {fields.map(f => {
-          const isPhone = f.label.startsWith('Tel') && f.value !== '—' && f.value !== 'Não cadastrado';
-          return (
-            <div key={f.label} className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850/60 p-3 flex flex-col justify-between">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 dark:text-slate-500">{f.label}</p>
-              {isPhone ? (
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <a 
-                    href={`tel:${f.value}`} 
-                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline dark:text-blue-400 active:scale-95 transition-transform shrink-0"
-                  >
-                    <Phone className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                    {f.value}
-                  </a>
-                  {(() => {
-                    const waUrl = formatPhoneForWhatsApp(f.value || '', entry.nomeAluno);
-                    if (!waUrl) return null;
-                    return (
+        {fields.map(f => (
+          <div key={f.label} className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850/60 p-3 flex flex-col justify-between">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 dark:text-slate-500">{f.label}</p>
+            <p className="text-xs font-bold text-slate-700 dark:text-slate-350 mt-1 truncate">{f.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Seção de Contatos dos Responsáveis */}
+      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-850/60">
+        <p className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+          📞 Contatos de Responsáveis (Supabase)
+        </p>
+        
+        {entry.contacts && entry.contacts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {entry.contacts.map((contact, idx) => {
+              const waUrl = formatPhoneForWhatsApp(contact.phone || '', entry.nomeAluno);
+              return (
+                <div 
+                  key={idx} 
+                  className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850/60 p-3 flex flex-col justify-between shadow-sm hover:shadow-md transition duration-200"
+                >
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                      {contact.name || `Contato ${idx + 1}`}
+                    </span>
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-350 mt-0.5">{contact.phone || 'Sem telefone'}</p>
+                  </div>
+                  
+                  {contact.phone && (
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-50 dark:border-slate-850/30">
                       <a
-                        href={waUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:underline dark:text-emerald-450 active:scale-95 transition-transform shrink-0"
-                        title="Enviar mensagem no WhatsApp"
+                        href={`tel:${contact.phone}`}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline dark:text-blue-400 bg-blue-500/5 px-2 py-1 rounded-lg border border-blue-500/10 active:scale-95 transition-transform shrink-0"
+                        title={`Ligar para ${contact.name}`}
                       >
-                        <MessageCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        WhatsApp
+                        <Phone className="h-3 w-3 text-blue-500 shrink-0" />
+                        Ligar
                       </a>
-                    );
-                  })()}
+                      
+                      {waUrl && (
+                        <a
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 hover:underline dark:text-emerald-450 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10 active:scale-95 transition-transform shrink-0"
+                          title={`Enviar WhatsApp para ${contact.name}`}
+                        >
+                          <MessageCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                          WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <p className="text-xs font-bold text-slate-700 dark:text-slate-350 mt-1 truncate">{f.value}</p>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-amber-500/5 border border-dashed border-amber-500/20 p-4 text-center">
+            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              Nenhum contato de responsável encontrado no Supabase para este aluno.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

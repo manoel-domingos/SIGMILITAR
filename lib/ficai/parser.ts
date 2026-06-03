@@ -117,6 +117,7 @@ export function processCSV(rawText: string, alunos: AlunoRecord[]): FICAIEntry[]
       telefone:             aluno?.telefone        ?? null,
       nomeResponsavel:      aluno?.nome_responsavel      ?? null,
       telefoneResponsavel:  aluno?.telefone_responsavel  ?? null,
+      contacts:             aluno?.contacts        || [],
       matchScore: score,
       matched: !!aluno,
 

@@ -44,6 +44,7 @@ export interface AlunoRecord {
   telefone: string | null
   nome_responsavel: string | null
   telefone_responsavel: string | null
+  contacts?: { name: string; phone: string }[]
 }
 
 // Entrada processada: dados do CSV + dados puxados do Supabase
@@ -72,6 +73,7 @@ export interface FICAIEntry {
   telefone: string | null
   nomeResponsavel: string | null
   telefoneResponsavel: string | null
+  contacts?: { name: string; phone: string }[]
   matchScore: number
   matched: boolean
 
