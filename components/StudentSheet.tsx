@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Camera, BookOpen, Phone, Paperclip, FileText, AlertCircle, CheckCircle2, Clock, MapPin, Archive, Plus, Trash2 } from 'lucide-react';
+import { X, User, Camera, BookOpen, Phone, Paperclip, FileText, AlertCircle, CheckCircle2, Clock, MapPin, Archive, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
 import { useTenantConfig } from '@/lib/useTenantConfig';
 import { ClassSelector } from '@/components/ClassSelector';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-type Tab = 'atividades' | 'dados' | 'responsaveis' | 'documentos';
+type Tab = 'atividades' | 'dados' | 'responsaveis' | 'documentos' | 'ficai';
 
 interface Props {
   studentId: string;
@@ -58,6 +60,66 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
   const [archiveText, setArchiveText] = useState('');
   const [ignoredWarning, setIgnoredWarning] = useState(false);
   const [visible, setVisible] = useState(false);
+
+  const [ficaiHistory, setFicaiHistory] = useState<any[]>([]);
+  const [loadingFicai, setLoadingFicai] = useState(false);
+
+  useEffect(() => {
+    if (!studentId) return;
+    
+    async function loadFicaiHistory() {
+      setLoadingFicai(true);
+      try {
+        const { data, error } = await supabase
+          .from('ficai_importacoes')
+          .select('*')
+          .eq('aluno_id', studentId)
+          .order('ano', { ascending: false });
+          
+        if (error) throw error;
+        setFicaiHistory(data || []);
+      } catch (err) {
+        console.error('Erro ao buscar histórico FICAI do aluno:', err);
+      } finally {
+        setLoadingFicai(false);
+      }
+    }
+    
+    loadFicaiHistory();
+  }, [studentId]);
+
+  const handleUpdateFicaiStatus = async (codAluno: number, ano: number, status: 'nao_aberta' | 'ficai_necessaria' | 'ficai_aberta' | 'encaminhado', date?: string) => {
+    const ficai_aberto = status === 'ficai_aberta' || status === 'encaminhado';
+    const data_ficai = status === 'ficai_aberta' ? (date || '') : '';
+    const encaminhado = status === 'encaminhado';
+    const data_encaminhamento = status === 'encaminhado' ? (date || '') : '';
+
+    try {
+      const { error } = await supabase
+        .from('ficai_importacoes')
+        .update({
+          ficai_aberto,
+          data_ficai,
+          encaminhado,
+          data_encaminhamento
+        })
+        .match({ cod_aluno: codAluno, ano });
+
+      if (error) throw error;
+      
+      // Update local state
+      setFicaiHistory(prev => prev.map(item => 
+        (item.cod_aluno === codAluno && item.ano === ano) 
+          ? { ...item, ficai_aberto, data_ficai, encaminhado, data_encaminhamento } 
+          : item
+      ));
+      
+      toast.success('Status do FICAI atualizado!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao atualizar status do FICAI: ' + err.message);
+    }
+  };
 
   useEffect(() => {
     // Pequeno delay para disparar a animacao de entrada
@@ -129,6 +191,7 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
     { id: 'dados' as Tab, label: 'Dados', Icon: User, count: null },
     { id: 'responsaveis' as Tab, label: 'Responsaveis', Icon: Phone, count: contacts.filter(c => c.phone).length },
     { id: 'documentos' as Tab, label: 'Documentos', Icon: Paperclip, count: allDocs.length },
+    { id: 'ficai' as Tab, label: 'FICAI', Icon: ShieldAlert, count: ficaiHistory.length > 0 ? ficaiHistory.length : null },
   ];
 
   // Conteudo interno compartilhado entre modal e panel — montado abaixo
@@ -468,6 +531,117 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
                 </div>
               );
             })()}
+
+            {/* FICAI */}
+            {activeTab === 'ficai' && (
+              <div className="p-6 space-y-4">
+                {loadingFicai ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-650">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2" />
+                    <p className="text-xs font-semibold">Carregando histórico FICAI...</p>
+                  </div>
+                ) : ficaiHistory.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-650">
+                    <ShieldAlert className="w-10 h-10 mb-3 opacity-40 text-slate-500" />
+                    <p className="text-sm font-bold">Nenhum histórico FICAI registrado</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-[280px] text-center">
+                      Este aluno não possui registros de infrequência importados de planilhas DRE.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Histórico de faltas e acompanhamento de FICAIs abertas para este aluno.
+                    </p>
+                    <div className="space-y-3">
+                      {ficaiHistory.map((item, idx) => {
+                        const alertGrave = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 25;
+                        const alertMedio = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 10;
+                        const statusClass = item.encaminhado 
+                          ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5'
+                          : item.ficai_aberto 
+                          ? 'text-amber-600 dark:text-amber-400 border-amber-500/20 bg-amber-500/5'
+                          : alertGrave 
+                          ? 'text-rose-600 dark:text-rose-400 border-rose-500/20 bg-rose-500/5'
+                          : 'text-slate-500 dark:text-slate-400';
+                          
+                        return (
+                          <div 
+                            key={idx} 
+                            className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-200"
+                          >
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider bg-slate-200/50 dark:bg-slate-700/60 px-2 py-0.5 rounded-lg">
+                                  Ano: {item.ano}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+                                  {item.turma} ({item.turno})
+                                </span>
+                                {item.modalidade && (
+                                  <span className="text-[10px] bg-slate-105 dark:bg-slate-800 text-slate-450 dark:text-slate-500 px-2 py-0.5 rounded-md font-semibold">
+                                    {item.modalidade}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-2 max-w-xs text-center">
+                                <div className="bg-white dark:bg-slate-850 p-2 rounded-lg border border-slate-150/40 dark:border-slate-700">
+                                  <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Faltas Geral</p>
+                                  <p className={`text-sm font-black mt-0.5 ${alertGrave ? 'text-rose-600 dark:text-rose-400' : alertMedio ? 'text-amber-600 dark:text-amber-500' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                                    {item.perc_faltas_geral !== null ? `${item.perc_faltas_geral}%` : '—'}
+                                  </p>
+                                </div>
+                                <div className="bg-white dark:bg-slate-850 p-2 rounded-lg border border-slate-150/40 dark:border-slate-700">
+                                  <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">1º Bimestre</p>
+                                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mt-0.5">
+                                    {item.perc_faltas_1bim !== null ? `${item.perc_faltas_1bim}%` : '—'}
+                                  </p>
+                                </div>
+                                <div className="bg-white dark:bg-slate-850 p-2 rounded-lg border border-slate-150/40 dark:border-slate-700">
+                                  <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">2º Bimestre</p>
+                                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mt-0.5">
+                                    {item.perc_faltas_2bim !== null ? `${item.perc_faltas_2bim}%` : '—'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col gap-2 shrink-0">
+                              <label className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider">Acompanhamento FICAI</label>
+                              <select
+                                value={
+                                  item.encaminhado ? 'encaminhado'
+                                  : item.ficai_aberto ? 'ficai_aberta'
+                                  : alertGrave ? 'ficai_necessaria'
+                                  : 'nao_aberta'
+                                }
+                                disabled={readOnly}
+                                onChange={e => {
+                                  const val = e.target.value as any;
+                                  let dateVal = '';
+                                  if (val === 'ficai_aberta' || val === 'encaminhado') {
+                                    const today = new Date().toLocaleDateString('pt-BR');
+                                    dateVal = prompt(`Digite a data (DD/MM/AAAA) ou clique em OK para usar hoje:`, today) || today;
+                                  }
+                                  handleUpdateFicaiStatus(item.cod_aluno, item.ano, val, dateVal);
+                                }}
+                                className={`bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-850 rounded-xl px-3 py-1.5 text-xs font-black cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-95 transition-all text-center min-w-[160px] ${statusClass}`}
+                              >
+                                <option value="nao_aberta">Não aberta</option>
+                                <option value="ficai_necessaria">⚠️ Necessária!</option>
+                                <option value="ficai_aberta">📝 Aberta {item.data_ficai && `(${item.data_ficai})`}</option>
+                                <option value="encaminhado">🚀 Encaminhado {item.data_encaminhamento && `(${item.data_encaminhamento})`}</option>
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Rodapé */}
