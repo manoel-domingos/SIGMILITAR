@@ -985,7 +985,7 @@ function TopbarLayout({
         </div>
 
         {/* nav row: grouped pills with hover dropdown */}
-        <div className="pointer-events-auto hidden md:flex items-center justify-center gap-1 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-md rounded-full px-4 md:px-10 py-1">
+        <div className="pointer-events-auto flex items-center justify-start md:justify-center overflow-x-auto no-scrollbar gap-1 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/40 dark:border-slate-800/50 shadow-md rounded-full px-4 md:px-10 py-1.5 max-w-[1600px] mx-auto w-full">
           {pathname === '/configuracoes' ? (
             (() => {
               const activeConfigTab = searchParams?.get('tab') || 'profile';
