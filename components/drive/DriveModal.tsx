@@ -122,10 +122,15 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
 
         const { uploadUri } = await sessionRes.json();
 
-        // 2. Upload direto para o Google Drive via PUT
+        // Extrair o upload_id para passar pelo proxy local do Next.js, evitando erros de CORS e HTTP 403 do Google
+        const urlObj = new URL(uploadUri);
+        const uploadId = urlObj.searchParams.get('upload_id');
+        const proxyUri = `/api/drive/upload-proxy?upload_id=${uploadId}`;
+
+        // 2. Upload para o Google Drive via proxy local
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open('PUT', uploadUri, true);
+          xhr.open('PUT', proxyUri, true);
 
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {

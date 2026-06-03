@@ -227,8 +227,13 @@ function RegistroDisciplinarContent() {
 
       const { uploadUri, isAlunosCreated } = await response.json();
 
-      // Upload file directly to Google Drive resumable session URL
-      const uploadRes = await fetch(uploadUri, {
+      // Extrair o upload_id para passar pelo proxy local do Next.js, evitando erros de CORS e HTTP 403 do Google
+      const urlObj = new URL(uploadUri);
+      const uploadId = urlObj.searchParams.get('upload_id');
+      const proxyUri = `/api/drive/upload-proxy?upload_id=${uploadId}`;
+
+      // Upload file directly to Google Drive via proxy local
+      const uploadRes = await fetch(proxyUri, {
         method: 'PUT',
         body: file,
       });
