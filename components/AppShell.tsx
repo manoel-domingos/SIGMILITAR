@@ -8,7 +8,7 @@ import { useAppContext } from '@/lib/store';
 import { useTenantConfig, getLinkHref } from '@/lib/useTenantConfig';
 
 import {
-  LayoutDashboard, Users, FileText, Activity,
+  LayoutDashboard, Users, FileText, Activity, FileWarning,
   BarChart, AlertTriangle, Star, CheckSquare, FileBadge,
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
@@ -82,6 +82,7 @@ const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
       { href: '/psicossocial', label: 'Dashboard Psicossocial', icon: LayoutDashboard },
       { href: '/psicossocial/ocorrencias', label: 'Registro de Ocorrências', icon: AlertTriangle },
       { href: '/psicossocial/notificacoes', label: 'Notificação de Violação', icon: FileText },
+      { href: '/psicossocial/ficai', label: 'Painel FICAI', icon: FileWarning },
       { href: '/psicossocial/agenda', label: 'Agenda Preventiva', icon: Clock },
       { href: '/psicossocial/relatorios', label: 'Relatórios', icon: BarChart },
     ],
