@@ -303,6 +303,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Override de segurança para Administrador Global
       if (emailLower === 'manoeldomingos2@gmail.com') return 'admin_global';
 
+      if (user.role) return user.role as AppUserRole;
+
       const matched = appUsers.find(u => u.email.toLowerCase().trim() === emailLower);
       if (matched) return matched.role as AppUserRole;
       return 'GESTOR';
@@ -318,6 +320,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Override para garantir perfil de Administrador Global no teste local
     if (emailLower === 'manoeldomingos2@gmail.com') return 'DRE';
     
+    if (user.school_id) return user.school_id;
+
     const matched = appUsers.find(u => u.email.toLowerCase().trim() === emailLower);
     return matched?.school_id ?? null;
   }, [user, isGuest, appUsers]);
@@ -681,7 +685,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
               }
 
               // 3. Atualiza estado do usuário
-              setUser(session.user);
+              setUser({
+                ...session.user,
+                school_id: profile.school_id,
+                role: normalizeDbRole(profile.role, profile.email)
+              });
               setIsGuest(false);
 
               let sid = profile.school_id && profile.school_id !== 'DRE'
