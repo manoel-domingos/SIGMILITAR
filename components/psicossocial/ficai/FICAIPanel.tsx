@@ -44,6 +44,7 @@ export function FICAIPanel() {
     toggleSelected,
     processFile,
     saveToDatabase,
+    reset,
     updateStatus,
     addContactToStudent,
     hasData,
