@@ -138,6 +138,13 @@ export default function PsicossocialDashboard() {
 
         <div className="relative z-10 flex flex-wrap gap-3 shrink-0">
           <Link
+            href={`/${schoolSlug}/psicossocial/ficai`}
+            className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow transition flex items-center justify-center gap-2 active:scale-95 border border-white/20"
+          >
+            <FileText className="w-4 h-4 text-emerald-300" />
+            Painel FICAI
+          </Link>
+          <Link
             href={`/${schoolSlug}/psicossocial/ocorrencias/nova`}
             className="bg-white text-emerald-700 hover:bg-emerald-50 px-4 py-2.5 rounded-xl text-xs font-extrabold shadow transition flex items-center justify-center gap-2 active:scale-95 border border-white/20"
           >
