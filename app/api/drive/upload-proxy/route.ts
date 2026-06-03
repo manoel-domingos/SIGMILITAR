@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const runtime = 'edge';
 
 export async function PUT(req: NextRequest) {
   try {
@@ -19,20 +18,17 @@ export async function PUT(req: NextRequest) {
     const headers: Record<string, string> = {};
     const contentType = req.headers.get('content-type');
     const contentRange = req.headers.get('content-range');
-    const contentLength = req.headers.get('content-length');
 
     if (contentType) headers['Content-Type'] = contentType;
     if (contentRange) headers['Content-Range'] = contentRange;
-    if (contentLength) headers['Content-Length'] = contentLength;
-
-    // Read request body as ArrayBuffer to bypass streaming/duplex issues on Vercel
-    const arrayBuffer = await req.arrayBuffer();
 
     // Upload the request body directly to Google Drive API
     const response = await fetch(googleUrl, {
       method: 'PUT',
       headers,
-      body: arrayBuffer,
+      body: req.body,
+      // @ts-ignore
+      duplex: 'half',
     });
 
     const responseText = await response.text();
