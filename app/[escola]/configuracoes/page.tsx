@@ -27,6 +27,20 @@ function supabase(): any {
   ));
 }
 
+async function adminApiHeaders() {
+  const { data } = await supabase().auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    throw new Error('Sessao expirada. Faca login novamente.');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'PROFESSOR' | 'admin_global';
 type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status' | 'users_prof' | 'occurrences_prof' | 'conduct_prof' | 'reports_prof' | 'permissions';
 type Severity = 'Leve' | 'Media' | 'Grave';
@@ -107,7 +121,7 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
     try {
       const res = await fetch('/api/admin/create-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await adminApiHeaders(),
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
@@ -317,7 +331,7 @@ function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
     try {
       const res = await fetch('/api/admin/create-user', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await adminApiHeaders(),
         body: JSON.stringify({ userId: user.id, password: newPassword }),
       });
       const json = await res.json();
