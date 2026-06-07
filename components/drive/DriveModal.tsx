@@ -85,9 +85,13 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
   }, []);
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+
+    const timeoutId = window.setTimeout(() => {
       loadFiles(currentFolder.id);
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [open, currentFolder.id, loadFiles]);
 
   const navigateTo = (folder: DriveFile) => {
@@ -121,13 +125,14 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
         }
 
         const { uploadUri } = await sessionRes.json();
+        if (!uploadUri) {
+          throw new Error('Google Drive não retornou URI para o upload resumível');
+        }
 
-        const proxyUri = uploadUri;
-
-        // 2. Upload para o Google Drive via proxy local
+        // 2. Upload direto para o Google Drive usando a sessão resumível
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open('PUT', proxyUri, true);
+          xhr.open('PUT', uploadUri, true);
           xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
 
           xhr.upload.onprogress = (event) => {
@@ -145,12 +150,31 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               resolve();
-            } else {
-              reject(new Error(`Erro HTTP ${xhr.status}: ${xhr.statusText || 'Erro interno no upload direto'}`));
+              return;
             }
+
+            const responseText = xhr.responseText || 'Resposta vazia do Google Drive';
+            console.error('[GOOGLE DRIVE DIRECT UPLOAD]', {
+              status: xhr.status,
+              statusText: xhr.statusText,
+              responseText,
+              fileName: file.name,
+              fileSize: file.size,
+              folderId: currentFolder.id,
+              origin: window.location.origin,
+            });
+            reject(new Error(`Erro HTTP ${xhr.status}: ${xhr.statusText || responseText}`));
           };
 
-          xhr.onerror = () => reject(new Error('Erro de conexão com o servidor do Google'));
+          xhr.onerror = () => {
+            console.error('[GOOGLE DRIVE DIRECT UPLOAD] Falha de rede/CORS', {
+              fileName: file.name,
+              fileSize: file.size,
+              folderId: currentFolder.id,
+              origin: window.location.origin,
+            });
+            reject(new Error('Erro de conexão/CORS com o Google Drive. Verifique o console do navegador.'));
+          };
           xhr.send(file);
         });
       }
@@ -526,7 +550,7 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
               <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
                 <Move size={15} />
                 <p className="text-xs font-semibold">
-                  Mover <strong className="text-amber-950 dark:text-amber-100 font-bold">"{moving.name}"</strong> para uma subpasta:
+                  Mover <strong className="text-amber-950 dark:text-amber-100 font-bold">&quot;{moving.name}&quot;</strong> para uma subpasta:
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap items-center">
