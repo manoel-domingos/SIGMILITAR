@@ -149,9 +149,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const pathname = useMemo(() => {
     if (!rawPathname) return '';
-    const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
     const segments = rawPathname.split('/').filter(Boolean);
-    if (segments.length > 0 && validTenants.includes(segments[0].toLowerCase())) {
+    if (segments.length > 0 && /^eecm[a-z0-9]+$/.test(segments[0].toLowerCase())) {
       return '/' + segments.slice(1).join('/');
     }
     return rawPathname;
@@ -202,7 +201,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [schools, setSchools] = useState<{id: string; name: string}[]>([]);
   useEffect(() => {
     if (!user) return;
-    supabase?.from('schools').select('id, name').neq('id', 'DRE').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
+    supabase?.from('schools').select('id, name').neq('id', 'DRE').eq('active', true).order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
       if (data) setSchools(data);
     });
   }, [user]);

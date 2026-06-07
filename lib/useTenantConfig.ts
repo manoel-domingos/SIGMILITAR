@@ -53,8 +53,7 @@ export function getTenantIdFromPath(): string | null {
   const segments = path.split('/').filter(Boolean);
   if (segments.length > 0) {
     const firstSegment = segments[0].toLowerCase();
-    const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
-    if (validTenants.includes(firstSegment)) {
+    if (/^eecm[a-z0-9]+$/.test(firstSegment)) {
       return firstSegment;
     }
   }
@@ -66,9 +65,8 @@ export function getTenantIdFromPath(): string | null {
  */
 export function getLinkHref(href: string, tenantId: string, rawPathname: string | null): string {
   if (!href || href.startsWith('http') || href.startsWith('//')) return href;
-  const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
   const segments = (rawPathname || '').split('/').filter(Boolean);
-  const isSlugMode = segments.length > 0 && validTenants.includes(segments[0].toLowerCase());
+  const isSlugMode = segments.length > 0 && /^eecm[a-z0-9]+$/.test(segments[0].toLowerCase());
   
   if (isSlugMode && tenantId) {
     const cleanHref = href.startsWith('/') ? href : `/${href}`;

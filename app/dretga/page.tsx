@@ -16,6 +16,8 @@ import {
   ArrowRight,
   ChevronLeft,
   ShieldCheck,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, isSupabaseReady } from '@/lib/supabase';
@@ -38,6 +40,7 @@ interface WizardState {
   driveFolder: string;
   driveFolderName: string;
   driveFolderValid: boolean;
+  logoUrl: string;
   provisionStep: ProvisionStep | null;
 }
 
@@ -59,14 +62,21 @@ const PROVISION_STEPS: { key: ProvisionStep; label: string }[] = [
   { key: 'done', label: 'Tudo pronto!' },
 ];
 
+function getPublicSchoolName(name: string): string {
+  const clean = name.trim().replace(/\s+/g, ' ');
+  if (!clean) return 'EECM ______';
+  if (/^e\.?e\.?c\.?m\.?\s+/i.test(clean)) return clean.replace(/^e\.?e\.?c\.?m\.?/i, 'EECM');
+  return `EECM ${clean}`;
+}
+
 function generateSlug(name: string): string {
-  return name
+  const base = getPublicSchoolName(name)
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
+    .replace(/[^a-z0-9]/g, '');
+
+  return base.startsWith('eecm') ? base : `eecm${base}`;
 }
 
 function extractFolderId(input: string): string {
@@ -90,6 +100,7 @@ const INITIAL_STATE: WizardState = {
   driveFolder: '',
   driveFolderName: '',
   driveFolderValid: false,
+  logoUrl: '',
   provisionStep: null,
 };
 
@@ -100,6 +111,8 @@ export default function DretgaOnboarding() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveError, setDriveError] = useState('');
   const [provisionDone, setProvisionDone] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoPreview, setLogoPreview] = useState('');
 
   // Detecta retorno do OAuth do Google (step=3 na URL)
   useEffect(() => {
@@ -107,7 +120,9 @@ export default function DretgaOnboarding() {
       const params = new URLSearchParams(window.location.search);
       const stepParam = params.get('step');
       if (stepParam === '3') {
-        setState((s) => ({ ...s, step: 3, authMethod: 'google' }));
+        window.setTimeout(() => {
+          setState((s) => ({ ...s, step: 3, authMethod: 'google' }));
+        }, 0);
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
       }
@@ -132,7 +147,8 @@ export default function DretgaOnboarding() {
           slug: state.slug,
           dreId: state.dreId,
           gestor: { email: state.email, name: state.gestor },
-          driveFolder: state.driveFolder,
+          driveFolder: state.driveFolderValid ? extractFolderId(state.driveFolder) : '',
+          logoUrl: state.logoUrl,
         }),
       }).catch(console.error);
 
@@ -146,7 +162,7 @@ export default function DretgaOnboarding() {
     }
 
     runProvision();
-  }, [state.step, provisionDone, state.schoolName, state.slug, state.dreId, state.email, state.gestor, state.driveFolder]);
+  }, [state.step, provisionDone, state.schoolName, state.slug, state.dreId, state.email, state.gestor, state.driveFolder, state.driveFolderValid, state.logoUrl]);
 
   const progress = (state.step / 6) * 100;
 
@@ -212,6 +228,44 @@ export default function DretgaOnboarding() {
     } finally {
       setDriveLoading(false);
     }
+  };
+
+
+  const handleLogoUpload = async (file: File | null) => {
+    if (!file) return;
+    setLogoPreview(URL.createObjectURL(file));
+
+    if (!isSupabaseReady()) {
+      toast.info('Logo selecionada. Ajuste definitivo poderá ser feito depois em Configurações.');
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      const safeSlug = state.slug || generateSlug(state.schoolName) || `eecm-${Date.now()}`;
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+      const path = `logos/${safeSlug}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from('sigmilitar-assets')
+        .upload(path, file, { cacheControl: '3600', upsert: true });
+
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('sigmilitar-assets').getPublicUrl(path);
+      setState((s) => ({ ...s, logoUrl: data.publicUrl || '' }));
+      toast.success('Logo enviada. Você ainda poderá ajustar depois.');
+    } catch (error: any) {
+      console.error(error);
+      toast.error('Não foi possível enviar a logo agora. Pule esta fase e ajuste depois.');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const skipLogo = () => {
+    setLogoPreview('');
+    setState((s) => ({ ...s, logoUrl: '' }));
+    toast.info('Logo pulada. Você poderá ajustar em Configurações.');
   };
 
   const goTo = (step: WizardState['step']) => setState((s) => ({ ...s, step }));
@@ -407,17 +461,15 @@ export default function DretgaOnboarding() {
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome da escola *</label>
                     <input
                       type="text"
-                      placeholder="Ex: EECM Prof. João Batista"
+                      placeholder="Ex: Prof. João Batista"
                       value={state.schoolName}
                       onChange={(e) => setState((s) => ({ ...s, schoolName: e.target.value, slug: generateSlug(e.target.value) }))}
                       className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                     />
-                    {state.slug && (
-                      <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                        <span className="text-blue-500 font-mono">{state.slug}.sigmilitar.com.br</span>
-                        — seu endereço na plataforma
-                      </p>
-                    )}
+                    <div className="mt-2 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                      <div>Nome exibido: <strong>{getPublicSchoolName(state.schoolName)}</strong></div>
+                      {state.slug && <div>URL padrão: <span className="font-mono">/{state.slug}</span></div>}
+                    </div>
                   </div>
 
                   <div>
@@ -454,6 +506,41 @@ export default function DretgaOnboarding() {
                       onChange={(e) => setState((s) => ({ ...s, phone: e.target.value }))}
                       className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                     />
+                  </div>
+
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
+                        {logoPreview ? (
+                          <img src={logoPreview} alt="Prévia da logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <ImageIcon className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-700">Logo da escola (opcional)</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Envie agora ou pule esta fase. A logo pode ser ajustada depois em Configurações.</p>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:border-blue-300 cursor-pointer transition">
+                            {logoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                            Enviar logo
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                              className="hidden"
+                              onChange={(e) => handleLogoUpload(e.target.files?.[0] || null)}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={skipLogo}
+                            className="px-3 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-600 hover:bg-white transition"
+                          >
+                            Pular logo por enquanto
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -590,7 +677,7 @@ export default function DretgaOnboarding() {
                   {state.driveFolderValid && (
                     <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm">
                       <CheckCircle2 size={16} />
-                      <span>Pasta <strong>"{state.driveFolderName}"</strong> verificada</span>
+                      <span>Pasta <strong>{state.driveFolderName}</strong> verificada</span>
                     </div>
                   )}
                   {driveError && (

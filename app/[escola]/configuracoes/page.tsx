@@ -602,9 +602,10 @@ function TabStatus() {
   // Custom Google Drive folders state
   const [showDriveModal, setShowDriveModal] = useState(false);
   const [folders, setFolders] = useState({
-    joaobatista: process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
-    heliodoro: process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA',
-    documentos: '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk'
+    joaobatista: '',
+    heliodoro: '',
+    tangara: '',
+    documentos: ''
   });
 
   const fetchDriveFolders = async () => {
@@ -614,16 +615,17 @@ function TabStatus() {
         .select('*');
       if (error) throw error;
       if (data) {
-        const defaultFolder = process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
         const foldersMap = {
-          joaobatista: defaultFolder,
-          heliodoro: defaultFolder,
-          documentos: '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk'
+          joaobatista: '',
+          heliodoro: '',
+          tangara: '',
+          documentos: ''
         };
         data.forEach((row: any) => {
-          if (row.school_id === 'joaobatista') foldersMap.joaobatista = row.drive_folder_id || defaultFolder;
-          if (row.school_id === 'heliodoro') foldersMap.heliodoro = row.drive_folder_id || defaultFolder;
-          if (row.school_id === 'documentos') foldersMap.documentos = row.drive_folder_id || '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
+          if (row.school_id === 'joaobatista') foldersMap.joaobatista = row.drive_folder_id || '';
+          if (row.school_id === 'heliodoro') foldersMap.heliodoro = row.drive_folder_id || '';
+          if (row.school_id === 'tangara') foldersMap.tangara = row.drive_folder_id || '';
+          if (row.school_id === 'documentos') foldersMap.documentos = row.drive_folder_id || '';
         });
         setFolders(foldersMap);
       }
@@ -639,9 +641,10 @@ function TabStatus() {
   const saveDriveFolders = async () => {
     try {
       const updates = [
-        { school_id: 'joaobatista', drive_folder_id: folders.joaobatista, updated_by: userEmail, updated_at: new Date().toISOString() },
-        { school_id: 'heliodoro', drive_folder_id: folders.heliodoro, updated_by: userEmail, updated_at: new Date().toISOString() },
-        { school_id: 'documentos', drive_folder_id: folders.documentos, updated_by: userEmail, updated_at: new Date().toISOString() }
+        { school_id: 'joaobatista', drive_folder_id: folders.joaobatista.trim() || null, updated_by: userEmail, updated_at: new Date().toISOString() },
+        { school_id: 'heliodoro', drive_folder_id: folders.heliodoro.trim() || null, updated_by: userEmail, updated_at: new Date().toISOString() },
+        { school_id: 'tangara', drive_folder_id: folders.tangara.trim() || null, updated_by: userEmail, updated_at: new Date().toISOString() },
+        { school_id: 'documentos', drive_folder_id: folders.documentos.trim() || null, updated_by: userEmail, updated_at: new Date().toISOString() }
       ];
 
       const { error } = await supabase()
@@ -748,7 +751,7 @@ function TabStatus() {
             <p className="font-bold text-slate-800 dark:text-slate-200">Copie o ID da Pasta</p>
             <p>Copie o ID do final da URL do seu navegador:</p>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1 font-semibold">
-              folders/<span className="text-indigo-500 font-bold underline">1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA</span>
+              folders/<span className="text-indigo-500 font-bold underline">ID_DA_SUA_PASTA</span>
             </p>
           </div>
         </div>
@@ -832,6 +835,15 @@ function TabStatus() {
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200"
                     value={folders.heliodoro}
                     onChange={e => setFolders({ ...folders, heliodoro: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">E.E.C.M. Tangará (ID da Pasta)</label>
+                  <input
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-200"
+                    value={folders.tangara}
+                    onChange={e => setFolders({ ...folders, tangara: e.target.value })}
                   />
                 </div>
 
@@ -1113,7 +1125,7 @@ function ConfiguracoesInner() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     let uQuery = supabase().from('user_profiles').select('*').order('name');
-    let sQuery = supabase().from('schools').select('id, name').order('id');
+    let sQuery = supabase().from('schools').select('id, name').eq('active', true).order('id');
 
     const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
     const resolvedSchoolId = envSchoolId ?? currentUserSchoolId;

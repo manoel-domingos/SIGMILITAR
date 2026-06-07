@@ -330,7 +330,7 @@ export default function DrePage() {
         { data: allImpl, error: implErr },
         { data: allRules, error: rulesErr },
       ] = await Promise.all([
-        supabase.from('schools').select('id, name').neq('id', 'DRE').order('name'),
+        supabase.from('schools').select('id, name').neq('id', 'DRE').eq('active', true).order('name'),
         supabase.from('students').select('school_id').eq('archived', false),
         supabase.from('occurrences').select('school_id, rule_code, date'),
         supabase.from('praises').select('school_id'),

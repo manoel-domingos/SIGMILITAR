@@ -14,11 +14,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const resolvedSchoolFolderId = schoolFolderId ?? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
-    
+    if (!schoolFolderId) {
+      return NextResponse.json({ error: 'Configure seu Google Drive para usar este painel.' }, { status: 400 });
+    }
+
     const origin = req.headers.get('origin') || undefined;
     const result = await getStudentOccurrenceUploadSession(
-      resolvedSchoolFolderId,
+      schoolFolderId,
       studentName,
       occurrenceNumber,
       fileName,

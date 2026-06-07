@@ -3,7 +3,10 @@ import { listFiles } from '@/lib/google-drive';
 
 export async function GET(req: NextRequest) {
   try {
-    const folderId = req.nextUrl.searchParams.get('folderId') ?? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+    const folderId = req.nextUrl.searchParams.get('folderId');
+    if (!folderId) {
+      return NextResponse.json({ error: 'Configure seu Google Drive para usar este painel.' }, { status: 400 });
+    }
     const files = await listFiles(folderId);
     return NextResponse.json(files);
   } catch (error: any) {

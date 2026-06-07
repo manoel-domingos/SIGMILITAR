@@ -385,7 +385,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (isSupabaseReady()) {
       (async () => {
         try {
-          const { data } = await supabase.from('schools').select('id, name').neq('id', 'DRE').order('name');
+          const { data } = await supabase.from('schools').select('id, name').neq('id', 'DRE').eq('active', true).order('name');
           if (data && data.length > 0) setContextSchools(data as {id: string; name: string}[]);
         } catch (_) {}
       })();
@@ -833,7 +833,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Pré-carrega lista de escolas para o modal de seleção
       try {
-        const { data: schoolsData } = await supabase.from('schools').select('id, name').neq('id', 'DRE').order('name');
+        const { data: schoolsData } = await supabase.from('schools').select('id, name').neq('id', 'DRE').eq('active', true).order('name');
         if (schoolsData && schoolsData.length > 0) setContextSchools(schoolsData as {id: string; name: string}[]);
       } catch (_) {}
 
@@ -860,10 +860,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     
     initAuthAndData();
   }, []);
-
-  // Pasta central de documentos no Google Drive — repositório principal
-  const DRIVE_FOLDER_ID = '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
-  const DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/' + DRIVE_FOLDER_ID;
 
   const uploadFile = async (file: File, studentId: string): Promise<string | null> => {
     if (!isSupabaseReady()) {

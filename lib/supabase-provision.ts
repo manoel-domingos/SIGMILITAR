@@ -7,6 +7,7 @@ export type ProvisionPayload = {
   dreId: string;
   gestor: { email: string; name: string };
   driveFolder: string;
+  logoUrl?: string;
 };
 
 export type ProvisionStep =

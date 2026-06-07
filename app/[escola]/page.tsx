@@ -136,11 +136,11 @@ export default function Dashboard() {
   }, [userId]);
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const validSlugs = ['eecmprofjoaobatista', 'eecmheliodoro', 'eecmtangara'];
   const firstSegment = pathname.split('/').filter(Boolean)[0]?.toLowerCase() ?? '';
+  const isTenantSlug = /^eecm[a-z0-9]+$/.test(firstSegment);
   const isLandingDomain =
     (host === 'sigmilitar.com.br' || host === 'www.sigmilitar.com.br') &&
-    !validSlugs.includes(firstSegment);
+    !isTenantSlug;
 
   if (isLandingDomain) {
     return <LandingPage />;
