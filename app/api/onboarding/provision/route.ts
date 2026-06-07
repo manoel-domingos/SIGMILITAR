@@ -35,6 +35,19 @@ function adminClient() {
   });
 }
 
+function userClient(accessToken: string) {
+  return createClient(env('NEXT_PUBLIC_SUPABASE_URL'), env('NEXT_PUBLIC_SUPABASE_ANON_KEY'), {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+}
+
+function bearerToken(req: NextRequest) {
+  const header = req.headers.get('authorization') || '';
+  const [type, token] = header.split(' ');
+  return type?.toLowerCase() === 'bearer' && token ? token : null;
+}
+
 function normalizeText(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -133,6 +146,25 @@ async function createOrFindManagerAuthUser(
   throw new Error(`Falha ao criar usuario Auth do gestor: ${error?.message || 'usuario nao retornado'}`);
 }
 
+async function requireAuthorizedGestor(req: NextRequest, gestorEmail: string) {
+  const token = bearerToken(req);
+  if (!token) return { error: jsonError('Sessao autenticada obrigatoria para provisionar escola.', 401) };
+
+  const scoped = userClient(token);
+  const { data, error } = await scoped.auth.getUser(token);
+
+  if (error || !data.user) {
+    return { error: jsonError('Sessao invalida ou expirada.', 401) };
+  }
+
+  const callerEmail = data.user.email?.trim().toLowerCase();
+  if (!callerEmail || callerEmail !== gestorEmail) {
+    return { error: jsonError('E-mail do gestor deve corresponder ao usuario autenticado.', 403) };
+  }
+
+  return { user: data.user };
+}
+
 async function syncMembership(supabase: SupabaseClient, userId: string, schoolId: string) {
   const payload = {
     user_id: userId,
@@ -177,6 +209,9 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
 
   try {
+    const authorization = await requireAuthorizedGestor(req, gestor.email);
+    if ('error' in authorization) return authorization.error;
+
     const supabase = adminClient();
     const { error: schoolError } = await supabase
       .from('schools')

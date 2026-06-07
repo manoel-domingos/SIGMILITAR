@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -103,15 +104,26 @@ export default function DretgaOnboarding() {
 
   // Detecta retorno do OAuth do Google (step=3 na URL)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const stepParam = params.get('step');
-      if (stepParam === '3') {
-        setState((s) => ({ ...s, step: 3, authMethod: 'google' }));
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
-      }
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const stepParam = params.get('step');
+    if (stepParam !== '3') return;
+
+    async function restoreOAuthSessionEmail() {
+      const { data } = await supabase.auth.getSession();
+      setState((s) => ({
+        ...s,
+        step: 3,
+        authMethod: 'google',
+        email: data.session?.user.email || s.email,
+        gestor: data.session?.user.user_metadata?.name || s.gestor,
+      }));
     }
+
+    restoreOAuthSessionEmail();
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
   }, []);
 
   // Inicia provisionamento ao entrar no step 6
@@ -123,18 +135,31 @@ export default function DretgaOnboarding() {
       const stepOrder: ProvisionStep[] = ['sending', 'database', 'tables', 'drive', 'interface', 'done'];
       const delays = [1200, 2000, 1800, 1000, 1500, 0];
 
-      // Dispara POST em paralelo com a animação
-      fetch('/api/onboarding/provision', {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      const gestorEmail = data.session?.user.email || state.email;
+
+      if (!accessToken || !gestorEmail) {
+        toast.error('Sessão autenticada obrigatória para provisionar a escola.');
+        setState((s) => ({ ...s, step: 2, provisionStep: null }));
+        return;
+      }
+
+      // Dispara POST autorizado em paralelo com a animação
+      const provisionRequest = fetch('/api/onboarding/provision', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           schoolName: state.schoolName,
           slug: state.slug,
           dreId: state.dreId,
-          gestor: { email: state.email, name: state.gestor },
+          gestor: { email: gestorEmail, name: state.gestor },
           driveFolder: state.driveFolder,
         }),
-      }).catch(console.error);
+      });
 
       // Animação passo a passo
       for (let i = 0; i < stepOrder.length; i++) {
@@ -142,7 +167,18 @@ export default function DretgaOnboarding() {
         if (delays[i] > 0) await new Promise((r) => setTimeout(r, delays[i]));
       }
 
-      setProvisionDone(true);
+      try {
+        const response = await provisionRequest;
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || 'Erro ao provisionar escola.');
+        }
+        setProvisionDone(true);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Erro ao provisionar escola.';
+        toast.error(message);
+        setState((s) => ({ ...s, provisionStep: null }));
+      }
     }
 
     runProvision();
@@ -296,9 +332,9 @@ export default function DretgaOnboarding() {
 
                 <p className="text-center text-sm text-slate-400">
                   Já tem conta?{' '}
-                  <a href="/login" className="text-blue-600 hover:underline font-medium">
+                  <Link href="/login" className="text-blue-600 hover:underline font-medium">
                     Fazer login
-                  </a>
+                  </Link>
                 </p>
               </motion.div>
             )}
@@ -590,7 +626,7 @@ export default function DretgaOnboarding() {
                   {state.driveFolderValid && (
                     <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm">
                       <CheckCircle2 size={16} />
-                      <span>Pasta <strong>"{state.driveFolderName}"</strong> verificada</span>
+                      <span>Pasta <strong>&quot;{state.driveFolderName}&quot;</strong> verificada</span>
                     </div>
                   )}
                   {driveError && (
