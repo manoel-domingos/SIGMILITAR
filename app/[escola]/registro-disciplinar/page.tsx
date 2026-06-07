@@ -195,8 +195,8 @@ function RegistroDisciplinarContent() {
         ? editingOccurrence.slice(0, 8) 
         : `nova_${Date.now()}`;
         
-      // Pasta raiz da escola no Drive
-      let schoolFolderId = process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+      // Pasta raiz da escola no Drive — ambiente novo começa sem pasta configurada.
+      let schoolFolderId: string | null = null;
       if (supabase && resolvedSchoolId) {
         const { data, error } = await supabase
           .from('school_settings')
@@ -206,6 +206,11 @@ function RegistroDisciplinarContent() {
         if (!error && data?.drive_folder_id) {
           schoolFolderId = data.drive_folder_id;
         }
+      }
+
+      if (!schoolFolderId) {
+        toast.error('Configure seu Google Drive para usar este painel. Acesse Configurações → Integrações.');
+        return null;
       }
 
       const response = await fetch('/api/drive/student-upload', {

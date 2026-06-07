@@ -12,7 +12,10 @@ export async function POST(req: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: 'File is required' }, { status: 400 });
     }
-    const folderId = (form.get('folderId') as string) ?? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
+    const folderId = form.get('folderId') as string | null;
+    if (!folderId) {
+      return NextResponse.json({ error: 'Configure seu Google Drive para usar este painel.' }, { status: 400 });
+    }
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await uploadFile(folderId, file.name, file.type, buffer);
     return NextResponse.json(result);

@@ -57,9 +57,7 @@ export default function FasePage() {
   const schoolName = currentSchool?.name || 'EECM';
 
   // Select the Drive Folder ID dynamically depending on the active tenant
-  const [driveFolderId, setDriveFolderId] = useState<string>(
-    process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA'
-  );
+  const [driveFolderId, setDriveFolderId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFolderId = async () => {
@@ -71,16 +69,10 @@ export default function FasePage() {
           .eq('school_id', resolvedSchoolId)
           .maybeSingle();
         if (error) throw error;
-        if (data?.drive_folder_id) {
-          setDriveFolderId(data.drive_folder_id);
-        } else {
-          // Fallback default
-          setDriveFolderId(process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
-        }
+        setDriveFolderId(data?.drive_folder_id || null);
       } catch (err) {
         console.error('Error fetching drive folder ID from settings:', err);
-        // Fallback default on error
-        setDriveFolderId(process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA');
+        setDriveFolderId(null);
       }
     };
     fetchFolderId();
@@ -318,10 +310,25 @@ export default function FasePage() {
 
             {/* Right Column: Integrated Google Drive Panel (Col span 7) */}
             <div className="lg:col-span-7 bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 rounded-3xl p-1 shadow-sm sticky top-8 flex flex-col gap-4 animate-in slide-in-from-bottom-4 duration-300">
-              <DrivePanel 
-                initialFolderId={driveFolderId} 
-                title="Repositório Google Drive"
-              />
+              {driveFolderId ? (
+                <DrivePanel
+                  initialFolderId={driveFolderId}
+                  title="Repositório Google Drive"
+                />
+              ) : (
+                <div className="min-h-[420px] flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center mb-4">
+                    <Info className="w-7 h-7 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-100">Configure seu Google Drive para usar este painel</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-sm">
+                    Ambiente novo começa sem pasta do Drive. Cadastre o ID da pasta em Configurações → Integrações quando quiser habilitar arquivos.
+                  </p>
+                  <Link href={`/${schoolSlug}/configuracoes?tab=status`} className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold transition">
+                    Configurar Drive
+                  </Link>
+                </div>
+              )}
             </div>
 
           </div>
@@ -401,9 +408,15 @@ export default function FasePage() {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto flex flex-col">
-                <DrivePanel 
-                  initialFolderId={driveFolderId} 
-                />
+                {driveFolderId ? (
+                  <DrivePanel initialFolderId={driveFolderId} />
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                    <Info className="w-8 h-8 text-amber-500 mb-3" />
+                    <p className="font-bold text-slate-700 dark:text-slate-200">Configure seu Google Drive para usar este painel.</p>
+                    <Link href={`/${schoolSlug}/configuracoes?tab=status`} className="mt-4 text-sm font-bold text-amber-600 hover:underline">Ir para integrações</Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>
