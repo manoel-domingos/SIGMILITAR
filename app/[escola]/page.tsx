@@ -245,13 +245,13 @@ export default function Dashboard() {
             <div className="flex items-center gap-2.5">
               <ClipboardList className="w-4 h-4 text-amber-600 shrink-0" />
               <p className="text-sm font-semibold text-amber-800">
-                Voce tem <span className="font-bold">{pendingCount}</span> {pendingCount === 1 ? 'pendencia' : 'pendencias'} em aberto de ocorrencias anteriores.
+                Você tem <span className="font-bold">{pendingCount}</span> {pendingCount === 1 ? 'pendência' : 'pendências'} em aberto de ocorrências anteriores.
               </p>
               <Link
                 href={getLinkHref('/registro-disciplinar', tenantId, rawPathname)}
                 className="text-xs font-bold text-amber-700 underline underline-offset-2 hover:text-amber-900 transition-colors whitespace-nowrap"
               >
-                Ver pendencias
+                Ver pendências
               </Link>
             </div>
             <button onClick={() => setPendingBanner(false)} className="text-amber-400 hover:text-amber-700 transition-colors shrink-0">
