@@ -688,7 +688,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               setUser({
                 ...session.user,
                 school_id: profile.school_id,
-                role: normalizeDbRole(profile.role, profile.email)
+                role: normalizeDbRole(profile.role, emailLower)
               });
               setIsGuest(false);
 
