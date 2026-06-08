@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -72,6 +73,13 @@ function extractFolderId(input: string): string {
   return match ? match[0] : input.trim();
 }
 
+function normalizeTenantSlug(slug: string): string {
+  return slug
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/^eecm/, '');
+}
+
 // ── Componente Principal ───────────────────────────────────────────────────
 
 const INITIAL_STATE: WizardState = {
@@ -81,7 +89,7 @@ const INITIAL_STATE: WizardState = {
   password: '',
   schoolName: '',
   slug: '',
-  dreId: '',
+  dreId: 'DRETGA',
   gestor: '',
   phone: '',
   driveFolder: '',
@@ -97,18 +105,40 @@ export default function DretgaOnboarding() {
   const [driveLoading, setDriveLoading] = useState(false);
   const [driveError, setDriveError] = useState('');
   const [provisionDone, setProvisionDone] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [provisionError, setProvisionError] = useState('');
 
   // Detecta retorno do OAuth do Google (step=3 na URL)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const stepParam = params.get('step');
-      if (stepParam === '3') {
-        setState((s) => ({ ...s, step: 3, authMethod: 'google' }));
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const stepParam = params.get('step');
+    if (stepParam !== '3') return;
+
+    async function restoreGoogleSession() {
+      setLoading(true);
+      setAuthError('');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const googleEmail = session?.user?.email?.toLowerCase().trim();
+        if (!googleEmail) {
+          const message = 'Não foi possível obter o e-mail da conta Google. Faça login novamente.';
+          setAuthError(message);
+          toast.error(message);
+          setState((s) => ({ ...s, step: 2, authMethod: 'google', email: '' }));
+          return;
+        }
+
+        setState((s) => ({ ...s, step: 3, authMethod: 'google', email: googleEmail }));
+      } finally {
+        setLoading(false);
         const newUrl = window.location.pathname;
         window.history.replaceState({}, document.title, newUrl);
       }
     }
+
+    restoreGoogleSession();
   }, []);
 
   // Inicia provisionamento ao entrar no step 6
@@ -120,8 +150,9 @@ export default function DretgaOnboarding() {
       const stepOrder: ProvisionStep[] = ['sending', 'database', 'tables', 'drive', 'interface', 'done'];
       const delays = [1200, 2000, 1800, 1000, 1500, 0];
 
+      setProvisionError('');
       const { data: { session } } = await supabase.auth.getSession();
-      fetch('/api/onboarding/provision', {
+      const res = await fetch('/api/onboarding/provision', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +165,15 @@ export default function DretgaOnboarding() {
           gestor: { email: state.email, name: state.gestor },
           driveFolder: state.driveFolder,
         }),
-      }).catch(console.error);
+      });
+      const provisionData = await res.json().catch(() => null);
+
+      if (!res.ok || !provisionData?.ok) {
+        const message = provisionData?.error || 'Falha ao provisionar escola.';
+        setProvisionError(message);
+        toast.error(message);
+        return;
+      }
 
       // Animação passo a passo
       for (let i = 0; i < stepOrder.length; i++) {
@@ -158,6 +197,8 @@ export default function DretgaOnboarding() {
       return;
     }
     setLoading(true);
+    setAuthError('');
+    setState((s) => ({ ...s, authMethod: 'google' }));
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/dretga?step=3` },
@@ -175,6 +216,8 @@ export default function DretgaOnboarding() {
       return;
     }
     setLoading(true);
+    setAuthError('');
+    setState((s) => ({ ...s, authMethod: 'email' }));
     const { error } = await supabase.auth.signUp({
       email: state.email,
       password: state.password,
@@ -215,6 +258,26 @@ export default function DretgaOnboarding() {
   };
 
   const goTo = (step: WizardState['step']) => setState((s) => ({ ...s, step }));
+
+  const handleSchoolDataNext = () => {
+    if (state.authMethod === 'google' && !state.email.trim()) {
+      const message = 'E-mail Google ausente. Faça login novamente para continuar.';
+      setAuthError(message);
+      toast.error(message);
+      return;
+    }
+    goTo(4);
+  };
+
+  const handleProvisionNext = () => {
+    if (!state.email.trim()) {
+      const message = 'E-mail do gestor ausente. Faça login novamente para continuar.';
+      setAuthError(message);
+      toast.error(message);
+      return;
+    }
+    goTo(6);
+  };
 
   // ── Slides de animação ────────────────────────────────────────────────────
 
@@ -296,9 +359,9 @@ export default function DretgaOnboarding() {
 
                 <p className="text-center text-sm text-slate-400">
                   Já tem conta?{' '}
-                  <a href="/login" className="text-blue-600 hover:underline font-medium">
+                  <Link href="/login" className="text-blue-600 hover:underline font-medium">
                     Fazer login
-                  </a>
+                  </Link>
                 </p>
               </motion.div>
             )}
@@ -318,6 +381,12 @@ export default function DretgaOnboarding() {
                   <h2 className="text-xl font-bold text-slate-800">Como deseja entrar?</h2>
                   <p className="text-slate-500 text-sm mt-1">Escolha o método de autenticação</p>
                 </div>
+
+                {authError && (
+                  <div className="text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-sm">
+                    {authError}
+                  </div>
+                )}
 
                 {/* Google */}
                 <button
@@ -402,6 +471,12 @@ export default function DretgaOnboarding() {
                   <p className="text-slate-500 text-sm mt-1">Informe os dados da sua unidade escolar</p>
                 </div>
 
+                {state.authMethod === 'google' && (
+                  <div className={`border rounded-lg px-3 py-2 text-sm ${state.email ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-rose-600 bg-rose-50 border-rose-200'}`}>
+                    {state.email ? `E-mail Google confirmado: ${state.email}` : (authError || 'E-mail Google ausente. Faça login novamente para continuar.')}
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Nome da escola *</label>
@@ -458,8 +533,8 @@ export default function DretgaOnboarding() {
                 </div>
 
                 <button
-                  onClick={() => goTo(4)}
-                  disabled={!state.schoolName || !state.dreId || !state.gestor}
+                  onClick={handleSchoolDataNext}
+                  disabled={!state.schoolName || state.dreId !== 'DRETGA' || !state.gestor || (state.authMethod === 'google' && !state.email)}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition-all"
                 >
                   Continuar <ArrowRight size={16} />
@@ -590,7 +665,7 @@ export default function DretgaOnboarding() {
                   {state.driveFolderValid && (
                     <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm">
                       <CheckCircle2 size={16} />
-                      <span>Pasta <strong>"{state.driveFolderName}"</strong> verificada</span>
+                      <span>Pasta <strong>{state.driveFolderName}</strong> verificada</span>
                     </div>
                   )}
                   {driveError && (
@@ -609,7 +684,7 @@ export default function DretgaOnboarding() {
                 </div>
 
                 <button
-                  onClick={() => goTo(6)}
+                  onClick={handleProvisionNext}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all"
                 >
                   {state.driveFolder && !state.driveFolderValid ? 'Pular e continuar' : 'Continuar'} <ArrowRight size={16} />
@@ -635,6 +710,12 @@ export default function DretgaOnboarding() {
                   <h2 className="text-xl font-bold text-slate-800">Configurando sua escola</h2>
                   <p className="text-slate-500 text-sm mt-1">Aguarde enquanto preparamos tudo para você</p>
                 </div>
+
+                {provisionError && (
+                  <div className="text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-sm">
+                    {provisionError}
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   {PROVISION_STEPS.map((s, i) => {
@@ -677,7 +758,7 @@ export default function DretgaOnboarding() {
                     </div>
 
                     <button
-                      onClick={() => router.push('/escola')}
+                      onClick={() => router.push(`/${normalizeTenantSlug(state.slug)}`)}
                       className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md"
                     >
                       Acessar meu painel <ArrowRight size={18} />

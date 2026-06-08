@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Slug inválido' }, { status: 400 });
   }
 
+  if (dreId !== 'DRETGA') {
+    return NextResponse.json({ ok: false, error: 'DRE inválida para este onboarding' }, { status: 400 });
+  }
+
   const emailNormalized = gestor.email.toLowerCase().trim();
 
   const authHeader = req.headers.get('authorization') || '';
@@ -101,6 +105,25 @@ export async function POST(req: NextRequest) {
     await supabase.from('school_settings').delete().eq('school_id', normalizedSlug);
     await supabase.from('schools').delete().eq('id', normalizedSlug);
     return NextResponse.json({ ok: false, error: `Falha ao criar perfil: ${profileError.message}` }, { status: 400 });
+  }
+
+  const { error: whitelistError } = await supabase
+    .from('tenant_email_whitelist')
+    .upsert(
+      {
+        tenant: normalizedSlug,
+        school_id: normalizedSlug,
+        email: emailNormalized,
+        role: 'gestor',
+        active: true,
+      },
+      { onConflict: 'tenant,email' },
+    );
+
+  if (whitelistError) {
+    await supabase.from('user_profiles').delete().eq('email', emailNormalized).eq('school_id', normalizedSlug);
+    await supabase.from('schools').delete().eq('id', normalizedSlug);
+    return NextResponse.json({ ok: false, error: `Falha ao liberar e-mail do gestor: ${whitelistError.message}` }, { status: 400 });
   }
 
   return NextResponse.json({

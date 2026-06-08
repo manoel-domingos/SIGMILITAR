@@ -50,13 +50,12 @@ const TENANT_HOSTNAME_RULES: Array<{ contains: string; tenant: string }> = [
 export function getTenantIdFromPath(): string | null {
   if (typeof window === 'undefined') return null;
   const path = window.location.pathname;
-  const segments = path.split('/').filter(Boolean);
-  if (segments.length > 0) {
-    const firstSegment = segments[0].toLowerCase();
-    if (/^eecm[a-z0-9]+$/.test(firstSegment)) {
-      return firstSegment;
-    }
-  }
+  const firstSegment = path.split('/').filter(Boolean)[0]?.toLowerCase();
+  const reserved = new Set(['api', 'dre', 'dre-login', 'dretga', 'login']);
+
+  if (!firstSegment || reserved.has(firstSegment)) return null;
+  if (/^[a-z0-9]+$/.test(firstSegment)) return firstSegment;
+
   return null;
 }
 
@@ -66,7 +65,9 @@ export function getTenantIdFromPath(): string | null {
 export function getLinkHref(href: string, tenantId: string, rawPathname: string | null): string {
   if (!href || href.startsWith('http') || href.startsWith('//')) return href;
   const segments = (rawPathname || '').split('/').filter(Boolean);
-  const isSlugMode = segments.length > 0 && /^eecm[a-z0-9]+$/.test(segments[0].toLowerCase());
+  const reserved = new Set(['api', 'dre', 'dre-login', 'dretga', 'login']);
+  const firstSegment = segments[0]?.toLowerCase();
+  const isSlugMode = !!firstSegment && /^[a-z0-9]+$/.test(firstSegment) && !reserved.has(firstSegment);
   
   if (isSlugMode && tenantId) {
     const cleanHref = href.startsWith('/') ? href : `/${href}`;
@@ -160,16 +161,7 @@ const FUNDAMENTAL_GRADES = ['6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 export function useTenantConfig() {
   const contextTenantId = React.useContext(TenantContext);
   
-  // Inicializa com o valor do contexto (ou fallback do SSR) e depois sincroniza
-  const [tenantId, setTenantId] = React.useState<string>(contextTenantId ?? 'eecmprofjoaobatista');
-
-  React.useEffect(() => {
-    if (contextTenantId) {
-      setTenantId(contextTenantId);
-    } else {
-      setTenantId(getTenantIdFromHost());
-    }
-  }, [contextTenantId]);
+  const tenantId = contextTenantId ?? getTenantIdFromHost();
 
   const ext = LOGO_EXT[tenantId] || 'png';
   const config = getSchoolConfig(tenantId);
