@@ -11,3 +11,6 @@ sempre acione a skill /caveman
   cabeçalho, rodapé, logo, nome, endereço, etc. deve ficar hardcoded no código.
   Quaisquer "defaults" hardcoded são apenas fallback de emergência — a fonte da
   verdade é sempre o BD (ex: tabelas `schools`, `school_settings`).
+
+- **Deploy no Vercel sempre para produção.** As alterações devem ser publicadas
+  em produção no Vercel (não deixar apenas em preview).
