@@ -18,6 +18,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Slug inválido' }, { status: 400 });
   }
 
+  const emailNormalized = gestor.email.toLowerCase().trim();
+
+  const authHeader = req.headers.get('authorization') || '';
+  const [scheme, accessToken] = authHeader.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || !accessToken) {
+    return NextResponse.json({ ok: false, error: 'Sessão autenticada obrigatória' }, { status: 401 });
+  }
+
+  const anonClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+
+  const { data: authUser, error: authErr } = await anonClient.auth.getUser(accessToken);
+  if (authErr || !authUser?.user?.email) {
+    return NextResponse.json({ ok: false, error: 'Sessão inválida ou expirada' }, { status: 401 });
+  }
+
+  if (authUser.user.email.toLowerCase().trim() !== emailNormalized) {
+    return NextResponse.json({ ok: false, error: 'O gestor declarado deve ser o usuário autenticado' }, { status: 403 });
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -51,12 +74,11 @@ export async function POST(req: NextRequest) {
       .eq('school_id', normalizedSlug);
   }
 
-  const emailNormalized = gestor.email.toLowerCase().trim();
-
   const { error: profileError } = await supabase
     .from('user_profiles')
     .upsert(
       {
+        id: authUser.user.id,
         email: emailNormalized,
         name: gestor.name,
         role: 'GESTOR',
