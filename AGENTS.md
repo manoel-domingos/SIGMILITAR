@@ -30,3 +30,6 @@ Se a versão exibida na UI estiver desatualizada após um deploy:
   unidades são escolas, não DREs.
 
 - **Deploy no Vercel sempre para produção** (não deixar apenas em preview).
+
+- **Trabalhar SEMPRE direto no `main`.** Não criar feature branches; commitar e
+  empurrar direto para `main`.
