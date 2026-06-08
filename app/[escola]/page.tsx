@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { hasPendingTasks, loadChecklists } from '@/components/OccurrenceChecklist';
 import StudentSheet from '@/components/StudentSheet';
 import LandingPage from '@/components/LandingPage';
+import DashboardCalendar from '@/components/DashboardCalendar';
 import { supabase } from '@/lib/supabase';
 import { useTenantConfig, getLinkHref } from '@/lib/useTenantConfig';
 import { usePathname } from 'next/navigation';
@@ -19,6 +20,7 @@ import { usePathname } from 'next/navigation';
 type PanelConfig = { id: string; label: string; enabled: boolean };
 
 const DEFAULT_PANELS: PanelConfig[] = [
+  { id: 'calendario',  label: 'Calendário',                 enabled: true },
   { id: 'kpis',        label: 'Cards de KPIs',              enabled: true },
   { id: 'alertas',     label: 'Alertas Críticos',           enabled: true },
   { id: 'disciplina',  label: 'Painel Disciplina',          enabled: true },
@@ -401,6 +403,14 @@ export default function Dashboard() {
           </>
         )}
 
+        <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-4 items-start">
+          {isVisible('calendario') && (
+            <aside className="xl:sticky xl:top-24">
+              <DashboardCalendar />
+            </aside>
+          )}
+
+          <div className="space-y-6 min-w-0">
         {/* Row 1: KPI Cards */}
         {isVisible('kpis') && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Link 
@@ -777,6 +787,8 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           </div>}
+        </div>
+          </div>
         </div>
       </div>
     </AppShell>

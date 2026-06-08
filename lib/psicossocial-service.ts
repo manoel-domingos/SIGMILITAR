@@ -235,6 +235,21 @@ export const psicossocialService = {
   },
 
   // Agenda Preventiva CRUD
+  async fetchAgendaPreventiva(schoolId: string) {
+    try {
+      const { data, error } = await bySchool(
+        supabase.from('agenda_preventiva').select('*').order('data_inicio', { ascending: true }),
+        schoolId
+      );
+
+      if (error) throw error;
+      return (data || []) as AgendaPreventiva[];
+    } catch (err: any) {
+      console.error('Error fetching agenda preventiva:', err);
+      throw new Error(err.message || 'Erro ao carregar agenda preventiva.');
+    }
+  },
+
   async addAgendaPreventiva(p: Omit<AgendaPreventiva, 'id'>, schoolId: string, userId?: string) {
     try {
       const payload = {
@@ -248,6 +263,10 @@ export const psicossocialService = {
         periodicidade: p.periodicidade || null,
         publico_alvo: p.publico_alvo || null,
         status: p.status || 'planejado',
+        occurrence_id: p.occurrence_id || null,
+        student_id: p.student_id || null,
+        source: p.source || null,
+        metadata: p.metadata || {},
         created_by: userId || null
       };
 
@@ -285,6 +304,84 @@ export const psicossocialService = {
     } catch (err: any) {
       console.error('Error updating agenda preventiva:', err);
       throw new Error(err.message || 'Erro ao atualizar atividade preventiva.');
+    }
+  },
+
+  async syncDisciplinaryRetentionEvent(payload: {
+    schoolId: string;
+    occurrenceId: string;
+    studentId: string;
+    studentName: string;
+    className?: string;
+    startDate: string;
+    endDate: string;
+    durationDays: number;
+    measure: string;
+    ruleCodes?: number[];
+    registeredBy?: string;
+    userId?: string;
+  }) {
+    try {
+      const eventPayload = {
+        school_id: payload.schoolId,
+        titulo: 'Retenção do intervalo - ' + payload.studentName,
+        descricao: 'Medida disciplinar vinculada à ocorrência ' + payload.occurrenceId + '.',
+        tematica: 'disciplina',
+        eixo: 'acao_intervencao',
+        data_inicio: payload.startDate,
+        data_fim: payload.endDate,
+        periodicidade: 'eventual',
+        publico_alvo: 'estudantes',
+        status: 'planejado',
+        occurrence_id: payload.occurrenceId,
+        student_id: payload.studentId,
+        source: 'disciplinary_retention',
+        metadata: {
+          turma: payload.className || null,
+          medida: payload.measure,
+          durationDays: payload.durationDays,
+          ruleCodes: payload.ruleCodes || [],
+          registeredBy: payload.registeredBy || null
+        },
+        created_by: payload.userId || null
+      };
+
+      const { data: existing, error: findError } = await supabase
+        .from('agenda_preventiva')
+        .select('id')
+        .eq('school_id', payload.schoolId)
+        .eq('occurrence_id', payload.occurrenceId)
+        .eq('source', 'disciplinary_retention')
+        .maybeSingle();
+
+      if (findError) throw findError;
+
+      const query = existing?.id
+        ? supabase.from('agenda_preventiva').update(eventPayload).eq('id', existing.id)
+        : supabase.from('agenda_preventiva').insert([eventPayload]);
+
+      const { data, error } = await query.select().single();
+      if (error) throw error;
+      return data as AgendaPreventiva;
+    } catch (err: any) {
+      console.error('Error syncing disciplinary retention event:', err);
+      throw new Error(err.message || 'Erro ao sincronizar retenção na agenda.');
+    }
+  },
+
+  async cancelDisciplinaryRetentionEvent(occurrenceId: string, schoolId: string) {
+    try {
+      const { error } = await supabase
+        .from('agenda_preventiva')
+        .update({ status: 'cancelado' })
+        .eq('school_id', schoolId)
+        .eq('occurrence_id', occurrenceId)
+        .eq('source', 'disciplinary_retention');
+
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Error canceling disciplinary retention event:', err);
+      throw new Error(err.message || 'Erro ao cancelar retenção na agenda.');
     }
   },
 

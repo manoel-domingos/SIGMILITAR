@@ -16,6 +16,7 @@ import { useSearchParams, useParams } from 'next/navigation';
 import { streamAI } from '@/components/AIChat';
 import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
 import { ClassSelector } from '@/components/ClassSelector';
+import { psicossocialService } from '@/lib/psicossocial-service';
 import OccurrenceChecklist, {
   OccurrenceTask,
   ChecklistItem,
@@ -698,10 +699,53 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     setIsModalOpen(true);
   };
 
-  const handleArchive = (e: React.MouseEvent, id: string) => {
+  const isRetentionMeasure = (measure?: string, measures: string[] = []) => {
+    const values = [measure, ...measures].filter(Boolean).map(value => normalizeText(String(value)));
+    return values.some(value =>
+      value.includes('suspensao de recreacao') ||
+      value.includes('retencao do intervalo') ||
+      value.includes('retencao de intervalo') ||
+      value.includes('retencao')
+    );
+  };
+
+  const addDaysToDate = (dateKey: string, days: number) => {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const next = new Date(year, (month || 1) - 1, day || 1);
+    next.setDate(next.getDate() + Math.max(days - 1, 0));
+    return next.getFullYear() + '-' + String(next.getMonth() + 1).padStart(2, '0') + '-' + String(next.getDate()).padStart(2, '0');
+  };
+
+  const syncRetentionAgenda = async (occurrenceId: string, studentId: string, measure: string, measures: string[], ruleCodes: number[], shouldCreate: boolean) => {
+    if (!activeSchoolContext || !occurrenceId) return;
+
+    if (!shouldCreate) {
+      await psicossocialService.cancelDisciplinaryRetentionEvent(occurrenceId, activeSchoolContext);
+      return;
+    }
+
+    const student = students.find(s => String(s.id) === String(studentId));
+    await psicossocialService.syncDisciplinaryRetentionEvent({
+      schoolId: activeSchoolContext,
+      occurrenceId,
+      studentId,
+      studentName: student?.name || 'Aluno',
+      className: student?.class,
+      startDate: date,
+      endDate: addDaysToDate(date, durationDays),
+      durationDays,
+      measure,
+      ruleCodes,
+      registeredBy,
+      userId: (user as any)?.id
+    });
+  };
+
+  const handleArchive = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (confirm('Deseja realmente arquivar este registro disciplinar?')) {
-      archiveOccurrence(id);
+      await archiveOccurrence(id);
+      await psicossocialService.cancelDisciplinaryRetentionEvent(id, activeSchoolContext);
     }
   };
 
@@ -973,6 +1017,8 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
         : escalation.severity === 'Grave'
           ? (graveMeasureType === suspensaoLabel ? suspensaoValue : graveMeasureType)
           : escalation.measure;
+      const measuresToSave = selectedMeasures.length > 0 ? selectedMeasures : [measureToSave];
+      const shouldSyncRetention = Boolean(durationDays) && isRetentionMeasure(measureToSave, measuresToSave);
 
       if (editingOccurrence) {
         // Identifica alunos que já estavam na ocorrência original
@@ -1002,6 +1048,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           attenuatingFactors,
           aggravatingFactors
         });
+        await syncRetentionAgenda(editingOccurrence, primaryStudentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention);
 
         // Para cada aluno novo, cria uma ocorrência clonada
         if (newStudentIds.length > 0) {
@@ -1020,7 +1067,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               registeredBy,
               observations,
               measure: measureToSave,
-              measures: [measureToSave],
+              measures: measuresToSave,
               videoUrls,
               signedDocUrls,
               durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
@@ -1029,6 +1076,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               status: 'iniciada'
             });
             if (result && result.id) {
+              await syncRetentionAgenda(result.id, studentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention);
               await updateOccurrence(result.id, { status: 'em tratamento' });
             }
           }
@@ -1060,7 +1108,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
             registeredBy,
             observations,
             measure: measureToSave,
-            measures: selectedMeasures.length > 0 ? selectedMeasures : [measureToSave],
+            measures: measuresToSave,
             videoUrls,
             signedDocUrls,
             durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
@@ -1071,6 +1119,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           if (result && result.id) {
             savedIds.push(result.id);
             if (!ataNumber && result.ataNumber) ataNumber = result.ataNumber;
+            await syncRetentionAgenda(result.id, studentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention);
             // Avança status automático após submit final
             await updateOccurrence(result.id, { status: 'em tratamento' });
           }
