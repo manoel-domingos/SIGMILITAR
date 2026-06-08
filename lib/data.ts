@@ -22,6 +22,7 @@ export interface Student {
 }
 
 export interface DisciplineRule {
+  school_id?: string;
   code: number;
   description: string;
   severity: Severity;

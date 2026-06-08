@@ -453,7 +453,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
         const sid = envSchoolId ?? (schoolId ?? activeSchoolContextRef.current);
         const dbSchoolId = getDbSchoolId(sid);
-        const bySchool = (q: any) => !dbSchoolId || dbSchoolId === 'DRE' ? q : (dbSchoolId === 'joaobatista' ? q.or('school_id.eq.joaobatista,school_id.is.null') : q.eq('school_id', dbSchoolId));
+        const bySchool = (q: any) => !dbSchoolId || dbSchoolId === 'DRE' ? q : q.eq('school_id', dbSchoolId);
         setIsSyncing(true);
         try {
           // Busca tabelas sequencialmente em grupos para evitar sobrecarga de locks no Safari
@@ -463,7 +463,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             { data: occurrencesData },
           ] = await Promise.all([
             bySchool(supabase!.from('students').select('*')),
-            supabase!.from('rules').select('*'),
+            bySchool(supabase!.from('rules').select('*').order('code', { ascending: true })),
             bySchool(supabase!.from('occurrences').select('*').order('date', { ascending: false })),
           ]);
 
@@ -558,7 +558,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 measure = 'Advertência Oral';
               }
 
-              return { ...r, ruleCode: r.code, measure, points };
+              return { ...r, school_id: r.school_id ?? dbSchoolId, ruleCode: r.code, measure, points };
             });
 
             setRules(normalized);
@@ -569,7 +569,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             );
             if (toFix.length > 0 && supabase) {
               toFix.forEach((r: any) => {
-                supabase!.from('rules').update({ measure: r.measure, points: r.points }).eq('code', r.code);
+                supabase!.from('rules').update({ measure: r.measure, points: r.points }).eq('school_id', r.school_id).eq('code', r.code);
               });
             }
           }
@@ -1172,7 +1172,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const envSchoolId = process.env.NEXT_PUBLIC_SCHOOL_ID ?? null;
     const sid = envSchoolId ?? activeSchoolContextRef.current;
     const dbSchoolId = getDbSchoolId(sid);
-    const bySchool = (q: any) => !dbSchoolId || dbSchoolId === 'DRE' ? q : (dbSchoolId === 'joaobatista' ? q.or('school_id.eq.joaobatista,school_id.is.null') : q.eq('school_id', dbSchoolId));
+    const bySchool = (q: any) => !dbSchoolId || dbSchoolId === 'DRE' ? q : q.eq('school_id', dbSchoolId);
     setIsSyncing(true);
     try {
       const responses = await Promise.all([
@@ -1183,6 +1183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         bySchool(supabase!.from('summons').select('*').order('date', { ascending: false })),
         bySchool(supabase!.from('conduct_terms').select('*').order('date', { ascending: false })),
         bySchool(supabase!.from('audit_logs').select('*').order('date', { ascending: false })),
+        bySchool(supabase!.from('rules').select('*').order('code', { ascending: true })),
         bySchool(supabase!.from('staff_members').select('*').order('name', { ascending: true })),
         bySchool(supabase!.from('user_profiles').select('*'))
       ]);
@@ -1195,6 +1196,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { data: summonsData },
         { data: conductTermsData },
         { data: auditLogsData },
+        { data: rulesData },
         { data: staffData },
         { data: appUsersData }
       ] = responses;
@@ -1205,6 +1207,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         sobLaudoPaedCid: s.sob_laudo_paed_cid,
         displayName: s.name + (s.sob_laudo_paed_cid ? ' - ATP' : '')
       })));
+      if (rulesData) {
+        const normalized = rulesData.map((r: any) => ({
+          ...r,
+          school_id: r.school_id ?? dbSchoolId,
+          ruleCode: r.code,
+          points: typeof r.points === 'number' ? r.points : parseFloat(r.points),
+        }));
+        setRules(normalized);
+      }
       if (occurrencesData) setOccurrences(occurrencesData.map((o: any) => {
         const allCodes = Array.isArray(o.rule_code) ? o.rule_code.map(Number) : [Number(o.rule_code)];
         return {
@@ -1639,11 +1650,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       alert('Acesso Negado: Apenas gestores podem modificar as regras da institui\u00e7\u00e3o.');
       return;
     }
-    if (supabase && isSupabaseConnected) {
-      await supabase!.from('rules').update(r).eq('code', code);
+    const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
+    if (!dbSchoolId || dbSchoolId === 'DRE') {
+      alert('Selecione uma escola antes de modificar regras disciplinares.');
+      return;
     }
-    setRules(prev => prev.map(item => item.code === code ? { ...item, ...r } : item));
-    logAction('UPDATE', 'Regra', String(code), 'Atualizada regra disciplinar Art. ' + code);
+    const payload = { ...r };
+    delete (payload as any).school_id;
+    delete (payload as any).code;
+    if (supabase && isSupabaseConnected) {
+      await supabase!.from('rules').update(payload).eq('school_id', dbSchoolId).eq('code', code);
+    }
+    setRules(prev => prev.map(item => (item.school_id ?? dbSchoolId) === dbSchoolId && item.code === code ? { ...item, ...payload, school_id: dbSchoolId } : item));
+    logAction('UPDATE', 'Regra', String(code), 'Atualizada regra disciplinar Art. ' + code + ' em ' + dbSchoolId);
   };
 
   const addSummons = async (s: Omit<Summons, 'id'>) => {
