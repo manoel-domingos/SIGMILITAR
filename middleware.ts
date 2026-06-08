@@ -116,12 +116,18 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  // ─── 2. ROTAS PUBLICAS DE ONBOARDING ────────────────────────────────────
-  const isPublicOnboarding =
+  // ─── 2. ROTAS PUBLICAS (onboarding + páginas de assinatura por link) ─────
+  // Páginas acessadas por responsáveis via QR/WhatsApp não têm tenant no path;
+  // precisam ser servidas direto, sem rewrite para /{tenant}/...
+  const isPublicRoute =
     pathname.startsWith('/dretga') ||
-    pathname.startsWith('/api/onboarding');
+    pathname.startsWith('/api/onboarding') ||
+    pathname.startsWith('/upload-assinado') ||
+    pathname.startsWith('/assinatura') ||
+    pathname.startsWith('/api/signatures') ||
+    pathname.startsWith('/api/signed-documents');
 
-  if (isPublicOnboarding) return NextResponse.next();
+  if (isPublicRoute) return NextResponse.next();
 
   // ─── 3. LOGICA DRE (mantida intacta) ────────────────────────────────────
   const isDreDomain =
