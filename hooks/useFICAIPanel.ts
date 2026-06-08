@@ -140,7 +140,7 @@ export function useFICAIPanel() {
     const realIdx = entries.findIndex(e => e.codAluno === entryToUpdate.codAluno);
     if (realIdx === -1) return;
 
-    const ficaiAberto = status === 'ficai_aberta';
+    const ficaiAberto = status === 'ficai_aberta' || status === 'encaminhado';
     const dataFicai = status === 'ficai_aberta' ? (date || '') : '';
     const encaminhado = status === 'encaminhado';
     const dataEncaminhamento = status === 'encaminhado' ? (date || '') : '';
