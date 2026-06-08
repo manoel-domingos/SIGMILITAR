@@ -41,15 +41,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Sessão inválida ou expirada' }, { status: 401 });
   }
 
-  if (authUser.user.email.toLowerCase().trim() !== emailNormalized) {
-    return NextResponse.json({ ok: false, error: 'O gestor declarado deve ser o usuário autenticado' }, { status: 403 });
-  }
-
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
+
+  // admin_global pode provisionar escolas declarando QUALQUER e-mail de gestor.
+  // Demais usuários (onboarding self-service) só podem declarar o próprio e-mail.
+  const { data: requesterProfile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('id', authUser.user.id)
+    .maybeSingle();
+  const isAdminGlobal = String(requesterProfile?.role || '').toLowerCase() === 'admin_global';
+
+  if (!isAdminGlobal && authUser.user.email.toLowerCase().trim() !== emailNormalized) {
+    return NextResponse.json({ ok: false, error: 'O gestor declarado deve ser o usuário autenticado' }, { status: 403 });
+  }
 
   const { data: existing } = await supabase
     .from('schools')
@@ -87,18 +96,21 @@ export async function POST(req: NextRequest) {
       .upsert({ school_id: normalizedSlug, drive_folder_id: driveFolderId }, { onConflict: 'school_id' });
   }
 
+  // Quando o próprio gestor se cadastra, vinculamos já o UUID de auth dele.
+  // Quando o admin cria para outro e-mail, deixamos o id default (gen_random_uuid)
+  // — o gestor vincula seu UUID real no primeiro login (whitelist em store.tsx).
+  const selfRegister = authUser.user.email!.toLowerCase().trim() === emailNormalized;
+  const profilePayload: Record<string, any> = {
+    email: emailNormalized,
+    name: gestor.name,
+    role: 'GESTOR',
+    school_id: normalizedSlug,
+  };
+  if (selfRegister) profilePayload.id = authUser.user.id;
+
   const { error: profileError } = await supabase
     .from('user_profiles')
-    .upsert(
-      {
-        id: authUser.user.id,
-        email: emailNormalized,
-        name: gestor.name,
-        role: 'GESTOR',
-        school_id: normalizedSlug,
-      },
-      { onConflict: 'email' },
-    );
+    .upsert(profilePayload, { onConflict: 'email' });
 
   if (profileError) {
     await supabase.from('rules').delete().eq('school_id', normalizedSlug);
