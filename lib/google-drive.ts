@@ -22,12 +22,21 @@ function getDriveClient() {
   return google.drive({ version: 'v3', auth });
 }
 
+// Drives Compartilhados (Shared Drives) do Google Workspace exigem os flags
+// supportsAllDrives/includeItemsFromAllDrives. São inofensivos para o Meu Drive,
+// então aplicamos em todas as chamadas. Sem isso, a service account recebe 403
+// (storageQuotaExceeded) ao subir arquivos, pois o arquivo seria de propriedade
+// da SA (que não tem cota própria) — num Shared Drive a cota é do Drive.
+
 export async function listFiles(folderId: string) {
   const drive = getDriveClient();
   const { data } = await drive.files.list({
     q: `'${folderId}' in parents and trashed = false`,
     fields: 'files(id,name,mimeType,size,modifiedTime,parents)',
     orderBy: 'folder,name',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    corpora: 'allDrives',
   });
   return data.files ?? [];
 }
@@ -38,6 +47,7 @@ export async function uploadFile(folderId: string, name: string, mimeType: strin
     requestBody: { name, parents: [folderId] },
     media: { mimeType, body: Readable.from(buffer) },
     fields: 'id,name,mimeType,size,modifiedTime',
+    supportsAllDrives: true,
   });
   return data;
 }
@@ -49,6 +59,7 @@ export async function moveFile(fileId: string, newParentId: string, oldParentId:
     addParents: newParentId,
     removeParents: oldParentId,
     fields: 'id,parents',
+    supportsAllDrives: true,
   });
   return data;
 }
@@ -59,13 +70,14 @@ export async function renameFile(fileId: string, newName: string) {
     fileId,
     requestBody: { name: newName },
     fields: 'id,name',
+    supportsAllDrives: true,
   });
   return data;
 }
 
 export async function deleteFile(fileId: string) {
   const drive = getDriveClient();
-  await drive.files.delete({ fileId });
+  await drive.files.delete({ fileId, supportsAllDrives: true });
 }
 
 export async function createFolder(parentId: string, name: string) {
@@ -77,6 +89,7 @@ export async function createFolder(parentId: string, name: string) {
       parents: [parentId],
     },
     fields: 'id,name,mimeType',
+    supportsAllDrives: true,
   });
   return data;
 }
@@ -87,6 +100,9 @@ export async function findFolderByName(parentId: string, name: string): Promise<
     q: `'${parentId}' in parents and name = '${name.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     fields: 'files(id)',
     pageSize: 1,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    corpora: 'allDrives',
   });
   return data.files && data.files.length > 0 ? (data.files[0].id ?? null) : null;
 }
@@ -115,6 +131,7 @@ export async function createFile(parentId: string, name: string, mimeType: strin
       body: Readable.from(Buffer.from(content, 'utf-8')),
     },
     fields: 'id,name',
+    supportsAllDrives: true,
   });
   return data;
 }
@@ -257,7 +274,7 @@ export async function createResumableUploadSession(
   }
 
   const res = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true',
     {
       method: 'POST',
       headers,
