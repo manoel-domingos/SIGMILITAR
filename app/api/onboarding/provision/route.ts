@@ -55,14 +55,17 @@ export async function POST(req: NextRequest) {
 
   const { error: profileError } = await supabase
     .from('user_profiles')
-    .insert({
-      email: emailNormalized,
-      name: gestor.name,
-      role: 'GESTOR',
-      school_id: normalizedSlug,
-    });
+    .upsert(
+      {
+        email: emailNormalized,
+        name: gestor.name,
+        role: 'GESTOR',
+        school_id: normalizedSlug,
+      },
+      { onConflict: 'email' },
+    );
 
-  if (profileError && profileError.code !== '23505') {
+  if (profileError) {
     await supabase.from('schools').delete().eq('id', normalizedSlug);
     return NextResponse.json({ ok: false, error: `Falha ao criar perfil: ${profileError.message}` }, { status: 400 });
   }
