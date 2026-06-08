@@ -194,54 +194,6 @@ export default function DrePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
-  // Nova Escola (provisionamento pelo admin_global)
-  const [newSchoolOpen, setNewSchoolOpen] = useState(false);
-  const [creatingSchool, setCreatingSchool] = useState(false);
-  const [newSchoolError, setNewSchoolError] = useState('');
-  const [newSchool, setNewSchool] = useState({ schoolName: '', slug: '', gestorName: '', gestorEmail: '', driveFolder: '' });
-
-  const slugPreview = newSchool.slug
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-    .replace(/^eecm/, '');
-
-  const handleCreateSchool = async () => {
-    setNewSchoolError('');
-    if (!newSchool.schoolName.trim() || !slugPreview || !newSchool.gestorName.trim() || !newSchool.gestorEmail.trim()) {
-      setNewSchoolError('Preencha nome da escola, slug, nome e e-mail do gestor.');
-      return;
-    }
-    setCreatingSchool(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      if (!accessToken) throw new Error('Sessão autenticada obrigatória.');
-
-      const res = await fetch('/api/onboarding/provision', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          schoolName: newSchool.schoolName.trim(),
-          slug: slugPreview,
-          dreId: 'DRETGA',
-          gestor: { email: newSchool.gestorEmail.trim().toLowerCase(), name: newSchool.gestorName.trim() },
-          driveFolder: newSchool.driveFolder.trim() || undefined,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Falha ao criar escola.');
-
-      setNewSchoolOpen(false);
-      setNewSchool({ schoolName: '', slug: '', gestorName: '', gestorEmail: '', driveFolder: '' });
-      await load();
-      alert(`Escola "${data.school?.name}" criada em sigmilitar.com.br/${data.slug}. O gestor ${data.gestor?.email} já pode entrar via Google.`);
-    } catch (err: any) {
-      setNewSchoolError(err.message || 'Erro ao criar escola.');
-    } finally {
-      setCreatingSchool(false);
-    }
-  };
-
   // Perfil dropdown
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileMenuPos, setProfileMenuPos] = useState<{ top: number; right: number } | null>(null);
@@ -504,54 +456,6 @@ export default function DrePage() {
 
   return (
     <>
-    {/* ── Modal Nova Escola (admin_global) ── */}
-    {newSchoolOpen && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setNewSchoolOpen(false); }}>
-        <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#181A20] p-6 shadow-2xl">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#0052CC]" />
-              <h2 className="text-lg font-black text-[#2B2C33] dark:text-slate-100">Nova Escola</h2>
-            </div>
-            <button onClick={() => setNewSchoolOpen(false)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"><X className="h-5 w-5" /></button>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-bold text-slate-500">Nome da escola</label>
-              <input value={newSchool.schoolName} onChange={(e) => setNewSchool(s => ({ ...s, schoolName: e.target.value }))} placeholder="EECM Prof. João Batista" className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0F1115] px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500">Slug (endereço)</label>
-              <input value={newSchool.slug} onChange={(e) => setNewSchool(s => ({ ...s, slug: e.target.value }))} placeholder="joaobatista" className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0F1115] px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
-              <p className="mt-1 text-[11px] text-slate-400">sigmilitar.com.br/<span className="font-bold text-[#0052CC]">{slugPreview || '...'}</span></p>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              <div>
-                <label className="text-xs font-bold text-slate-500">Nome do gestor</label>
-                <input value={newSchool.gestorName} onChange={(e) => setNewSchool(s => ({ ...s, gestorName: e.target.value }))} placeholder="Maria Silva" className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0F1115] px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-500">E-mail do gestor (login Google)</label>
-                <input value={newSchool.gestorEmail} onChange={(e) => setNewSchool(s => ({ ...s, gestorEmail: e.target.value }))} placeholder="gestor@edu.mt.gov.br" className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0F1115] px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500">ID da pasta do Drive (opcional)</label>
-              <input value={newSchool.driveFolder} onChange={(e) => setNewSchool(s => ({ ...s, driveFolder: e.target.value }))} placeholder="ID do Drive Compartilhado" className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0F1115] px-3 py-2 text-sm text-slate-800 dark:text-slate-100" />
-            </div>
-
-            {newSchoolError && <p className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">{newSchoolError}</p>}
-
-            <button onClick={handleCreateSchool} disabled={creatingSchool} className="w-full rounded-xl bg-[#0052CC] px-4 py-3 text-sm font-black text-white shadow-lg transition hover:bg-[#003d99] disabled:opacity-50">
-              {creatingSchool ? 'Criando...' : 'Criar escola'}
-            </button>
-            <p className="text-center text-[11px] text-slate-400">Aplica regras padrão (DRETGA) e libera o e-mail do gestor.</p>
-          </div>
-        </div>
-      </div>
-    )}
-
     {/* ── Fundo azul igual ao login DRE ── */}
     <div className="min-h-screen bg-[#F4F5F7] dark:bg-[#0F1115] text-[#2B2C33] dark:text-slate-100 relative">
       {/* Blobs decorativos */}
@@ -598,17 +502,6 @@ export default function DrePage() {
               {isSupabaseConnected ? <CloudCheck className="w-3.5 h-3.5" aria-hidden="true" /> : <CloudOff className="w-3.5 h-3.5" aria-hidden="true" />}
               <span className="hidden xs:inline">{isSupabaseConnected ? 'Online' : 'Offline'}</span>
             </div>
-
-            {/* Nova Escola (admin_global) */}
-            <button
-              onClick={() => { setNewSchoolError(''); setNewSchoolOpen(true); }}
-              className="inline-flex items-center gap-1.5 px-3 h-9 rounded-full text-xs font-bold text-white bg-[#0052CC] hover:bg-[#003d99] active:scale-95 transition shadow-sm"
-              aria-label="Criar nova escola"
-              title="Nova Escola"
-            >
-              <Building2 className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Nova Escola</span>
-            </button>
 
             {/* Trocar escola */}
             <button
@@ -690,7 +583,7 @@ export default function DrePage() {
                 <div className="py-2" role="none">
                   <button
                     role="menuitem"
-                    onClick={() => { router.push('/configuracoes'); setProfileOpen(false); }}
+                    onClick={() => { router.push('/dretga/configuracoes'); setProfileOpen(false); }}
                     className="w-full text-left px-4 py-2.5 hover:bg-[#F4F5F7] dark:hover:bg-[#22252D] dark:bg-[#0F1115] text-purple-600  flex items-center gap-3 transition-colors"
                   >
                     <Settings className="w-4 h-4" aria-hidden="true" /> Configuracao do Sistema
