@@ -67,11 +67,11 @@ async function buildOccurrenceSummary(upload: any) {
   const ruleCodes = Array.isArray(occ.rule_code) ? occ.rule_code : [occ.rule_code].filter((c: any) => c != null);
 
   const [{ data: students }, { data: rules }] = await Promise.all([
-    supabaseAdmin.from('students').select('id, name, display_name, class').in('id', studentIds.length ? studentIds : ['']),
+    supabaseAdmin.from('students').select('id, name, class').in('id', studentIds.length ? studentIds : ['']),
     supabaseAdmin.from('rules').select('code, description').eq('school_id', occ.school_id).in('code', ruleCodes.length ? ruleCodes : [-1]),
   ]);
 
-  const studentNames = (students || []).map((s: any) => s.display_name || s.name).filter(Boolean);
+  const studentNames = (students || []).map((s: any) => s.name).filter(Boolean);
   const studentClass = (students || [])[0]?.class || '';
   const infractions = ruleCodes.map((code: number) => {
     const r = (rules || []).find((x: any) => x.code === code);

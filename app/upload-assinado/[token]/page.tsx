@@ -22,6 +22,18 @@ export default function UploadAssinadoPage() {
   const [submitting, setSubmitting] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [occurrence, setOccurrence] = useState<OccurrenceSummary | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Pré-visualização local do arquivo selecionado (antes e depois do envio).
+  useEffect(() => {
+    if (!file || !file.type.startsWith('image/')) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   useEffect(() => {
     if (!token) return;
@@ -72,7 +84,7 @@ export default function UploadAssinadoPage() {
 
       setStatus('enviado');
       setMessage('Documento enviado com sucesso.');
-      setFile(null);
+      // Mantém o arquivo para exibir a pré-visualização do que foi enviado.
     } catch (error: any) {
       setMessage(error.message || 'Falha ao enviar documento.');
     } finally {
@@ -185,9 +197,18 @@ export default function UploadAssinadoPage() {
             </label>
 
             {file && (
-              <p className="truncate rounded-xl bg-blue-50 px-3 py-2 text-center text-xs font-semibold text-blue-700">
-                Selecionado: {file.name}
-              </p>
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3">
+                {previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={previewUrl} alt="Pré-visualização" className="mb-2 max-h-56 w-full rounded-xl object-contain" />
+                ) : (
+                  <div className="mb-2 flex items-center justify-center gap-2 py-4 text-blue-600">
+                    <FileText className="h-7 w-7" />
+                    <span className="text-sm font-bold">{file.type === 'application/pdf' ? 'PDF' : 'Arquivo'} pronto para envio</span>
+                  </div>
+                )}
+                <p className="truncate text-center text-xs font-semibold text-blue-700">{file.name}</p>
+              </div>
             )}
 
             <button
@@ -199,6 +220,21 @@ export default function UploadAssinadoPage() {
               {submitting ? 'Enviando...' : 'Enviar documento'}
             </button>
             <p className="text-center text-xs text-slate-400">PDF, JPG ou PNG até 10MB.</p>
+          </div>
+        )}
+
+        {status === 'enviado' && file && (
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3">
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt="Documento enviado" className="mb-2 max-h-56 w-full rounded-xl object-contain" />
+            ) : (
+              <div className="mb-2 flex items-center justify-center gap-2 py-4 text-emerald-600">
+                <FileText className="h-7 w-7" />
+                <span className="text-sm font-bold">{file.type === 'application/pdf' ? 'PDF' : 'Arquivo'} enviado</span>
+              </div>
+            )}
+            <p className="truncate text-center text-xs font-semibold text-emerald-700">{file.name}</p>
           </div>
         )}
 

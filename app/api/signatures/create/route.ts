@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     const ruleCodes = Array.isArray(occurrence.rule_code) ? occurrence.rule_code : [occurrence.rule_code];
 
     const [{ data: students }, { data: rules }] = await Promise.all([
-      auth.scoped.from('students').select('id, name, display_name, class').in('id', studentIds),
+      auth.scoped.from('students').select('id, name, class').in('id', studentIds),
       auth.scoped.from('rules').select('code, description, severity, measure').in('code', ruleCodes),
     ]);
 

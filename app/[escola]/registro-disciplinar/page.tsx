@@ -3427,12 +3427,30 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {docList.map((url, index) => (
-                            <div key={index} className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={url} className="w-full h-full object-cover" onClick={() => window.open(url, '_blank')} alt={`Documento ${index + 1}`} />
-                            </div>
-                          ))}
+                          {docList.map((url, index) => {
+                            const isImage = /\.(jpe?g|png|gif|webp|heic)(\?|$)/i.test(url);
+                            const isPdf = /\.pdf(\?|$)/i.test(url);
+                            return (
+                              <div
+                                key={index}
+                                onClick={() => window.open(url, '_blank')}
+                                className="aspect-square bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition"
+                              >
+                                {isImage ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={url} className="w-full h-full object-cover" alt={`Documento ${index + 1}`} />
+                                ) : (
+                                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center">
+                                    <FileText className={`h-8 w-8 ${isPdf ? 'text-red-500' : 'text-slate-400'}`} />
+                                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                                      {isPdf ? 'PDF' : 'Documento'} {index + 1}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">Toque para abrir</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
