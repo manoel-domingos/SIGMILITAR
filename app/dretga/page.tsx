@@ -45,9 +45,6 @@ interface WizardState {
 
 const DRE_OPTIONS = [
   { id: 'DRETGA', label: 'DRE Tangará da Serra (DRETGA)' },
-  { id: 'DREJB', label: 'DRE João Batista (DREJB)' },
-  { id: 'DREHELIODORO', label: 'DRE Heliodoro (DREHELIODORO)' },
-  { id: 'OUTRO', label: 'Outra DRE' },
 ];
 
 const PROVISION_STEPS: { key: ProvisionStep; label: string }[] = [
@@ -417,7 +414,7 @@ export default function DretgaOnboarding() {
                     />
                     {state.slug && (
                       <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                        <span className="text-blue-500 font-mono">{state.slug}.sigmilitar.com.br</span>
+                        <span className="text-blue-500 font-mono">sigmilitar.com.br/{state.slug}</span>
                         — seu endereço na plataforma
                       </p>
                     )}
