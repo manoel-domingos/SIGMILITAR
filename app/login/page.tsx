@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
 import { supabase, isSupabaseReady } from '@/lib/supabase';
-import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
+import { useTenantConfig, getDbSchoolId, getTenantSlugFromSchoolId } from '@/lib/useTenantConfig';
 import { Trophy, User as UserIcon, KeyRound, Loader2, ArrowRight, Building2, ShieldCheck, BookOpen, ChevronDown, ChevronRight, X } from 'lucide-react';
 import versionData from '@/lib/version.json';
 import { SCHOOL_SUBTITLE } from '@/lib/school';
@@ -28,7 +28,7 @@ export default function Login() {
   const handleAdminSelection = (schoolId: string, module: 'civico-militar' | 'pedagogico') => {
     const schoolExists = contextSchools.some(s => s.id === schoolId);
     if (!schoolExists) return;
-    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
+    const slug = getTenantSlugFromSchoolId(schoolId);
     setActivePanelModule(module);
     setActiveSchoolContext(schoolId);
     
@@ -100,7 +100,7 @@ export default function Login() {
               if (chosen === 'DRE') {
                 router.push('/dre');
               } else {
-                const slug = chosen === 'joaobatista' ? 'eecmprofjoaobatista' : chosen === 'heliodoro' ? 'eecmheliodoro' : chosen === 'tangara' ? 'eecmtangara' : chosen;
+                const slug = getTenantSlugFromSchoolId(chosen);
                 router.push(`/${slug}`);
               }
               return;
@@ -111,7 +111,7 @@ export default function Login() {
 
           if (currentUserSchoolId && currentUserSchoolId !== 'DRE') {
             // Mapeia schoolId para o tenant slug
-            const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId === 'tangara' ? 'eecmtangara' : currentUserSchoolId;
+            const slug = getTenantSlugFromSchoolId(currentUserSchoolId);
             const targetPath = currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`;
             console.log(`[CENTRAL REDIRECT] Redirecionando para ${targetPath}...`);
             router.push(targetPath);
@@ -121,13 +121,13 @@ export default function Login() {
       }
 
       // Fallback
-      const slug = currentUserSchoolId === 'joaobatista' ? 'eecmprofjoaobatista' : currentUserSchoolId === 'heliodoro' ? 'eecmheliodoro' : currentUserSchoolId === 'tangara' ? 'eecmtangara' : currentUserSchoolId;
+      const slug = getTenantSlugFromSchoolId(currentUserSchoolId);
       
       if (currentUserRole === 'admin_global') {
         const chosen = typeof window !== 'undefined' ? sessionStorage.getItem('dre_context_chosen_' + new Date().toDateString()) : null;
         if (chosen) {
           if (chosen === 'DRE') router.push('/dre');
-          else router.push(`/${chosen === 'joaobatista' ? 'eecmprofjoaobatista' : chosen === 'heliodoro' ? 'eecmheliodoro' : chosen === 'tangara' ? 'eecmtangara' : chosen}`);
+          else router.push(`/${getTenantSlugFromSchoolId(chosen)}`);
         } else {
           setShowContextModal(true);
         }

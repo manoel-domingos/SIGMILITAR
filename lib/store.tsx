@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase, isSupabaseReady } from './supabase';
-import { getTenantIdFromHost, TenantContext, getDbSchoolId } from './useTenantConfig';
+import { getTenantIdFromHost, TenantContext, getDbSchoolId, getTenantSlugFromSchoolId } from './useTenantConfig';
 import { 
   Student, Occurrence, Accident, Praise, DisciplineRule, Summons, ConductTerm, AuditLog, StaffMember, AppUser, AppUserRole, BehaviorClass,
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
@@ -1986,9 +1986,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
   const activeTenantId = useMemo(() => {
-    if (activeSchoolContext === 'heliodoro') return 'eecmheliodoro';
-    if (activeSchoolContext === 'tangara') return 'eecmtangara';
-    return 'eecmprofjoaobatista';
+    return getTenantSlugFromSchoolId(activeSchoolContext) || 'eecmprofjoaobatista';
   }, [activeSchoolContext]);
 
   return (

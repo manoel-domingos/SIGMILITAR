@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ReactDOM from 'react-dom';
 import { useAppContext } from '@/lib/store';
 import { supabase as supabaseClient } from '@/lib/supabase';
+import { getTenantSlugFromSchoolId } from '@/lib/useTenantConfig';
 import {
   Building2, Users, AlertTriangle, Star, Activity,
   RefreshCw, SwitchCamera, TrendingUp, TrendingDown, Minus,
@@ -122,7 +123,7 @@ export default function DrePage() {
   const handleAdminSelection = (schoolId: string, module: 'civico-militar' | 'pedagogico') => {
     const schoolExists = contextSchools.some(s => s.id === schoolId);
     if (!schoolExists) return;
-    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
+    const slug = getTenantSlugFromSchoolId(schoolId);
     setActivePanelModule(module);
     setActiveSchoolContext(schoolId);
     
@@ -158,12 +159,7 @@ export default function DrePage() {
 
     if (!isCentral) return '/';
 
-    // Mapeia o schoolId para o slug da URL
-    const slug =
-      schoolId === 'joaobatista'  ? 'eecmprofjoaobatista' :
-      schoolId === 'heliodoro'    ? 'eecmheliodoro'        :
-      schoolId === 'tangara'      ? 'eecmtangara'          :
-      schoolId; // fallback: usa o próprio id como slug
+    const slug = getTenantSlugFromSchoolId(schoolId);
 
     return `/${slug}/`;
   };
