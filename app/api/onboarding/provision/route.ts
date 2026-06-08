@@ -65,13 +65,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: `Falha ao criar escola: ${schoolError.message}` }, { status: 400 });
   }
 
+  const { error: rulesError } = await supabase.rpc('backfill_default_rules_for_school', {
+    target_school_id: normalizedSlug,
+  });
+
+  if (rulesError) {
+    await supabase.from('rules').delete().eq('school_id', normalizedSlug);
+    await supabase.from('schools').delete().eq('id', normalizedSlug);
+    return NextResponse.json({ ok: false, error: `Falha ao copiar regras padrão: ${rulesError.message}` }, { status: 400 });
+  }
+
   const driveFolderId = typeof driveFolder === 'string' ? driveFolder.trim() : driveFolder?.id;
 
   if (driveFolderId) {
     await supabase
       .from('school_settings')
-      .update({ drive_folder_id: driveFolderId })
-      .eq('school_id', normalizedSlug);
+      .upsert({ school_id: normalizedSlug, drive_folder_id: driveFolderId }, { onConflict: 'school_id' });
   }
 
   const { error: profileError } = await supabase
@@ -88,6 +97,8 @@ export async function POST(req: NextRequest) {
     );
 
   if (profileError) {
+    await supabase.from('rules').delete().eq('school_id', normalizedSlug);
+    await supabase.from('school_settings').delete().eq('school_id', normalizedSlug);
     await supabase.from('schools').delete().eq('id', normalizedSlug);
     return NextResponse.json({ ok: false, error: `Falha ao criar perfil: ${profileError.message}` }, { status: 400 });
   }
