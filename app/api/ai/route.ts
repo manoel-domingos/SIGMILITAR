@@ -216,9 +216,10 @@ function deepseekErrorMessage(status: number, rawMessage: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { 
-    type: string; 
-    payload: Record<string, any>; 
+  let body: {
+    type: string;
+    payload: Record<string, any>;
+    schoolId?: string;
     customApiKey?: string;
     customBaseUrl?: string;
     customModel?: string;
@@ -233,7 +234,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { type, payload, customApiKey, customBaseUrl, customModel } = body;
+    const { type, payload, schoolId, customApiKey, customBaseUrl, customModel } = body;
 
     const activeApiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
     if (!activeApiKey) {
@@ -254,8 +255,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Resolve o tenant ativo a partir dos headers / sessão do servidor
-    const tenantId = await getTenantServer();
+    // Resolve o tenant ativo. No modelo só-slug (sigmilitar.com.br/<escola>), o
+    // /api/ai não recebe o slug no path, então o header x-tenant cai no fallback.
+    // Por isso priorizamos o schoolId enviado pelo cliente (validado), e só então
+    // recorremos ao header/sessão do servidor.
+    const VALID_TENANTS = new Set([
+      'eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara',
+      'heliodoro', 'joaobatista', 'tangara',
+    ]);
+    const clientTenant = typeof schoolId === 'string' && VALID_TENANTS.has(schoolId) ? schoolId : null;
+    const tenantId = clientTenant ?? await getTenantServer();
     const dbSchoolId = getDbSchoolId(tenantId);
 
     // Inicializa o cliente do Supabase para buscar o nome correto da escola

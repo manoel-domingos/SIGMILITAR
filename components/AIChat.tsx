@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Brain, X, Send, Loader2, Sparkles, ChevronDown, Activity, Clock, ArrowRight, Trash2, AlertTriangle, CheckCircle2, RefreshCw, ClipboardList } from 'lucide-react';
 import { loadChecklists, OccurrenceTask, toggleChecklistItem, removeOccurrenceTask } from '@/components/OccurrenceChecklist';
 import { useAppContext } from '@/lib/store';
+import { getTenantIdFromHost } from '@/lib/useTenantConfig';
 
 // ---------------------------------------------------------------------------
 // Log Store global — qualquer chamada streamAI alimenta este store
@@ -62,7 +63,8 @@ export async function streamAI(
   type: string,
   payload: Record<string, any>,
   onDelta: (delta: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  schoolId?: string
 ): Promise<string> {
   const inputSummary = type === 'chat'
     ? payload.message
@@ -72,10 +74,16 @@ export async function streamAI(
   let customBaseUrl = '';
   let customModel = '';
 
+  // Tenant ativo: prioriza o valor explícito; senão deriva do slug da URL.
+  // No modelo só-slug (sigmilitar.com.br/<escola>), o /api/ai não recebe o slug
+  // no path, então o cliente precisa enviar o tenant junto no body.
+  let activeSchoolId = schoolId || '';
+
   if (typeof window !== 'undefined') {
     customApiKey = localStorage.getItem('aria_api_key') || '';
     customBaseUrl = localStorage.getItem('aria_api_url') || '';
     customModel = localStorage.getItem('aria_active_model') || '';
+    if (!activeSchoolId) activeSchoolId = getTenantIdFromHost();
   }
 
   const logId = addLog({
@@ -98,9 +106,10 @@ export async function streamAI(
     res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        type, 
+      body: JSON.stringify({
+        type,
         payload,
+        schoolId: activeSchoolId || undefined,
         customApiKey: customApiKey || undefined,
         customBaseUrl: customBaseUrl || undefined,
         customModel: customModel || undefined
