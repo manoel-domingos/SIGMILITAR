@@ -123,10 +123,13 @@ export default function DretgaOnboarding() {
       const stepOrder: ProvisionStep[] = ['sending', 'database', 'tables', 'drive', 'interface', 'done'];
       const delays = [1200, 2000, 1800, 1000, 1500, 0];
 
-      // Dispara POST em paralelo com a animação
+      const { data: { session } } = await supabase.auth.getSession();
       fetch('/api/onboarding/provision', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           schoolName: state.schoolName,
           slug: state.slug,

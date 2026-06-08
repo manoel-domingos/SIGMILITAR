@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase, isSupabaseReady } from './supabase';
-import { getTenantIdFromHost, TenantContext, getDbSchoolId } from './useTenantConfig';
+import { getTenantIdFromHost, TenantContext, getDbSchoolId, getTenantSlugFromSchoolId } from './useTenantConfig';
 import { 
   Student, Occurrence, Accident, Praise, DisciplineRule, Summons, ConductTerm, AuditLog, StaffMember, AppUser, AppUserRole, BehaviorClass,
   INITIAL_STUDENTS, INITIAL_OCCURRENCES, INITIAL_ACCIDENTS, INITIAL_PRAISES, INITIAL_RULES
@@ -243,8 +243,6 @@ export const DEFAULT_PERMISSIONS: Record<AppUserRole, Record<string, boolean>> =
     sistema_auditoria: false,
   }
 };
-
-let isExchangingCode = false;
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const contextTenantId = useContext(TenantContext);
@@ -738,98 +736,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const domainDbSchoolId = getDbSchoolId(domainTenantId);
       let bootSchoolId = domainDbSchoolId;
 
-      const hasOAuthCode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('code');
-      
-      if (hasOAuthCode) {
-        if (isExchangingCode) {
-          console.log("[OAUTH] Já existe uma troca de código em andamento neste carregamento de página. Ignorando chamada duplicada para evitar colisão e consumo duplo de token.");
-          return;
-        }
-        isExchangingCode = true;
-        try {
-          const code = new URLSearchParams(window.location.search).get('code');
-          if (code) {
-            console.log("[OAUTH] Código detectado na URL, iniciando troca manual por sessão...");
-            const { data, error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
-            if (exchangeErr) {
-              console.error("[OAUTH] Erro ao trocar código por sessão:", exchangeErr.message);
-              throw exchangeErr;
-            }
-            if (data?.session?.user?.email) {
-              const userEmail = data.session.user.email.toLowerCase();
-              console.log("[OAUTH] Troca realizada com sucesso para o usuário:", userEmail);
-              
-              // Busca perfil e define escola do usuário
-              const { data: profile, error: profileErr } = await supabase
-                .from('user_profiles')
-                .select('school_id, role')
-                .eq('email', userEmail)
-                .single();
-                
-              if (profileErr) {
-                console.error("[OAUTH] Erro ao buscar perfil pós-troca:", profileErr.message);
-              }
-              
-              if (profile?.school_id && profile.school_id !== 'DRE') {
-                bootSchoolId = profile.school_id;
-                console.log("[OAUTH] Definindo escola de boot pós-troca:", bootSchoolId);
-              } else if (userEmail === 'manoeldomingos2@gmail.com') {
-                const saved = typeof window !== 'undefined' ? sessionStorage.getItem('active_school_context') : null;
-                if (!saved) bootSchoolId = 'joaobatista';
-              }
-            }
-          }
-        } catch (e: any) {
-          console.error("[OAUTH] Falha na troca de sessão:", e.message || e);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('eecm_login_error', 'Erro ao validar login com o Google: ' + (e.message || 'Código inválido ou expirado.'));
-          }
-          window.location.href = '/login?error=whitelist';
-          return;
-        }
-      } else {
-        try {
-          console.log("[AUTH] Buscando sessão atual...");
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user?.email) {
-            console.log("[AUTH] Sessão ativa encontrada para:", session.user.email);
-            const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('school_id, role')
-              .eq('email', session.user.email.toLowerCase())
-              .single();
-            if (profile?.school_id && profile.school_id !== 'DRE') {
-              bootSchoolId = profile.school_id;
-              console.log("[AUTH] Definindo escola de boot:", bootSchoolId);
-            } else if (session.user.email) {
-               const emailLower = session.user.email.toLowerCase().trim();
-               if (emailLower === 'manoeldomingos2@gmail.com') {
-                 const saved = typeof window !== 'undefined' ? sessionStorage.getItem('active_school_context') : null;
-                 if (!saved) bootSchoolId = 'joaobatista';
-               }
-             }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('school_id, role')
+            .eq('email', session.user.email.toLowerCase())
+            .single();
+          if (profile?.school_id && profile.school_id !== 'DRE') {
+            bootSchoolId = profile.school_id;
           } else {
-            console.log("[AUTH] Nenhuma sessão ativa encontrada.");
-            setIsAuthRestored(true);
+            const emailLower = session.user.email.toLowerCase().trim();
+            if (emailLower === 'manoeldomingos2@gmail.com') {
+              const saved = typeof window !== 'undefined' ? sessionStorage.getItem('active_school_context') : null;
+              if (!saved) bootSchoolId = 'joaobatista';
+            }
           }
-        } catch (e) {
-          console.error("[AUTH] Erro ao buscar sessão:", e);
+        } else {
           setIsAuthRestored(true);
         }
+      } catch (e) {
+        console.error("[AUTH] Erro ao buscar sessão:", e);
+        setIsAuthRestored(true);
       }
 
-      // Sincroniza o ref e estado com o school_id resolvido
       if (bootSchoolId) {
         activeSchoolContextRef.current = bootSchoolId;
         setActiveSchoolContextState(bootSchoolId);
       }
 
-      if (!hasOAuthCode) {
-        console.log("[AUTH] Carregando dados iniciais para a escola:", bootSchoolId || "Padrão");
-        await fetchData(bootSchoolId || undefined);
-      } else {
-        console.log("[AUTH] Ignorando carga inicial de dados paralela na URL de callback do Google para evitar gargalo e garantir foco no Whitelist.");
-      }
+      await fetchData(bootSchoolId || undefined);
 
       // Pré-carrega lista de escolas para o modal de seleção
       try {
@@ -2049,9 +1986,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
   const activeTenantId = useMemo(() => {
-    if (activeSchoolContext === 'heliodoro') return 'eecmheliodoro';
-    if (activeSchoolContext === 'tangara') return 'eecmtangara';
-    return 'eecmprofjoaobatista';
+    return getTenantSlugFromSchoolId(activeSchoolContext) || 'eecmprofjoaobatista';
   }, [activeSchoolContext]);
 
   return (

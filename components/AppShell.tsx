@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { useTenantConfig, getLinkHref } from '@/lib/useTenantConfig';
+import { useTenantConfig, getLinkHref, getTenantSlugFromSchoolId } from '@/lib/useTenantConfig';
 
 import {
   LayoutDashboard, Users, FileText, Activity, FileWarning,
@@ -149,9 +149,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const pathname = useMemo(() => {
     if (!rawPathname) return '';
-    const validTenants = ['eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara'];
     const segments = rawPathname.split('/').filter(Boolean);
-    if (segments.length > 0 && validTenants.includes(segments[0].toLowerCase())) {
+    if (segments.length > 0 && /^eecm[a-z0-9]+$/.test(segments[0].toLowerCase())) {
       return '/' + segments.slice(1).join('/');
     }
     return rawPathname;
@@ -239,7 +238,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') sessionStorage.setItem(key, 'common_' + module);
 
     const schoolId = (currentUserSchoolId === 'DRE' || !currentUserSchoolId) ? activeSchoolContext : currentUserSchoolId;
-    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
+    const slug = getTenantSlugFromSchoolId(schoolId);
     if (slug) {
       router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
     }
@@ -249,7 +248,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Valida se a escola existe na lista antes de prosseguir (Segurança)
     const schoolExists = contextSchools.some(s => s.id === schoolId);
     if (!schoolExists) return;
-    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
+    const slug = getTenantSlugFromSchoolId(schoolId);
     setActivePanelModule(module);
     setActiveSchoolContext(schoolId);
     const key = 'dre_context_chosen_' + new Date().toDateString();
@@ -1234,7 +1233,7 @@ function MobileDrawer({
   const handleModuleSwitch = (module: 'civico-militar' | 'pedagogico') => {
     setActivePanelModule(module);
     const schoolId = activeSchoolContext || currentUserSchoolId;
-    const slug = schoolId === 'joaobatista' ? 'eecmprofjoaobatista' : schoolId === 'heliodoro' ? 'eecmheliodoro' : schoolId === 'tangara' ? 'eecmtangara' : schoolId;
+    const slug = getTenantSlugFromSchoolId(schoolId);
     if (slug) {
       router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
     }
