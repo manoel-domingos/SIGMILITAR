@@ -641,6 +641,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           // Isso evita um DEADLOCK (trava mútua) interno do cliente Supabase-js, pois a troca manual de código
           // (exchangeCodeForSession) ainda está segurando o lock de autenticação enquanto o callback síncrono roda.
           setTimeout(async () => {
+            // Fluxo de cadastro de escola (/dretga): a autenticação Google serve
+            // apenas para capturar/confirmar o e-mail do gestor que está se
+            // cadastrando — esse e-mail ainda NÃO existe em user_profiles. Não
+            // aplicar a whitelist aqui (senão derruba para /login). A própria
+            // página /dretga consome a sessão e segue o onboarding.
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+            if (currentPath.startsWith('/dretga')) {
+              console.log('[AUTH EVENT] [Async] Contexto /dretga (onboarding): whitelist ignorada.');
+              setIsAuthRestored(true);
+              return;
+            }
+
             console.log(`[AUTH EVENT] [Async] Verificando whitelist para o e-mail: ${emailLower}...`);
             try {
               // 1. Verifica se o e-mail existe na whitelist (user_profiles)
