@@ -1,10 +1,11 @@
 'use client';
 
 import { toast } from 'sonner';
+import { QRCodeCanvas } from 'qrcode.react';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check } from 'lucide-react';
+import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check, QrCode, Copy } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS, markdownBoldToHtml } from '@/lib/print-header';
@@ -115,6 +116,8 @@ function RegistroDisciplinarContent() {
   const [viewOccurrence, setViewOccurrence] = useState<Occurrence | null>(null);
   const [voTab, setVoTab] = useState<'status' | 'detalhes' | 'documentos' | 'responsaveis'>('status');
   const [voUploadingDoc, setVoUploadingDoc] = useState(false);
+  const [signedUploadLinks, setSignedUploadLinks] = useState<Record<string, { url: string; expiresAt: string; status: 'pendente' | 'enviado' | 'expirado' }>>({});
+  const [generatingSignedQr, setGeneratingSignedQr] = useState(false);
   const [voUploadingEv, setVoUploadingEv] = useState(false);
   const [editingOccurrence, setEditingOccurrence] = useState<string | null>(null);
 
@@ -184,6 +187,46 @@ function RegistroDisciplinarContent() {
     ataNumber?: number;
   } | null>(null);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+
+  const getSignedUploadStatus = (occurrence: Occurrence, link?: { expiresAt: string; status: 'pendente' | 'enviado' | 'expirado' }) => {
+    if ((occurrence.signedDocUrls?.length || 0) > 0) return 'enviado';
+    return link?.status || 'pendente';
+  };
+
+  const generateSignedDocumentQr = async (occurrence: Occurrence) => {
+    if (generatingSignedQr) return;
+    try {
+      setGeneratingSignedQr(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('Sessão autenticada obrigatória.');
+
+      const response = await fetch('/api/signed-documents/create-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          school_id: resolvedSchoolId,
+          occurrence_id: occurrence.id,
+          student_id: occurrence.studentIds?.[0] ?? occurrence.studentId,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Erro ao gerar QR Code.');
+
+      setSignedUploadLinks(prev => ({
+        ...prev,
+        [occurrence.id]: { url: data.url, expiresAt: data.expires_at, status: 'pendente' },
+      }));
+      toast.success('QR Code gerado. Link expira em até 72 horas.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao gerar QR Code.');
+    } finally {
+      setGeneratingSignedQr(false);
+    }
+  };
 
   const uploadToDrive = async (file: File, studentId: string): Promise<string | null> => {
     try {
@@ -3060,11 +3103,21 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
 
                     {/* ── Documentos Assinados ── */}
                     <div>
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-3 gap-3">
                         <div>
                           <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Documentos Assinados</p>
                           <p className="text-xs text-slate-400 dark:text-slate-500">Termos, protocolos e registros</p>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => generateSignedDocumentQr(_vo)}
+                            disabled={generatingSignedQr}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold transition"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            {generatingSignedQr ? 'Gerando...' : 'Gerar QR Code'}
+                          </button>
                         <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold transition cursor-pointer ${voUploadingDoc ? 'opacity-60 pointer-events-none' : ''}`}>
                           {voUploadingDoc ? (
                             <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
@@ -3092,7 +3145,42 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                             }}
                           />
                         </label>
+                        </div>
                       </div>
+                      {(() => {
+                        const link = signedUploadLinks[_vo.id];
+                        const status = getSignedUploadStatus(_vo, link);
+                        const label = status === 'enviado' ? 'enviado' : status === 'expirado' ? 'expirado' : 'pendente';
+                        const cls = status === 'enviado'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30'
+                          : status === 'expirado'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30'
+                            : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+                        return (
+                          <div className={`mb-3 inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${cls}`}>
+                            Status: {label}
+                          </div>
+                        );
+                      })()}
+                      {signedUploadLinks[_vo.id] && getSignedUploadStatus(_vo, signedUploadLinks[_vo.id]) === 'pendente' && (
+                        <div className="mb-4 flex flex-col sm:flex-row gap-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-500/20 dark:bg-blue-500/10">
+                          <div className="rounded-xl bg-white p-2 w-fit">
+                            <QRCodeCanvas value={signedUploadLinks[_vo.id].url} size={132} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-blue-900 dark:text-blue-100">QR Code para upload do responsável</p>
+                            <p className="mt-1 break-all text-xs text-blue-700 dark:text-blue-200">{signedUploadLinks[_vo.id].url}</p>
+                            <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">Expira em {new Date(signedUploadLinks[_vo.id].expiresAt).toLocaleString('pt-BR')}</p>
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(signedUploadLinks[_vo.id].url).then(() => toast.success('Link copiado.'))}
+                              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-blue-700 shadow-sm hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-200"
+                            >
+                              <Copy className="h-3.5 w-3.5" /> Copiar link
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {docList.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600">
                           <FileText className="w-7 h-7 mb-2 opacity-40" />
