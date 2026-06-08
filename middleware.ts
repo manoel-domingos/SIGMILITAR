@@ -147,7 +147,12 @@ export function middleware(request: NextRequest) {
 
   // ─── 3. IDENTIFICACAO DO TENANT ─────────────────────────────────────────
 
-  const isValidTenantSlug = (slug: string | undefined) => !!slug && /^eecm[a-z0-9]+$/.test(slug);
+  const reservedPathSegments = new Set(['api', 'dre', 'dre-login', 'dretga', 'login']);
+  const isValidTenantSlug = (slug: string | undefined) => (
+    !!slug &&
+    /^[a-z0-9]+$/.test(slug) &&
+    !reservedPathSegments.has(slug)
+  );
 
   // Prioridade 1: Extrair o primeiro segmento da URL (se for um slug válido de escola)
   const segments = pathname.split('/').filter(Boolean);
@@ -175,7 +180,7 @@ export function middleware(request: NextRequest) {
   // Prioridade 4: Subdomínio removido
 
   // ─── 4. REWRITE PARA ROTAS LEGADAS OU REDIRECIONAMENTO DE CENTRAL ─────────
-  if (tenant && isValidTenantSlug(tenant)) {
+  if (tenant && /^[a-z0-9]+$/.test(tenant)) {
     const isGlobalRoute =
       pathname === '/login' ||
       pathname.startsWith('/api') ||
