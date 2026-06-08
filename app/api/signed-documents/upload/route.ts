@@ -95,11 +95,26 @@ export async function GET(req: NextRequest) {
     const upload = await findUpload(token);
     const status = uploadStatus(upload);
     const occurrence = status === 'invalido' ? null : await buildOccurrenceSummary(upload);
+
+    // Documentos assinados ja anexados a ocorrencia (usado pelo painel do gestor
+    // para refletir, sem reload, que o responsavel concluiu o upload).
+    let signedDocUrls: string[] = [];
+    if (upload && status !== 'invalido') {
+      const { data: occ } = await adminClient()
+        .from('occurrences')
+        .select('signed_doc_urls')
+        .eq('id', upload.occurrence_id)
+        .eq('school_id', upload.school_id)
+        .maybeSingle();
+      signedDocUrls = Array.isArray(occ?.signed_doc_urls) ? occ.signed_doc_urls : [];
+    }
+
     return NextResponse.json({
       status,
       expires_at: upload?.expires_at || null,
       used_at: upload?.used_at || null,
       occurrence,
+      signed_doc_urls: signedDocUrls,
     }, { status: status === 'invalido' ? 404 : 200 });
   } catch (error: any) {
     return jsonError(error.message || 'Erro ao consultar link.', 500);

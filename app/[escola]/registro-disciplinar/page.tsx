@@ -118,7 +118,7 @@ function RegistroDisciplinarContent() {
   const [viewOccurrence, setViewOccurrence] = useState<Occurrence | null>(null);
   const [voTab, setVoTab] = useState<'status' | 'detalhes' | 'documentos' | 'responsaveis'>('status');
   const [voUploadingDoc, setVoUploadingDoc] = useState(false);
-  const [signedUploadLinks, setSignedUploadLinks] = useState<Record<string, { url: string; expiresAt: string; status: 'pendente' | 'enviado' | 'expirado' }>>({});
+  const [signedUploadLinks, setSignedUploadLinks] = useState<Record<string, { url: string; token?: string; expiresAt: string; status: 'pendente' | 'enviado' | 'expirado' }>>({});
   const [generatingSignedQr, setGeneratingSignedQr] = useState(false);
   const [voUploadingEv, setVoUploadingEv] = useState(false);
   const [signatureRequests, setSignatureRequests] = useState<SignatureRequest[]>([]);
@@ -223,7 +223,7 @@ function RegistroDisciplinarContent() {
 
       setSignedUploadLinks(prev => ({
         ...prev,
-        [occurrence.id]: { url: data.url, expiresAt: data.expires_at, status: 'pendente' },
+        [occurrence.id]: { url: data.url, token: data.token, expiresAt: data.expires_at, status: 'pendente' },
       }));
       toast.success('QR Code gerado. Link expira em até 72 horas.');
     } catch (error: any) {
@@ -232,6 +232,42 @@ function RegistroDisciplinarContent() {
       setGeneratingSignedQr(false);
     }
   };
+
+  // Refresh interno: enquanto o QR está pendente e o modal aberto, consulta o
+  // status do link. Quando o responsável conclui o upload, reflete na hora o
+  // documento recebido sem precisar recarregar a página.
+  useEffect(() => {
+    const occId = viewOccurrence?.id;
+    if (!occId) return;
+    const link = signedUploadLinks[occId];
+    if (!link?.token || link.status !== 'pendente') return;
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/signed-documents/upload?token=${encodeURIComponent(link.token!)}`);
+        const data = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok) return;
+        if (data.status === 'enviado') {
+          const urls: string[] = Array.isArray(data.signed_doc_urls) ? data.signed_doc_urls : [];
+          if (urls.length > 0) {
+            updateOccurrence(occId, { signedDocUrls: urls });
+            setViewOccurrence(prev => (prev && prev.id === occId ? { ...prev, signedDocUrls: urls } : prev));
+          }
+          setSignedUploadLinks(prev => ({ ...prev, [occId]: { ...prev[occId], status: 'enviado' } }));
+          toast.success('Documento assinado recebido do responsável.');
+        } else if (data.status === 'expirado') {
+          setSignedUploadLinks(prev => ({ ...prev, [occId]: { ...prev[occId], status: 'expirado' } }));
+        }
+      } catch {
+        /* silencioso: tenta de novo no próximo intervalo */
+      }
+    };
+
+    const interval = setInterval(poll, 5000);
+    poll();
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [viewOccurrence?.id, signedUploadLinks, updateOccurrence]);
 
   const uploadToDrive = async (file: File, studentId: string): Promise<string | null> => {
     try {
@@ -784,26 +820,33 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
   const syncRetentionAgenda = async (occurrenceId: string, studentId: string, measure: string, measures: string[], ruleCodes: number[], shouldCreate: boolean) => {
     if (!activeSchoolContext || !occurrenceId) return;
 
-    if (!shouldCreate) {
-      await psicossocialService.cancelDisciplinaryRetentionEvent(occurrenceId, activeSchoolContext);
-      return;
-    }
+    // A sincronização com a Agenda Preventiva é um efeito colateral: NUNCA deve
+    // impedir o salvamento da ocorrência (ex.: tabela agenda_preventiva ausente
+    // neste tenant). Falhas são logadas, não propagadas.
+    try {
+      if (!shouldCreate) {
+        await psicossocialService.cancelDisciplinaryRetentionEvent(occurrenceId, activeSchoolContext);
+        return;
+      }
 
-    const student = students.find(s => String(s.id) === String(studentId));
-    await psicossocialService.syncDisciplinaryRetentionEvent({
-      schoolId: activeSchoolContext,
-      occurrenceId,
-      studentId,
-      studentName: student?.name || 'Aluno',
-      className: student?.class,
-      startDate: date,
-      endDate: addDaysToDate(date, durationDays),
-      durationDays,
-      measure,
-      ruleCodes,
-      registeredBy,
-      userId: (user as any)?.id
-    });
+      const student = students.find(s => String(s.id) === String(studentId));
+      await psicossocialService.syncDisciplinaryRetentionEvent({
+        schoolId: activeSchoolContext,
+        occurrenceId,
+        studentId,
+        studentName: student?.name || 'Aluno',
+        className: student?.class,
+        startDate: date,
+        endDate: addDaysToDate(date, durationDays),
+        durationDays,
+        measure,
+        ruleCodes,
+        registeredBy,
+        userId: (user as any)?.id
+      });
+    } catch (err) {
+      console.warn('[agenda] Falha ao sincronizar retenção (ignorado para não bloquear o save):', err);
+    }
   };
 
   const handleArchive = async (e: React.MouseEvent, id: string) => {
