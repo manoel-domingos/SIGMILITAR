@@ -4,19 +4,15 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AppShell from '@/components/AppShell';
-import { createClient } from '@supabase/supabase-js';
+import { supabase as supabaseClient } from '@/lib/supabase';
 import {
   CheckCircle2, Circle, Plus, Trash2, Edit2, Check, X,
   ChevronDown, ChevronRight, Rocket, FileText, ClipboardCheck,
   RotateCcw, Loader2,
 } from 'lucide-react';
 
-let _supabase: any = null;
 function supabase(): any {
-  return (_supabase ??= createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
+  return supabaseClient;
 }
 
 // ---------- tipos ----------

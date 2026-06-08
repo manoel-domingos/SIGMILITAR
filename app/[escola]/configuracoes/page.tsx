@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/lib/store';
-import { createClient } from '@supabase/supabase-js';
+import { supabase as supabaseClient } from '@/lib/supabase';
 import {
   ShieldAlert, ShieldCheck, Edit2, Check, X, ArrowLeft,
   RefreshCw, Building2, UserPlus, Search, Trash2,
@@ -19,12 +19,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 
-let _supabase: any = null;
 function supabase(): any {
-  return (_supabase ??= createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ));
+  return supabaseClient;
 }
 
 async function adminApiHeaders() {
