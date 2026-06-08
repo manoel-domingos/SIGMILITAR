@@ -85,6 +85,10 @@ CREATE TABLE IF NOT EXISTS agenda_preventiva (
   periodicidade TEXT, -- eventual | semanal | mensal | bimestral | anual
   publico_alvo TEXT,  -- estudantes | professores | pais | todos
   status TEXT DEFAULT 'planejado',  -- planejado | em_andamento | realizado | cancelado
+  occurrence_id TEXT,
+  student_id TEXT,
+  source TEXT,
+  metadata JSONB DEFAULT '{}',
   created_by UUID,
   created_at TIMESTAMPTZ DEFAULT now()
 );

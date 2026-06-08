@@ -364,6 +364,10 @@ export interface AgendaPreventiva {
   periodicidade?: string;
   publico_alvo?: string;
   status: 'planejado' | 'em_andamento' | 'realizado' | 'cancelado';
+  occurrence_id?: string;
+  student_id?: string;
+  source?: string;
+  metadata?: Record<string, any>;
   created_by?: string;
   created_at?: string;
 }
