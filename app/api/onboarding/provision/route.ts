@@ -9,7 +9,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Dados obrigatórios ausentes' }, { status: 400 });
   }
 
-  const normalizedSlug = String(slug).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalizedSlug = String(slug)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/^eecm/, '');
+
   if (!normalizedSlug) {
     return NextResponse.json({ ok: false, error: 'Slug inválido' }, { status: 400 });
   }
@@ -38,10 +42,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: `Falha ao criar escola: ${schoolError.message}` }, { status: 400 });
   }
 
-  if (driveFolder?.id) {
+  const driveFolderId = typeof driveFolder === 'string' ? driveFolder.trim() : driveFolder?.id;
+
+  if (driveFolderId) {
     await supabase
       .from('school_settings')
-      .update({ drive_folder_id: driveFolder.id })
+      .update({ drive_folder_id: driveFolderId })
       .eq('school_id', normalizedSlug);
   }
 
