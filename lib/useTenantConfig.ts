@@ -130,11 +130,11 @@ export function getDbSchoolId(tenantId: string): string {
   return tenantId;
 }
 
-export function getTenantSlugFromSchoolId(schoolId: string): string {
+export function getTenantSlugFromSchoolId(schoolId: string | null | undefined): string {
+  if (!schoolId) return '';
   if (schoolId === 'joaobatista') return 'eecmprofjoaobatista';
   if (schoolId === 'heliodoro') return 'eecmheliodoro';
   if (schoolId === 'tangara') return 'eecmtangara';
-  if (!schoolId) return '';
   return schoolId.startsWith('eecm') ? schoolId : `eecm${schoolId}`;
 }
 

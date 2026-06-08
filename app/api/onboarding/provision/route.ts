@@ -47,22 +47,9 @@ export async function POST(req: NextRequest) {
 
   const emailNormalized = gestor.email.toLowerCase().trim();
 
-  const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
-    emailNormalized,
-    { data: { name: gestor.name, school_id: normalizedSlug, role: 'GESTOR' } },
-  );
-
-  if (inviteError) {
-    await supabase.from('schools').delete().eq('id', normalizedSlug);
-    return NextResponse.json({ ok: false, error: `Falha ao convidar gestor: ${inviteError.message}` }, { status: 400 });
-  }
-
-  const userId = inviteData.user.id;
-
   const { error: profileError } = await supabase
     .from('user_profiles')
     .insert({
-      id: userId,
       email: emailNormalized,
       name: gestor.name,
       role: 'GESTOR',
@@ -70,24 +57,14 @@ export async function POST(req: NextRequest) {
     });
 
   if (profileError && profileError.code !== '23505') {
-    await supabase.auth.admin.deleteUser(userId);
     await supabase.from('schools').delete().eq('id', normalizedSlug);
     return NextResponse.json({ ok: false, error: `Falha ao criar perfil: ${profileError.message}` }, { status: 400 });
   }
-
-  await supabase
-    .from('user_school_memberships')
-    .insert({
-      user_id: userId,
-      school_id: normalizedSlug,
-      role_key: 'gestor',
-      active: true,
-    });
 
   return NextResponse.json({
     ok: true,
     slug: normalizedSlug,
     school: { id: normalizedSlug, name: schoolName, dre_id: dreId },
-    gestor: { id: userId, email: emailNormalized },
+    gestor: { email: emailNormalized, login_url: 'https://sigmilitar.com.br/login' },
   });
 }
