@@ -51,6 +51,41 @@ function uploadStatus(upload: any) {
   return 'pendente';
 }
 
+async function buildOccurrenceSummary(upload: any) {
+  if (!upload) return null;
+  const supabaseAdmin = adminClient();
+  const { data: occ } = await supabaseAdmin
+    .from('occurrences')
+    .select('ata_number, rule_code, student_id, student_ids, school_id')
+    .eq('id', upload.occurrence_id)
+    .maybeSingle();
+  if (!occ) return null;
+
+  const studentIds = Array.isArray(occ.student_ids) && occ.student_ids.length > 0
+    ? occ.student_ids
+    : [occ.student_id].filter(Boolean);
+  const ruleCodes = Array.isArray(occ.rule_code) ? occ.rule_code : [occ.rule_code].filter((c: any) => c != null);
+
+  const [{ data: students }, { data: rules }] = await Promise.all([
+    supabaseAdmin.from('students').select('id, name, display_name, class').in('id', studentIds.length ? studentIds : ['']),
+    supabaseAdmin.from('rules').select('code, description').eq('school_id', occ.school_id).in('code', ruleCodes.length ? ruleCodes : [-1]),
+  ]);
+
+  const studentNames = (students || []).map((s: any) => s.display_name || s.name).filter(Boolean);
+  const studentClass = (students || [])[0]?.class || '';
+  const infractions = ruleCodes.map((code: number) => {
+    const r = (rules || []).find((x: any) => x.code === code);
+    return `Art. ${code}${r?.description ? ' — ' + r.description : ''}`;
+  });
+
+  return {
+    ata_number: occ.ata_number || null,
+    student_name: studentNames.join(', '),
+    student_class: studentClass,
+    infractions,
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     if (!supabaseUrl() || !serviceRoleKey()) return jsonError('Supabase nao configurado.', 500);
@@ -59,10 +94,12 @@ export async function GET(req: NextRequest) {
 
     const upload = await findUpload(token);
     const status = uploadStatus(upload);
+    const occurrence = status === 'invalido' ? null : await buildOccurrenceSummary(upload);
     return NextResponse.json({
       status,
       expires_at: upload?.expires_at || null,
       used_at: upload?.used_at || null,
+      occurrence,
     }, { status: status === 'invalido' ? 404 : 200 });
   } catch (error: any) {
     return jsonError(error.message || 'Erro ao consultar link.', 500);

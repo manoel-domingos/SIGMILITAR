@@ -2,9 +2,16 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { CheckCircle, Clock, FileText, Upload, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, Camera, FileText, Upload, XCircle, ScanLine } from 'lucide-react';
 
 type UploadStatus = 'carregando' | 'pendente' | 'enviado' | 'expirado' | 'invalido' | 'erro';
+
+interface OccurrenceSummary {
+  ata_number: string | null;
+  student_name: string;
+  student_class: string;
+  infractions: string[];
+}
 
 export default function UploadAssinadoPage() {
   const params = useParams();
@@ -14,6 +21,7 @@ export default function UploadAssinadoPage() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [occurrence, setOccurrence] = useState<OccurrenceSummary | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -29,6 +37,7 @@ export default function UploadAssinadoPage() {
         }
         setStatus(data.status || 'pendente');
         setExpiresAt(data.expires_at || null);
+        setOccurrence(data.occurrence || null);
       } catch (error: any) {
         setStatus('erro');
         setMessage(error.message || 'Erro ao consultar link.');
@@ -73,13 +82,15 @@ export default function UploadAssinadoPage() {
 
   const statusCard = {
     carregando: { icon: Clock, title: 'Consultando link...', text: 'Aguarde.', color: 'text-slate-500' },
-    pendente: { icon: Upload, title: 'Enviar documento assinado', text: 'Selecione PDF, JPG ou PNG até 10MB.', color: 'text-blue-600' },
+    pendente: { icon: Upload, title: 'Enviar documento assinado', text: 'Tire uma foto, escolha um arquivo ou escaneie o documento.', color: 'text-blue-600' },
     enviado: { icon: CheckCircle, title: 'Documento enviado', text: 'Recebemos o arquivo assinado.', color: 'text-emerald-600' },
     expirado: { icon: XCircle, title: 'Link expirado', text: 'Solicite novo QR Code à escola.', color: 'text-amber-600' },
     invalido: { icon: XCircle, title: 'Link inválido', text: 'Token não encontrado.', color: 'text-red-600' },
     erro: { icon: XCircle, title: 'Erro', text: message || 'Tente novamente.', color: 'text-red-600' },
   }[status];
   const Icon = statusCard.icon;
+
+  const ACCEPT = 'application/pdf,image/jpeg,image/png';
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-900">
@@ -97,19 +108,88 @@ export default function UploadAssinadoPage() {
           )}
         </div>
 
+        {/* Dados da ocorrência */}
+        {occurrence && (status === 'pendente' || status === 'enviado') && (
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Ocorrência</h2>
+            <dl className="space-y-1.5">
+              {occurrence.ata_number && (
+                <div className="flex justify-between gap-3">
+                  <dt className="font-semibold text-slate-500">Nº ATA</dt>
+                  <dd className="text-right font-bold text-slate-800">{occurrence.ata_number}</dd>
+                </div>
+              )}
+              {occurrence.student_name && (
+                <div className="flex justify-between gap-3">
+                  <dt className="font-semibold text-slate-500">Aluno</dt>
+                  <dd className="text-right font-bold text-slate-800">
+                    {occurrence.student_name}
+                    {occurrence.student_class ? ` (${occurrence.student_class})` : ''}
+                  </dd>
+                </div>
+              )}
+              {occurrence.infractions?.length > 0 && (
+                <div>
+                  <dt className="font-semibold text-slate-500">Infração</dt>
+                  <dd className="mt-1 space-y-1">
+                    {occurrence.infractions.map((inf, i) => (
+                      <p key={i} className="rounded-lg bg-white px-2 py-1 text-xs text-slate-700">{inf}</p>
+                    ))}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
+
         {status === 'pendente' && (
-          <div className="space-y-4">
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center transition hover:border-blue-400 hover:bg-blue-50">
-              <FileText className="mb-3 h-8 w-8 text-slate-400" />
-              <span className="text-sm font-bold text-slate-700">{file ? file.name : 'Escolher arquivo'}</span>
-              <span className="mt-1 text-xs text-slate-400">PDF, JPG ou PNG</span>
+          <div className="space-y-3">
+            {/* Tirar foto (abre a câmera no celular) */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white p-4 transition hover:border-blue-400 hover:bg-blue-50">
+              <Camera className="h-5 w-5 text-blue-600" />
+              <span className="text-sm font-bold text-slate-700">Tirar foto</span>
               <input
                 className="hidden"
                 type="file"
-                accept="application/pdf,image/jpeg,image/png"
+                accept="image/*"
+                capture="environment"
                 onChange={(event) => setFile(event.target.files?.[0] || null)}
               />
             </label>
+
+            {/* Escolher arquivo do celular */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white p-4 transition hover:border-blue-400 hover:bg-blue-50">
+              <FileText className="h-5 w-5 text-blue-600" />
+              <span className="text-sm font-bold text-slate-700">Escolher arquivo</span>
+              <input
+                className="hidden"
+                type="file"
+                accept={ACCEPT}
+                onChange={(event) => setFile(event.target.files?.[0] || null)}
+              />
+            </label>
+
+            {/* Escanear documento — no iPhone/iPad o seletor oferece "Digitalizar Documentos" */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white p-4 transition hover:border-blue-400 hover:bg-blue-50">
+              <ScanLine className="h-5 w-5 text-blue-600" />
+              <div>
+                <span className="block text-sm font-bold text-slate-700">Escanear documento</span>
+                <span className="block text-xs text-slate-400">No iPhone, toque em &quot;Digitalizar Documentos&quot;.</span>
+              </div>
+              <input
+                className="hidden"
+                type="file"
+                accept={ACCEPT}
+                onChange={(event) => setFile(event.target.files?.[0] || null)}
+              />
+            </label>
+
+            {file && (
+              <p className="truncate rounded-xl bg-blue-50 px-3 py-2 text-center text-xs font-semibold text-blue-700">
+                Selecionado: {file.name}
+              </p>
+            )}
+
             <button
               type="button"
               onClick={submitFile}
@@ -118,6 +198,7 @@ export default function UploadAssinadoPage() {
             >
               {submitting ? 'Enviando...' : 'Enviar documento'}
             </button>
+            <p className="text-center text-xs text-slate-400">PDF, JPG ou PNG até 10MB.</p>
           </div>
         )}
 
