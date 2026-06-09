@@ -1567,9 +1567,40 @@ function BottomNavigation({ pathname }: { pathname: string }) {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom,0px)]">
-      <div className="flex items-stretch justify-around px-2 pt-1.5">
+      <div className="flex items-end justify-around px-2 pt-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
+          // Ação-núcleo do app: Disciplina vira botão central elevado (FAB).
+          const isPrimary = item.href === '/registro-disciplinar';
+
+          if (isPrimary) {
+            return (
+              <Link
+                key={item.label}
+                href={getLinkHref(item.href, tenantId, rawPathname)}
+                aria-current={item.active ? 'page' : undefined}
+                className="group relative flex flex-col items-center justify-end flex-1 min-h-[58px]"
+              >
+                <span
+                  className={`-mt-7 flex items-center justify-center w-14 h-14 rounded-full ring-4 ring-white dark:ring-slate-900 shadow-lg transition-transform duration-200 active:scale-90 ${
+                    item.active
+                      ? 'bg-blue-600 text-white shadow-blue-500/40'
+                      : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-blue-500/30'
+                  }`}
+                >
+                  <Icon className="w-6 h-6" />
+                </span>
+                <span
+                  className={`text-[10px] font-bold tracking-tight mt-0.5 transition-colors duration-200 ${
+                    item.active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            );
+          }
+
           return (
             <Link
               key={item.label}
