@@ -21,11 +21,13 @@ function getClient(): OpenAI {
 // max_tokens removido intencionalmente — DeepSeek usa seu limite padrão (4096+)
 // Restrição de input é feita no prompt; nunca limitar a saída gerada.
 const CONFIGS: Record<string, { temperature: number }> = {
-  ata:       { temperature: 0.4 },
-  analise:   { temperature: 0.5 },
-  relatorio: { temperature: 0.4 },
-  chat:      { temperature: 0.5 },
-  sugestao:  { temperature: 0.3 },
+  ata:             { temperature: 0.4 },
+  analise:         { temperature: 0.5 },
+  relatorio:       { temperature: 0.4 },
+  chat:            { temperature: 0.5 },
+  sugestao:        { temperature: 0.3 },
+  'match-alunos':  { temperature: 0.0 },
+  'header-planilha': { temperature: 0.0 },
 };
 
 function getDbSchoolId(tenantId: string): string {
@@ -160,6 +162,49 @@ function buildPrompts(type: string, payload: Record<string, any>, school: { id: 
           REGIMENTO_CORPUS,
         ].join('\n'),
         user: payload.message,
+      };
+
+    case 'match-alunos':
+      return {
+        system: [
+          `Você é um assistente de deduplicação de cadastro escolar da ${school.name}.`,
+          'Recebe duas listas de alunos: EXISTENTES (já no sistema) e IMPORTADOS (planilha nova).',
+          'Identifique quem é PROVAVELMENTE a MESMA pessoa, mesmo com: sobrenome faltando,',
+          'abreviação, ordem de nomes trocada, acento, ou erro de digitação. CPF igual é prova forte.',
+          'Turmas/turnos diferentes reduzem a confiança, mas não eliminam o match.',
+          '',
+          'Responda APENAS com um array JSON, sem markdown, sem comentários, sem texto extra.',
+          'Formato: [{"importIndex": número, "existingId": "id-do-aluno-existente", "confidence": 0.0-1.0, "reason": "motivo curto"}]',
+          'Inclua somente pares com confidence >= 0.5. Se nenhum, responda [].',
+        ].join('\n'),
+        user: [
+          'EXISTENTES (id | nome | turma | cpf):',
+          payload.existentes || '(vazio)',
+          '',
+          'IMPORTADOS (importIndex | nome | turma | cpf):',
+          payload.importados || '(vazio)',
+          '',
+          'Retorne o array JSON dos prováveis duplicados.',
+        ].join('\n'),
+      };
+
+    case 'header-planilha':
+      return {
+        system: [
+          'Você analisa as primeiras linhas de uma planilha escolar (CSV) para importar alunos.',
+          'Responda APENAS com um objeto JSON, sem markdown, sem texto extra.',
+          'Formato: {"headerRowIndex": número 0-indexed da linha de cabeçalho, "columns": {chave: "NOME DA COLUNA"}}',
+          'Chaves suportadas em columns: "name" (Aluno), "class" (Série/Turma), "shift" (Turno),',
+          '"cpf", "birthDate" (Nascimento), "phone1" (Telefone), "phone2", "registration" (Matrícula),',
+          '"observation" (Observação), "mother" (Mãe), "father" (Pai).',
+          'Omita chaves sem coluna correspondente. Nunca repita os dados da planilha nos valores.',
+        ].join('\n'),
+        user: [
+          'Primeiras linhas da planilha (CSV):',
+          String(payload.csv || '').substring(0, 1500),
+          '',
+          'Retorne o objeto JSON da estrutura.',
+        ].join('\n'),
       };
 
     default:

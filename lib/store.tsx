@@ -1065,10 +1065,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         
         const studentsToUpsert = newStudents.map(ns => {
           let matchedId = crypto.randomUUID();
-          // Try to find a match by exact name and class if matched in DB
-          if (existingStudents) {
-             const match = existingStudents.find((es: any) => 
-               es.name.toLowerCase().trim() === ns.name.toLowerCase().trim() && 
+          // Frontend já decidiu o vínculo (dedup por CPF/nome/IA) → respeita o id explícito
+          if ((ns as any).id) {
+             matchedId = (ns as any).id;
+          } else if (existingStudents) {
+             // Retrocompat: match por nome+turma exatos quando não veio id
+             const match = existingStudents.find((es: any) =>
+               es.name.toLowerCase().trim() === ns.name.toLowerCase().trim() &&
                es.class.toLowerCase().trim() === ns.class.toLowerCase().trim()
              );
              if (match) {

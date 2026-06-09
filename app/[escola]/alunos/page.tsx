@@ -3,88 +3,104 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User, PanelRight, Rows3, Menu, ShieldAlert } from 'lucide-react';
+import { Users, Plus, Upload, Download, Search, X, Edit2, Archive, Trash2, ChevronDown, Camera, FileText, Phone, BookOpen, Paperclip, AlertCircle, CheckCircle2, Clock, MapPin, User, PanelRight, Rows3, Menu, ShieldAlert, Sparkles, Loader2 } from 'lucide-react';
 import StudentSheet from '@/components/StudentSheet';
 import * as XLSX from 'xlsx';
-import { GoogleGenAI, Type } from "@google/genai";
+import { streamAI } from '@/components/AIChat';
 import { useTenantConfig } from '@/lib/useTenantConfig';
 import { getAllClassNames } from '@/lib/school';
 import { ClassSelector } from '@/components/ClassSelector';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+// Extrai o primeiro objeto/array JSON de um texto, tolerando cercas markdown e ruído.
+const extractJson = (text: string): any => {
+  if (!text) return null;
+  const cleaned = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  const tryParse = (s: string) => { try { return JSON.parse(s); } catch { return undefined; } };
+  let r = tryParse(cleaned);
+  if (r !== undefined) return r;
+  const fa = cleaned.indexOf('['); const la = cleaned.lastIndexOf(']');
+  if (fa !== -1 && la > fa) { r = tryParse(cleaned.slice(fa, la + 1)); if (r !== undefined) return r; }
+  const fo = cleaned.indexOf('{'); const lo = cleaned.lastIndexOf('}');
+  if (fo !== -1 && lo > fo) { r = tryParse(cleaned.slice(fo, lo + 1)); if (r !== undefined) return r; }
+  return null;
+};
+
+// Detecção de cabeçalho da planilha via DeepSeek (substitui o antigo Gemini).
 const analyzeSheetWithAI = async (csvSnippet: string) => {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey) return null;
-    const ai = new GoogleGenAI({ apiKey });
-    
-    // Limit to prevent huge JSON hallucination loops
-    const limitedCsv = csvSnippet.substring(0, 1500);
-
-    const prompt = `Analise as primeiras linhas dessa planilha escolar (formato CSV) e identifique a estrutura para importar alunos.
-CSV:
-${limitedCsv}
-
-Responda APENAS com o objeto JSON solicitado. NUNCA inclua os dados da planilha de volta nos valores. Seja curto e conciso. Não use blocos markdown.
-Formato do JSON (não adicione propriedades que não foram pedidas):
-{
-  "headerRowIndex": número da linha (0-indexed) onde estão os cabeçalhos,
-  "columns": { "name": "NOME DO ALUNO", "class": "TURMA", ... }
-}
-
-Para a estrutura de alunos, as chaves suportadas em "columns" são: "name" (Aluno), "class" (Série/Turma), "shift" (Turno), "cpf", "birthDate" (Nascimento), "phone1" (Telefone), "phone2", "registration" (Matrícula), "observation" (Observação), "mother" (Mãe), "father" (Pai).
-Se não houver coluna para alguma dessas chaves internas, não inclua a chave no objeto. Exemplo: {"headerRowIndex": 0, "columns": {"name": "NOME DO ALUNO", "class": "TURMA"}}`;
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        maxOutputTokens: 256,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            headerRowIndex: { type: Type.INTEGER },
-            columns: {
-               type: Type.OBJECT,
-               properties: {
-                 name: { type: Type.STRING },
-                 class: { type: Type.STRING },
-                 shift: { type: Type.STRING },
-                 cpf: { type: Type.STRING },
-                 birthDate: { type: Type.STRING },
-                 phone1: { type: Type.STRING },
-                 phone2: { type: Type.STRING },
-                 registration: { type: Type.STRING },
-                 observation: { type: Type.STRING },
-                 mother: { type: Type.STRING },
-                 father: { type: Type.STRING }
-               }
-            }
-          }
-        }
-      }
-    });
-
-    const responseText = (response.text || '{}');
-    try {
-       // Find the first { and the last }
-       const startIndex = responseText.indexOf('{');
-       const endIndex = responseText.lastIndexOf('}');
-       if (startIndex !== -1 && endIndex !== -1 && endIndex >= startIndex) {
-         const jsonStr = responseText.substring(startIndex, endIndex + 1);
-         return JSON.parse(jsonStr);
-       }
-       return JSON.parse(responseText.trim().replace(/^```json/, '').replace(/```$/, '').trim());
-    } catch (parseError) {
-       console.warn("JSON parse failed.", parseError);
-       return null; // Return null instead of throwing to allow heuristic fallback
-    }
+    let acc = '';
+    const result = await streamAI('header-planilha', { csv: csvSnippet.substring(0, 1500) }, (d) => { acc += d; });
+    return extractJson(result || acc);
   } catch (err) {
-    console.error("AI Analysis failed:", err);
-    return null;
+    console.error('AI Analysis (header) failed:', err);
+    return null; // permite fallback heurístico
   }
+};
+
+// ---------------------------------------------------------------------------
+// Deduplicação de alunos na importação
+// ---------------------------------------------------------------------------
+const CREATE_NEW = '__new__'; // sentinela: "criar novo aluno" no dropdown de suspeitos
+
+const normCpf = (v: any) => String(v || '').replace(/\D/g, '');
+const normName = (v: any) =>
+  String(v || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+// "1 ANO A" / "1º A" / "1A" → "1a"
+const normClass = (v: any) =>
+  normName(v).replace(/\bano\b/g, '').replace(/[ºª°.]/g, '').replace(/\s+/g, '');
+
+const tokenSet = (name: string) => new Set(normName(name).split(' ').filter(Boolean));
+
+// Classifica cada linha importada contra a lista existente (mesma escola).
+// Anexa: matchStatus ('real'|'suspeito'|'novo'), matchedStudentId, matchCandidates[], matchReason.
+const classifyImports = (rows: any[], existing: any[]): any[] => {
+  return rows.map((row) => {
+    if (row.error) return { ...row, matchStatus: 'novo', matchedStudentId: '', matchCandidates: [], matchReason: '' };
+
+    const icpf = normCpf(row.cpf);
+    // Camada 1 — CPF
+    let real = icpf.length === 11 ? existing.find((e) => normCpf(e.cpf) === icpf) : undefined;
+    let reason = real ? 'CPF idêntico' : '';
+
+    // Camada 2 — nome + turma + turno normalizados
+    if (!real) {
+      const inm = normName(row.name), icl = normClass(row.class), ish = normName(row.shift);
+      real = existing.find((e) => normName(e.name) === inm && normClass(e.class) === icl && normName(e.shift) === ish);
+      if (real) reason = 'Nome + turma idênticos';
+    }
+    if (real) {
+      return { ...row, matchStatus: 'real', matchedStudentId: real.id, matchCandidates: [real], matchReason: reason };
+    }
+
+    // Camada 3 — similaridade local (suspeito)
+    const itoks = tokenSet(row.name);
+    const cands = existing
+      .map((e) => {
+        const etoks = tokenSet(e.name);
+        const inter = [...itoks].filter((t) => etoks.has(t)).length;
+        const smaller = Math.min(itoks.size, etoks.size);
+        const union = new Set([...itoks, ...etoks]).size || 1;
+        const jaccard = inter / union;
+        const subset = smaller > 0 && inter === smaller; // um nome contido no outro (falta sobrenome)
+        return { e, score: subset ? Math.max(jaccard, 0.7) : jaccard };
+      })
+      .filter((c) => c.score >= 0.5)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    if (cands.length) {
+      return {
+        ...row,
+        matchStatus: 'suspeito',
+        matchedStudentId: '', // pendente até o usuário decidir
+        matchCandidates: cands.map((c) => c.e),
+        matchReason: 'Nome parecido: ' + cands[0].e.name,
+      };
+    }
+    return { ...row, matchStatus: 'novo', matchedStudentId: '', matchCandidates: [], matchReason: '' };
+  });
 };
 
 export default function Alunos() {
@@ -120,6 +136,12 @@ export default function Alunos() {
   const [pendingImports, setPendingImports] = useState<any[]>([]);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [reviewEditContactsIndex, setReviewEditContactsIndex] = useState<number | null>(null);
+
+  // IA match (deduplicação) state
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiProgress, setAiProgress] = useState<string[]>([]);
+  const [aiFoundCount, setAiFoundCount] = useState(0);
+  const aiAbortRef = useRef<AbortController | null>(null);
 
   // Exclusão state
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -407,13 +429,11 @@ export default function Alunos() {
       
       let aiMap: any = null;
       try {
-        if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-           setImportMessage('Analisando cabeçalhos com IA...');
-           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-           const csvSnippet = XLSX.utils.sheet_to_csv(firstSheet).split('\n').slice(0, 15).join('\n');
-           aiMap = await analyzeSheetWithAI(csvSnippet);
-           if (aiMap) console.log("AI Sheet mapping:", aiMap);
-        }
+        setImportMessage('Analisando cabeçalhos com IA...');
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const csvSnippet = XLSX.utils.sheet_to_csv(firstSheet).split('\n').slice(0, 15).join('\n');
+        aiMap = await analyzeSheetWithAI(csvSnippet);
+        if (aiMap) console.log("AI Sheet mapping:", aiMap);
       } catch (e) {
         console.error("AI map failed", e);
       }
@@ -787,7 +807,11 @@ export default function Alunos() {
       });
 
       if (parsedStudents.length > 0) {
-        setPendingImports(parsedStudents);
+        // Classificação de duplicatas contra os alunos já cadastrados (mesma escola)
+        const classified = classifyImports(parsedStudents, students);
+        setPendingImports(classified);
+        setAiProgress([]);
+        setAiFoundCount(0);
         setIsReviewOpen(true);
       } else {
         alert('Nenhum dado encontrado na planilha.');
@@ -798,6 +822,109 @@ export default function Alunos() {
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = ''; // reseta
+    }
+  };
+
+  // Usuário escolhe o vínculo de uma linha suspeita (id existente ou "criar novo")
+  const handleMatchDecision = (index: number, value: string) => {
+    const updated = [...pendingImports];
+    updated[index].matchedStudentId = value === CREATE_NEW ? '' : value;
+    updated[index].matchDecided = true;
+    setPendingImports(updated);
+  };
+
+  // Reanálise com IA DeepSeek: manda as duas listas e refina os suspeitos.
+  const analyzeMatchesWithAI = async () => {
+    if (aiBusy) return;
+    const ambiguos = pendingImports
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => !s.error && s.matchStatus !== 'real'); // 'real' já resolvido localmente
+
+    if (ambiguos.length === 0) {
+      toast.info('Nenhuma linha ambígua para a IA analisar — tudo já casou localmente.');
+      return;
+    }
+
+    setAiBusy(true);
+    setAiFoundCount(0);
+    setAiProgress([
+      'Carregado alunos do sistema (' + students.length + ')',
+      'Carregado alunos do Excel (' + ambiguos.length + ')',
+      'Enviando para a IA DeepSeek…',
+    ]);
+
+    const existentesStr = students
+      .map((e) => [e.id, e.name, e.class + (e.shift ? '/' + e.shift : ''), normCpf(e.cpf)].join(' | '))
+      .join('\n');
+    const importadosStr = ambiguos
+      .map(({ s, i }) => [i, s.name, (s.class || '') + (s.shift ? '/' + s.shift : ''), normCpf(s.cpf)].join(' | '))
+      .join('\n');
+
+    const abort = new AbortController();
+    aiAbortRef.current = abort;
+
+    let buffer = '';
+    let lastCount = 0;
+    try {
+      const result = await streamAI(
+        'match-alunos',
+        { existentes: existentesStr, importados: importadosStr },
+        (delta) => {
+          buffer += delta;
+          // Progresso ao vivo: conta pares "importIndex" detectados no buffer parcial (só p/ UI)
+          const matches = buffer.match(/"importIndex"/g);
+          const count = matches ? matches.length : 0;
+          if (count !== lastCount) {
+            lastCount = count;
+            setAiFoundCount(count);
+            setAiProgress((p) => {
+              const base = p.filter((l) => !l.startsWith('Analisando'));
+              return [...base, 'Analisando… encontrado ' + count];
+            });
+          }
+        },
+        abort.signal,
+        tenantId,
+      );
+
+      // Parse final é a fonte da verdade
+      const pairs = extractJson(result || buffer);
+      const list: any[] = Array.isArray(pairs) ? pairs : [];
+
+      const updated = [...pendingImports];
+      let applied = 0;
+      for (const pair of list) {
+        const idx = Number(pair?.importIndex);
+        const existing = students.find((e) => e.id === pair?.existingId);
+        const conf = Number(pair?.confidence) || 0;
+        if (!Number.isInteger(idx) || !updated[idx] || !existing || updated[idx].matchStatus === 'real') continue;
+
+        // Coloca o candidato da IA no topo, sem duplicar
+        const cands = [existing, ...(updated[idx].matchCandidates || []).filter((c: any) => c.id !== existing.id)].slice(0, 5);
+        updated[idx] = {
+          ...updated[idx],
+          matchStatus: 'suspeito',
+          matchCandidates: cands,
+          matchReason: 'IA: provável ' + existing.name + ' (' + Math.round(conf * 100) + '%)',
+          // Pré-seleciona quando a IA tem alta confiança; usuário ainda pode trocar/recusar
+          matchedStudentId: conf >= 0.85 ? existing.id : updated[idx].matchedStudentId,
+          matchDecided: conf >= 0.85 ? true : updated[idx].matchDecided,
+        };
+        applied++;
+      }
+      setPendingImports(updated);
+      setAiProgress((p) => [...p.filter((l) => !l.startsWith('Analisando')), 'Concluído: ' + applied + ' possível(is) duplicado(s) sinalizado(s)']);
+      setAiFoundCount(applied);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setAiProgress((p) => [...p, 'Análise cancelada.']);
+      } else {
+        console.error('IA match falhou', err);
+        setAiProgress((p) => [...p, 'Falha na IA: ' + (err?.message || 'erro') + '. Mantida a análise local.']);
+      }
+    } finally {
+      setAiBusy(false);
+      aiAbortRef.current = null;
     }
   };
 
@@ -842,6 +969,16 @@ export default function Alunos() {
     setPendingImports(updated);
   };
 
+  // Fecha o modal de revisão e cancela qualquer análise de IA em andamento
+  const closeReview = () => {
+    aiAbortRef.current?.abort();
+    setIsReviewOpen(false);
+    setPendingImports([]);
+    setAiProgress([]);
+    setAiFoundCount(0);
+    setAiBusy(false);
+  };
+
   const confirmImport = async () => {
     const validStudents = pendingImports.filter(s => !s.error);
     if (validStudents.length === 0) {
@@ -849,10 +986,17 @@ export default function Alunos() {
        return;
     }
     
-    // strip _id and error before importing
+    // Bloqueia se houver suspeito ainda sem decisão do usuário
+    const indecisos = validStudents.filter(s => s.matchStatus === 'suspeito' && !s.matchedStudentId && !s.matchDecided);
+    if (indecisos.length > 0) {
+       toast.error(indecisos.length + ' linha(s) suspeita(s) sem decisão. Vincule a um aluno existente ou marque "Criar novo".');
+       return;
+    }
+
+    // Monta payload: id explícito do match decidido vence; descarta o id da planilha.
     const payload = validStudents.map(s => {
-       const { _id, error, ...rest } = s;
-       return rest;
+       const { _id, error, id: _sheetId, matchStatus, matchedStudentId, matchCandidates, matchReason, matchDecided, ...rest } = s;
+       return matchedStudentId ? { ...rest, id: matchedStudentId } : rest;
     });
 
     setIsImporting(true);
@@ -2000,27 +2144,55 @@ export default function Alunos() {
 
       {/* Import Review Modal */}
       {isReviewOpen && (
-        <div className="fixed inset-0 glass-overlay z-[9992] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsReviewOpen(false); }}>
+        <div className="fixed inset-0 glass-overlay z-[9992] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) closeReview(); }}>
           <div className="glass-modal w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 gap-4">
               <div>
                 <h2 className="text-xl font-bold text-slate-800">Revisão de Importação</h2>
-                <p className="text-sm text-slate-500 mt-1">Verifique e corrija os dados antes de finalizar a importação.</p>
+                <p className="text-sm text-slate-500 mt-1">Verifique os vínculos e corrija os dados antes de finalizar.</p>
               </div>
-              <button 
-                onClick={() => { setIsReviewOpen(false); setPendingImports([]); }}
-                className="text-slate-400 hover:bg-slate-50 p-2 rounded-full transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={analyzeMatchesWithAI}
+                  disabled={aiBusy}
+                  className="px-3 py-2 rounded-lg text-sm font-medium border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 transition flex items-center gap-2 disabled:opacity-60"
+                  title="Compara a planilha com os alunos já cadastrados usando IA"
+                >
+                  {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {aiBusy ? 'Analisando…' : 'Analisar novamente com IA'}
+                </button>
+                <button
+                  onClick={closeReview}
+                  className="text-slate-400 hover:bg-slate-50 p-2 rounded-full transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            
+
+            {aiProgress.length > 0 && (
+              <div className="px-6 py-3 border-b border-slate-100 bg-purple-50/50">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-purple-800">
+                  {aiProgress.map((line, i) => (
+                    <span key={i} className="inline-flex items-center gap-1">
+                      {i > 0 && <span className="text-purple-300">›</span>}
+                      {aiBusy && i === aiProgress.length - 1
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <CheckCircle2 className="w-3 h-3 text-purple-500" />}
+                      {line}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex-1 overflow-auto bg-slate-50 p-4">
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
                       <th className="py-3 px-4 font-medium whitespace-nowrap">Status</th>
+                      <th className="py-3 px-4 font-medium whitespace-nowrap">Vínculo</th>
                       <th className="py-3 px-4 font-medium">Nome do Aluno</th>
                       <th className="py-3 px-4 font-medium">Turma</th>
                       <th className="py-3 px-4 font-medium">Turno</th>
@@ -2042,9 +2214,42 @@ export default function Alunos() {
                             </span>
                           )}
                         </td>
+                        <td className="py-2 px-4 w-60 align-top">
+                          {student.error ? (
+                            <span className="text-xs text-slate-400">—</span>
+                          ) : student.matchStatus === 'real' ? (
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                <CheckCircle2 className="w-3 h-3" /> Atualiza existente
+                              </span>
+                              {student.matchReason && <p className="text-[11px] text-slate-400 truncate" title={student.matchReason}>{student.matchReason}</p>}
+                            </div>
+                          ) : student.matchStatus === 'suspeito' ? (
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                <AlertCircle className="w-3 h-3" /> Possível duplicado
+                              </span>
+                              <select
+                                value={student.matchedStudentId || (student.matchDecided ? CREATE_NEW : '')}
+                                onChange={(e) => handleMatchDecision(index, e.target.value)}
+                                className={'w-full px-2 py-1 rounded-md border text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 ' + (!student.matchedStudentId && !student.matchDecided ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white')}
+                              >
+                                <option value="" disabled>Escolha o vínculo…</option>
+                                {(student.matchCandidates || []).map((c: any) => (
+                                  <option key={c.id} value={c.id}>{c.name} ({c.class})</option>
+                                ))}
+                                <option value={CREATE_NEW}>➕ Criar novo aluno</option>
+                              </select>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                              <Plus className="w-3 h-3" /> Novo aluno
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2 px-4">
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             value={student.name}
                             onChange={(e) => handleReviewChange(index, 'name', e.target.value)}
                             className={'w-full px-3 py-1.5 rounded-md border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ' + (!student.name ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white')}
@@ -2104,21 +2309,23 @@ export default function Alunos() {
             </div>
             
             <div className="p-6 border-t border-slate-100 bg-white flex justify-between items-center sm:flex-row flex-col gap-4">
-              <span className="text-sm font-medium text-slate-600">
-                {pendingImports.filter(s => s.error).length} linha(s) com erro(s). 
-                <span className="text-green-600 ml-2">{pendingImports.filter(s => !s.error).length} linha(s) válida(s).</span>
+              <span className="text-sm font-medium text-slate-600 flex flex-wrap gap-x-3 gap-y-1">
+                <span className="text-emerald-600">{pendingImports.filter(s => !s.error && (s.matchStatus === 'real' || (s.matchStatus === 'suspeito' && s.matchedStudentId))).length} atualiza</span>
+                <span className="text-slate-500">{pendingImports.filter(s => !s.error && (s.matchStatus === 'novo' || (s.matchStatus === 'suspeito' && !s.matchedStudentId && s.matchDecided))).length} novos</span>
+                <span className="text-amber-600">{pendingImports.filter(s => !s.error && s.matchStatus === 'suspeito' && !s.matchedStudentId && !s.matchDecided).length} a confirmar</span>
+                {pendingImports.filter(s => s.error).length > 0 && <span className="text-red-500">{pendingImports.filter(s => s.error).length} com erro</span>}
               </span>
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { setIsReviewOpen(false); setPendingImports([]); }}
+                  onClick={closeReview}
                   className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmImport}
-                  disabled={pendingImports.filter(s => !s.error).length === 0 || isImporting}
+                  disabled={pendingImports.filter(s => !s.error).length === 0 || isImporting || pendingImports.some(s => !s.error && s.matchStatus === 'suspeito' && !s.matchedStudentId && !s.matchDecided)}
                   className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition font-medium disabled:opacity-50 flex items-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
