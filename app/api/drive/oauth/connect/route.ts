@@ -3,6 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
+// Resolve a redirect_uri canônica (DEVE bater exatamente com a registrada no Google Console).
+// Prioridade: env GOOGLE_OAUTH_REDIRECT_URI > headers encaminhados pela Vercel (https forçado) > req.url.
+// O header `Origin` não vem em navegação top-level, e `new URL(req.url)` atrás do proxy pode
+// retornar http:// ou o host *.vercel.app — causando redirect_uri_mismatch.
+function resolveRedirectUri(req: NextRequest): string {
+  const explicit = process.env.GOOGLE_OAUTH_REDIRECT_URI;
+  if (explicit) return explicit.trim();
+  const proto = (req.headers.get('x-forwarded-proto') || 'https').split(',')[0].trim();
+  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || new URL(req.url).host)
+    .split(',')[0].trim();
+  return `${proto}://${host}/api/drive/oauth/callback`;
+}
+
 // Inicia o fluxo OAuth Google Drive para uma escola.
 // O gestor é redirecionado para o consentimento Google; após autorizar, o callback
 // armazena o refresh_token em school_settings.
@@ -34,8 +47,7 @@ export async function GET(req: NextRequest) {
   }
 
   const schoolId = req.nextUrl.searchParams.get('schoolId') || '';
-  const origin = req.headers.get('origin') || new URL(req.url).origin;
-  const redirectUri = `${origin}/api/drive/oauth/callback`;
+  const redirectUri = resolveRedirectUri(req);
 
   // Página de retorno após o consentimento (validada: apenas caminhos relativos internos)
   const rawReturnTo = req.nextUrl.searchParams.get('returnTo') || '';

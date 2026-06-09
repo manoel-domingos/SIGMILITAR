@@ -3,6 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
+// Mesma resolução do connect: garante que a redirect_uri usada na troca do code
+// seja idêntica à enviada no consentimento (evita redirect_uri_mismatch / invalid_grant).
+function resolveRedirectUri(req: NextRequest): string {
+  const explicit = process.env.GOOGLE_OAUTH_REDIRECT_URI;
+  if (explicit) return explicit.trim();
+  const proto = (req.headers.get('x-forwarded-proto') || 'https').split(',')[0].trim();
+  const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || new URL(req.url).host)
+    .split(',')[0].trim();
+  return `${proto}://${host}/api/drive/oauth/callback`;
+}
+
 // Callback do OAuth Google Drive. O Google redireciona aqui após o consentimento.
 // Troca o `code` por refresh_token e armazena em school_settings.
 export async function GET(req: NextRequest) {
@@ -36,8 +47,8 @@ export async function GET(req: NextRequest) {
     return failRedirect('State invalido.');
   }
 
-  // Recupera redirect_uri do cookie
-  const redirectUri = req.cookies.get('drive_oauth_redirect_uri')?.value || `${origin}/api/drive/oauth/callback`;
+  // Recupera redirect_uri do cookie (idêntica à do connect); fallback resolve do mesmo jeito
+  const redirectUri = req.cookies.get('drive_oauth_redirect_uri')?.value || resolveRedirectUri(req);
 
   // Troca code por tokens
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
