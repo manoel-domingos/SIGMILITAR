@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { promises as dns } from 'dns';
 
 type AppRole = 'admin_global' | 'GESTOR' | 'COORD' | 'PROFESSOR' | 'MONITOR';
 
@@ -67,6 +68,41 @@ function rbacRole(role: string) {
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ error }, { status });
+}
+
+// Domínios gov.br conhecidos por rejeitar emails de servidores SMTP compartilhados
+const KNOWN_BOUNCE_DOMAINS = new Set([
+  'edu.mt.gov.br',
+  'educacao.go.gov.br',
+  'seed.pr.gov.br',
+  'educacao.ba.gov.br',
+  'educacao.sp.gov.br',
+  'see.mg.gov.br',
+  'seduc.ce.gov.br',
+  'seduc.pa.gov.br',
+]);
+
+async function validateEmailDeliverability(email: string): Promise<{ valid: boolean; reason?: string }> {
+  const domain = email.split('@')[1]?.toLowerCase();
+  if (!domain) return { valid: false, reason: 'Formato de email inválido.' };
+
+  if (KNOWN_BOUNCE_DOMAINS.has(domain)) {
+    return {
+      valid: false,
+      reason: `O domínio "${domain}" bloqueia emails automáticos. Cadastre o usuário com senha manual ou use outro email.`,
+    };
+  }
+
+  try {
+    const mxRecords = await dns.resolveMx(domain);
+    if (!mxRecords || mxRecords.length === 0) {
+      return { valid: false, reason: `O domínio "${domain}" não possui servidor de email (MX) configurado.` };
+    }
+  } catch {
+    return { valid: false, reason: `Não foi possível verificar o domínio "${domain}". Verifique se o email está correto.` };
+  }
+
+  return { valid: true };
 }
 
 async function requireUserManager(req: NextRequest, targetSchoolId: string | null) {
@@ -161,7 +197,21 @@ export async function POST(req: NextRequest) {
     }
 
     const supabaseAdmin = adminClient();
-    const emailNormalized = email.includes('@') ? email : `${email.toLowerCase()}@eecm.local`;
+    const emailNormalized = email.includes('@') ? email.toLowerCase().trim() : `${email.toLowerCase()}@eecm.local`;
+
+    // Valida entregabilidade antes de qualquer envio (reduz bounce rate)
+    if (emailNormalized.includes('@') && !emailNormalized.endsWith('@eecm.local')) {
+      if (!password) {
+        // Convites por email: valida MX e domínios problemáticos
+        const deliverability = await validateEmailDeliverability(emailNormalized);
+        if (!deliverability.valid) {
+          return jsonError(
+            deliverability.reason ?? 'Email não pode receber mensagens. Use senha manual ou outro endereço.',
+            400,
+          );
+        }
+      }
+    }
 
     let userId = '';
 
@@ -179,10 +229,15 @@ export async function POST(req: NextRequest) {
     } else {
       const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
         emailNormalized,
-        { data: { name } },
+        { data: { name }, redirectTo: process.env.APP_URL ? `${process.env.APP_URL}/login` : undefined },
       );
 
-      if (inviteError) return jsonError(inviteError.message, 400);
+      if (inviteError) {
+        if (inviteError.status === 429 || inviteError.message?.includes('rate limit')) {
+          return jsonError('Limite de convites atingido. Aguarde alguns minutos e tente novamente.', 429);
+        }
+        return jsonError(inviteError.message, 400);
+      }
       userId = inviteData.user.id;
     }
 
