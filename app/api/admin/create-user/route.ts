@@ -178,10 +178,16 @@ async function syncMembership(
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, name, role, school_id } = await req.json();
+    const { email, name, role, school_id, cargo } = await req.json();
 
     if (!email || !name) {
       return jsonError('email e name sao obrigatorios.', 400);
+    }
+
+    const emailNormalized = email.toLowerCase().trim();
+
+    if (!emailNormalized.endsWith('@edu.mt.gov.br')) {
+      return jsonError('Apenas e-mails @edu.mt.gov.br são permitidos neste sistema.', 400);
     }
 
     const normalizedRole = normalizeRole(String(role || 'MONITOR'));
@@ -197,70 +203,35 @@ export async function POST(req: NextRequest) {
     }
 
     const supabaseAdmin = adminClient();
-    const emailNormalized = email.includes('@') ? email.toLowerCase().trim() : `${email.toLowerCase()}@eecm.local`;
 
-    // Valida entregabilidade antes de qualquer envio (reduz bounce rate)
-    if (emailNormalized.includes('@') && !emailNormalized.endsWith('@eecm.local')) {
-      if (!password) {
-        // Convites por email: valida MX e domínios problemáticos
-        const deliverability = await validateEmailDeliverability(emailNormalized);
-        if (!deliverability.valid) {
-          return jsonError(
-            deliverability.reason ?? 'Email não pode receber mensagens. Use senha manual ou outro endereço.',
-            400,
-          );
-        }
-      }
+    // Verifica se já existe perfil com este email
+    const { data: existing } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, email')
+      .eq('email', emailNormalized)
+      .maybeSingle();
+
+    if (existing) {
+      return jsonError('Este e-mail já está cadastrado no sistema.', 409);
     }
 
-    let userId = '';
-
-    if (password) {
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: emailNormalized,
-        password,
-        email_confirm: true,
-        user_metadata: { name },
-        app_metadata: { role: rbacRole(normalizedRole) },
-      });
-
-      if (authError) return jsonError(authError.message, 400);
-      userId = authData.user.id;
-    } else {
-      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-        emailNormalized,
-        { data: { name }, redirectTo: process.env.APP_URL ? `${process.env.APP_URL}/login` : undefined },
-      );
-
-      if (inviteError) {
-        if (inviteError.status === 429 || inviteError.message?.includes('rate limit')) {
-          return jsonError('Limite de convites atingido. Aguarde alguns minutos e tente novamente.', 429);
-        }
-        return jsonError(inviteError.message, 400);
-      }
-      userId = inviteData.user.id;
-    }
-
+    // Cria apenas o perfil (whitelist). O UUID será vinculado automaticamente
+    // quando o usuário fizer login com Google pela primeira vez.
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('user_profiles')
-      .insert([
-        {
-          id: userId,
-          name,
-          email: emailNormalized,
-          role: normalizedRole,
-          school_id: profileSchoolId,
-        },
-      ])
+      .insert([{
+        name,
+        email: emailNormalized,
+        role: normalizedRole,
+        school_id: profileSchoolId,
+        cargo: cargo || null,
+      }])
       .select()
       .single();
 
     if (profileError) {
-      await supabaseAdmin.auth.admin.deleteUser(userId);
       return jsonError(profileError.message, 400);
     }
-
-    await syncMembership(supabaseAdmin, userId, normalizedRole, profileSchoolId);
 
     return NextResponse.json({ user: profileData });
   } catch (err: any) {

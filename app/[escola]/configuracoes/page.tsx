@@ -45,7 +45,7 @@ type Severity = 'Leve' | 'Media' | 'Grave';
 
 interface UserRow {
   id: string; name: string; email: string;
-  role: AppRole; school_id: string; created_at: string;
+  role: AppRole; school_id: string; created_at: string; cargo?: string;
 }
 interface School { id: string; name: string; }
 
@@ -208,12 +208,14 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editUserName, setEditUserName] = useState('');
   const [editUserRole, setEditUserRole] = useState<AppRole>('GESTOR');
+  const [editUserCargo, setEditUserCargo] = useState('');
   const [savingUser, setSavingUser] = useState(false);
 
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<AppRole>('GESTOR');
+  const [newUserCargo, setNewUserCargo] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [creatingUser, setCreatingUser] = useState(false);
 
@@ -224,6 +226,7 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
     setEditingUserId(u.id);
     setEditUserName(u.name || '');
     setEditUserRole(u.role);
+    setEditUserCargo(u.cargo || '');
   };
 
   const handleSaveUserEdit = async (uId: string) => {
@@ -232,7 +235,7 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
     try {
       const { error } = await supabase()
         .from('user_profiles')
-        .update({ name: editUserName.trim(), role: editUserRole, updated_at: new Date().toISOString() })
+        .update({ name: editUserName.trim(), role: editUserRole, cargo: editUserCargo.trim() || null, updated_at: new Date().toISOString() })
         .eq('id', uId);
       if (error) throw error;
       toast.success('Usuário atualizado com sucesso!');
@@ -271,6 +274,10 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
       toast.error('Nome e email são obrigatórios.');
       return;
     }
+    if (!newUserEmail.toLowerCase().endsWith('@edu.mt.gov.br')) {
+      toast.error('Apenas e-mails @edu.mt.gov.br são permitidos.');
+      return;
+    }
     setCreatingUser(true);
     setError(null);
     try {
@@ -281,8 +288,8 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
         body: JSON.stringify({
           name: newUserName.trim(),
           email: newUserEmail.trim(),
-          password: newUserPassword.trim() || '123456',
           role: newUserRole,
+          cargo: newUserCargo.trim() || null,
           school_id: school?.id,
         }),
       });
@@ -293,6 +300,7 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
       setNewUserName('');
       setNewUserEmail('');
       setNewUserRole('GESTOR');
+      setNewUserCargo('');
       setNewUserPassword('');
       if (onUsersChange) onUsersChange();
     } catch (err: any) {
@@ -554,22 +562,26 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail / Usuário</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={newUserEmail} 
-                        onChange={e => setNewUserEmail(e.target.value)} 
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail @edu.mt.gov.br</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="nome@edu.mt.gov.br"
+                        value={newUserEmail}
+                        onChange={e => setNewUserEmail(e.target.value)}
+                        className={`w-full bg-white dark:bg-slate-900 border rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none ${newUserEmail && !newUserEmail.toLowerCase().endsWith('@edu.mt.gov.br') && newUserEmail.includes('@') ? 'border-rose-400' : 'border-slate-200 dark:border-slate-800'}`}
                       />
+                      {newUserEmail && !newUserEmail.toLowerCase().endsWith('@edu.mt.gov.br') && newUserEmail.includes('@') && (
+                        <p className="text-[10px] text-rose-600 mt-0.5">Apenas @edu.mt.gov.br</p>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo</label>
-                      <select 
-                        value={newUserRole} 
-                        onChange={e => setNewUserRole(e.target.value as AppRole)} 
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Permissão</label>
+                      <select
+                        value={newUserRole}
+                        onChange={e => setNewUserRole(e.target.value as AppRole)}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
                       >
                         <option value="GESTOR">Gestor</option>
@@ -579,15 +591,19 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Senha</label>
-                      <input 
-                        type="password" 
-                        placeholder="Mínimo 4 caracteres (padrão: 123456)" 
-                        value={newUserPassword} 
-                        onChange={e => setNewUserPassword(e.target.value)} 
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo / Título</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Gestor Cívico Militar"
+                        value={newUserCargo}
+                        onChange={e => setNewUserCargo(e.target.value)}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
                       />
                     </div>
+                  </div>
+                  <div className="col-span-2 flex items-start gap-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg px-3 py-2 text-[11px] text-blue-700 dark:text-blue-400">
+                    <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    Após cadastrar, avise o usuário para logar com <strong>Google</strong> usando este e-mail.
                   </div>
                   <button 
                     type="submit" 
@@ -608,18 +624,18 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nome</label>
-                            <input 
-                              type="text" 
-                              value={editUserName} 
-                              onChange={e => setEditUserName(e.target.value)} 
+                            <input
+                              type="text"
+                              value={editUserName}
+                              onChange={e => setEditUserName(e.target.value)}
                               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo</label>
-                            <select 
-                              value={editUserRole} 
-                              onChange={e => setEditUserRole(e.target.value as AppRole)} 
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Permissão</label>
+                            <select
+                              value={editUserRole}
+                              onChange={e => setEditUserRole(e.target.value as AppRole)}
                               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
                             >
                               <option value="GESTOR">Gestor</option>
@@ -628,6 +644,16 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
                               <option value="PROFESSOR">Professor</option>
                             </select>
                           </div>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo / Título</label>
+                          <input
+                            type="text"
+                            placeholder="Ex: Gestor Cívico Militar"
+                            value={editUserCargo}
+                            onChange={e => setEditUserCargo(e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                          />
                         </div>
                         <div className="flex justify-end gap-2 mt-1">
                           <button
@@ -650,11 +676,12 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
                       <>
                         <div>
                           <p className="font-semibold text-slate-800 dark:text-slate-200">{u.name || 'Sem nome'}</p>
+                          {u.cargo && <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">{u.cargo}</p>}
                           <p className="text-slate-400 dark:text-slate-550">{u.email}</p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-slate-605 dark:text-slate-400 ${ROLE_COLORS[u.role] || 'bg-slate-100 dark:bg-slate-850'}`}>
-                            {ROLE_LABELS[u.role] || u.role}
+                          <span className={`px-2 py-0.5 rounded font-semibold text-xs ${ROLE_COLORS[u.role] || 'bg-slate-100 text-slate-600'}`}>
+                            {ROLE_LABELS[u.role] || 'Indefinido'}
                           </span>
                           {u.role !== 'admin_global' && (
                             <div className="flex items-center gap-1.5">
@@ -755,9 +782,7 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
 }) {
   const { currentUserRole, currentUserSchoolId } = useAppContext();
   const firstSchool = schools[0]?.id ?? '';
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'GESTOR' as AppRole, school_id: firstSchool });
-  const [creationMethod, setCreationMethod] = useState<'invite' | 'password'>('invite');
-  const [showPass, setShowPass] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', role: 'GESTOR' as AppRole, school_id: firstSchool, cargo: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -771,23 +796,18 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
   }, [firstSchool, currentUserRole, currentUserSchoolId]);
 
   const reset = () => {
-    setForm({ name: '', email: '', password: '', role: 'GESTOR', school_id: firstSchool });
-    setCreationMethod('invite');
+    setForm({ name: '', email: '', role: 'GESTOR', school_id: firstSchool, cargo: '' });
     setError(null);
-    setShowPass(false);
   };
   const handleClose = () => { reset(); onClose(); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) { setError('Nome e e-mail/usuário são obrigatórios.'); return; }
-    
-    const pwdToSubmit = creationMethod === 'password' ? form.password : '';
-    if (creationMethod === 'password' && pwdToSubmit.length < 4) {
-      setError('A senha deve ter pelo menos 4 caracteres.');
+    if (!form.name.trim() || !form.email.trim()) { setError('Nome e e-mail são obrigatórios.'); return; }
+    if (!form.email.toLowerCase().endsWith('@edu.mt.gov.br')) {
+      setError('Apenas e-mails @edu.mt.gov.br são permitidos.');
       return;
     }
-    
     setSaving(true); setError(null);
     try {
       const res = await fetch('/api/admin/create-user', {
@@ -796,9 +816,9 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
         body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
-          password: pwdToSubmit,
           role: form.role,
           school_id: form.school_id,
+          cargo: form.cargo.trim() || null,
         }),
       });
       const json = await res.json();
@@ -833,61 +853,27 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
           </div>
           
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">E-mail ou usuário <span className="text-rose-500">*</span></label>
-            <input className={INPUT} placeholder="Ex: maria.silva" value={form.email} onChange={set('email')} />
-            <p className="text-[11px] text-slate-400">Usado para login. Pode ser e-mail ou nome simples.</p>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">E-mail <span className="text-rose-500">*</span></label>
+            <input className={INPUT} placeholder="nome@edu.mt.gov.br" value={form.email} onChange={set('email')} />
+            {form.email && !form.email.includes('@') ? (
+              <p className="text-[11px] text-amber-600 flex items-center gap-1"><ShieldAlert className="w-3 h-3 shrink-0" /> Informe o e-mail completo com @edu.mt.gov.br</p>
+            ) : form.email && !form.email.toLowerCase().endsWith('@edu.mt.gov.br') ? (
+              <p className="text-[11px] text-rose-600 flex items-center gap-1"><ShieldAlert className="w-3 h-3 shrink-0" /> Apenas e-mails @edu.mt.gov.br são permitidos.</p>
+            ) : (
+              <p className="text-[11px] text-slate-400">Apenas e-mails institucionais <span className="font-semibold text-slate-500">@edu.mt.gov.br</span> são aceitos.</p>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Método de Cadastro</label>
-            <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700/30">
-              <button
-                type="button"
-                onClick={() => { setCreationMethod('invite'); setForm(v => ({ ...v, password: '' })); }}
-                className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${creationMethod === 'invite' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-              >
-                <Users className="w-3.5 h-3.5" /> Enviar Convite
-              </button>
-              <button
-                type="button"
-                onClick={() => setCreationMethod('password')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${creationMethod === 'password' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-              >
-                <KeyRound className="w-3.5 h-3.5" /> Definir Senha
-              </button>
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4 flex gap-3 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
+            <svg className="w-5 h-5 mt-0.5 shrink-0 text-blue-500" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            <div>
+              <p className="font-semibold mb-0.5">Acesso via Google</p>
+              <p>Após o cadastro, avise o usuário para fazer login em <span className="font-semibold">sigmilitar.com.br</span> usando o botão <span className="font-semibold">"Entrar com Google"</span> com este e-mail institucional.</p>
             </div>
           </div>
-
-          {creationMethod === 'invite' ? (
-            <div className="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-xl p-4 flex gap-3 text-xs text-blue-700 dark:text-blue-400 leading-relaxed animate-in fade-in slide-in-from-top-1 duration-200">
-              <Brain className="w-5 h-5 mt-0.5 shrink-0 text-blue-500" />
-              <div>
-                <p className="font-semibold mb-0.5">Convite Oficial por E-mail</p>
-                <p>O usuário receberá uma notificação em seu e-mail com instruções e um link seguro para cadastrar sua própria senha de acesso.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-blue-500" /> Senha de Acesso <span className="text-rose-500">*</span></label>
-              <div className="relative">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  className={INPUT + ' pr-10'}
-                  placeholder="Mínimo 4 caracteres"
-                  value={form.password}
-                  onChange={set('password')}
-                  required={creationMethod === 'password'}
-                />
-                <button type="button" onClick={() => setShowPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-400">Esta senha será usada pelo usuário para seu primeiro acesso direto.</p>
-            </div>
-          )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Papel / Permissão</label>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Permissão / Papel</label>
             <select className={SELECT} value={form.role} onChange={set('role')}>
               {currentUserRole === 'admin_global' && <option value="admin_global">Admin Global</option>}
               <option value="GESTOR">Gestor</option>
@@ -903,7 +889,13 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
               {form.role === 'PROFESSOR' && 'Acesso a alunos e registro de ocorrências.'}
             </p>
           </div>
-          
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Cargo / Título</label>
+            <input className={INPUT} placeholder="Ex: Gestor Cívico Militar, Monitor Escolar" value={form.cargo} onChange={set('cargo')} />
+            <p className="text-[11px] text-slate-400">Aparece nas ocorrências e documentos. Diferente da permissão de sistema.</p>
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Escola</label>
             {currentUserRole === 'admin_global' ? (
@@ -921,20 +913,10 @@ function CreateUserDrawer({ open, onClose, schools, onCreated }: {
             form="create-user-form"
             type="submit"
             disabled={saving}
-            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98] ${
-              creationMethod === 'invite'
-                ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-indigo-500/10'
-                : 'bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-blue-500/10'
-            }`}
+            className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98] bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-indigo-500/10"
           >
-            {saving ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : creationMethod === 'invite' ? (
-              <Users className="w-4 h-4" />
-            ) : (
-              <Check className="w-4 h-4" />
-            )}
-            {saving ? 'Enviando...' : creationMethod === 'invite' ? 'Enviar Convite' : 'Criar Usuário'}
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+            {saving ? 'Cadastrando...' : 'Cadastrar Usuário'}
           </button>
         </div>
       </aside>
@@ -951,7 +933,7 @@ function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
   onUpdated: (updated: UserRow) => void;
 }) {
   const { currentUserRole } = useAppContext();
-  const [form, setForm] = useState({ name: '', email: '', role: 'GESTOR' as AppRole, school_id: '' });
+  const [form, setForm] = useState({ name: '', email: '', role: 'GESTOR' as AppRole, school_id: '', cargo: '' });
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -964,7 +946,7 @@ function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
 
   useEffect(() => {
     if (user) {
-      setForm({ name: user.name || '', email: user.email || '', role: user.role, school_id: user.school_id });
+      setForm({ name: user.name || '', email: user.email || '', role: user.role, school_id: user.school_id, cargo: user.cargo || '' });
       setNewPassword('');
       setConfirmPassword('');
       setError(null);
@@ -983,10 +965,10 @@ function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
     try {
       const { error: dbErr } = await supabase()
         .from('user_profiles')
-        .update({ name: form.name.trim(), email: form.email.trim(), role: form.role, school_id: form.school_id, updated_at: new Date().toISOString() })
+        .update({ name: form.name.trim(), email: form.email.trim(), role: form.role, school_id: form.school_id, cargo: form.cargo.trim() || null, updated_at: new Date().toISOString() })
         .eq('id', user.id);
       if (dbErr) { setError(dbErr.message); return; }
-      onUpdated({ ...user, name: form.name.trim(), email: form.email.trim(), role: form.role, school_id: form.school_id });
+      onUpdated({ ...user, name: form.name.trim(), email: form.email.trim(), role: form.role, school_id: form.school_id, cargo: form.cargo.trim() || undefined });
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 2500);
     } catch (err: any) {
@@ -1051,7 +1033,7 @@ function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
                 <p className="text-[11px] text-slate-400">Alterar o e-mail modifica o login de acesso do usuario.</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Papel / Permissao</label>
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Permissão / Papel</label>
                 <select className={SELECT} value={form.role} onChange={set('role')}>
                   {currentUserRole === 'admin_global' && <option value="admin_global">Admin Global</option>}
                   <option value="GESTOR">Gestor</option>
@@ -1059,6 +1041,12 @@ function EditUserDrawer({ user, open, onClose, schools, onUpdated }: {
                   <option value="MONITOR">Monitor</option>
                   <option value="PROFESSOR">Professor</option>
                 </select>
+                <p className="text-[11px] text-slate-400">Define o que o usuário pode fazer no sistema.</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Cargo / Título</label>
+                <input className={INPUT} placeholder="Ex: Gestor Cívico Militar, Monitor Escolar" value={form.cargo} onChange={set('cargo')} />
+                <p className="text-[11px] text-slate-400">Aparece nas ocorrências e documentos gerados.</p>
               </div>
               {currentUserRole === 'admin_global' && (
                 <div className="space-y-1.5">
@@ -2210,12 +2198,13 @@ function ConfiguracoesInner() {
                             <div className="flex items-center gap-3">
                               <Avatar name={u.name || u.email} />
                               <div className="min-w-0">
-                                <p 
+                                <p
                                   onClick={() => setEditDrawerUser(u)}
                                   className="font-semibold text-slate-800 dark:text-slate-100 truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
                                 >
                                   {u.name || '—'}
                                 </p>
+                                {u.cargo && <p className="text-[11px] text-slate-500 dark:text-slate-400 italic truncate">{u.cargo}</p>}
                                 <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{u.email}</p>
                               </div>
                             </div>
@@ -2229,7 +2218,7 @@ function ConfiguracoesInner() {
                                   .map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                               </select>
                             ) : (
-                              <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${ROLE_COLORS[u.role] ?? 'bg-slate-100 text-slate-600'}`}>{ROLE_LABELS[u.role] ?? u.role}</span>
+                              <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${ROLE_COLORS[u.role] ?? 'bg-slate-100 text-slate-600'}`}>{ROLE_LABELS[u.role] ?? 'Indefinido'}</span>
                             )}
                           </td>
                           <td className="px-5 py-3.5">
