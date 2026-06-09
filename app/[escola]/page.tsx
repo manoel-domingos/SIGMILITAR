@@ -138,11 +138,11 @@ export default function Dashboard() {
   }, [userId]);
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const validSlugs = ['eecmprofjoaobatista', 'eecmheliodoro', 'eecmtangara'];
   const firstSegment = pathname.split('/').filter(Boolean)[0]?.toLowerCase() ?? '';
+  // Só exibe LandingPage se não houver slug (raiz do domínio sem escola)
   const isLandingDomain =
     (host === 'sigmilitar.com.br' || host === 'www.sigmilitar.com.br') &&
-    !validSlugs.includes(firstSegment);
+    !firstSegment;
 
   if (isLandingDomain) {
     return <LandingPage />;
