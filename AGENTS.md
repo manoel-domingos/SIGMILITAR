@@ -33,3 +33,15 @@ Se a versão exibida na UI estiver desatualizada após um deploy:
 
 - **Trabalhar SEMPRE direto no `main`.** Não criar feature branches; commitar e
   empurrar direto para `main`.
+
+## Regra de Redirect Pós-Login (por role)
+
+| Role | Comportamento após login |
+|---|---|
+| `GESTOR` / `MONITOR` | Direto ao painel cívico-militar (`/<slug>`) — sem modal |
+| `admin_global` / `COORD` / `PROFESSOR` | Abre modal de escolha: **Cívico-Militar** ou **Pedagógico** |
+
+Implementado em `app/login/page.tsx` (useEffect de redirect) e
+`components/AppShell.tsx` (modal de contexto).
+- GESTOR/MONITOR **nunca** vê o modal — vai direto.
+- Admin/Coord/Prof **sempre** vê o modal para escolher módulo/escola.
