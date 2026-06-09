@@ -856,6 +856,12 @@ function SidebarLayout({
                   : [
                       { id: 'users',   label: 'Usuários da Escola', icon: Users },
                       { id: 'profile', label: 'Meu Perfil',       icon: User },
+                      ...((currentUserRole === 'GESTOR' || currentUserRole === 'COORD')
+                        ? [
+                            { id: 'print', label: 'Impressão', icon: FileText },
+                            { id: 'permissions', label: 'Permissões', icon: KeyRound },
+                          ]
+                        : []),
                     ]
                 );
                 return configTabs.map((tab) => {
@@ -1103,6 +1109,12 @@ function TopbarLayout({
                 : [
                     { id: 'users',   label: 'Usuários da Escola', icon: Users },
                     { id: 'profile', label: 'Meu Perfil',       icon: User },
+                    ...((currentUserRole === 'GESTOR' || currentUserRole === 'COORD')
+                      ? [
+                          { id: 'print', label: 'Impressão', icon: FileText },
+                          { id: 'permissions', label: 'Permissões', icon: KeyRound },
+                        ]
+                      : []),
                   ]
               );
               return (
@@ -1416,6 +1428,12 @@ function MobileDrawer({
                 : [
                     { id: 'users',   label: 'Usuários da Escola', icon: Users },
                     { id: 'profile', label: 'Meu Perfil',       icon: User },
+                    ...((currentUserRole === 'GESTOR' || currentUserRole === 'COORD')
+                      ? [
+                          { id: 'print', label: 'Impressão', icon: FileText },
+                          { id: 'permissions', label: 'Permissões', icon: KeyRound },
+                        ]
+                      : []),
                   ]
               );
               return configTabs.map((tab) => {
