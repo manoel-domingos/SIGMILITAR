@@ -14,6 +14,7 @@ import {
   FileText, CheckSquare, Loader2, Link2, CheckCircle2, AlertCircle, HardDrive,
 } from 'lucide-react';
 import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
+import PrintHeaderModal from '@/components/PrintHeaderModal';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -603,6 +604,9 @@ function TabStatus() {
   const [connectingDrive, setConnectingDrive] = useState(false);
   const [driveMsg, setDriveMsg] = useState('');
 
+  // ── Cabeçalho de impressão (BD) ──
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
   const loadDriveStatus = useCallback(async () => {
     try {
       const res = await fetch(`/api/drive/oauth/status?schoolId=${driveSchoolId}`);
@@ -783,6 +787,31 @@ function TabStatus() {
           {connectingDrive ? 'Redirecionando...' : driveStatus?.connected ? 'Reconectar Drive' : 'Conectar Drive'}
         </button>
       </div>
+
+      {/* Cabeçalho/rodapé/logo de impressão — configurável vindo do BD */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">Cabeçalho de Impressão</h4>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 max-w-lg">
+              Personalize logo, cabeçalho e rodapé das ATAs e documentos impressos. Os dados ficam salvos no banco e valem para esta escola.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowPrintModal(true)}
+          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md whitespace-nowrap self-start md:self-auto"
+        >
+          Editar cabeçalho
+        </button>
+      </div>
+
+      {showPrintModal && (
+        <PrintHeaderModal open={showPrintModal} onClose={() => setShowPrintModal(false)} schoolId={driveSchoolId} />
+      )}
 
       {/* Google Drive Status Section */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

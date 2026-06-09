@@ -5,7 +5,8 @@ import ReactDOM from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { useTenantConfig, getLinkHref, getTenantSlugFromSchoolId } from '@/lib/useTenantConfig';
+import { useTenantConfig, getLinkHref, getTenantSlugFromSchoolId, getDbSchoolId } from '@/lib/useTenantConfig';
+import { setSchoolPrintConfig } from '@/lib/print-header';
 
 import {
   LayoutDashboard, Users, FileText, Activity, FileWarning,
@@ -205,6 +206,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       if (data) setSchools(data);
     });
   }, [user]);
+
+  // Hidrata o cabeçalho/rodapé/logo de impressão a partir do BD (school_settings).
+  // Os builders em lib/print-header leem desse cache via setSchoolPrintConfig.
+  useEffect(() => {
+    if (!user || !supabase) return;
+    const schoolId = (activeSchoolContext && activeSchoolContext !== 'DRE')
+      ? activeSchoolContext
+      : getDbSchoolId(tenantId);
+    if (!schoolId) return;
+    let cancelled = false;
+    supabase
+      .from('school_settings')
+      .select('print_logo_url, print_seduc_logo_url, print_header_lines, print_footer_lines')
+      .eq('school_id', schoolId)
+      .maybeSingle()
+      .then(({ data }: { data: any }) => {
+        if (cancelled || !data) return;
+        setSchoolPrintConfig(schoolId, {
+          logoUrl: data.print_logo_url ?? null,
+          seducLogoUrl: data.print_seduc_logo_url ?? null,
+          headerLines: Array.isArray(data.print_header_lines) ? data.print_header_lines : null,
+          footerLines: Array.isArray(data.print_footer_lines) ? data.print_footer_lines : null,
+        });
+      });
+    return () => { cancelled = true; };
+  }, [user, activeSchoolContext, tenantId]);
 
   // Abre automaticamente o modal de contexto para admin_global, gestores e coordenadores uma vez por sessão
   useEffect(() => {

@@ -15,50 +15,99 @@
 const origin = (): string =>
   typeof window !== 'undefined' ? window.location.origin : '';
 
+// ─── Configuração de impressão por escola (hidratada do BD) ──────────────────
+// O AppShell carrega school_settings e chama setSchoolPrintConfig() para que os
+// builders abaixo gerem cabeçalho/rodapé/logo a partir do banco. Se nada for
+// hidratado, mantém-se o comportamento padrão (hardcoded) por compatibilidade.
+export interface PrintConfig {
+  logoUrl?: string | null;       // brasão da escola (direita)
+  seducLogoUrl?: string | null;  // logo SEDUC/Governo (esquerda)
+  headerLines?: string[] | null; // linhas centrais do cabeçalho
+  footerLines?: string[] | null; // linhas do rodapé
+}
+
+const PRINT_CONFIGS: Record<string, PrintConfig> = {};
+let LAST_PRINT_CONFIG: PrintConfig | null = null;
+
+export function setSchoolPrintConfig(schoolId: string | undefined, cfg: PrintConfig): void {
+  if (schoolId) PRINT_CONFIGS[schoolId] = cfg;
+  LAST_PRINT_CONFIG = cfg;
+}
+
+function resolvePrintConfig(schoolId?: string): PrintConfig | null {
+  if (schoolId && PRINT_CONFIGS[schoolId]) return PRINT_CONFIGS[schoolId];
+  return LAST_PRINT_CONFIG;
+}
+
+// Resolve uma URL de logo: absoluta (http) usa direto; relativa recebe o origin.
+function resolveLogo(url: string): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${origin()}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 export const getSchoolHeaderHTML = (schoolId?: string): string => {
   const isHeliodoro = schoolId === 'heliodoro' || (typeof window !== 'undefined' && window.location.host.includes('heliodoro'));
-  
+
+  // Padrões (fallback) por escola
   const schoolNameUpper = isHeliodoro ? 'HELIODORO CAPISTRANO' : 'PROF. JOÃO BATISTA';
   const logoEscola = isHeliodoro ? 'nova_logo.svg' : 'logo-escola.png';
   const logoFolder = isHeliodoro ? 'heliodoro' : '';
-  const logoPath = logoFolder ? `/schools/${logoFolder}/${logoEscola}` : `/${logoEscola}`;
+  const defaultLogoPath = logoFolder ? `/schools/${logoFolder}/${logoEscola}` : `/${logoEscola}`;
+
+  // Sobrescreve com a configuração do BD quando existir
+  const cfg = resolvePrintConfig(schoolId);
+  const seducSrc = cfg?.seducLogoUrl ? resolveLogo(cfg.seducLogoUrl) : `${origin()}/logo-seduc-mt.svg`;
+  const escolaSrc = cfg?.logoUrl ? resolveLogo(cfg.logoUrl) : `${origin()}${defaultLogoPath}`;
+
+  const headerLines = (cfg?.headerLines && cfg.headerLines.length > 0)
+    ? cfg.headerLines
+    : ['GOVERNO DO ESTADO DE MATO GROSSO', 'SECRETARIA DE ESTADO DE EDUCAÇÃO', 'ESCOLA ESTADUAL CÍVICO-MILITAR', schoolNameUpper];
+
+  const centerHtml = headerLines
+    .map(line => `    <span class="cab-escola">${escapeHtml(line)}</span>`)
+    .join('\n');
 
   return `
 <div class="cabecalho-oficial">
-  <img class="cab-logo-seduc"  src="${origin()}/logo-seduc-mt.svg" alt="Logo SEDUC e Governo MT" />
+  <img class="cab-logo-seduc"  src="${seducSrc}" alt="Logo SEDUC e Governo MT" />
   <div class="cab-center">
-    <span class="cab-gov">GOVERNO DO ESTADO DE MATO GROSSO</span>
-    <span class="cab-gov">SECRETARIA DE ESTADO DE EDUCAÇÃO</span>
-    <span class="cab-escola">ESCOLA ESTADUAL CÍVICO-MILITAR</span>
-    <span class="cab-escola">${schoolNameUpper}</span>
+${centerHtml}
   </div>
-  <img class="cab-logo-escola" src="${origin()}${logoPath}" alt="Logo ${schoolNameUpper}" />
+  <img class="cab-logo-escola" src="${escolaSrc}" alt="Logo da escola" />
 </div>
 `;
 };
 
 export const getSchoolFooterHTML = (schoolId?: string): string => {
   const isHeliodoro = schoolId === 'heliodoro' || (typeof window !== 'undefined' && window.location.host.includes('heliodoro'));
-  
-  if (isHeliodoro) {
-    return `
-<div class="rodape-oficial">
-  <div>E.E Cívico-Militar Heliodoro Capistrano</div>
-  <div>(65) 3326-1234</div>
-  <div>Rua Filinto Müller, Centro</div>
-  <div>CEP 78.300-000 – TANGARÁ DA SERRA/MT</div>
-  <div>escola.heliodoro@edu.mt.gov.br</div>
-</div>
-`;
-  }
+
+  const defaultLines = isHeliodoro
+    ? [
+        'E.E Cívico-Militar Heliodoro Capistrano',
+        '(65) 3326-1234',
+        'Rua Filinto Müller, Centro',
+        'CEP 78.300-000 – TANGARÁ DA SERRA/MT',
+        'escola.heliodoro@edu.mt.gov.br',
+      ]
+    : [
+        'E.E Cívico-Militar Prof. João Batista',
+        '(65) 3329-1021 | (65) 99944-6304',
+        'Av. Ismael José do Nascimento nº 892-N Jardim Europa',
+        'CEP 78.300-152 – TANGARÁ DA SERRA/MT',
+        'escola.16020@edu.mt.gov.br',
+      ];
+
+  const cfg = resolvePrintConfig(schoolId);
+  const lines = (cfg?.footerLines && cfg.footerLines.length > 0) ? cfg.footerLines : defaultLines;
+
+  const inner = lines.map(line => `  <div>${escapeHtml(line)}</div>`).join('\n');
 
   return `
 <div class="rodape-oficial">
-  <div>E.E Cívico-Militar Prof. João Batista</div>
-  <div>(65) 3329-1021 | (65) 99944-6304</div>
-  <div>Av. Ismael José do Nascimento nº 892-N Jardim Europa</div>
-  <div>CEP 78.300-152 – TANGARÁ DA SERRA/MT</div>
-  <div>escola.16020@edu.mt.gov.br</div>
+${inner}
 </div>
 `;
 };
