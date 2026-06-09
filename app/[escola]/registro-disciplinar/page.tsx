@@ -5,7 +5,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check, QrCode, Copy, Send, ShieldCheck, Loader2 } from 'lucide-react';
+import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check, QrCode, Copy, Send, ShieldCheck, Loader2, FolderOpen } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import type { SignatureRequest } from '@/lib/signatures';
