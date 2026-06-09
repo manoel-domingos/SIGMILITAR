@@ -116,6 +116,7 @@ function RegistroDisciplinarContent() {
   const [showArchiveMenu, setShowArchiveMenu] = useState(false);
   const [showVoGuardianMenu, setShowVoGuardianMenu] = useState(false);
   const [showResolucaoModal, setShowResolucaoModal] = useState(false);
+  const [showQrResolucaoModal, setShowQrResolucaoModal] = useState(false);
   const [resolucaoText, setResolucaoText] = useState('');
   const [resolucaoSaving, setResolucaoSaving] = useState(false);
   
@@ -352,8 +353,8 @@ function RegistroDisciplinarContent() {
     return link?.status || 'pendente';
   };
 
-  const generateSignedDocumentQr = async (occurrence: Occurrence) => {
-    if (generatingSignedQr) return;
+  const generateSignedDocumentQr = async (occurrence: Occurrence): Promise<string | null> => {
+    if (generatingSignedQr) return null;
     try {
       setGeneratingSignedQr(true);
       const { data: sessionData } = await supabase.auth.getSession();
@@ -380,10 +381,43 @@ function RegistroDisciplinarContent() {
         [occurrence.id]: { url: data.url, token: data.token, expiresAt: data.expires_at, status: 'pendente' },
       }));
       toast.success('QR Code gerado. Link expira em até 72 horas.');
+      return data.url as string;
     } catch (error: any) {
       toast.error(error.message || 'Erro ao gerar QR Code.');
+      return null;
     } finally {
       setGeneratingSignedQr(false);
+    }
+  };
+
+  // Fluxo novo: gera o QR e, em seguida, abre o card pedindo a solução
+  // definitiva da ocorrência com o QR ao lado para leitura.
+  const handleGenerateQrAndResolve = async (occurrence: Occurrence) => {
+    const url = await generateSignedDocumentQr(occurrence);
+    if (!url) return;
+    setResolucaoText(occurrence.solucao_acao || '');
+    setShowQrResolucaoModal(true);
+  };
+
+  const handleResolverQr = async () => {
+    if (!_vo || !resolucaoText.trim()) return;
+    setResolucaoSaving(true);
+    try {
+      await updateOccurrence(_vo.id, {
+        status: 'resolvida',
+        solucao_acao: resolucaoText,
+        resolved: true,
+        resolvedAt: new Date().toISOString(),
+      });
+      setViewOccurrence({ ..._vo, status: 'resolvida', solucao_acao: resolucaoText });
+      setShowQrResolucaoModal(false);
+      setResolucaoText('');
+      toast.success('Solução definitiva registrada.');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao salvar solução.');
+    } finally {
+      setResolucaoSaving(false);
     }
   };
 
@@ -3247,7 +3281,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           </div>
                           <button
                             type="button"
-                            onClick={() => generateSignedDocumentQr(_vo)}
+                            onClick={() => handleGenerateQrAndResolve(_vo)}
                             disabled={generatingSignedQr}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold transition shrink-0"
                           >
@@ -3788,7 +3822,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => generateSignedDocumentQr(_vo)}
+                            onClick={() => handleGenerateQrAndResolve(_vo)}
                             disabled={generatingSignedQr}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold transition"
                           >
@@ -4035,6 +4069,75 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition disabled:opacity-50"
               >
                 {resolucaoSaving ? 'Salvando...' : 'Confirmar e Imprimir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal QR + Solução Definitiva (fluxo novo ao gerar QR Code) */}
+      {showQrResolucaoModal && viewOccurrence && (
+        <div className="fixed inset-0 z-[9996] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setShowQrResolucaoModal(false); }}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 bg-blue-600">
+              <p className="text-white font-bold text-sm flex items-center gap-2">
+                <QrCode className="w-4 h-4" /> QR Code gerado
+              </p>
+              <p className="text-white/80 text-xs mt-0.5">
+                Aproveite e já informe a solução definitiva dessa ocorrência.
+              </p>
+            </div>
+            {/* Body */}
+            <div className="px-6 py-5 grid sm:grid-cols-[160px_1fr] gap-5">
+              {/* QR Code para leitura */}
+              <div className="flex flex-col items-center gap-2">
+                {(() => {
+                  const link = signedUploadLinks[viewOccurrence.id];
+                  if (!link) return <p className="text-xs text-slate-400 text-center">QR indisponível.</p>;
+                  return (
+                    <>
+                      <div className="rounded-xl bg-white p-2 border border-slate-200">
+                        <QRCodeCanvas value={link.url} size={132} />
+                      </div>
+                      <p className="text-[10px] text-slate-400 text-center">Leia para enviar o documento assinado</p>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText(link.url).then(() => toast.success('Link copiado.'))}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Copiar link
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+              {/* Solução definitiva */}
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">Solução / Ação definitiva</label>
+                <textarea
+                  value={resolucaoText}
+                  onChange={(e) => setResolucaoText(e.target.value)}
+                  className="w-full min-h-[132px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  placeholder="Descreva a solução definitiva desta ocorrência..."
+                  autoFocus
+                />
+              </div>
+            </div>
+            {/* Footer */}
+            <div className="flex gap-2 justify-end px-6 py-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-700">
+              <button
+                onClick={() => setShowQrResolucaoModal(false)}
+                className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={handleResolverQr}
+                disabled={!resolucaoText.trim() || resolucaoSaving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition disabled:opacity-50"
+              >
+                <Check className="w-3.5 h-3.5" /> {resolucaoSaving ? 'Salvando...' : 'Salvar solução'}
               </button>
             </div>
           </div>

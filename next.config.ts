@@ -30,7 +30,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://www.googleapis.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://picsum.photos https://lh3.googleusercontent.com https://*.googleusercontent.com https://i.postimg.cc https://*.postimg.cc",
+      "img-src 'self' data: blob: https://" + SUPABASE_HOST + " https://picsum.photos https://lh3.googleusercontent.com https://*.googleusercontent.com https://i.postimg.cc https://*.postimg.cc",
       "connect-src 'self' https://" + SUPABASE_HOST + " wss://" + SUPABASE_HOST + " https://accounts.google.com https://oauth2.googleapis.com https://generativelanguage.googleapis.com https://www.googleapis.com https://*.googleapis.com https://www.google.com https://lh3.googleusercontent.com",
       "frame-src 'self' https://accounts.google.com https://drive.google.com",
       "frame-ancestors 'none'",

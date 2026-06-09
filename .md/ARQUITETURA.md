@@ -102,5 +102,6 @@ Domínios atualmente permitidos em `img-src`:
 - `lh3.googleusercontent.com`, `*.googleusercontent.com`
 - `vercel.live`, `*.vercel.live`, `vercel.com`, `*.vercel.com`
 - `i.postimg.cc`, `*.postimg.cc`
+- `imprdimqcjbndqewioyt.supabase.co` (Storage — logos/fotos de escolas que importam própria imagem; ex: Jada Torres)
 
 Para adicionar um novo host de imagens, edite a diretiva `img-src` em `next.config.ts` e **documente aqui**.
