@@ -1056,9 +1056,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (supabase && isSupabaseConnected) {
       try {
         const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
-        
+
         // Intelligence: Check for existing students to preserve IDs and avoid duplicates
-        const { data: existingStudents } = await supabase!.from('students').select('id, name, class');
+        // Filter by school_id to prevent cross-school ID reuse when admin_global imports
+        const { data: existingStudents } = await supabase!.from('students').select('id, name, class').eq('school_id', dbSchoolId);
         
         const studentsToUpsert = newStudents.map(ns => {
           let matchedId = crypto.randomUUID();

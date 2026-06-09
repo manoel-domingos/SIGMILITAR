@@ -156,7 +156,7 @@ export function middleware(request: NextRequest) {
 
   // ─── 3. IDENTIFICACAO DO TENANT ─────────────────────────────────────────
 
-  const reservedPathSegments = new Set(['api', 'dre', 'dre-login', 'dretga', 'login']);
+  const reservedPathSegments = new Set(['api', 'dre', 'dre-login', 'dretga', 'login', 'auth']);
   const isValidTenantSlug = (slug: string | undefined) => (
     !!slug &&
     /^[a-z0-9]+$/.test(slug) &&
