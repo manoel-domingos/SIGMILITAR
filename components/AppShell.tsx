@@ -1566,39 +1566,40 @@ function BottomNavigation({ pathname }: { pathname: string }) {
   });
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200/50 dark:border-slate-800/50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pt-2.5 pb-[calc(10px+env(safe-area-inset-bottom,0px))] px-4 flex items-center justify-around transition-all duration-200">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.label}
-            href={getLinkHref(item.href, tenantId, rawPathname)}
-            className="flex flex-col items-center justify-center flex-1 text-center transition-transform active:scale-95"
-          >
-            <Icon
-              className={`w-5 h-5 transition-all duration-200 ${
-                item.active
-                  ? 'text-blue-600 dark:text-blue-400 scale-110'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
-              }`}
-            />
-            <span
-              className={`text-[10px] font-semibold mt-1 transition-colors duration-200 ${
-                item.active
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-slate-400 dark:text-slate-500'
-              }`}
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/60 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="flex items-stretch justify-around px-2 pt-1.5">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.label}
+              href={getLinkHref(item.href, tenantId, rawPathname)}
+              aria-current={item.active ? 'page' : undefined}
+              className="group relative flex flex-col items-center justify-center flex-1 min-h-[58px] gap-1 rounded-2xl transition-transform active:scale-90"
             >
-              {item.label}
-            </span>
-            <span
-              className={`w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 mt-1 transition-all duration-200 ${
-                item.active ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
-              }`}
-            />
-          </Link>
-        );
-      })}
+              {/* Cápsula do ícone — alvo de toque grande + estado ativo evidente */}
+              <span
+                className={`flex items-center justify-center w-12 h-8 rounded-full transition-all duration-200 ${
+                  item.active
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
+                    : 'text-slate-400 dark:text-slate-500 group-active:bg-slate-100 dark:group-active:bg-slate-800'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+              </span>
+              <span
+                className={`text-[10px] font-bold tracking-tight transition-colors duration-200 ${
+                  item.active
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-slate-400 dark:text-slate-500'
+                }`}
+              >
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
