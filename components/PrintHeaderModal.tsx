@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, FileText, Upload, Lock, Loader2, Check } from 'lucide-react';
+import { X, FileText, Upload, Loader2, Check } from 'lucide-react';
 import { supabase as supabaseClient } from '@/lib/supabase';
 import { setSchoolPrintConfig } from '@/lib/print-header';
 
@@ -28,7 +28,6 @@ export default function PrintHeaderModal({ open, onClose, schoolId, onSaved }: P
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [footerSlug, setFooterSlug] = useState('');
   const [footerText, setFooterText] = useState('');
 
   // Revoke object URL when preview changes (memory cleanup)
@@ -54,10 +53,11 @@ export default function PrintHeaderModal({ open, onClose, schoolId, onSaved }: P
         .maybeSingle(),
     ]).then(([{ data: ss }, { data: sc }]: [{ data: any }, { data: any }]) => {
       const slug = sc?.name ? `E.E Cívico-Militar ${sc.name}` : '';
-      setFooterSlug(slug);
       setLogoPreview(ss?.print_logo_url || null);
       const allLines = Array.isArray(ss?.print_footer_lines) ? ss.print_footer_lines : [];
-      setFooterText(linesToText(allLines.slice(1)));
+      // Rodapé 100% editável (inclusive a 1ª linha). Sem rodapé salvo → pré-preenche
+      // com o nome da escola como ponto de partida editável.
+      setFooterText(allLines.length ? linesToText(allLines) : slug);
     }).finally(() => setLoading(false));
   }, [open, schoolId, supabase]);
 
@@ -91,9 +91,8 @@ export default function PrintHeaderModal({ open, onClose, schoolId, onSaved }: P
         resolvedLogoUrl = pub?.publicUrl || null;
       }
 
-      const footerLines = footerSlug
-        ? [footerSlug, ...textToLines(footerText)]
-        : textToLines(footerText);
+      // Todas as linhas digitadas viram o rodapé (1ª linha inclusa, sem trava).
+      const footerLines = textToLines(footerText);
 
       const payload = {
         school_id: schoolId,
@@ -193,22 +192,14 @@ export default function PrintHeaderModal({ open, onClose, schoolId, onSaved }: P
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Rodapé</label>
 
-              {/* Slug line (readonly) */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <Lock className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                  {footerSlug || <span className="italic">Nome da escola (carregando...)</span>}
-                </span>
-              </div>
-
               <textarea
                 className={inputCls + ' font-mono text-xs leading-relaxed'}
-                rows={4}
+                rows={5}
                 value={footerText}
                 onChange={e => setFooterText(e.target.value)}
-                placeholder={'(65) 3329-1021\nAv. Ismael José do Nascimento nº 892-N\nCEP 78.300-152 – TANGARÁ DA SERRA/MT\nescola.16020@edu.mt.gov.br'}
+                placeholder={'E.E Cívico-Militar Prof. João Batista\n(65) 3329-1021\nAv. Ismael José do Nascimento nº 892-N\nCEP 78.300-152 – TANGARÁ DA SERRA/MT\nescola.16020@edu.mt.gov.br'}
               />
-              <p className="text-[10px] text-slate-400">Primeira linha (nome da escola) é automática.</p>
+              <p className="text-[10px] text-slate-400">Cada linha vira uma linha do rodapé. Totalmente editável, inclusive a primeira.</p>
             </div>
 
             {msg && (

@@ -5,7 +5,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check, QrCode, Copy, Send, ShieldCheck, Loader2, FolderOpen } from 'lucide-react';
+import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check, QrCode, Copy, Send, Loader2, FolderOpen } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import type { SignatureRequest } from '@/lib/signatures';
@@ -680,6 +680,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
       await streamAI(
         'ata',
         {
+          schoolName,
           students: studentNames || 'Não identificado',
           infractions: ruleDescriptions || 'Não especificada',
           dateTime: date + ' ' + hour,
@@ -3213,37 +3214,46 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                         })}
                       </div>
                       
+                      {/* QR Code para o responsável enviar o documento assinado (clonado de Documentos) */}
                       <div className="space-y-3 bg-blue-50 dark:bg-blue-950/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/40">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
-                            <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <QrCode className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             <div>
-                              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Assinatura digital</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">Provedor interno simples + envio manual via WhatsApp</p>
+                              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">QR Code para o responsável</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">Gere o QR para o responsável enviar o documento assinado</p>
                             </div>
                           </div>
-                          {signatureLoading ? (
-                            <span className="text-xs text-slate-400">Carregando...</span>
-                          ) : (
-                            <span className="text-xs font-bold text-blue-700 dark:text-blue-300">{approvedSignatureCount} aprovada(s)</span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => generateSignedDocumentQr(_vo)}
+                            disabled={generatingSignedQr}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold transition shrink-0"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            {generatingSignedQr ? 'Gerando...' : 'Gerar QR Code'}
+                          </button>
                         </div>
-                        {signatureRequests.length > 0 ? (
-                          <div className="space-y-2">
-                            {signatureRequests.slice(0, 3).map(req => (
-                              <div key={req.id} className="flex items-center justify-between gap-3 bg-white/80 dark:bg-slate-900/60 rounded-xl px-3 py-2 border border-blue-100 dark:border-blue-900/30">
-                                <div>
-                                  <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{req.recipient_name}</p>
-                                  <p className="text-[11px] text-slate-400">Expira em {new Date(req.expires_at).toLocaleDateString('pt-BR')}</p>
-                                </div>
-                                <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : req.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
-                                  {signatureStatusLabel(req.status)}
-                                </span>
-                              </div>
-                            ))}
+                        {signedUploadLinks[_vo.id] && getSignedUploadStatus(_vo, signedUploadLinks[_vo.id]) === 'pendente' ? (
+                          <div className="flex flex-col sm:flex-row gap-4 rounded-2xl border border-blue-100 bg-white/70 p-4 dark:border-blue-500/20 dark:bg-slate-900/40">
+                            <div className="rounded-xl bg-white p-2 w-fit">
+                              <QRCodeCanvas value={signedUploadLinks[_vo.id].url} size={132} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-blue-900 dark:text-blue-100">QR Code para upload do responsável</p>
+                              <p className="mt-1 break-all text-xs text-blue-700 dark:text-blue-200">{signedUploadLinks[_vo.id].url}</p>
+                              <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">Expira em {new Date(signedUploadLinks[_vo.id].expiresAt).toLocaleString('pt-BR')}</p>
+                              <button
+                                type="button"
+                                onClick={() => navigator.clipboard.writeText(signedUploadLinks[_vo.id].url).then(() => toast.success('Link copiado.'))}
+                                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-blue-700 shadow-sm hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-200"
+                              >
+                                <Copy className="h-3.5 w-3.5" /> Copiar link
+                              </button>
+                            </div>
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Nenhuma solicitação de assinatura criada.</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Nenhum QR Code gerado. Clique em "Gerar QR Code".</p>
                         )}
                       </div>
 
@@ -3563,13 +3573,14 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => handleCreateSignatureRequest(_vo, student, c)}
-                                        disabled={signatureCreatingFor === `${student.id}-${c.phone}`}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors disabled:opacity-60"
+                                        disabled
+                                        title="Assinatura digital em desenvolvimento"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-xs font-semibold cursor-not-allowed"
                                       >
                                         <Send className="w-3.5 h-3.5" />
-                                        {signatureCreatingFor === `${student.id}-${c.phone}` ? 'Criando...' : 'Assinar'}
+                                        Assinar
                                       </button>
+                                      <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 italic shrink-0">(Em breve)</span>
                                     </div>
                                   )}
                                 </li>

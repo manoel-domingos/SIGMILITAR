@@ -267,7 +267,14 @@ export async function POST(req: NextRequest) {
       heliodoro: 'E.E. Cívico-Militar Heliodoro Capistrano',
       tangara: 'E.E. Cívico-Militar Tangará',
     };
-    const fallbackName = FALLBACK_SCHOOL_NAMES[dbSchoolId] || 'E.E. Cívico-Militar Heliodoro Capistrano';
+    // Nome enviado pelo cliente (currentSchool.name) é autoritativo — o cliente
+    // sabe exatamente em qual tenant está. Evita IA "chutar" outra escola.
+    const clientSchoolName = typeof payload?.schoolName === 'string' && payload.schoolName.trim()
+      ? payload.schoolName.trim()
+      : '';
+    const fallbackName = clientSchoolName
+      || FALLBACK_SCHOOL_NAMES[dbSchoolId]
+      || 'Escola Estadual Cívico-Militar';
     let school = { id: dbSchoolId, name: fallbackName };
 
     if (supabaseUrl && keyToUse) {
@@ -287,11 +294,14 @@ export async function POST(req: NextRequest) {
             .from('schools')
             .select('id, name')
             .eq('id', dbSchoolId)
-            .single(),
+            .maybeSingle(),
         ]);
         if (!activeApiKey && ariaCfgRes.data?.aria_api_key)   activeApiKey = ariaCfgRes.data.aria_api_key;
         if (!activeModel  && ariaCfgRes.data?.aria_active_model) activeModel = ariaCfgRes.data.aria_active_model;
-        if (schoolRes.data?.name) school = { id: schoolRes.data.id, name: schoolRes.data.name };
+        // DB confirma o nome oficial — mas só sobrescreve se o cliente não mandou
+        // um nome explícito (cliente é a fonte de verdade do tenant ativo).
+        if (schoolRes.data?.name && !clientSchoolName) school = { id: schoolRes.data.id, name: schoolRes.data.name };
+        else if (schoolRes.data?.id) school = { id: schoolRes.data.id, name: school.name };
       } catch (err) {
         console.error('[AI API] Falha ao recuperar dados do Supabase:', err);
       }

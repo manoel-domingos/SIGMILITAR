@@ -36,7 +36,9 @@ export function setSchoolPrintConfig(schoolId: string | undefined, cfg: PrintCon
 }
 
 function resolvePrintConfig(schoolId?: string): PrintConfig | null {
-  if (schoolId && PRINT_CONFIGS[schoolId]) return PRINT_CONFIGS[schoolId];
+  // Isolamento por tenant (regra #1/#5): com schoolId, NUNCA cair em config de
+  // outra escola. Só usa LAST_PRINT_CONFIG quando o schoolId não foi informado.
+  if (schoolId) return PRINT_CONFIGS[schoolId] ?? null;
   return LAST_PRINT_CONFIG;
 }
 
@@ -61,12 +63,18 @@ export const getSchoolHeaderHTML = (schoolId?: string): string => {
       ? 'PROF. JOÃO BATISTA'
       : (cfg?.schoolName?.toUpperCase() ?? 'ESCOLA CÍVICO-MILITAR');
 
-  const logoEscola = isHeliodoro ? 'nova_logo.svg' : 'logo-escola.png';
-  const logoFolder = isHeliodoro ? 'heliodoro' : '';
-  const defaultLogoPath = logoFolder ? `/schools/${logoFolder}/${logoEscola}` : `/${logoEscola}`;
+  // Logo da escola — defaults por tenant:
+  //  heliodoro → brasão próprio | joaobatista → /logo-escola.png |
+  //  demais → logo PADRÃO (SEDUC) compartilhada. Escola que importa a sua
+  //  própria (cfg.logoUrl, fluxo de importação) sempre tem prioridade.
+  const defaultLogoPath = isHeliodoro
+    ? '/schools/heliodoro/nova_logo.svg'
+    : isJB
+      ? '/logo-escola.png'
+      : '/logo-escola-padrao.svg';
 
-  // Sobrescreve com a configuração do BD quando existir
-  const seducSrc = cfg?.seducLogoUrl ? resolveLogo(cfg.seducLogoUrl) : `${origin()}/logo-seduc-mt.svg`;
+  // SEDUC é FIXA e idêntica para todos os tenants — nunca configurável por escola.
+  const seducSrc = `${origin()}/logo-seduc-mt.svg`;
   const escolaSrc = cfg?.logoUrl ? resolveLogo(cfg.logoUrl) : `${origin()}${defaultLogoPath}`;
 
   const headerLines = (cfg?.headerLines && cfg.headerLines.length > 0)

@@ -229,7 +229,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         if (cancelled || !data) return;
         setSchoolPrintConfig(schoolId, {
           logoUrl: data.print_logo_url ?? null,
-          seducLogoUrl: data.print_seduc_logo_url ?? null,
+          // SEDUC é fixa/global — nunca por escola (evita logo quebrada por tenant)
+          seducLogoUrl: null,
           headerLines: Array.isArray(data.print_header_lines) ? data.print_header_lines : null,
           footerLines: Array.isArray(data.print_footer_lines) ? data.print_footer_lines : null,
           schoolName: schools.find(s => s.id === schoolId)?.name ?? null,
