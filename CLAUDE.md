@@ -164,6 +164,24 @@ O Ralph Loop:
 
 ---
 
+## Verificação Pós-Push (OBRIGATÓRIO)
+
+**Push sempre para `main`** — sem feature branches, sem PRs. `git push origin main` direto.
+
+Após push: **consultar Vercel via MCP** (`list_deployments` + `get_deployment`) para confirmar build 100% antes de reportar tarefa concluída.
+
+```
+1. git push origin main
+2. list_deployments → pegar deploymentId do commit mais recente
+3. get_deployment → verificar state === 'READY'
+4. Se state === 'ERROR' → get_deployment_build_logs → corrigir → novo push
+5. Só reportar "concluído" quando state === 'READY'
+```
+
+Nunca assumir que o build passou sem verificar. Erros de tipo (TypeScript), imports ausentes e outros erros de compilação só aparecem no build da Vercel.
+
+---
+
 ## Integração Canny
 
 A cada 3 git pushes: filtrar últimos 15 commits para top 3 mudanças importantes (ignorar typos/formatação/chores, focar em features/fixes/migrações). Enviar ao Canny em português automaticamente.
