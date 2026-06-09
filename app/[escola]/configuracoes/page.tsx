@@ -1697,42 +1697,64 @@ function TabStatus() {
 }
 
 // ─── Tab: Assistente ARIA ────────────────────────────────────────────────────
+const ARIA_VALID_MODELS = ['deepseek-v4-pro', 'deepseek-v4-flash'];
+
 function TabAria() {
   const [model, setModel] = useState('deepseek-v4-pro');
   const [apiKey, setApiKey] = useState('');
-  const [apiUrl, setApiUrl] = useState('https://api.deepseek.com');
+  const [hasSavedKey, setHasSavedKey] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ t: 'ok' | 'err'; m: string } | null>(null);
 
   useEffect(() => {
+    // Limpa resíduos de localStorage de versões anteriores
     if (typeof window !== 'undefined') {
-      const savedModel = localStorage.getItem('aria_active_model') || 'deepseek-v4-pro';
-      const savedKey = localStorage.getItem('aria_api_key') || '';
-      const savedUrl = localStorage.getItem('aria_api_url') || 'https://api.deepseek.com';
-      setModel(savedModel);
-      setApiKey(savedKey);
-      setApiUrl(savedUrl);
+      localStorage.removeItem('aria_api_key');
+      localStorage.removeItem('aria_api_url');
+      localStorage.removeItem('aria_active_model');
     }
+    // Carrega do Supabase
+    supabaseClient?.from('school_settings')
+      .select('aria_api_key, aria_active_model')
+      .eq('school_id', 'DRE')
+      .maybeSingle()
+      .then(({ data }: { data: any }) => {
+        if (data?.aria_api_key) setHasSavedKey(true);
+        if (data?.aria_active_model && ARIA_VALID_MODELS.includes(data.aria_active_model)) {
+          setModel(data.aria_active_model);
+        }
+      });
   }, []);
 
   const handleSaveAndTest = async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('aria_active_model', model);
-      localStorage.setItem('aria_api_key', apiKey);
-      localStorage.setItem('aria_api_url', apiUrl);
-    }
-
     setTesting(true);
     setTestResult(null);
+
+    // Salva no Supabase (não atualiza aria_api_key se o campo estiver vazio)
+    const upsertData: Record<string, any> = {
+      school_id: 'DRE',
+      aria_active_model: model,
+      updated_at: new Date().toISOString(),
+    };
+    if (apiKey) upsertData.aria_api_key = apiKey;
+
+    const { error: saveErr } = await supabaseClient!
+      .from('school_settings')
+      .upsert(upsertData, { onConflict: 'school_id' });
+
+    if (saveErr) {
+      setTestResult({ t: 'err', m: `Falha ao salvar: ${saveErr.message}` });
+      setTesting(false);
+      return;
+    }
+    if (apiKey) { setHasSavedKey(true); setApiKey(''); }
 
     try {
       const { streamAI } = await import('@/components/AIChat');
       const response = await streamAI('chat', { message: 'Diga exatamente: "Conexão OK!"' }, () => {});
-      
-      if (response && response.toLowerCase().includes('ok')) {
-        setTestResult({ t: 'ok', m: `Sucesso! Resposta da IA: "${response}"` });
-      } else if (response) {
+
+      if (response) {
         setTestResult({ t: 'ok', m: `Sucesso! Resposta da IA: "${response}"` });
       } else {
         throw new Error('Nenhum dado retornado.');
@@ -1746,19 +1768,15 @@ function TabAria() {
 
   const getModelLabel = (m: string) => {
     switch(m) {
-      case 'deepseek-v4-pro': return 'DeepSeek V4 Pro';
+      case 'deepseek-v4-pro':   return 'DeepSeek V4 Pro';
       case 'deepseek-v4-flash': return 'DeepSeek V4 Flash';
-      case 'gemini-1.5-pro': return 'Gemini 1.5 Pro';
-      case 'gemini-1.5-flash': return 'Gemini 1.5 Flash';
-      case 'gemini-2.0-flash': return 'Gemini 2.0 Flash';
-      case 'gpt-4o': return 'GPT-4o';
       default: return m;
     }
   };
 
   const stats = [
     { label: 'Modelo ativo',       value: getModelLabel(model), icon: Brain,        color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-900/20' },
-    { label: 'Gateway / API Base', value: apiUrl.replace('https://', '').replace('http://', ''),    icon: Zap,          color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: 'Gateway / API Base', value: 'api.deepseek.com',    icon: Zap,          color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
     { label: 'Conversas (sessao)', value: '—',                    icon: MessageSquare, color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'Latencia media',     value: '~1.2s',                icon: Activity,     color: 'text-emerald-500',bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
     { label: 'Tokens (estimado)',  value: '—',                    icon: BarChart2,    color: 'text-rose-500',   bg: 'bg-rose-50 dark:bg-rose-900/20' },
@@ -1807,24 +1825,20 @@ function TabAria() {
           <select className={SELECT} value={model} onChange={e => setModel(e.target.value)} disabled={testing}>
             <option value="deepseek-v4-pro">DeepSeek V4 Pro (Padrão)</option>
             <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
-            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-            <option value="gpt-4o">GPT-4o</option>
           </select>
         </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Chave de API (API Key)</label>
           <div className="relative">
-            <input type={showKey ? 'text' : 'password'} className={INPUT + ' pr-10'} value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Insira a API Key para o modelo selecionado..." disabled={testing} />
+            <input type={showKey ? 'text' : 'password'} className={INPUT + ' pr-10'} value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={hasSavedKey ? 'Chave salva — insira nova para substituir' : 'Insira a API Key para o modelo selecionado...'} disabled={testing} />
             <button type="button" onClick={() => setShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
               {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        <button onClick={handleSaveAndTest} disabled={testing || !apiKey} className="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-semibold shadow-sm transition flex items-center justify-center gap-2 active:scale-95 animate-in fade-in duration-200">
+        <button onClick={handleSaveAndTest} disabled={testing || (!apiKey && !hasSavedKey)} className="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-semibold shadow-sm transition flex items-center justify-center gap-2 active:scale-95 animate-in fade-in duration-200">
           {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           {testing ? 'Testando Conexão...' : 'Testar e Salvar Conexão'}
         </button>

@@ -234,18 +234,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { type, payload, schoolId, customApiKey, customBaseUrl, customModel } = body;
-
-    const activeApiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
-    if (!activeApiKey) {
-      return new Response(
-        JSON.stringify({ error: deepseekErrorMessage(401, 'API Key do Assistente não configurada.') }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const rawBaseUrl = customBaseUrl || 'https://api.deepseek.com';
-    const activeBaseUrl = rawBaseUrl.replace(/\/+$/, '');
+    const { type, payload, schoolId, customApiKey, customModel } = body;
 
     const cfg = CONFIGS[type];
     if (!cfg) {
@@ -255,10 +244,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Resolve o tenant ativo. No modelo só-slug (sigmilitar.com.br/<escola>), o
-    // /api/ai não recebe o slug no path, então o header x-tenant cai no fallback.
-    // Por isso priorizamos o schoolId enviado pelo cliente (validado), e só então
-    // recorremos ao header/sessão do servidor.
+    // Resolve o tenant ativo
     const VALID_TENANTS = new Set([
       'eecmheliodoro', 'eecmprofjoaobatista', 'eecmtangara',
       'heliodoro', 'joaobatista', 'tangara',
@@ -267,12 +253,15 @@ export async function POST(req: NextRequest) {
     const tenantId = clientTenant ?? await getTenantServer();
     const dbSchoolId = getDbSchoolId(tenantId);
 
-    // Inicializa o cliente do Supabase para buscar o nome correto da escola
+    // Supabase — busca chave global da IA + nome da escola (uma única conexão)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     const keyToUse = supabaseServiceKey || supabaseAnonKey;
-    
+
+    let activeApiKey = customApiKey || '';
+    let activeModel  = customModel  || '';
+
     const FALLBACK_SCHOOL_NAMES: Record<string, string> = {
       joaobatista: 'E.E. Cívico-Militar Prof. João Batista',
       heliodoro: 'E.E. Cívico-Militar Heliodoro Capistrano',
@@ -288,27 +277,45 @@ export async function POST(req: NextRequest) {
         const supabaseAdmin = createClient(url, keyToUse, {
           auth: { autoRefreshToken: false, persistSession: false }
         });
-        const { data } = await supabaseAdmin
-          .from('schools')
-          .select('*')
-          .eq('id', dbSchoolId)
-          .single();
-        if (data && data.name) {
-          school = { id: data.id, name: data.name };
-        }
+        const [ariaCfgRes, schoolRes] = await Promise.all([
+          supabaseAdmin
+            .from('school_settings')
+            .select('aria_api_key, aria_active_model')
+            .eq('school_id', 'DRE')
+            .maybeSingle(),
+          supabaseAdmin
+            .from('schools')
+            .select('id, name')
+            .eq('id', dbSchoolId)
+            .single(),
+        ]);
+        if (!activeApiKey && ariaCfgRes.data?.aria_api_key)   activeApiKey = ariaCfgRes.data.aria_api_key;
+        if (!activeModel  && ariaCfgRes.data?.aria_active_model) activeModel = ariaCfgRes.data.aria_active_model;
+        if (schoolRes.data?.name) school = { id: schoolRes.data.id, name: schoolRes.data.name };
       } catch (err) {
-        console.error('[AI API] Falha ao recuperar dados da escola:', err);
+        console.error('[AI API] Falha ao recuperar dados do Supabase:', err);
       }
     }
+
+    if (!activeApiKey) activeApiKey = process.env.DEEPSEEK_API_KEY || '';
+    if (!activeApiKey) {
+      return new Response(
+        JSON.stringify({ error: deepseekErrorMessage(401, 'API Key do Assistente não configurada.') }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!activeModel) activeModel = 'deepseek-v4-pro';
+
+    const activeBaseUrl = 'https://api.deepseek.com';
 
     const { system, user } = buildPrompts(type, payload, school);
 
     // Modelos nativos DeepSeek — fallback automatico se o primeiro nao responder
-    const MODEL_CHAIN = customModel
-      ? [customModel]
+    const MODEL_CHAIN = activeModel
+      ? [activeModel]
       : [
-          'deepseek-v4-pro',   // DeepSeek V4 Pro
-          'deepseek-v4-flash', // DeepSeek V4 Flash
+          'deepseek-v4-pro',
+          'deepseek-v4-flash',
         ];
     const FIRST_CHUNK_TIMEOUT_MS = 20000; // 20s sem nenhum chunk = timeout
 

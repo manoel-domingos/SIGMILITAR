@@ -70,25 +70,15 @@ export async function streamAI(
     ? payload.message
     : Object.entries(payload).map(([k, v]) => `${k}: ${String(v).slice(0, 60)}`).join(' | ');
 
-  let customApiKey = '';
-  let customBaseUrl = '';
-  let customModel = '';
-
   // Tenant ativo: prioriza o valor explícito; senão deriva do slug da URL.
-  // No modelo só-slug (sigmilitar.com.br/<escola>), o /api/ai não recebe o slug
-  // no path, então o cliente precisa enviar o tenant junto no body.
   let activeSchoolId = schoolId || '';
-
-  if (typeof window !== 'undefined') {
-    customApiKey = localStorage.getItem('aria_api_key') || '';
-    customBaseUrl = localStorage.getItem('aria_api_url') || '';
-    customModel = localStorage.getItem('aria_active_model') || '';
-    if (!activeSchoolId) activeSchoolId = getTenantIdFromHost();
+  if (typeof window !== 'undefined' && !activeSchoolId) {
+    activeSchoolId = getTenantIdFromHost();
   }
 
   const logId = addLog({
     type,
-    model: customModel || 'deepseek-v4-pro',
+    model: 'deepseek-v4-pro',
     httpStatus: null,
     input: inputSummary,
     output: '',
@@ -110,9 +100,6 @@ export async function streamAI(
         type,
         payload,
         schoolId: activeSchoolId || undefined,
-        customApiKey: customApiKey || undefined,
-        customBaseUrl: customBaseUrl || undefined,
-        customModel: customModel || undefined
       }),
       signal,
     });
