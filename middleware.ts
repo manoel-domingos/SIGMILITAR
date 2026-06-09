@@ -25,7 +25,9 @@ interface RateLimitRule {
 const RATE_LIMIT_RULES: Array<{ pattern: RegExp; rule: RateLimitRule }> = [
   // Rota de login: max 10 tentativas por minuto por IP (anti brute-force)
   { pattern: /^\/login$/, rule: { limit: 10, windowMs: 60_000 } },
-  // APIs criticas (criacao de usuario, etc): max 20 por minuto
+  // Criacao de usuario: max 5 convites por minuto (previne spam de emails)
+  { pattern: /^\/api\/admin\/create-user$/, rule: { limit: 5, windowMs: 60_000 } },
+  // Demais APIs admin: max 20 por minuto
   { pattern: /^\/api\/admin\//, rule: { limit: 20, windowMs: 60_000 } },
   // Demais APIs: max 60 por minuto
   { pattern: /^\/api\//, rule: { limit: 60, windowMs: 60_000 } },
