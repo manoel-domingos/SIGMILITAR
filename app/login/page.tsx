@@ -122,7 +122,7 @@ export default function Login() {
 
       // Fallback
       const slug = getTenantSlugFromSchoolId(currentUserSchoolId);
-      
+
       if (currentUserRole === 'admin_global') {
         const chosen = typeof window !== 'undefined' ? sessionStorage.getItem('dre_context_chosen_' + new Date().toDateString()) : null;
         if (chosen) {
@@ -131,7 +131,10 @@ export default function Login() {
         } else {
           setShowContextModal(true);
         }
-      } else {
+      } else if (slug) {
+        // Guard: só redireciona quando schoolId já foi carregado do banco.
+        // Se slug for vazio (schoolId ainda null/undefined), o efeito re-dispara
+        // quando currentUserSchoolId for populado pelo store.
         router.push(currentUserRole === 'PROFESSOR' ? `/${slug}/registro-disciplinar` : `/${slug}`);
       }
     }
