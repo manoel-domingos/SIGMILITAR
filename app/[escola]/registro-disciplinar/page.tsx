@@ -5,7 +5,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAppContext } from '@/lib/store';
-import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check, QrCode, Copy, Send, ShieldCheck } from 'lucide-react';
+import { Search, Plus, X, Edit2, Archive, Video, FileText, Camera, Clock, MapPin, UserPlus, Trash2, MessageSquare, Phone, Printer, Sparkles, AlertTriangle, ChevronDown, Paperclip, User, Users, Check, QrCode, Copy, Send, ShieldCheck, Loader2 } from 'lucide-react';
 import SearchableSelect from '@/components/SearchableSelect';
 import { Occurrence, StaffMember, Student, AVAILABLE_MEASURES } from '@/lib/data';
 import type { SignatureRequest } from '@/lib/signatures';
@@ -25,6 +25,8 @@ import OccurrenceChecklist, {
   loadChecklists,
   autocompleteWhatsapp,
 } from '@/components/OccurrenceChecklist';
+import { DriveModal } from '@/components/drive/DriveModal';
+
 
 function RegistroDisciplinarContent() {
   const { 
@@ -125,6 +127,12 @@ function RegistroDisciplinarContent() {
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [signatureCreatingFor, setSignatureCreatingFor] = useState<string | null>(null);
   const [editingOccurrence, setEditingOccurrence] = useState<string | null>(null);
+
+  // States para o modal de visualização de pastas do Google Drive
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
+  const [occurrenceDriveFolderId, setOccurrenceDriveFolderId] = useState<string | null>(null);
+  const [resolvingFolder, setResolvingFolder] = useState(false);
+
 
   // States para agendamento de retencao no calendario
   const [retentionEvent, setRetentionEvent] = useState<any | null>(null);
@@ -421,7 +429,10 @@ function RegistroDisciplinarContent() {
       // Resolve o occurrenceNumber
       const occurrenceNumber = editingOccurrence 
         ? editingOccurrence.slice(0, 8) 
-        : `nova_${Date.now()}`;
+        : viewOccurrence?.id
+          ? viewOccurrence.id.slice(0, 8)
+          : `nova_${Date.now()}`;
+
         
       // Pasta raiz da escola no Drive
       let schoolFolderId = process.env.NEXT_PUBLIC_DEFAULT_DRIVE_FOLDER_ID || '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
@@ -497,6 +508,36 @@ function RegistroDisciplinarContent() {
       return null;
     }
   };
+
+  const handleOpenDriveModal = async () => {
+    if (!viewOccurrence) return;
+    setResolvingFolder(true);
+    try {
+      const student = students.find(s => s.id === viewOccurrence.studentId);
+      const studentName = student ? (student.displayName || student.name) : 'Aluno_Desconhecido';
+      const occurrenceNumber = viewOccurrence.id.slice(0, 8);
+
+      const res = await fetch('/api/drive/resolve-occurrence-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schoolId: resolvedSchoolId,
+          studentName,
+          occurrenceNumber,
+        })
+      });
+      if (!res.ok) throw new Error('Falha ao resolver pasta da ocorrência');
+      const data = await res.json();
+      setOccurrenceDriveFolderId(data.folderId);
+      setIsDriveModalOpen(true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao acessar pasta no Google Drive: ' + err.message);
+    } finally {
+      setResolvingFolder(false);
+    }
+  };
+
 
   const handleGenerateAta = () => {
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -3294,145 +3335,148 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                     )}
 
                     {/* Controle do Calendário de Retenção */}
-                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                            Agenda / Retenção do Intervalo
-                          </h4>
+                    {isRetentionMeasure(_vo.measure || undefined, _vo.measures) && (
+                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                              Agenda / Retenção do Intervalo
+                            </h4>
+                          </div>
+                          {loadingRetentionEvent ? (
+                            <span className="text-xs text-slate-400">Carregando...</span>
+                          ) : retentionEvent ? (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                              Agendado
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                              Não Agendado
+                            </span>
+                          )}
                         </div>
-                        {loadingRetentionEvent ? (
-                          <span className="text-xs text-slate-400">Carregando...</span>
-                        ) : retentionEvent ? (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                            Agendado
-                          </span>
+
+                        {retentionEvent ? (
+                          <div className="space-y-3">
+                            {isEditingRetention ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Início</label>
+                                  <input 
+                                    type="date" 
+                                    value={retentionStartDate}
+                                    onChange={e => setRetentionStartDate(e.target.value)}
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dias</label>
+                                  <input 
+                                    type="number" 
+                                    min={1}
+                                    value={retentionDays}
+                                    onChange={e => setRetentionDays(parseInt(e.target.value, 10) || 1)}
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                  />
+                                </div>
+                                <div className="flex items-end gap-2">
+                                  <button 
+                                    onClick={handleSaveRetentionEvent}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex-1"
+                                  >
+                                    Salvar
+                                  </button>
+                                  <button 
+                                    onClick={() => setIsEditingRetention(false)}
+                                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-lg"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                <div className="space-y-1">
+                                  <p className="text-slate-600 dark:text-slate-300">
+                                    <strong>Início:</strong> {formatDate(retentionEvent.data_inicio)}
+                                  </p>
+                                  <p className="text-slate-600 dark:text-slate-300">
+                                    <strong>Dias de Retenção:</strong> {retentionEvent.metadata?.durationDays || retentionEvent.metadata?.duration_days || 1}
+                                  </p>
+                                  <p className="text-slate-600 dark:text-slate-300">
+                                    <strong>Fim:</strong> {formatDate(retentionEvent.data_fim)}
+                                  </p>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => setIsEditingRetention(true)}
+                                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 px-3 py-1.5 rounded-lg font-bold"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button 
+                                    onClick={handleDeleteRetentionEvent}
+                                    className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 px-3 py-1.5 rounded-lg font-bold"
+                                  >
+                                    Remover
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                            Não Agendado
-                          </span>
+                          <div className="space-y-3">
+                            <p className="text-xs text-slate-500">Nenhum agendamento ativo para esta ocorrência.</p>
+                            {isEditingRetention ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Início</label>
+                                  <input 
+                                    type="date" 
+                                    value={retentionStartDate}
+                                    onChange={e => setRetentionStartDate(e.target.value)}
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dias</label>
+                                  <input 
+                                    type="number" 
+                                    min={1}
+                                    value={retentionDays}
+                                    onChange={e => setRetentionDays(parseInt(e.target.value, 10) || 1)}
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                  />
+                                </div>
+                                <div className="flex items-end gap-2">
+                                  <button 
+                                    onClick={handleSaveRetentionEvent}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex-1"
+                                  >
+                                    Agendar
+                                  </button>
+                                  <button 
+                                    onClick={() => setIsEditingRetention(false)}
+                                    className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-lg"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => setIsEditingRetention(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+                              >
+                                Agendar Retenção de Intervalo
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
+                    )}
 
-                      {retentionEvent ? (
-                        <div className="space-y-3">
-                          {isEditingRetention ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Início</label>
-                                <input 
-                                  type="date" 
-                                  value={retentionStartDate}
-                                  onChange={e => setRetentionStartDate(e.target.value)}
-                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dias</label>
-                                <input 
-                                  type="number" 
-                                  min={1}
-                                  value={retentionDays}
-                                  onChange={e => setRetentionDays(parseInt(e.target.value, 10) || 1)}
-                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
-                                />
-                              </div>
-                              <div className="flex items-end gap-2">
-                                <button 
-                                  onClick={handleSaveRetentionEvent}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex-1"
-                                >
-                                  Salvar
-                                </button>
-                                <button 
-                                  onClick={() => setIsEditingRetention(false)}
-                                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-lg"
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                              <div className="space-y-1">
-                                <p className="text-slate-600 dark:text-slate-300">
-                                  <strong>Início:</strong> {formatDate(retentionEvent.data_inicio)}
-                                </p>
-                                <p className="text-slate-600 dark:text-slate-300">
-                                  <strong>Dias de Retenção:</strong> {retentionEvent.metadata?.durationDays || retentionEvent.metadata?.duration_days || 1}
-                                </p>
-                                <p className="text-slate-600 dark:text-slate-300">
-                                  <strong>Fim:</strong> {formatDate(retentionEvent.data_fim)}
-                                </p>
-                              </div>
-                              <div className="flex gap-2">
-                                <button 
-                                  onClick={() => setIsEditingRetention(true)}
-                                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 px-3 py-1.5 rounded-lg font-bold"
-                                >
-                                  Editar
-                                </button>
-                                <button 
-                                  onClick={handleDeleteRetentionEvent}
-                                  className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 px-3 py-1.5 rounded-lg font-bold"
-                                >
-                                  Remover
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-xs text-slate-500">Nenhum agendamento ativo para esta ocorrência.</p>
-                          {isEditingRetention ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Início</label>
-                                <input 
-                                  type="date" 
-                                  value={retentionStartDate}
-                                  onChange={e => setRetentionStartDate(e.target.value)}
-                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dias</label>
-                                <input 
-                                  type="number" 
-                                  min={1}
-                                  value={retentionDays}
-                                  onChange={e => setRetentionDays(parseInt(e.target.value, 10) || 1)}
-                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
-                                />
-                              </div>
-                              <div className="flex items-end gap-2">
-                                <button 
-                                  onClick={handleSaveRetentionEvent}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex-1"
-                                >
-                                  Agendar
-                                </button>
-                                <button 
-                                  onClick={() => setIsEditingRetention(false)}
-                                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-lg"
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <button 
-                              onClick={() => setIsEditingRetention(true)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
-                            >
-                              Agendar Retenção de Intervalo
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
 
                     {/* Responsaveis */}
                     {_voStudent?.contacts && _voStudent.contacts.length > 0 && (
@@ -3540,7 +3584,30 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                 {voTab === 'documentos' && (
                   <div className="p-6 space-y-6">
 
+                    {/* Card de Acesso ao Google Drive */}
+                    <div className="flex items-center justify-between p-4 bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-150/40 dark:border-indigo-850/40 rounded-2xl animate-in fade-in duration-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm shrink-0">
+                          <FolderOpen size={16} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Pasta da Ocorrência no Google Drive</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Explore todos os arquivos e subpastas desta ocorrência no Google Drive.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleOpenDriveModal}
+                        disabled={resolvingFolder}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                      >
+                        {resolvingFolder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FolderOpen className="w-3.5 h-3.5" />}
+                        <span>Abrir Pasta do Drive</span>
+                      </button>
+                    </div>
+
                     {/* ── Evidencias (fotos/videos) ── */}
+
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div>
@@ -3988,7 +4055,24 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
         onUpdate={setChecklistTasks}
       />
 
+      {/* Modal para visualizar arquivos do Google Drive */}
+      {isDriveModalOpen && occurrenceDriveFolderId && (
+        <DriveModal
+          open={isDriveModalOpen}
+          onClose={() => setIsDriveModalOpen(false)}
+          schoolId={resolvedSchoolId}
+          rootFolderId={occurrenceDriveFolderId}
+          rootFolderName={`Ocorrência - ${
+            (() => {
+              const student = students.find(s => s.id === viewOccurrence?.studentId);
+              return student ? (student.displayName || student.name) : 'Aluno';
+            })()
+          }`}
+        />
+      )}
+
     </AppShell>
+
 
   );
 }

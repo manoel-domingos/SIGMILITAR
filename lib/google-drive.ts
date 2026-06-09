@@ -242,6 +242,25 @@ export async function getStudentOccurrenceUploadSession(
   return { uploadUri, isAlunosCreated: alunos.created };
 }
 
+export async function getStudentOccurrenceFolderId(
+  schoolFolderId: string,
+  studentName: string,
+  occurrenceNumber: string,
+  schoolId?: string
+): Promise<string> {
+  const sistema = await createFolderIfNotExist(schoolFolderId, 'SISTEMA', schoolId);
+  const alunos = await createFolderIfNotExist(sistema.id, 'Alunos', schoolId);
+  if (alunos.created) {
+    const docContent = `ATENÇÃO: NÃO APAGUE ESTA PASTA!\nEsta é a pasta centralizadora de documentos, ocorrências, termos de conduta e fotos de alunos do MEG.\nA remoção de pastas deste diretório comprometerá a integridade do histórico do aluno no sistema.`;
+    await createFile(alunos.id, 'Nao apagar.txt', 'text/plain', docContent, schoolId);
+  }
+  const student = await createFolderIfNotExist(alunos.id, studentName, schoolId);
+  const ocorrencias = await createFolderIfNotExist(student.id, 'Ocorrencias', schoolId);
+  const targetFolder = await createFolderIfNotExist(ocorrencias.id, `Ocorrencia_${occurrenceNumber}`, schoolId);
+  return targetFolder.id;
+}
+
+
 
 // ── Resumable Upload (bypasses Vercel 4.5MB body limit) ──────────────────────
 // Server creates a resumable session URI → client uploads file directly to Google
