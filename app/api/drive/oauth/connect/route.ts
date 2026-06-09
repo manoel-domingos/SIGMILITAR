@@ -11,8 +11,10 @@ function resolveRedirectUri(req: NextRequest): string {
   const explicit = process.env.GOOGLE_OAUTH_REDIRECT_URI;
   if (explicit) return explicit.trim();
   const proto = (req.headers.get('x-forwarded-proto') || 'https').split(',')[0].trim();
+  // Normaliza para o host canônico (apex, sem www) — o Google Console registra a URI
+  // sem www; acessar por www.sigmilitar.com.br gerava redirect_uri_mismatch.
   const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || new URL(req.url).host)
-    .split(',')[0].trim();
+    .split(',')[0].trim().replace(/^www\./i, '');
   return `${proto}://${host}/api/drive/oauth/callback`;
 }
 
