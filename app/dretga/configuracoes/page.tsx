@@ -107,7 +107,7 @@ export default function DreConfiguracoesPage() {
     }
   };
 
-  const slugPreview = newSchool.slug.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/^eecm/, '');
+  const slugPreview = newSchool.slug.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   const handleCreateSchool = async () => {
     setNewSchoolError('');
