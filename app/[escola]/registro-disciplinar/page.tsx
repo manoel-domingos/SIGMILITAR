@@ -301,6 +301,7 @@ function RegistroDisciplinarContent() {
           studentName,
           occurrenceNumber,
           schoolFolderId,
+          schoolId: resolvedSchoolId,
         }),
       });
 

@@ -24,9 +24,12 @@ export async function GET(req: NextRequest) {
 
   // Decodifica state
   let schoolId = '';
+  let returnTo = '/dretga/configuracoes';
   try {
     const decoded = JSON.parse(Buffer.from(stateB64, 'base64url').toString('utf-8'));
     schoolId = String(decoded.schoolId || '');
+    const rawReturnTo = String(decoded.returnTo || '');
+    if (/^\/[A-Za-z0-9/_\-?=&.]*$/.test(rawReturnTo)) returnTo = rawReturnTo;
     const ts = Number(decoded.ts || 0);
     if (Date.now() - ts > 15 * 60 * 1000) return failRedirect('Link de autorizacao expirado. Tente novamente.');
   } catch {
@@ -85,7 +88,8 @@ export async function GET(req: NextRequest) {
 
   if (upsertErr) return failRedirect(`Erro ao salvar token: ${upsertErr.message}`);
 
-  const res = NextResponse.redirect(`${origin}/dretga/configuracoes?drive=connected&email=${encodeURIComponent(gestorEmail)}`);
+  const sep = returnTo.includes('?') ? '&' : '?';
+  const res = NextResponse.redirect(`${origin}${returnTo}${sep}drive=connected&email=${encodeURIComponent(gestorEmail)}`);
   // Limpa o cookie
   res.cookies.delete('drive_oauth_redirect_uri');
   return res;

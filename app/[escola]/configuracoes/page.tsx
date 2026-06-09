@@ -11,8 +11,9 @@ import {
   Eye, EyeOff, Users, ChevronRight, Lock, Brain,
   Zap, Activity, Server, Database, Wifi, WifiOff,
   BarChart2, Cpu, MessageSquare, User, KeyRound,
-  FileText, CheckSquare, Loader2,
+  FileText, CheckSquare, Loader2, Link2, CheckCircle2, AlertCircle, HardDrive,
 } from 'lucide-react';
+import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -591,9 +592,59 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
 function TabStatus() {
   const { user } = useAppContext();
   const userEmail = user?.email || '';
+  const { tenantId } = useTenantConfig();
+  const driveSchoolId = getDbSchoolId(tenantId);
 
   const [ping, setPing] = useState<'idle'|'ok'|'err'>('idle');
   const [pingMs, setPingMs] = useState<number|null>(null);
+
+  // ── OAuth Google Drive (conta do gestor) ──
+  const [driveStatus, setDriveStatus] = useState<{ connected: boolean; email: string | null; connectedAt: string | null } | null>(null);
+  const [connectingDrive, setConnectingDrive] = useState(false);
+  const [driveMsg, setDriveMsg] = useState('');
+
+  const loadDriveStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/drive/oauth/status?schoolId=${driveSchoolId}`);
+      setDriveStatus(await res.json());
+    } catch { /* silencioso */ }
+  }, [driveSchoolId]);
+
+  useEffect(() => { loadDriveStatus(); }, [loadDriveStatus]);
+
+  // Trata retorno do callback OAuth (?drive=connected|error)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    const drive = sp.get('drive');
+    if (drive === 'connected') {
+      const email = sp.get('email') || '';
+      setDriveMsg(`Drive conectado${email ? ` como ${email}` : ''}.`);
+      loadDriveStatus();
+      const url = new URL(window.location.href);
+      url.searchParams.delete('drive'); url.searchParams.delete('email');
+      window.history.replaceState({}, '', url.toString());
+    } else if (drive === 'error') {
+      setDriveMsg(`Erro: ${sp.get('msg') || 'Falha ao conectar.'}`);
+    }
+  }, [loadDriveStatus]);
+
+  const handleConnectDrive = async () => {
+    setConnectingDrive(true); setDriveMsg('');
+    try {
+      const { data } = await supabase().auth.getSession();
+      const accessToken = data?.session?.access_token;
+      if (!accessToken) throw new Error('Sessão autenticada obrigatória.');
+      const returnTo = `/${tenantId}/configuracoes?tab=status`;
+      window.location.href =
+        `/api/drive/oauth/connect?schoolId=${driveSchoolId}` +
+        `&returnTo=${encodeURIComponent(returnTo)}` +
+        `&_token=${encodeURIComponent(accessToken)}`;
+    } catch (err: any) {
+      setDriveMsg(`Erro: ${err.message}`);
+      setConnectingDrive(false);
+    }
+  };
   
   // Custom Google Drive folders state
   const [showDriveModal, setShowDriveModal] = useState(false);
@@ -688,6 +739,49 @@ function TabStatus() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Google Drive — conexão OAuth da conta do gestor */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
+        <div className="flex items-center gap-3 pb-2 border-b border-slate-100 dark:border-slate-700">
+          <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+            <HardDrive className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">Conectar Google Drive (conta do gestor)</h4>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">O gestor autoriza uma vez. Os arquivos passam a usar a cota da conta dele, sem erro 403.</p>
+          </div>
+        </div>
+
+        <div className={`flex items-start gap-3 rounded-xl p-4 ${driveStatus?.connected ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30' : 'bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700'}`}>
+          {driveStatus?.connected
+            ? <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+            : <AlertCircle className="h-5 w-5 text-slate-400 shrink-0 mt-0.5" />}
+          <div className="min-w-0">
+            <p className={`text-sm font-bold ${driveStatus?.connected ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-500'}`}>
+              {driveStatus?.connected ? 'Conectado' : 'Não conectado'}
+            </p>
+            {driveStatus?.connected && driveStatus.email && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">{driveStatus.email}</p>
+            )}
+            {driveStatus?.connected && driveStatus.connectedAt && (
+              <p className="text-[11px] text-slate-400 mt-0.5">Desde {new Date(driveStatus.connectedAt).toLocaleDateString('pt-BR')}</p>
+            )}
+          </div>
+        </div>
+
+        {driveMsg && (
+          <p className={`rounded-xl px-3 py-2 text-xs font-semibold ${driveMsg.startsWith('Erro') ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'}`}>{driveMsg}</p>
+        )}
+
+        <button
+          onClick={handleConnectDrive}
+          disabled={connectingDrive}
+          className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition"
+        >
+          <Link2 className="h-4 w-4" />
+          {connectingDrive ? 'Redirecionando...' : driveStatus?.connected ? 'Reconectar Drive' : 'Conectar Drive'}
+        </button>
       </div>
 
       {/* Google Drive Status Section */}

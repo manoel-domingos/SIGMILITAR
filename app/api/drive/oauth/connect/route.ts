@@ -37,8 +37,12 @@ export async function GET(req: NextRequest) {
   const origin = req.headers.get('origin') || new URL(req.url).origin;
   const redirectUri = `${origin}/api/drive/oauth/callback`;
 
-  // Guarda schoolId + userId no state (signed via HMAC com service key como segredo)
-  const statePayload = JSON.stringify({ schoolId, userId: authUser.user.id, ts: Date.now() });
+  // Página de retorno após o consentimento (validada: apenas caminhos relativos internos)
+  const rawReturnTo = req.nextUrl.searchParams.get('returnTo') || '';
+  const returnTo = /^\/[A-Za-z0-9/_\-?=&.]*$/.test(rawReturnTo) ? rawReturnTo : '';
+
+  // Guarda schoolId + userId + returnTo no state
+  const statePayload = JSON.stringify({ schoolId, userId: authUser.user.id, returnTo, ts: Date.now() });
   const stateB64 = Buffer.from(statePayload).toString('base64url');
 
   const params = new URLSearchParams({
