@@ -15,6 +15,14 @@
 
 ## Changelog
 
+### 2026-06-09 — Correções: PrintHeaderModal + Canny Integration
+**Trigger:** Sessão de desenvolvimento
+**Resumo:**
+- `PrintHeaderModal` redesenhado: logo agora é upload de arquivo (Supabase Storage `student-files/school-logos/{id}/logo.ext`), SEDUC logo removido da UI, header lines removidas (fixas por padrão), rodapé dividido em slug automático + textarea do usuário. Após salvar: banner AppShell dispensado via CustomEvent `printFooterConfigured`.
+- Canny `/api/canny` corrigido: endpoint `retrieve_or_create` → `find_or_create` (era 404). Testado com post real criado em https://sigmilitar.canny.io.
+- `CannyKanbanModal.handleCreateIdea` agora chama `/api/canny create` após inserir no Supabase (fire-and-forget).
+**Status:** Concluído
+
 ### 2026-06-08 — Ciclo Ralph Loop (inicialização)
 **Trigger:** ralph-loop --init
 **Resumo:** Configurações de tenant e OAuth

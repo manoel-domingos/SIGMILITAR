@@ -15,6 +15,11 @@
 
 ## Changelog
 
+### 2026-06-09 — OnboardingChecklist criado
+**Trigger:** Solicitação do usuário
+**Resumo:** `components/OnboardingChecklist.tsx` — card flutuante bottom-left, steps por role (GESTOR: 5, COORD: 4, PROFESSOR: 3, MONITOR: 2), auto-detect via Supabase (students/occurrences count), persistência localStorage, integrado ao AppShell. TL;DR da sessão inserido em `system_notifications` (sino > aba Atualizações).
+**Status:** Concluído
+
 ### 2026-06-08 — Ciclo Ralph Loop (inicialização)
 **Trigger:** ralph-loop --init
 **Resumo:** MEG e acompanhamento pedagógico

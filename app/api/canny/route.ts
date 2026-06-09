@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 1. Retrieve or Create Canny User
-      const user = await cannyRequest('/api/v1/users/retrieve_or_create', {
+      const user = await cannyRequest('/api/v1/users/find_or_create', {
         email: userEmail,
         name: authorName,
         userID: userEmail,
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 1. Retrieve or Create User to get Canny Voter ID
-      const user = await cannyRequest('/api/v1/users/retrieve_or_create', {
+      const user = await cannyRequest('/api/v1/users/find_or_create', {
         email: userEmail,
         name: authorName,
         userID: userEmail,

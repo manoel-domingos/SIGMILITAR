@@ -251,6 +251,18 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
       fetchIdeas(); // revert
     } else {
       toast.success('Sua sugestão foi publicada com sucesso!');
+      // Espelha no painel Canny (fire-and-forget — falha silenciosa)
+      fetch('/api/canny', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          title: newIdea.title,
+          description: newIdea.description,
+          userEmail: newIdea.createdBy,
+          authorName: newIdea.createdByName,
+        }),
+      }).catch(() => {/* silencioso */});
     }
   };
 

@@ -22,6 +22,7 @@ import versionData from '@/lib/version.json';
 import AIChat from '@/components/AIChat';
 import CannyKanbanModal from '@/components/meg/CannyKanbanModal';
 import DashboardCalendar from '@/components/DashboardCalendar';
+import OnboardingChecklist from '@/components/OnboardingChecklist';
 
 type MenuItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 type MenuGroup = { label: string; icon: React.ComponentType<{ className?: string }>; href?: string; children?: MenuItem[] };
@@ -41,7 +42,7 @@ const MENU_GROUPS: MenuGroup[] = [
     label: 'Disciplina', icon: Gavel,
     children: [
       { href: '/registro-disciplinar', label: 'Registro Disciplinar', icon: FileText },
-      { href: '/faltas', label: 'Faltas Disciplinares', icon: CheckSquare },
+      { href: '/faltas', label: 'Medidas Disciplinares', icon: CheckSquare },
       { href: '/termo', label: 'Termo de Conduta', icon: FileText },
       { href: '/convocacao', label: 'Convocação de Pais', icon: UserPlus },
       { href: '/disciplina/documentos', label: 'Documentos', icon: FolderOpen },
@@ -239,6 +240,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       });
     return () => { cancelled = true; };
   }, [user, activeSchoolContext, tenantId]);
+
+  useEffect(() => {
+    const handler = () => setShowPrintBanner(false);
+    window.addEventListener('printFooterConfigured', handler);
+    return () => window.removeEventListener('printFooterConfigured', handler);
+  }, []);
 
   // Abre automaticamente o modal de contexto para admin_global, gestores e coordenadores uma vez por sessão
   useEffect(() => {
@@ -583,6 +590,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {/* Onboarding: primeiros passos (roles não-admin) */}
+      {user && currentUserRole && currentUserRole !== 'admin_global' && (
+        <OnboardingChecklist
+          role={currentUserRole}
+          schoolId={getDbSchoolId(tenantId) || tenantId}
+          tenantSlug={tenantId}
+          userEmail={user.email || ''}
+        />
+      )}
+
       {/* Modal de seleção de contexto */}
       {showContextModal && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowContextModal(false); setExpandedSchool(null); } }}>
@@ -830,7 +847,7 @@ function SidebarLayout({
                       { id: 'profile', label: 'Minha Conta',       icon: User },
                       { id: 'users_prof', label: 'Alunos',        icon: Users },
                       { id: 'occurrences_prof', label: 'Ocorrências', icon: FileText },
-                      { id: 'conduct_prof', label: 'Faltas Disciplinares', icon: CheckSquare },
+                      { id: 'conduct_prof', label: 'Medidas Disciplinares', icon: CheckSquare },
                       { id: 'reports_prof', label: 'Relatórios', icon: BarChart },
                     ]
                   : [

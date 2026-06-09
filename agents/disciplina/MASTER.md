@@ -15,6 +15,12 @@
 
 ## Changelog
 
+### 2026-06-09 — Renomeação de item de menu
+**Trigger:** Solicitação do usuário
+**Resumo:** "Faltas Disciplinares" → "Medidas Disciplinares" em 5 locais: `AppShell.tsx` (nav + aba professor), `app/[escola]/faltas/page.tsx` (título da página), `app/[escola]/configuracoes/page.tsx` (aba professor, cabeçalho da seção, lista de painéis).
+**Impacto:** Visual apenas — slug de rota `/faltas` e chaves de permissão inalterados.
+**Status:** Concluído
+
 ### 2026-06-08 — Ciclo Ralph Loop (inicialização)
 **Trigger:** ralph-loop --init
 **Resumo:** Ocorrências disciplinares e sanções

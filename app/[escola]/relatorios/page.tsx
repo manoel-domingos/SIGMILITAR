@@ -87,7 +87,9 @@ export default function Relatorios() {
           topClasses: topClasses || 'Sem dados',
           severityDistribution: 'Leves: ' + leves + ', M\u00e9dias: ' + medias + ', Graves: ' + graves,
         },
-        (delta) => setAiReport(prev => prev + delta)
+        (delta) => setAiReport(prev => prev + delta),
+        undefined,
+        activeSchoolContext
       );
     } catch {
       setAiReport('Não foi possível gerar o relatório no momento. Tente novamente.');

@@ -689,7 +689,9 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           isReincidente,
           text: observations,
         },
-        (delta) => setObservations(prev => prev + delta)
+        (delta) => setObservations(prev => prev + delta),
+        undefined,
+        resolvedSchoolId
       );
     } catch (error) {
       console.error("Erro ao melhorar ATA:", error);

@@ -2045,7 +2045,7 @@ function ConfiguracoesInner() {
         { id: 'profile', label: 'Minha Conta',       icon: User },
         { id: 'users_prof', label: 'Alunos',        icon: Users },
         { id: 'occurrences_prof', label: 'Ocorrências', icon: FileText },
-        { id: 'conduct_prof', label: 'Faltas Disciplinares', icon: CheckSquare },
+        { id: 'conduct_prof', label: 'Medidas Disciplinares', icon: CheckSquare },
         { id: 'reports_prof', label: 'Relatórios', icon: BarChart2 },
       ]
     : [
@@ -2548,8 +2548,8 @@ function TabConductProf() {
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
         <div>
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Faltas Disciplinares</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Visão consolidada de todas as faltas disciplinares registradas na turma selecionada (Somente Leitura).</p>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Medidas Disciplinares</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Visão consolidada de todas as medidas disciplinares registradas na turma selecionada (Somente Leitura).</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
@@ -2824,7 +2824,7 @@ function TabPermissions() {
     { key: 'alunos_xerife', label: 'Xerife', category: 'Alunos', description: 'Acesso à gestão de xerifes escolares da semana.' },
     { key: 'alunos_arquivados', label: 'Arquivados', category: 'Alunos', description: 'Acesso a alunos arquivados e históricos passados.' },
     { key: 'disciplina_registro', label: 'Registro Disciplinar', category: 'Disciplina', description: 'Lançar e gerenciar ocorrências disciplinares de alunos.' },
-    { key: 'disciplina_faltas', label: 'Faltas Disciplinares', category: 'Disciplina', description: 'Visualizar e gerenciar as faltas disciplinares ativas.' },
+    { key: 'disciplina_faltas', label: 'Medidas Disciplinares', category: 'Disciplina', description: 'Visualizar e gerenciar as medidas disciplinares ativas.' },
     { key: 'disciplina_termo', label: 'Termo de Conduta (TAC)', category: 'Disciplina', description: 'Lançamento e impressão de Termos de Ajustamento de Conduta.' },
     { key: 'disciplina_convocacao', label: 'Convocação de Pais', category: 'Disciplina', description: 'Emissão e registro de convocações de pais ou responsáveis.' },
     { key: 'disciplina_documentos', label: 'Documentos', category: 'Disciplina', description: 'Acesso à pasta de documentos oficiais e portarias.' },

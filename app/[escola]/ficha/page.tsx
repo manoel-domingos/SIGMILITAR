@@ -209,7 +209,9 @@ export default function FichaDisciplinar() {
           currentPoints: getStudentPoints(student.id).toFixed(1),
           occurrences: occurrencesSummary,
         },
-        (delta) => setAnalysisResult(prev => prev + delta)
+        (delta) => setAnalysisResult(prev => prev + delta),
+        undefined,
+        activeSchoolContext
       );
     } catch (error) {
       setAnalysisResult('Não foi possível gerar a análise no momento. Tente novamente.');

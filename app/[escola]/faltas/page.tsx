@@ -107,7 +107,7 @@ export default function FaltasDisciplinares() {
               <BookOpen className="w-4 h-4" />
               <span className="text-xs font-semibold uppercase tracking-wider">Base de Dados</span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">Faltas Disciplinares</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Medidas Disciplinares</h1>
             <p className="text-slate-500 text-sm mt-0.5">
               Regulamento com {rules.length} infrações organizadas por gravidade.
             </p>
