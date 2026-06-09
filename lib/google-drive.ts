@@ -92,15 +92,28 @@ export async function getAccessTokenForSchool(schoolId?: string): Promise<string
 
 export async function listFiles(folderId: string, schoolId?: string) {
   const drive = await getSchoolDriveClient(schoolId);
-  const { data } = await drive.files.list({
-    q: `'${folderId}' in parents and trashed = false`,
-    fields: 'files(id,name,mimeType,size,modifiedTime,parents)',
-    orderBy: 'folder,name',
-    pageSize: 1000,
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  });
-  return data.files ?? [];
+  const files: any[] = [];
+  let pageToken: string | undefined;
+
+  // Pagina até o fim — pastas com >1000 itens não eram listadas por completo.
+  // corpora:'allDrives' + includeItemsFromAllDrives garante itens de Drives
+  // Compartilhados independentemente de quem os criou.
+  do {
+    const { data } = await drive.files.list({
+      q: `'${folderId}' in parents and trashed = false`,
+      fields: 'nextPageToken, files(id,name,mimeType,size,modifiedTime,parents)',
+      orderBy: 'folder,name',
+      pageSize: 1000,
+      pageToken,
+      corpora: 'allDrives',
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+    if (data.files?.length) files.push(...data.files);
+    pageToken = data.nextPageToken ?? undefined;
+  } while (pageToken);
+
+  return files;
 }
 
 export async function uploadFile(folderId: string, name: string, mimeType: string, buffer: Buffer, schoolId?: string) {
