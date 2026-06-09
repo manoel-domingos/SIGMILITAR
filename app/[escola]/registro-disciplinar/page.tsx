@@ -113,6 +113,8 @@ function RegistroDisciplinarContent() {
   
   // States para o fluxo de resolução e impressão
   const [showPrintBanner, setShowPrintBanner] = useState(false);
+  const [showArchiveMenu, setShowArchiveMenu] = useState(false);
+  const [showVoGuardianMenu, setShowVoGuardianMenu] = useState(false);
   const [showResolucaoModal, setShowResolucaoModal] = useState(false);
   const [resolucaoText, setResolucaoText] = useState('');
   const [resolucaoSaving, setResolucaoSaving] = useState(false);
@@ -860,17 +862,24 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     
     return anyNameMatch || obsMatch || false;
   }).sort((a, b) => {
-    // Ordenar primariamente por data e horário do fato (mais recente primeiro)
-    const dateTimeA = new Date(a.date + 'T' + (a.hour || '00:00')).getTime();
-    const dateTimeB = new Date(b.date + 'T' + (b.hour || '00:00')).getTime();
-    if (dateTimeB !== dateTimeA) return dateTimeB - dateTimeA;
+    // ORDEM-TOTAL e ESTAVEL — a sequencia NUNCA embaralha (antes o comparador
+    // empatava em 0 por NaN/createdAt ausente e dependia da ordem do array,
+    // que muda apos buscar/limpar).
+    // 1) Por DIA do fato (mais recente primeiro). Hora NAO entra no sort para
+    //    nao quebrar a sequencia visual dos numeros dentro do mesmo dia.
+    const dayDiff = (b.date || '').localeCompare(a.date || '');
+    if (dayDiff !== 0) return dayDiff;
 
-    // Se data e hora do fato forem iguais, desempata por createdAt do servidor
+    // 2) Dentro do mesmo dia, pela sequencia da ATA (ataNumber e unico por tenant)
+    const ataA = a.ataNumber ?? -1;
+    const ataB = b.ataNumber ?? -1;
+    if (ataB !== ataA) return ataB - ataA;
+
+    // 3) Fallbacks deterministicos (registros sem ataNumber ainda nao persistido)
     if (a.createdAt && b.createdAt) {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (diff !== 0) return diff;
     }
-
-    // Se tudo mais for igual, por ID (mais recente ID primeiro)
     return b.id.localeCompare(a.id);
   });
 
@@ -2077,7 +2086,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                         return (
                           <tr 
                             key={o.id} 
-                            onClick={() => { setViewOccurrence(o); setIsPrintPanelOpen(false); setVoTab('status'); loadSignatureRequests(o.id); }}
+                            onClick={() => { setViewOccurrence(o); setIsPrintPanelOpen(false); setVoTab('status'); setShowArchiveMenu(false); setShowVoGuardianMenu(false); loadSignatureRequests(o.id); }}
                             className="hover:bg-slate-50 transition cursor-pointer"
                             title="Clique para ver os detalhes ou exportar"
                           >
