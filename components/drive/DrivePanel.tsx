@@ -17,11 +17,13 @@ import {
   ExternalLink,
   RefreshCw,
   AlertCircle,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { DriveFile } from './DriveModal';
+import { supabase } from '@/lib/supabase';
 
 const ROOT_FOLDER = '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
 
@@ -37,9 +39,72 @@ interface DrivePanelProps {
 export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title, schoolId }: DrivePanelProps) {
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  const [folderIdState, setFolderIdState] = useState(initialFolderId);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [driveFolderInput, setDriveFolderInput] = useState('');
+  const [savingConfig, setSavingConfig] = useState(false);
+
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
     { id: initialFolderId, name: 'Meu Drive' }
   ]);
+
+  useEffect(() => {
+    setFolderIdState(initialFolderId);
+    setBreadcrumbs([{ id: initialFolderId, name: 'Meu Drive' }]);
+  }, [initialFolderId]);
+
+  const extractFolderId = (url: string): string => {
+    const match = url.match(/folders\/([a-zA-Z0-9_-]{25,50})/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]{25,50})/);
+    if (idMatch && idMatch[1]) {
+      return idMatch[1];
+    }
+    if (/^[a-zA-Z0-9_-]{25,50}$/.test(url.trim())) {
+      return url.trim();
+    }
+    return '';
+  };
+
+  const handleSaveConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schoolId) {
+      toast.error('ID da escola não identificado.');
+      return;
+    }
+    const extractedId = extractFolderId(driveFolderInput);
+    if (!extractedId) {
+      toast.error('URL ou ID de pasta do Google Drive inválido.');
+      return;
+    }
+
+    setSavingConfig(true);
+    try {
+      const { error } = await supabase
+        .from('school_settings')
+        .upsert({ 
+          school_id: schoolId, 
+          drive_folder_id: extractedId,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'school_id' });
+
+      if (error) throw error;
+
+      toast.success('Pasta do Google Drive configurada com sucesso!');
+      setFolderIdState(extractedId);
+      setBreadcrumbs([{ id: extractedId, name: 'Meu Drive' }]);
+      setIsConfigModalOpen(false);
+    } catch (err: any) {
+      console.error('Erro ao salvar config do Drive:', err);
+      toast.error(err.message || 'Erro ao salvar configuração.');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [menuFile, setMenuFile] = useState<DriveFile | null>(null);
@@ -302,10 +367,23 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title, sch
         
         {/* Actions buttons */}
         <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+          {schoolId && (
+            <button
+              onClick={() => {
+                setDriveFolderInput(currentFolder.id);
+                setIsConfigModalOpen(true);
+              }}
+              className="flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40 shadow-sm cursor-pointer"
+              title="Configurações da Pasta"
+            >
+              <Settings size={13} />
+            </button>
+          )}
+
           <button
             onClick={() => loadFiles(currentFolder.id)}
             disabled={loading}
-            className="flex items-center justify-center p-2 rounded-xl bg-slate-105 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40 shadow-sm cursor-pointer"
+            className="flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40 shadow-sm cursor-pointer"
             title="Atualizar pasta"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -599,6 +677,56 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title, sch
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Google Drive Configuration Modal */}
+      {isConfigModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-800 dark:text-white">Configurar Pasta do Google Drive</h3>
+              <button 
+                onClick={() => setIsConfigModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveConfig} className="p-5 space-y-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Link ou ID da Pasta</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="Cole o link inteiro ou ID da pasta do Google Drive"
+                  value={driveFolderInput}
+                  onChange={e => setDriveFolderInput(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                  Insira o link da pasta compartilhada do Google Drive. O sistema extrairá automaticamente o ID necessário. Certifique-se de que a conta de serviço do sistema tenha acesso a essa pasta.
+                </p>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConfigModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-350 dark:hover:bg-slate-850 rounded-xl transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingConfig}
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {savingConfig && <Loader2 size={12} className="animate-spin" />}
+                  <span>Salvar Pasta</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Error alert indicator - bottom left */}
       <AnimatePresence>

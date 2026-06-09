@@ -126,6 +126,116 @@ function RegistroDisciplinarContent() {
   const [signatureCreatingFor, setSignatureCreatingFor] = useState<string | null>(null);
   const [editingOccurrence, setEditingOccurrence] = useState<string | null>(null);
 
+  // States para agendamento de retencao no calendario
+  const [retentionEvent, setRetentionEvent] = useState<any | null>(null);
+  const [loadingRetentionEvent, setLoadingRetentionEvent] = useState(false);
+  const [retentionStartDate, setRetentionStartDate] = useState('');
+  const [retentionDays, setRetentionDays] = useState(1);
+  const [retentionStatus, setRetentionStatus] = useState('planejado');
+  const [isEditingRetention, setIsEditingRetention] = useState(false);
+
+  // Fetch retention event when viewOccurrence changes
+  useEffect(() => {
+    if (!viewOccurrence?.id) {
+      setRetentionEvent(null);
+      return;
+    }
+    const fetchRetentionEvent = async () => {
+      try {
+        setLoadingRetentionEvent(true);
+        const { data, error } = await supabase
+          .from('agenda_preventiva')
+          .select('*')
+          .eq('school_id', resolvedSchoolId)
+          .eq('occurrence_id', viewOccurrence.id)
+          .eq('source', 'disciplinary_retention')
+          .maybeSingle();
+        if (error) {
+          console.error('Erro ao buscar evento de retencao:', error);
+        } else {
+          setRetentionEvent(data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingRetentionEvent(false);
+      }
+    };
+    fetchRetentionEvent();
+  }, [viewOccurrence?.id, resolvedSchoolId]);
+
+  // Sync retention states when retentionEvent or viewOccurrence changes
+  useEffect(() => {
+    if (retentionEvent) {
+      setRetentionStartDate(retentionEvent.data_inicio || '');
+      setRetentionDays(retentionEvent.metadata?.durationDays || retentionEvent.metadata?.duration_days || 1);
+      setRetentionStatus(retentionEvent.status || 'planejado');
+    } else {
+      setRetentionStartDate(viewOccurrence?.date || '');
+      setRetentionDays(viewOccurrence?.durationDays || 1);
+      setRetentionStatus('planejado');
+    }
+  }, [retentionEvent, viewOccurrence]);
+
+  const handleSaveRetentionEvent = async () => {
+    if (!viewOccurrence) return;
+    try {
+      const student = students.find(s => s.id === viewOccurrence.studentId);
+      const studentName = student?.name || 'Aluno';
+      const className = student?.class || '';
+      
+      const start = new Date(retentionStartDate);
+      const end = new Date(start);
+      end.setDate(start.getDate() + (retentionDays - 1));
+      const endDateStr = end.toISOString().split('T')[0];
+
+      await psicossocialService.syncDisciplinaryRetentionEvent({
+        schoolId: schoolSlug,
+        occurrenceId: viewOccurrence.id,
+        studentId: viewOccurrence.studentId,
+        studentName,
+        className,
+        startDate: retentionStartDate,
+        endDate: endDateStr,
+        durationDays: retentionDays,
+        measure: viewOccurrence.measureOverride || 'Retenção',
+        ruleCodes: viewOccurrence.ruleCodes || [viewOccurrence.ruleCode].filter(Boolean),
+        registeredBy: user?.name || user?.email || 'Sistema',
+        userId: user?.id
+      });
+      
+      toast.success('Agendamento de retenção atualizado no calendário!');
+      
+      // Refresh the event
+      const { data } = await supabase
+        .from('agenda_preventiva')
+        .select('*')
+        .eq('school_id', resolvedSchoolId)
+        .eq('occurrence_id', viewOccurrence.id)
+        .eq('source', 'disciplinary_retention')
+        .maybeSingle();
+      setRetentionEvent(data);
+      setIsEditingRetention(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Erro ao salvar agendamento.');
+    }
+  };
+
+  const handleDeleteRetentionEvent = async () => {
+    if (!retentionEvent) return;
+    if (!confirm('Deseja realmente remover esta retenção do calendário?')) return;
+    try {
+      await psicossocialService.deleteAgendaPreventiva(retentionEvent.id);
+      toast.success('Retenção removida do calendário.');
+      setRetentionEvent(null);
+      setIsEditingRetention(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Erro ao remover retenção.');
+    }
+  };
+
   // Modal form state
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   
@@ -163,6 +273,39 @@ function RegistroDisciplinarContent() {
   // Checklist flutuante de pendências pós-ocorrência
   const [checklistTasks, setChecklistTasks] = useState<OccurrenceTask[]>([]);
   const userId = user?.email ?? 'guest';
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlDate = searchParams.get('data');
+      const shouldOpen = searchParams.get('nova') === 'true';
+      if (shouldOpen) {
+        const now = new Date();
+        const localHour = now.toTimeString().split(' ')[0];
+        setEditingOccurrence(null);
+        setSelectedStudents([]);
+        setDate(urlDate || new Date().toISOString().split('T')[0]);
+        setHour(localHour);
+        setLocation('Pátio');
+        setLocatedBy('');
+        setLinkedProfessor(getLoggedProfessor());
+        setSelectedRules([]);
+        setRuleSearch('');
+        setRegisteredBy(getLoggedUserName());
+        setObservations('');
+        setVideoUrls([]);
+        setSignedDocUrls([]);
+        setDurationDays(1);
+        setAttenuatingFactors([]);
+        setAggravatingFactors([]);
+        setGraveMeasureType('Suspensão Escolar');
+        setIsModalOpen(true);
+
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [user]);
 
   // Auto-seleciona "Acionar os pais" para infrações Média/Grave
   useEffect(() => {
@@ -1153,7 +1296,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           measure: measureToSave,
           videoUrls,
           signedDocUrls,
-          durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
+          durationDays: (escalation.severity === 'Grave' || isRetentionMeasure(measureToSave, measuresToSave)) ? durationDays : undefined,
           attenuatingFactors,
           aggravatingFactors
         });
@@ -1179,7 +1322,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               measures: measuresToSave,
               videoUrls,
               signedDocUrls,
-              durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
+              durationDays: (escalation.severity === 'Grave' || isRetentionMeasure(measureToSave, measuresToSave)) ? durationDays : undefined,
               attenuatingFactors,
               aggravatingFactors,
               status: 'iniciada'
@@ -1220,7 +1363,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
             measures: measuresToSave,
             videoUrls,
             signedDocUrls,
-            durationDays: escalation.severity === 'Grave' ? durationDays : undefined,
+            durationDays: (escalation.severity === 'Grave' || isRetentionMeasure(measureToSave, measuresToSave)) ? durationDays : undefined,
             attenuatingFactors,
             aggravatingFactors,
             status: 'iniciada'
@@ -1472,6 +1615,16 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
       if (pending.length > 0) setChecklistTasks(updated);
     }
 
+    const isRuleRetention = (code: number) => {
+      const r = rules.find(rule => rule.code === code);
+      if (!r) return false;
+      const measureStr = normalizeText(String(r.measure));
+      return measureStr.includes('suspensao de recreacao') ||
+        measureStr.includes('retencao do intervalo') ||
+        measureStr.includes('retencao de intervalo') ||
+        measureStr.includes('retencao');
+    };
+
     // If we are in the main modal (new/edit), auto-save before redirecting
     if (isModalOpen && selectedStudents.length > 0 && selectedRules.length > 0) {
       if (editingOccurrence) {
@@ -1489,7 +1642,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           observations,
           videoUrls,
           signedDocUrls,
-          durationDays: rules.find(r => r.code === ruleCodeInt)?.severity === 'Grave' ? durationDays : undefined
+          durationDays: (rules.find(r => r.code === ruleCodeInt)?.severity === 'Grave' || isRuleRetention(ruleCodeInt)) ? durationDays : undefined
         });
       } else {
         for (const ruleCodeStr of selectedRules) {
@@ -1506,7 +1659,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
             observations,
             videoUrls,
             signedDocUrls,
-            durationDays: rules.find(r => r.code === ruleCodeInt)?.severity === 'Grave' ? durationDays : undefined
+            durationDays: (rules.find(r => r.code === ruleCodeInt)?.severity === 'Grave' || isRuleRetention(ruleCodeInt)) ? durationDays : undefined
           });
         }
       }
@@ -3137,6 +3290,147 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                         </div>
                       </div>
                     )}
+
+                    {/* Controle do Calendário de Retenção */}
+                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                            Agenda / Retenção do Intervalo
+                          </h4>
+                        </div>
+                        {loadingRetentionEvent ? (
+                          <span className="text-xs text-slate-400">Carregando...</span>
+                        ) : retentionEvent ? (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            Agendado
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+                            Não Agendado
+                          </span>
+                        )}
+                      </div>
+
+                      {retentionEvent ? (
+                        <div className="space-y-3">
+                          {isEditingRetention ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Início</label>
+                                <input 
+                                  type="date" 
+                                  value={retentionStartDate}
+                                  onChange={e => setRetentionStartDate(e.target.value)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dias</label>
+                                <input 
+                                  type="number" 
+                                  min={1}
+                                  value={retentionDays}
+                                  onChange={e => setRetentionDays(parseInt(e.target.value, 10) || 1)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                />
+                              </div>
+                              <div className="flex items-end gap-2">
+                                <button 
+                                  onClick={handleSaveRetentionEvent}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex-1"
+                                >
+                                  Salvar
+                                </button>
+                                <button 
+                                  onClick={() => setIsEditingRetention(false)}
+                                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-lg"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                              <div className="space-y-1">
+                                <p className="text-slate-600 dark:text-slate-300">
+                                  <strong>Início:</strong> {formatDate(retentionEvent.data_inicio)}
+                                </p>
+                                <p className="text-slate-600 dark:text-slate-300">
+                                  <strong>Dias de Retenção:</strong> {retentionEvent.metadata?.durationDays || retentionEvent.metadata?.duration_days || 1}
+                                </p>
+                                <p className="text-slate-600 dark:text-slate-300">
+                                  <strong>Fim:</strong> {formatDate(retentionEvent.data_fim)}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => setIsEditingRetention(true)}
+                                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 px-3 py-1.5 rounded-lg font-bold"
+                                >
+                                  Editar
+                                </button>
+                                <button 
+                                  onClick={handleDeleteRetentionEvent}
+                                  className="bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 px-3 py-1.5 rounded-lg font-bold"
+                                >
+                                  Remover
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-xs text-slate-500">Nenhum agendamento ativo para esta ocorrência.</p>
+                          {isEditingRetention ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Início</label>
+                                <input 
+                                  type="date" 
+                                  value={retentionStartDate}
+                                  onChange={e => setRetentionStartDate(e.target.value)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Dias</label>
+                                <input 
+                                  type="number" 
+                                  min={1}
+                                  value={retentionDays}
+                                  onChange={e => setRetentionDays(parseInt(e.target.value, 10) || 1)}
+                                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
+                                />
+                              </div>
+                              <div className="flex items-end gap-2">
+                                <button 
+                                  onClick={handleSaveRetentionEvent}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex-1"
+                                >
+                                  Agendar
+                                </button>
+                                <button 
+                                  onClick={() => setIsEditingRetention(false)}
+                                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-lg"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => setIsEditingRetention(true)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+                            >
+                              Agendar Retenção de Intervalo
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Responsaveis */}
                     {_voStudent?.contacts && _voStudent.contacts.length > 0 && (

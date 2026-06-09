@@ -1,9 +1,12 @@
 import { supabase } from './supabase';
 import { Ocorrencia, FichaNotificacao, Acompanhamento, AgendaPreventiva } from './data';
 
+import { getDbSchoolId } from './useTenantConfig';
+
 // Helper to wrap queries with school_id filter
 const bySchool = (query: any, schoolId: string) => {
-  return schoolId && schoolId !== 'DRE' ? query.eq('school_id', schoolId) : query;
+  const dbSchoolId = getDbSchoolId(schoolId);
+  return dbSchoolId && dbSchoolId !== 'DRE' ? query.eq('school_id', dbSchoolId) : query;
 };
 
 export const psicossocialService = {
@@ -33,7 +36,7 @@ export const psicossocialService = {
   async addOcorrencia(o: Omit<Ocorrencia, 'id'>, schoolId: string, userId?: string) {
     try {
       const payload = {
-        school_id: schoolId,
+        school_id: getDbSchoolId(schoolId),
         data_notificacao: o.data_notificacao,
         municipio: o.municipio || null,
         uf: o.uf || 'MT',
@@ -115,7 +118,7 @@ export const psicossocialService = {
   async addFichaNotificacao(f: Omit<FichaNotificacao, 'id'>, schoolId: string, userId?: string) {
     try {
       const payload = {
-        school_id: schoolId,
+        school_id: getDbSchoolId(schoolId),
         ocorrencia_id: f.ocorrencia_id || null,
         data_notificacao: f.data_notificacao,
         municipio_notificacao: f.municipio_notificacao || null,
@@ -197,7 +200,7 @@ export const psicossocialService = {
   async addAcompanhamento(a: Omit<Acompanhamento, 'id'>, schoolId: string, userId?: string) {
     try {
       const payload = {
-        school_id: schoolId,
+        school_id: getDbSchoolId(schoolId),
         ocorrencia_id: a.ocorrencia_id,
         data_registro: a.data_registro,
         descricao: a.descricao,
@@ -253,7 +256,7 @@ export const psicossocialService = {
   async addAgendaPreventiva(p: Omit<AgendaPreventiva, 'id'>, schoolId: string, userId?: string) {
     try {
       const payload = {
-        school_id: schoolId,
+        school_id: getDbSchoolId(schoolId),
         titulo: p.titulo,
         descricao: p.descricao || null,
         tematica: p.tematica || null,
@@ -323,7 +326,7 @@ export const psicossocialService = {
   }) {
     try {
       const eventPayload = {
-        school_id: payload.schoolId,
+        school_id: getDbSchoolId(payload.schoolId),
         titulo: 'Retenção do intervalo - ' + payload.studentName,
         descricao: 'Medida disciplinar vinculada à ocorrência ' + payload.occurrenceId + '.',
         tematica: 'disciplina',
@@ -349,7 +352,7 @@ export const psicossocialService = {
       const { data: existing, error: findError } = await supabase
         .from('agenda_preventiva')
         .select('id')
-        .eq('school_id', payload.schoolId)
+        .eq('school_id', getDbSchoolId(payload.schoolId))
         .eq('occurrence_id', payload.occurrenceId)
         .eq('source', 'disciplinary_retention')
         .maybeSingle();
@@ -374,7 +377,7 @@ export const psicossocialService = {
       const { error } = await supabase
         .from('agenda_preventiva')
         .update({ status: 'cancelado' })
-        .eq('school_id', schoolId)
+        .eq('school_id', getDbSchoolId(schoolId))
         .eq('occurrence_id', occurrenceId)
         .eq('source', 'disciplinary_retention');
 

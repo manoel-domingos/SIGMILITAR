@@ -186,14 +186,16 @@ function CreateSchoolDrawer({ open, onClose, onCreated }: {
 }
 
 // ─── Drawer: detalhes e exclusão de escola ───────────────────────────────────
-function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDeleted }: {
+function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDeleted, onUsersChange }: {
   school: School | null;
   open: boolean;
   onClose: () => void;
   users: UserRow[];
   onUpdated: (s: School) => void;
   onDeleted: (id: string) => void;
+  onUsersChange?: () => void;
 }) {
+  const { currentUserRole } = useAppContext();
   const [activeSubTab, setActiveSubTab] = useState<'config' | 'users' | 'integrations' | 'delete'>('config');
   const [schoolName, setSchoolName] = useState('');
   const [driveFolderId, setDriveFolderId] = useState('');
@@ -201,6 +203,128 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // States para CRUD inline de usuarios
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserRole, setEditUserRole] = useState<AppRole>('GESTOR');
+  const [savingUser, setSavingUser] = useState(false);
+
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<AppRole>('GESTOR');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [creatingUser, setCreatingUser] = useState(false);
+
+  // State para acionamento de backup
+  const [triggeringBackup, setTriggeringBackup] = useState(false);
+
+  const startEditUser = (u: UserRow) => {
+    setEditingUserId(u.id);
+    setEditUserName(u.name || '');
+    setEditUserRole(u.role);
+  };
+
+  const handleSaveUserEdit = async (uId: string) => {
+    setSavingUser(true);
+    setError(null);
+    try {
+      const { error } = await supabase()
+        .from('user_profiles')
+        .update({ name: editUserName.trim(), role: editUserRole, updated_at: new Date().toISOString() })
+        .eq('id', uId);
+      if (error) throw error;
+      toast.success('Usuário atualizado com sucesso!');
+      setEditingUserId(null);
+      if (onUsersChange) onUsersChange();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao atualizar usuário.');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (u: UserRow) => {
+    if (u.role === 'admin_global') {
+      toast.error('Não é permitido excluir administradores globais.');
+      return;
+    }
+    if (!confirm(`Deseja realmente remover o usuário ${u.name || u.email}?`)) return;
+    setSavingUser(true);
+    setError(null);
+    try {
+      const { error } = await supabase().from('user_profiles').delete().eq('id', u.id);
+      if (error) throw error;
+      toast.success('Usuário removido com sucesso!');
+      if (onUsersChange) onUsersChange();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao remover usuário.');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserName.trim() || !newUserEmail.trim()) {
+      toast.error('Nome e email são obrigatórios.');
+      return;
+    }
+    setCreatingUser(true);
+    setError(null);
+    try {
+      const headers = await adminApiHeaders();
+      const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: newUserName.trim(),
+          email: newUserEmail.trim(),
+          password: newUserPassword.trim() || '123456',
+          role: newUserRole,
+          school_id: school?.id,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Erro ao criar usuário.');
+      toast.success('Usuário criado com sucesso!');
+      setIsCreatingUser(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserRole('GESTOR');
+      setNewUserPassword('');
+      if (onUsersChange) onUsersChange();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao criar usuário.');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const handleTriggerFullBackup = async () => {
+    setTriggeringBackup(true);
+    setError(null);
+    try {
+      const headers = await adminApiHeaders();
+      const res = await fetch('/api/admin/backup-full', {
+        method: 'POST',
+        headers
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || 'Falha ao processar backup completo.');
+      }
+      toast.success('Backup completo gerado e salvo com sucesso!');
+      if (json.downloadUrl || json.url) {
+        window.open(json.downloadUrl || json.url, '_blank');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Erro ao acionar backup completo.');
+    } finally {
+      setTriggeringBackup(false);
+    }
+  };
 
   useEffect(() => {
     if (school) {
@@ -327,7 +451,7 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
       await supabase().from('students').delete().eq('school_id', schoolId);
 
       console.log("Removendo usuários e whitelists...");
-      await supabase().from('user_profiles').delete().eq('school_id', schoolId);
+      await supabase().from('user_profiles').delete().eq('school_id', schoolId).neq('role', 'admin_global');
       await supabase().from('tenant_email_whitelist').delete().eq('school_id', schoolId);
 
       console.log("Removendo configurações e registro da escola...");
@@ -395,16 +519,164 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
           )}
 
           {activeSubTab === 'users' && (
-            <div className="space-y-3">
-              <p className="text-xs text-slate-500 dark:text-slate-400">{schoolUsers.length} usuário(s) associado(s) a esta escola:</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500 dark:text-slate-400">{schoolUsers.length} usuário(s) associado(s) a esta escola:</p>
+                {!isCreatingUser ? (
+                  <button
+                    onClick={() => setIsCreatingUser(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 transition-all text-xs font-bold"
+                  >
+                    <UserPlus size={13} /> Novo Usuário
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsCreatingUser(false)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-100 transition-all text-xs font-bold"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+
+              {isCreatingUser && (
+                <form onSubmit={handleCreateUser} className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-350">Novo Usuário para {schoolName}</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nome Completo</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={newUserName} 
+                        onChange={e => setNewUserName(e.target.value)} 
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail / Usuário</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={newUserEmail} 
+                        onChange={e => setNewUserEmail(e.target.value)} 
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo</label>
+                      <select 
+                        value={newUserRole} 
+                        onChange={e => setNewUserRole(e.target.value as AppRole)} 
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                      >
+                        <option value="GESTOR">Gestor</option>
+                        <option value="COORD">Coordenador</option>
+                        <option value="MONITOR">Monitor</option>
+                        <option value="PROFESSOR">Professor</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Senha</label>
+                      <input 
+                        type="password" 
+                        placeholder="Mínimo 4 caracteres (padrão: 123456)" 
+                        value={newUserPassword} 
+                        onChange={e => setNewUserPassword(e.target.value)} 
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <button 
+                    type="submit" 
+                    disabled={creatingUser} 
+                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {creatingUser && <RefreshCw size={12} className="animate-spin" />}
+                    <span>Confirmar Criação</span>
+                  </button>
+                </form>
+              )}
+
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {schoolUsers.map(u => (
                   <div key={u.id} className="py-2.5 flex items-center justify-between text-xs">
-                    <div>
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">{u.name || 'Sem nome'}</p>
-                      <p className="text-slate-400 dark:text-slate-550">{u.email}</p>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-semibold text-slate-600 dark:text-slate-400">{ROLE_LABELS[u.role] || u.role}</span>
+                    {editingUserId === u.id ? (
+                      <div className="flex-1 flex flex-col gap-2 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800/30 animate-in fade-in duration-200">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nome</label>
+                            <input 
+                              type="text" 
+                              value={editUserName} 
+                              onChange={e => setEditUserName(e.target.value)} 
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cargo</label>
+                            <select 
+                              value={editUserRole} 
+                              onChange={e => setEditUserRole(e.target.value as AppRole)} 
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none"
+                            >
+                              <option value="GESTOR">Gestor</option>
+                              <option value="COORD">Coordenador</option>
+                              <option value="MONITOR">Monitor</option>
+                              <option value="PROFESSOR">Professor</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-1">
+                          <button
+                            onClick={() => setEditingUserId(null)}
+                            className="px-2.5 py-1 text-[11px] font-semibold text-slate-650 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 transition"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={() => handleSaveUserEdit(u.id)}
+                            disabled={savingUser}
+                            className="px-2.5 py-1 text-[11px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {savingUser && <RefreshCw size={10} className="animate-spin" />}
+                            <span>Salvar</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="font-semibold text-slate-800 dark:text-slate-200">{u.name || 'Sem nome'}</p>
+                          <p className="text-slate-400 dark:text-slate-550">{u.email}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2 py-0.5 rounded font-semibold text-slate-605 dark:text-slate-400 ${ROLE_COLORS[u.role] || 'bg-slate-100 dark:bg-slate-850'}`}>
+                            {ROLE_LABELS[u.role] || u.role}
+                          </span>
+                          {u.role !== 'admin_global' && (
+                            <div className="flex items-center gap-1.5">
+                              <button 
+                                onClick={() => startEditUser(u)} 
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-blue-600 rounded-lg transition"
+                                title="Editar Usuário"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteUser(u)} 
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-rose-600 rounded-lg transition"
+                                title="Excluir Usuário"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -412,16 +684,43 @@ function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDelete
           )}
 
           {activeSubTab === 'integrations' && (
-            <form onSubmit={handleUpdateConfig} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">ID da Pasta do Google Drive</label>
-                <input className={INPUT} value={driveFolderId} onChange={e => setDriveFolderId(e.target.value)} placeholder="Insira o ID do Drive Compartilhado..." />
-              </div>
-              <button type="submit" disabled={saving} className="w-full py-2.5 rounded-xl bg-blue-650 hover:bg-blue-700 text-white text-sm font-semibold transition flex items-center justify-center gap-2">
-                {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : success ? <Check className="w-4 h-4" /> : <Check className="w-4 h-4" />}
-                {saving ? 'Salvando...' : success ? 'Salvo!' : 'Salvar Integrações'}
-              </button>
-            </form>
+            <div className="space-y-4">
+              <form onSubmit={handleUpdateConfig} className="space-y-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">ID da Pasta do Google Drive</label>
+                  <input className={INPUT} value={driveFolderId} onChange={e => setDriveFolderId(e.target.value)} placeholder="Insira o ID do Drive Compartilhado..." />
+                </div>
+                <button type="submit" disabled={saving} className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition flex items-center justify-center gap-2">
+                  {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : success ? <Check className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                  {saving ? 'Salvando...' : success ? 'Salvo!' : 'Salvar Integrações'}
+                </button>
+              </form>
+
+              {currentUserRole === 'admin_global' && (
+                <div className="space-y-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                    <Database size={14} className="text-indigo-500" />
+                    <span>Backup Completo do Banco de Dados</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Gere uma cópia de segurança completa contendo todas as tabelas públicas do Supabase e envie para o Google Drive configurado. O backup também será fornecido para download imediato em formato JSON.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleTriggerFullBackup}
+                    disabled={triggeringBackup}
+                    className="w-full py-2.5 mt-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition flex items-center justify-center gap-1.5"
+                  >
+                    {triggeringBackup ? (
+                      <RefreshCw size={13} className="animate-spin" />
+                    ) : (
+                      <HardDrive size={13} />
+                    )}
+                    <span>{triggeringBackup ? 'Processando Backup...' : 'Executar Backup Completo do Banco'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {activeSubTab === 'delete' && (
@@ -1763,6 +2062,7 @@ function ConfiguracoesInner() {
           setSchools(prev => prev.filter(s => s.id !== deletedId));
           showToast('Escola e todos os seus dados foram excluídos com sucesso.');
         }}
+        onUsersChange={fetchData}
       />
       <CreateUserDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} schools={schools} onCreated={handleCreated} />
       <EditUserDrawer

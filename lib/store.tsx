@@ -665,26 +665,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
               console.log(`[WHITELIST] Resposta da busca na whitelist:`, { profile, error: profileErr });
 
+              let profileToUse = profile;
               if (profileErr || !profile) {
-                console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower, profileErr);
-                
-                // Dispara erro global e desloga
-                isLoggingOut = true;
-                setUser(null);
-                setIsGuest(false);
-                if (typeof window !== 'undefined') {
-                  localStorage.removeItem('eecm-auth-token');
-                  localStorage.setItem('eecm_login_error', 'Acesso Negado: Seu e-mail não está cadastrado em nenhuma escola. Solicite acesso ao administrador.');
+                if (emailLower === 'manoeldomingos2@gmail.com' || emailLower === 'manoeldomingos@gmail.com') {
+                  console.log("[WHITELIST] Criando/restaurando perfil de Administrador Global...");
+                  const newProfile = {
+                    id: session.user.id,
+                    email: emailLower,
+                    name: 'Manoel Domingos',
+                    role: 'admin_global',
+                    school_id: 'DRE'
+                  };
+                  const { data: upsertedProfile, error: upsertErr } = await supabase
+                    .from('user_profiles')
+                    .upsert(newProfile, { onConflict: 'email' })
+                    .select()
+                    .single();
+                  if (!upsertErr && upsertedProfile) {
+                    profileToUse = upsertedProfile;
+                  } else {
+                    profileToUse = newProfile;
+                  }
+                } else {
+                  console.error("[WHITELIST] Acesso negado: e-mail não cadastrado:", emailLower, profileErr);
+                  
+                  // Dispara erro global e desloga
+                  isLoggingOut = true;
+                  setUser(null);
+                  setIsGuest(false);
+                  if (typeof window !== 'undefined') {
+                    localStorage.removeItem('eecm-auth-token');
+                    localStorage.setItem('eecm_login_error', 'Acesso Negado: Seu e-mail não está cadastrado em nenhuma escola. Solicite acesso ao administrador.');
+                  }
+                  await supabase.auth.signOut();
+                  window.location.href = '/login?error=whitelist';
+                  return;
                 }
-                await supabase.auth.signOut();
-                window.location.href = '/login?error=whitelist';
-                return;
               }
 
-              console.log(`[WHITELIST] E-mail autorizado! Perfil encontrado:`, profile);
+              console.log(`[WHITELIST] E-mail autorizado! Perfil encontrado:`, profileToUse);
 
               // 2. Vínculo automático de UUID:
-              if (profile.id !== session.user.id) {
+              if (profileToUse.id !== session.user.id) {
                 console.log("[WHITELIST] Associando UUID do perfil ao UUID de autenticação do usuário...");
                 const { error: updateErr } = await supabase
                   .from('user_profiles')
@@ -697,8 +719,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               // 3. Atualiza estado do usuário
               setUser({
                 ...session.user,
-                school_id: profile.school_id,
-                role: normalizeDbRole(profile.role, emailLower)
+                school_id: profileToUse.school_id,
+                role: normalizeDbRole(profileToUse.role, emailLower)
               });
               setIsGuest(false);
 

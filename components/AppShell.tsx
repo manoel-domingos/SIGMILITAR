@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
 import AIChat from '@/components/AIChat';
 import CannyKanbanModal from '@/components/meg/CannyKanbanModal';
+import DashboardCalendar from '@/components/DashboardCalendar';
 
 type MenuItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 type MenuGroup = { label: string; icon: React.ComponentType<{ className?: string }>; href?: string; children?: MenuItem[] };
@@ -166,6 +167,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('topbar');
   const [isCannyModalOpen, setIsCannyModalOpen] = useState(false);
+  const [isFloatingCalendarOpen, setIsFloatingCalendarOpen] = useState(false);
 
   const hasCannyPermission = useMemo(() => {
     if (currentUserRole === 'admin_global') return true;
@@ -533,6 +535,39 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <BottomNavigation pathname={pathname} />
 
       <AIChat />
+
+      {/* Botão Flutuante do Calendário - Exibir apenas fora do Dashboard principal */}
+      {!(rawPathname === `/${tenantId}` || rawPathname === `/${tenantId}/` || rawPathname === '/') && (
+        <button
+          onClick={() => setIsFloatingCalendarOpen(true)}
+          className="fixed bottom-6 right-24 z-[9997] w-12 h-12 rounded-full bg-indigo-600 text-white shadow-xl hover:bg-indigo-700 active:scale-95 flex flex-col items-center justify-center border border-indigo-500/20 transition-all cursor-pointer hover:shadow-indigo-500/20 hover:shadow-2xl"
+          title="Calendário Escolar"
+        >
+          <span className="text-[9px] font-extrabold uppercase tracking-wide leading-none mb-0.5">
+            {new Date().toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()}
+          </span>
+          <span className="text-sm font-black leading-none">
+            {new Date().getDate()}
+          </span>
+        </button>
+      )}
+
+      {/* Modal Flutuante do Calendário */}
+      {isFloatingCalendarOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 animate-in fade-in duration-200" onMouseDown={(e) => { if (e.target === e.currentTarget) setIsFloatingCalendarOpen(false); }}>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setIsFloatingCalendarOpen(false)}
+              className="absolute top-4 right-4 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-655 transition z-[10]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="pt-2">
+              <DashboardCalendar />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de seleção de contexto */}
       {showContextModal && (
