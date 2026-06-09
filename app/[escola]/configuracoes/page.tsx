@@ -76,8 +76,382 @@ function Avatar({ name }: { name: string }) {
 const INPUT = 'w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder:text-slate-400';
 const SELECT = INPUT + ' appearance-none cursor-pointer';
 
+// ─── Drawer: criar escola ────────────────────────────────────────────────────
+function CreateSchoolDrawer({ open, onClose, onCreated }: {
+  open: boolean; onClose: () => void; onCreated: (s: School) => void;
+}) {
+  const [form, setForm] = useState({ schoolName: '', slug: '', gestorName: '', gestorEmail: '', driveFolder: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const slugPreview = form.slug.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/^eecm/, '');
+
+  const reset = () => {
+    setForm({ schoolName: '', slug: '', gestorName: '', gestorEmail: '', driveFolder: '' });
+    setError(null);
+  };
+  const handleClose = () => { reset(); onClose(); };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.schoolName.trim() || !slugPreview || !form.gestorName.trim() || !form.gestorEmail.trim()) {
+      setError('Preencha nome da escola, slug, nome e e-mail do gestor.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const headers = await adminApiHeaders();
+      const res = await fetch('/api/onboarding/provision', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          schoolName: form.schoolName.trim(),
+          slug: slugPreview,
+          dreId: 'DRETGA',
+          gestor: { email: form.gestorEmail.trim().toLowerCase(), name: form.gestorName.trim() },
+          driveFolder: form.driveFolder.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        setError(json.error || 'Erro ao criar escola.');
+        return;
+      }
+      if (json.school) onCreated(json.school);
+      handleClose();
+    } catch (err: any) {
+      setError(err.message || 'Erro inesperado.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(v => ({ ...v, [k]: e.target.value }));
+
+  return (
+    <>
+      <div className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={handleClose} />
+      <aside className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Nova Escola</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Crie uma nova escola com regras padrão.</p>
+          </div>
+          <button onClick={handleClose} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"><X className="w-5 h-5" /></button>
+        </div>
+        <form id="create-school-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {error && <div className="flex items-start gap-2 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 text-sm px-4 py-3 rounded-xl border border-rose-100 dark:border-rose-900/40"><ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+          
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome da Escola <span className="text-rose-500">*</span></label>
+            <input className={INPUT} placeholder="Ex: EECM Prof. João Batista" value={form.schoolName} onChange={set('schoolName')} autoFocus />
+          </div>
+          
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Slug (Endereço) <span className="text-rose-500">*</span></label>
+            <input className={INPUT} placeholder="Ex: joaobatista" value={form.slug} onChange={set('slug')} />
+            <p className="text-[11px] text-slate-400">sigmilitar.com.br/<span className="font-bold text-blue-600">{slugPreview || '...'}</span></p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome do Gestor <span className="text-rose-500">*</span></label>
+            <input className={INPUT} placeholder="Ex: Maria Silva" value={form.gestorName} onChange={set('gestorName')} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">E-mail do Gestor <span className="text-rose-500">*</span></label>
+            <input className={INPUT} placeholder="Ex: gestor@edu.mt.gov.br" value={form.gestorEmail} onChange={set('gestorEmail')} />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">ID da Pasta do Drive (Opcional)</label>
+            <input className={INPUT} placeholder="ID da pasta compartilhada" value={form.driveFolder} onChange={set('driveFolder')} />
+          </div>
+        </form>
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+          <button type="button" onClick={handleClose} className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancelar</button>
+          <button
+            form="create-school-form"
+            type="submit"
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98]"
+          >
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {saving ? 'Criando...' : 'Criar Escola'}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// ─── Drawer: detalhes e exclusão de escola ───────────────────────────────────
+function SchoolDetailsDrawer({ school, open, onClose, users, onUpdated, onDeleted }: {
+  school: School | null;
+  open: boolean;
+  onClose: () => void;
+  users: UserRow[];
+  onUpdated: (s: School) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [activeSubTab, setActiveSubTab] = useState<'config' | 'users' | 'integrations' | 'delete'>('config');
+  const [schoolName, setSchoolName] = useState('');
+  const [driveFolderId, setDriveFolderId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (school) {
+      setSchoolName(school.name);
+      setDriveFolderId('');
+      setError(null);
+      setSuccess(false);
+      setActiveSubTab('config');
+      
+      supabase()
+        .from('school_settings')
+        .select('drive_folder_id')
+        .eq('school_id', school.id)
+        .maybeSingle()
+        .then(({ data, error }: any) => {
+          if (!error && data) {
+            setDriveFolderId(data.drive_folder_id || '');
+          }
+        });
+    }
+  }, [school]);
+
+  if (!school) return null;
+
+  const handleUpdateConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      const { error: err1 } = await supabase()
+        .from('schools')
+        .update({ name: schoolName.trim() })
+        .eq('id', school.id);
+      if (err1) throw err1;
+
+      const { error: err2 } = await supabase()
+        .from('school_settings')
+        .upsert({ school_id: school.id, drive_folder_id: driveFolderId.trim() }, { onConflict: 'school_id' });
+      if (err2) throw err2;
+
+      onUpdated({ ...school, name: schoolName.trim() });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2000);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao salvar.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBackupAndDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      const schoolId = school.id;
+      const backupData: Record<string, any> = { schoolId, timestamp: new Date().toISOString() };
+      
+      const tables = [
+        { name: 'schools', key: 'id' },
+        { name: 'school_settings', key: 'school_id' },
+        { name: 'user_profiles', key: 'school_id' },
+        { name: 'tenant_email_whitelist', key: 'school_id' },
+        { name: 'students', key: 'school_id' },
+        { name: 'occurrences', key: 'school_id' },
+        { name: 'accidents', key: 'school_id' },
+        { name: 'praises', key: 'school_id' },
+        { name: 'rules', key: 'school_id' },
+        { name: 'summons', key: 'school_id' },
+        { name: 'conduct_terms', key: 'school_id' },
+        { name: 'audit_logs', key: 'school_id' },
+        { name: 'staff_members', key: 'school_id' }
+      ];
+
+      for (const t of tables) {
+        const { data, error } = await supabase().from(t.name).select('*').eq(t.key, schoolId);
+        if (error) {
+          console.warn(`Erro no backup da tabela ${t.name}:`, error.message);
+          backupData[t.name] = [];
+        } else {
+          backupData[t.name] = data || [];
+        }
+      }
+
+      const jsonString = JSON.stringify(backupData, null, 2);
+      const fileName = `${schoolId}_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const file = new File([blob], fileName, { type: 'application/json' });
+
+      console.log(`Enviando backup para storage: backups/${fileName}...`);
+      const { error: uploadErr } = await supabase().storage
+        .from('student-files')
+        .upload(`backups/${fileName}`, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadErr) {
+        console.error('Falha no upload do backup:', uploadErr.message);
+      } else {
+        console.log('Upload do backup concluído com sucesso!');
+      }
+
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      console.log("Removendo registros disciplinares e dependentes...");
+      await supabase().from('occurrences').delete().eq('school_id', schoolId);
+      await supabase().from('accidents').delete().eq('school_id', schoolId);
+      await supabase().from('praises').delete().eq('school_id', schoolId);
+      await supabase().from('summons').delete().eq('school_id', schoolId);
+      await supabase().from('conduct_terms').delete().eq('school_id', schoolId);
+      await supabase().from('audit_logs').delete().eq('school_id', schoolId);
+      await supabase().from('staff_members').delete().eq('school_id', schoolId);
+      await supabase().from('rules').delete().eq('school_id', schoolId);
+
+      console.log("Removendo alunos...");
+      await supabase().from('students').delete().eq('school_id', schoolId);
+
+      console.log("Removendo usuários e whitelists...");
+      await supabase().from('user_profiles').delete().eq('school_id', schoolId);
+      await supabase().from('tenant_email_whitelist').delete().eq('school_id', schoolId);
+
+      console.log("Removendo configurações e registro da escola...");
+      await supabase().from('school_settings').delete().eq('school_id', schoolId);
+      const { error: deleteSchoolErr } = await supabase().from('schools').delete().eq('id', schoolId);
+      if (deleteSchoolErr) throw deleteSchoolErr;
+
+      onDeleted(schoolId);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao excluir a escola.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const schoolUsers = users.filter(u => u.school_id === school.id);
+
+  return (
+    <>
+      <div className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose} />
+      <aside className={`fixed top-0 right-0 h-full w-full max-w-lg bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">{schoolName || 'Detalhes da Escola'}</h2>
+            <p className="text-xs text-slate-550 dark:text-slate-400 mt-0.5 font-mono">{school.id}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="px-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex gap-4 text-xs font-bold">
+          {(['config', 'users', 'integrations', 'delete'] as const).map(tab => {
+            const label = tab === 'config' ? 'Configurações' : tab === 'users' ? 'Usuários' : tab === 'integrations' ? 'Integrações' : 'Excluir';
+            const active = activeSubTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => { setActiveSubTab(tab); setError(null); }}
+                className={`py-3 border-b-2 transition-colors ${active ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {error && <div className="flex items-start gap-2 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-450 text-sm px-4 py-3 rounded-xl border border-rose-100 dark:border-rose-900/40"><ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+
+          {activeSubTab === 'config' && (
+            <form id="update-school-form" onSubmit={handleUpdateConfig} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome da Escola</label>
+                <input className={INPUT} value={schoolName} onChange={e => setSchoolName(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Identificador (Slug)</label>
+                <input className={INPUT + ' opacity-60 cursor-not-allowed'} value={school.id} readOnly />
+              </div>
+              <button type="submit" disabled={saving} className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition flex items-center justify-center gap-2">
+                {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : success ? <Check className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                {saving ? 'Salvando...' : success ? 'Salvo!' : 'Salvar Alterações'}
+              </button>
+            </form>
+          )}
+
+          {activeSubTab === 'users' && (
+            <div className="space-y-3">
+              <p className="text-xs text-slate-500 dark:text-slate-400">{schoolUsers.length} usuário(s) associado(s) a esta escola:</p>
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {schoolUsers.map(u => (
+                  <div key={u.id} className="py-2.5 flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">{u.name || 'Sem nome'}</p>
+                      <p className="text-slate-400 dark:text-slate-550">{u.email}</p>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-semibold text-slate-600 dark:text-slate-400">{ROLE_LABELS[u.role] || u.role}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeSubTab === 'integrations' && (
+            <form onSubmit={handleUpdateConfig} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">ID da Pasta do Google Drive</label>
+                <input className={INPUT} value={driveFolderId} onChange={e => setDriveFolderId(e.target.value)} placeholder="Insira o ID do Drive Compartilhado..." />
+              </div>
+              <button type="submit" disabled={saving} className="w-full py-2.5 rounded-xl bg-blue-650 hover:bg-blue-700 text-white text-sm font-semibold transition flex items-center justify-center gap-2">
+                {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : success ? <Check className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                {saving ? 'Salvando...' : success ? 'Salvo!' : 'Salvar Integrações'}
+              </button>
+            </form>
+          )}
+
+          {activeSubTab === 'delete' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 rounded-xl text-rose-700 dark:text-rose-400 text-xs leading-relaxed space-y-2">
+                <p className="font-bold flex items-center gap-1.5"><ShieldAlert className="w-4 h-4 shrink-0" /> ATENÇÃO: AÇÃO IRREVERSÍVEL</p>
+                <p>Ao excluir esta escola, todos os registros relacionados a ela serão permanentemente excluídos do banco de dados (estudantes, ocorrências, medidas disciplinares, justificativas, etc).</p>
+                <p className="font-semibold">Um arquivo de backup completo (.json) será gerado automaticamente, baixado no seu navegador e armazenado no Supabase Storage antes de iniciar a remoção.</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleBackupAndDelete}
+                disabled={deleting}
+                className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2"
+              >
+                {deleting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {deleting ? 'Efetuando Backup e Excluindo...' : 'Fazer Backup e Excluir Escola'}
+              </button>
+            </div>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
+
 // ─── Drawer: criar usuário ───────────────────────────────────────────────────
 function CreateUserDrawer({ open, onClose, schools, onCreated }: {
+
   open: boolean; onClose: () => void; schools: School[]; onCreated: (u: UserRow) => void;
 }) {
   const { currentUserRole, currentUserSchoolId } = useAppContext();
@@ -1240,6 +1614,8 @@ function ConfiguracoesInner() {
   const [toast, setToast]       = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editDrawerUser, setEditDrawerUser] = useState<UserRow | null>(null);
+  const [schoolDrawerOpen, setSchoolDrawerOpen] = useState(false);
+  const [selectedSchoolForDetails, setSelectedSchoolForDetails] = useState<School | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const t = searchParams?.get('tab') as Tab | null;
@@ -1370,6 +1746,24 @@ function ConfiguracoesInner() {
 
   return (
     <>
+      <CreateSchoolDrawer open={schoolDrawerOpen} onClose={() => setSchoolDrawerOpen(false)} onCreated={(newSchool) => {
+        setSchools(prev => [...prev, newSchool].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')));
+        showToast('Escola criada com sucesso.');
+      }} />
+      <SchoolDetailsDrawer
+        school={selectedSchoolForDetails}
+        open={selectedSchoolForDetails !== null}
+        onClose={() => setSelectedSchoolForDetails(null)}
+        users={users}
+        onUpdated={(updated) => {
+          setSchools(prev => prev.map(s => s.id === updated.id ? updated : s));
+          showToast('Configurações da escola atualizadas.');
+        }}
+        onDeleted={(deletedId) => {
+          setSchools(prev => prev.filter(s => s.id !== deletedId));
+          showToast('Escola e todos os seus dados foram excluídos com sucesso.');
+        }}
+      />
       <CreateUserDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} schools={schools} onCreated={handleCreated} />
       <EditUserDrawer
         user={editDrawerUser}
@@ -1427,6 +1821,16 @@ function ConfiguracoesInner() {
               </button>
               <button onClick={() => setDrawerOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition">
                 <UserPlus className="w-4 h-4" /> Novo Usuario
+              </button>
+            </div>
+          )}
+          {activeTab === 'schools' && (
+            <div className="flex items-center gap-2">
+              <button onClick={fetchData} disabled={loading} className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 hover:bg-slate-50 transition shadow-sm" title="Atualizar">
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <button onClick={() => setSchoolDrawerOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition">
+                <Building2 className="w-4 h-4" /> Nova Escola
               </button>
             </div>
           )}
@@ -1557,7 +1961,7 @@ function ConfiguracoesInner() {
             {renderedTab === 'schools' && (
               <div className="space-y-3">
                 {schools.map(s => (
-                  <div key={s.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 flex items-center gap-4">
+                  <div key={s.id} onClick={() => setSelectedSchoolForDetails(s)} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4 flex items-center gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                     <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center shrink-0">
                       <Building2 className="w-5 h-5 text-blue-500" />
                     </div>
