@@ -153,6 +153,12 @@ export default function DashboardCalendar() {
     );
   }, [rules, searchRule]);
 
+  const handleSelectStudent = (id: string, name: string) => {
+    setSelectedStudentId(id);
+    setSearchStudent(name);
+    setShowStudentList(false);
+  };
+
   const handleSelectRule = (code: number, measure: string) => {
     setSelectedRuleCode(code);
     setMeasureOverride(measure);

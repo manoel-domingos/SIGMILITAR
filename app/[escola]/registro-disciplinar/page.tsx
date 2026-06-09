@@ -198,7 +198,7 @@ function RegistroDisciplinarContent() {
         startDate: retentionStartDate,
         endDate: endDateStr,
         durationDays: retentionDays,
-        measure: viewOccurrence.measureOverride || 'Retenção',
+        measure: viewOccurrence.measure || 'Retenção',
         ruleCodes: viewOccurrence.ruleCodes || [viewOccurrence.ruleCode].filter(Boolean),
         registeredBy: user?.name || user?.email || 'Sistema',
         userId: user?.id

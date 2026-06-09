@@ -706,7 +706,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               console.log(`[WHITELIST] E-mail autorizado! Perfil encontrado:`, profileToUse);
 
               // 2. Vínculo automático de UUID:
-              if (profileToUse.id !== session.user.id) {
+              if (profileToUse && profileToUse.id !== session.user.id) {
                 console.log("[WHITELIST] Associando UUID do perfil ao UUID de autenticação do usuário...");
                 const { error: updateErr } = await supabase
                   .from('user_profiles')
@@ -719,12 +719,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
               // 3. Atualiza estado do usuário
               setUser({
                 ...session.user,
-                school_id: profileToUse.school_id,
-                role: normalizeDbRole(profileToUse.role, emailLower)
+                school_id: profileToUse?.school_id,
+                role: normalizeDbRole(profileToUse?.role ?? '', emailLower)
               });
               setIsGuest(false);
 
-              let sid = profile.school_id && profile.school_id !== 'DRE'
+              let sid = profile?.school_id && profile.school_id !== 'DRE'
                 ? profile.school_id
                 : '';
 
