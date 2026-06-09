@@ -716,8 +716,17 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
 
   const locations = ['Pátio', 'Quadra', 'Refeitório', 'Sala'].sort();
 
-  const buildUserLabel = (name: string, role: string) => {
-    const parts = [role, name].filter(Boolean);
+  // Humaniza papéis de sistema; cargo (título do BD) sempre tem prioridade.
+  const ROLE_TITLES: Record<string, string> = {
+    admin_global: 'Administrador',
+    GESTOR: 'Gestor Cívico Militar',
+    COORD: 'Coordenador',
+    MONITOR: 'Monitor',
+    PROFESSOR: 'Professor',
+  };
+  const buildUserLabel = (name: string, roleOrCargo?: string | null) => {
+    const title = roleOrCargo ? (ROLE_TITLES[roleOrCargo] || roleOrCargo) : '';
+    const parts = [title, name].filter(Boolean);
     return parts.length ? parts.join(' ') : (user?.email?.split('@')[0] || 'Gestor Escolar');
   };
 
@@ -744,33 +753,36 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     return '';
   };
 
-  // Carregar perfil do Supabase para preencher "Registrado por"
+  // Carregar perfil do Supabase para preencher "Registrado por" com o USUÁRIO LOGADO.
+  // Um mesmo e-mail pode ter perfis em vários tenants (ex: DRE + escola); por isso
+  // buscamos todos e priorizamos o perfil do tenant ativo (resolvedSchoolId).
   useEffect(() => {
     if (!user?.email || !supabase) return;
     supabase
       .from('user_profiles')
-      .select('name, role')
+      .select('name, role, cargo, school_id')
       .eq('email', user.email)
-      .maybeSingle()
-      .then(({ data }: { data: { name: string; role: string } | null }) => {
-        if (data?.name) {
-          setRegisteredBy(buildUserLabel(data.name, data.role));
-          if (data.role === 'PROFESSOR') {
+      .then(({ data }: { data: { name: string; role: string; cargo: string | null; school_id: string }[] | null }) => {
+        const rows = Array.isArray(data) ? data : [];
+        const profile = rows.find(r => r.school_id === resolvedSchoolId) || rows[0];
+        if (profile?.name) {
+          setRegisteredBy(buildUserLabel(profile.name, profile.cargo || profile.role));
+          if (profile.role === 'PROFESSOR') {
             const appUser = appUsers.find(u =>
-              u.role === 'PROFESSOR' && u.name.toLowerCase() === data.name.toLowerCase()
+              u.role === 'PROFESSOR' && u.name.toLowerCase() === profile.name.toLowerCase()
             );
             if (appUser) setLinkedProfessor('Professor ' + appUser.name);
           }
         } else if (user.email) {
-          const staff = staffMembers.find(s => s.name.toLowerCase() === user.email.split('@')[0].toLowerCase());
-          setRegisteredBy(staff ? staff.role + ' ' + staff.name : user.email.split('@')[0]);
+          const staff = staffMembers.find(s => s.name.toLowerCase() === user.email!.split('@')[0].toLowerCase());
+          setRegisteredBy(staff ? staff.role + ' ' + staff.name : user.email!.split('@')[0]);
           if (staff && staff.role === 'Professor') {
             setLinkedProfessor(staff.role + ' ' + staff.name);
           }
         }
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.email, staffMembers]);
+  }, [user?.email, staffMembers, resolvedSchoolId]);
 
   // Atualizar registeredBy em tempo real quando o perfil for salvo no AppShell
   useEffect(() => {
