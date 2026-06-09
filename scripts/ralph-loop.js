@@ -17,7 +17,26 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+
+// Load .env if present (local dev)
+try {
+  require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
+} catch {}
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+let supabase = null;
+async function getSupabase() {
+  if (supabase) return supabase;
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    log('  ⚠ Supabase env vars não configuradas — usando valores de fallback');
+    return null;
+  }
+  const { createClient } = require('@supabase/supabase-js');
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  return supabase;
+}
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -95,85 +114,153 @@ function writeMaster(agent, content) {
 async function collectEscolas() {
   const dataDir = path.join(AGENTS_DIR, 'escolas', 'data');
   const files = countFiles(dataDir);
+  const alerts = [];
+  const metrics = { 'Arquivos em data/': files };
 
-  // TODO: Integrar com Supabase para dados reais
-  // const { data } = await supabase.from('schools').select('id, name, slug, created_at');
-  return {
-    summary: 'Configurações de tenant e OAuth',
-    metrics: {
-      'Escolas ativas': '3 (joaobatista, heliodoro, tangara)',
-      'Arquivos em data/': files,
-      'Integrações OAuth': 'Verificar em school_settings',
-    },
-    alerts: [],
-  };
+  const sb = await getSupabase();
+  if (sb) {
+    const { data: schools } = await sb.from('schools').select('id, name, slug');
+    metrics['Escolas ativas'] = schools ? schools.length : 'erro';
+
+    const { data: settings } = await sb.from('school_settings')
+      .select('school_id, google_access_token')
+      .not('google_access_token', 'is', null);
+    metrics['OAuth Google configurado'] = settings ? `${settings.length} escola(s)` : '0';
+
+    if (schools && settings && settings.length < schools.length) {
+      alerts.push(`${schools.length - settings.length} escola(s) sem OAuth Google configurado`);
+    }
+  } else {
+    metrics['Escolas ativas'] = '3 (joaobatista, heliodoro, tangara)';
+    metrics['OAuth Google configurado'] = 'Sem conexão Supabase';
+  }
+
+  return { summary: 'Configurações de tenant e OAuth', metrics, alerts };
 }
 
 async function collectAlunos() {
   const dataDir = path.join(AGENTS_DIR, 'alunos', 'data');
   const files = countFiles(dataDir);
+  const alerts = [];
+  const metrics = { 'Arquivos em data/': files };
 
-  // TODO: Integrar com Supabase
-  // const { count } = await supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active');
-  return {
-    summary: 'Cadastro e gestão de estudantes',
-    metrics: {
-      'Alunos ativos': 'Consultar Supabase',
-      'Arquivos em data/': files,
-      'Alunos sem turma': 'Verificar',
-    },
-    alerts: [],
-  };
+  const sb = await getSupabase();
+  if (sb) {
+    const { count: ativos } = await sb.from('students')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+    metrics['Alunos ativos'] = ativos ?? 'erro';
+
+    const { count: arquivados } = await sb.from('students')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'archived');
+    metrics['Alunos arquivados'] = arquivados ?? 'erro';
+
+    const { count: semTurma } = await sb.from('students')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .is('class_id', null);
+    metrics['Alunos ativos sem turma'] = semTurma ?? 'erro';
+
+    if (semTurma > 0) alerts.push(`${semTurma} aluno(s) ativo(s) sem turma atribuída`);
+  } else {
+    metrics['Alunos ativos'] = 'Sem conexão Supabase';
+  }
+
+  return { summary: 'Cadastro e gestão de estudantes', metrics, alerts };
 }
 
 async function collectDisciplina() {
   const dataDir = path.join(AGENTS_DIR, 'disciplina', 'data');
   const files = countFiles(dataDir);
+  const alerts = [];
+  const metrics = { 'Arquivos em data/': files };
 
-  // TODO: Integrar com Supabase
-  // const { count } = await supabase.from('occurrences').select('*', { count: 'exact', head: true })
-  //   .gte('created_at', startOfMonth);
-  return {
-    summary: 'Ocorrências disciplinares e sanções',
-    metrics: {
-      'Ocorrências (mês)': 'Consultar Supabase',
-      'Fichas aguardando assinatura': 'Verificar',
-      'Arquivos em data/': files,
-    },
-    alerts: [],
-  };
+  const sb = await getSupabase();
+  if (sb) {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { count: ocorrenciasMes } = await sb.from('occurrences')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfMonth.toISOString());
+    metrics['Ocorrências (mês atual)'] = ocorrenciasMes ?? 'erro';
+
+    const { count: fichasPendentes } = await sb.from('notification_forms')
+      .select('*', { count: 'exact', head: true })
+      .eq('signed', false);
+    metrics['Fichas aguardando assinatura'] = fichasPendentes ?? 'erro';
+
+    const { count: elogiosMes } = await sb.from('praises')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfMonth.toISOString());
+    metrics['Elogios (mês atual)'] = elogiosMes ?? 'erro';
+
+    if (fichasPendentes > 10) alerts.push(`${fichasPendentes} fichas aguardando assinatura`);
+  } else {
+    metrics['Ocorrências (mês atual)'] = 'Sem conexão Supabase';
+  }
+
+  return { summary: 'Ocorrências disciplinares e sanções', metrics, alerts };
 }
 
 async function collectPedagogico() {
   const dataDir = path.join(AGENTS_DIR, 'pedagogico', 'data');
   const files = countFiles(dataDir);
+  const alerts = [];
+  const metrics = { 'Arquivos em data/': files };
 
-  // TODO: Integrar com Supabase
-  return {
-    summary: 'MEG e acompanhamento pedagógico',
-    metrics: {
-      'Progresso MEG médio': 'Consultar Supabase',
-      'Alunos em FICAI': 'Verificar',
-      'Arquivos em data/': files,
-    },
-    alerts: [],
-  };
+  const sb = await getSupabase();
+  if (sb) {
+    const { count: ficaiAtivos } = await sb.from('ficai_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+    metrics['Alunos em acompanhamento FICAI'] = ficaiAtivos ?? 'erro';
+
+    const { data: megData } = await sb.from('meg_evidence')
+      .select('completed')
+      .limit(1000);
+    if (megData && megData.length > 0) {
+      const done = megData.filter(r => r.completed).length;
+      const pct = Math.round((done / megData.length) * 100);
+      metrics['Progresso MEG médio'] = `${pct}% (${done}/${megData.length} critérios)`;
+      if (pct < 50) alerts.push(`Progresso MEG abaixo de 50% (${pct}%)`);
+    } else {
+      metrics['Progresso MEG médio'] = 'Sem dados';
+    }
+  } else {
+    metrics['Progresso MEG médio'] = 'Sem conexão Supabase';
+  }
+
+  return { summary: 'MEG e acompanhamento pedagógico', metrics, alerts };
 }
 
 async function collectRelatorios() {
   const dataDir = path.join(AGENTS_DIR, 'relatorios', 'data');
   const files = countFiles(dataDir);
+  const alerts = [];
+  const metrics = { 'Arquivos em data/': files };
 
-  // TODO: Integrar com Supabase
-  return {
-    summary: 'Relatórios, DRE e análises',
-    metrics: {
-      'Fechamentos pendentes': 'Verificar',
-      'Relatórios gerados (30d)': 'Consultar logs',
-      'Arquivos em data/': files,
-    },
-    alerts: [],
-  };
+  const sb = await getSupabase();
+  if (sb) {
+    const { count: fechamentosPendentes } = await sb.from('period_closures')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    metrics['Fechamentos de período pendentes'] = fechamentosPendentes ?? 'erro';
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { count: auditoria30d } = await sb.from('audit_logs')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', thirtyDaysAgo);
+    metrics['Ações auditadas (30d)'] = auditoria30d ?? 'erro';
+
+    if (fechamentosPendentes > 0) alerts.push(`${fechamentosPendentes} fechamento(s) de período pendente(s)`);
+  } else {
+    metrics['Fechamentos pendentes'] = 'Sem conexão Supabase';
+  }
+
+  return { summary: 'Relatórios, DRE e análises', metrics, alerts };
 }
 
 const COLLECTORS = {
