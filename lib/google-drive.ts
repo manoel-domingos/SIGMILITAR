@@ -2,22 +2,44 @@ import { google } from 'googleapis';
 import { Readable } from 'stream';
 import { createClient } from '@supabase/supabase-js';
 
-function getDriveClient() {
+// E-mail do DONO da pasta a ser impersonado via Domain-Wide Delegation.
+// Quando definido (e o super-admin do Workspace autorizou o client ID da SA),
+// a service account passa a AGIR COMO o dono -> enxerga TODOS os arquivos e
+// pastas, inclusive os criados por outras pessoas. Sem isso, a SA só vê o que
+// foi compartilhado com ela. Vazio = comportamento antigo (sem impersonation).
+function getImpersonationSubject(): string | undefined {
+  return process.env.GOOGLE_DRIVE_IMPERSONATE_SUBJECT?.trim() || undefined;
+}
+
+function getServiceAccountCreds(): { email: string; key: string } {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   let key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   if (key && key.startsWith('"') && key.endsWith('"')) {
     key = key.substring(1, key.length - 1);
   }
-
   if (!email || !key) {
     throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY must be set');
   }
+  return { email, key };
+}
+
+function getDriveClient() {
+  const { email, key } = getServiceAccountCreds();
+  const subject = getImpersonationSubject();
+
+  // DWD: assina um JWT com `subject` = dono da pasta -> visibilidade total.
+  if (subject) {
+    const jwt = new google.auth.JWT({
+      email,
+      key,
+      scopes: ['https://www.googleapis.com/auth/drive'],
+      subject,
+    });
+    return google.drive({ version: 'v3', auth: jwt });
+  }
 
   const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: email,
-      private_key: key,
-    },
+    credentials: { client_email: email, private_key: key },
     scopes: ['https://www.googleapis.com/auth/drive'],
   });
   return google.drive({ version: 'v3', auth });
@@ -279,21 +301,24 @@ export async function getStudentOccurrenceFolderId(
 // Server creates a resumable session URI → client uploads file directly to Google
 
 export async function getAccessToken(): Promise<string> {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  let key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  if (key && key.startsWith('"') && key.endsWith('"')) {
-    key = key.substring(1, key.length - 1);
-  }
+  const { email, key } = getServiceAccountCreds();
+  const subject = getImpersonationSubject();
 
-  if (!email || !key) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY must be set');
+  // DWD: token emitido em nome do dono da pasta (uploads acompanham a visibilidade).
+  if (subject) {
+    const jwt = new google.auth.JWT({
+      email,
+      key,
+      scopes: ['https://www.googleapis.com/auth/drive'],
+      subject,
+    });
+    const { access_token } = await jwt.authorize();
+    if (!access_token) throw new Error('Failed to obtain impersonated Google access token');
+    return access_token;
   }
 
   const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: email,
-      private_key: key,
-    },
+    credentials: { client_email: email, private_key: key },
     scopes: ['https://www.googleapis.com/auth/drive'],
   });
 
