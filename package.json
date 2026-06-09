@@ -11,8 +11,6 @@
     "tokens": "node scripts/check-tokens.js"
   },
   "dependencies": {
-    "@google/genai": "^1.50.1",
-    "@google/generative-ai": "^0.21.0",
     "@hookform/resolvers": "^5.2.1",
     "@supabase/supabase-js": "^2.104.0",
     "autoprefixer": "^10.4.21",

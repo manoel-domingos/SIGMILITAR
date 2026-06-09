@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Send, Sparkles, MessageSquare, History, ShieldAlert, BookOpen, PenTool, ClipboardList, ChevronUp, ChevronDown } from 'lucide-react';
-import { generateContentWithFallback } from '@/lib/ai';
+import { streamAI } from '@/components/AIChat';
+import { addAILog } from '@/lib/ai';
 import { useAppContext } from '@/lib/store';
 import { useTenantConfig } from '@/lib/useTenantConfig';
 import OccurrenceChecklist, { loadChecklists, OccurrenceTask, toggleChecklistItem, removeOccurrenceTask } from './OccurrenceChecklist';
@@ -28,7 +29,7 @@ function BrainWithBeret({ className = "w-6 h-6" }: { className?: string }) {
 }
 
 export default function AIAssistant() {
-  const { students, occurrences, rules, geminiApiKey, groqApiKey, user, activeSchoolContext } = useAppContext();
+  const { students, occurrences, rules, user, activeSchoolContext } = useAppContext();
   const { schoolName } = useTenantConfig();
 
   const currentSchoolName = activeSchoolContext ? (
@@ -98,13 +99,38 @@ export default function AIAssistant() {
         'Responda em Portugu\u00eas do Brasil de forma direta e profissional.',
       ].join('\n');
 
-      const result = await generateContentWithFallback(geminiApiKey, prompt, undefined, groqApiKey);
-      const aiResponse = result.response.text();
+      // Mensagem placeholder do assistente — preenchida ao vivo conforme o stream chega
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      let acc = '';
+      const aiResponse = await streamAI(
+        'chat',
+        { message: prompt },
+        (delta) => {
+          acc += delta;
+          setMessages(prev => {
+            const copy = [...prev];
+            copy[copy.length - 1] = { role: 'assistant', content: acc };
+            return copy;
+          });
+        },
+        undefined,
+        activeSchoolContext || undefined,
+      );
 
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      addAILog({ model: 'deepseek-v4-pro', prompt, response: aiResponse, status: 'success', provider: 'deepseek' });
     } catch (error: any) {
       console.error("AI Assistant Error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: `Erro: ${error.message || 'Falha na IA'}. Verifique suas chaves de API.` }]);
+      addAILog({ model: 'deepseek-v4-pro', prompt: messageText, response: '', status: 'error', error: error?.message, provider: 'deepseek' });
+      setMessages(prev => {
+        // Substitui o placeholder vazio (se houver) pela mensagem de erro
+        const copy = [...prev];
+        const errMsg = { role: 'assistant' as const, content: `Erro: ${error.message || 'Falha na IA'}. Tente novamente em instantes.` };
+        if (copy.length && copy[copy.length - 1].role === 'assistant' && copy[copy.length - 1].content === '') {
+          copy[copy.length - 1] = errMsg;
+          return copy;
+        }
+        return [...copy, errMsg];
+      });
     } finally {
       setIsLoading(false);
     }
