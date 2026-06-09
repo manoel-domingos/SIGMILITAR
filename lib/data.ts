@@ -142,6 +142,7 @@ export interface AuditLog {
   entityId: string;
   details: string;
   userEmail: string;
+  school_id?: string | null;
 }
 
 export const INITIAL_RULES: DisciplineRule[] = [

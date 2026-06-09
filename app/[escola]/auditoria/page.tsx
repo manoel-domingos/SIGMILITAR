@@ -11,29 +11,38 @@ export default function AuditoriaPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAction, setFilterAction] = useState('ALL');
 
+  const shortName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    return parts.length >= 2 ? `${parts[0]} ${parts[1]}` : parts[0];
+  };
+
   const enrichDetails = (details: string) => {
     let newDetails = details;
     const uuidRegex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/gi;
     const matches = details.match(uuidRegex);
-    if (matches) {
-      matches.forEach(uuid => {
-        const student = students.find(s => s.id === uuid);
-        if (student) {
-          newDetails = newDetails.replace(uuid, student.name);
-          return;
-        }
-        const occurrence = occurrences.find(o => o.id === uuid);
-        if (occurrence) {
-          newDetails = newDetails.replace(uuid, `Nº ${occurrence.ataNumber ?? occurrence.id.slice(0, 4)}`);
-          return;
-        }
-        const user = appUsers.find(u => u.id === uuid);
-        if (user) {
-          newDetails = newDetails.replace(uuid, user.name || user.email);
-          return;
-        }
-      });
-    }
+    if (!matches) return newDetails;
+
+    const seen = new Set<string>();
+    matches.forEach(uuid => {
+      if (seen.has(uuid)) return;
+      seen.add(uuid);
+
+      const student = students.find(s => s.id === uuid);
+      if (student) {
+        newDetails = newDetails.replaceAll(uuid, shortName(student.name));
+        return;
+      }
+      const occurrence = occurrences.find(o => o.id === uuid);
+      if (occurrence) {
+        newDetails = newDetails.replaceAll(uuid, `Nº ${occurrence.ataNumber ?? occurrence.id.slice(0, 4)}`);
+        return;
+      }
+      const appUser = appUsers.find(u => u.id === uuid);
+      if (appUser) {
+        newDetails = newDetails.replaceAll(uuid, shortName(appUser.name || appUser.email));
+        return;
+      }
+    });
     return newDetails;
   };
 

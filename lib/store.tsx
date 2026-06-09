@@ -883,15 +883,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logAction = async (action: AuditLog['action'], entityName: string, entityId: string, details: string) => {
     const userEmail = user?.email || (isGuest ? 'Somente Leitura' : 'Gestor Escolar');
-    
-    // Default system log logic
+    const schoolId = getDbSchoolId(activeSchoolContextRef.current) || null;
+
     const newLog: Omit<AuditLog, 'id'> = {
       date: new Date().toISOString(),
       action,
       entityName,
       entityId,
       details,
-      userEmail
+      userEmail,
+      school_id: schoolId,
     };
 
     if (supabase && isSupabaseConnected) {
@@ -902,11 +903,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           entity_name: newLog.entityName,
           entity_id: newLog.entityId,
           details: newLog.details,
-          user_email: newLog.userEmail
+          user_email: newLog.userEmail,
+          school_id: schoolId,
         }]).select().single();
-        
+
         if (!error && data) {
-          setAuditLogs(prev => [{...data, entityName: data.entity_name, entityId: data.entity_id, userEmail: data.user_email}, ...prev]);
+          setAuditLogs(prev => [{...data, entityName: data.entity_name, entityId: data.entity_id, userEmail: data.user_email, school_id: data.school_id}, ...prev]);
           return;
         }
       } catch (err) {
