@@ -226,21 +226,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       .eq('school_id', schoolId)
       .maybeSingle()
       .then(({ data }: { data: any }) => {
-        if (cancelled || !data) return;
+        if (cancelled) return;
+        // SEMPRE hidrata o nome da escola (mesmo sem linha em school_settings),
+        // senão o cabeçalho da ATA cai no fallback genérico "ESCOLA CÍVICO-MILITAR".
         setSchoolPrintConfig(schoolId, {
-          logoUrl: data.print_logo_url ?? null,
+          logoUrl: data?.print_logo_url ?? null,
           // SEDUC é fixa/global — nunca por escola (evita logo quebrada por tenant)
           seducLogoUrl: null,
-          headerLines: Array.isArray(data.print_header_lines) ? data.print_header_lines : null,
-          footerLines: Array.isArray(data.print_footer_lines) ? data.print_footer_lines : null,
+          headerLines: Array.isArray(data?.print_header_lines) ? data.print_header_lines : null,
+          footerLines: Array.isArray(data?.print_footer_lines) ? data.print_footer_lines : null,
           schoolName: schools.find(s => s.id === schoolId)?.name ?? null,
         });
-        if (!data.print_footer_lines || !Array.isArray(data.print_footer_lines) || data.print_footer_lines.length === 0) {
+        if (!data?.print_footer_lines || !Array.isArray(data.print_footer_lines) || data.print_footer_lines.length === 0) {
           setShowPrintBanner(true);
         }
       });
     return () => { cancelled = true; };
-  }, [user, activeSchoolContext, tenantId]);
+  }, [user, activeSchoolContext, tenantId, schools]);
 
   useEffect(() => {
     const handler = () => setShowPrintBanner(false);

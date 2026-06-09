@@ -181,7 +181,7 @@ export const SCHOOL_HEADER_CSS = `
      ================================================ */
   .cabecalho-oficial {
     display: grid;
-    grid-template-columns: 200px 1fr 80px;
+    grid-template-columns: 200px 1fr 112px;
     align-items: center;
     gap: 10px;
     padding-bottom: 6px;
@@ -196,8 +196,8 @@ export const SCHOOL_HEADER_CSS = `
     object-position: left center;
   }
   .cab-logo-escola {
-    height: 80px;
-    width: 80px;
+    height: 112px;
+    width: 112px;
     object-fit: contain;
     object-position: right center;
   }
