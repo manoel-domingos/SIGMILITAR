@@ -40,7 +40,7 @@ async function adminApiHeaders() {
 }
 
 type AppRole = 'GESTOR' | 'COORD' | 'MONITOR' | 'PROFESSOR' | 'admin_global';
-type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status' | 'users_prof' | 'occurrences_prof' | 'conduct_prof' | 'reports_prof' | 'permissions';
+type Tab = 'users' | 'schools' | 'profile' | 'aria' | 'status' | 'users_prof' | 'occurrences_prof' | 'conduct_prof' | 'reports_prof' | 'permissions' | 'print';
 type Severity = 'Leve' | 'Media' | 'Grave';
 
 interface UserRow {
@@ -585,6 +585,43 @@ function TabProfile({ user }: { user: ReturnType<typeof useAppContext>['user'] }
         ))}
         <button onClick={changePwd} className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition">Alterar Senha</button>
       </div>
+    </div>
+  );
+}
+
+// ─── Tab: Cabeçalho de Impressão (gestor/coord) ──────────────────────────────
+// Versão enxuta do card de cabeçalho, sem as integrações de admin (Drive/Supabase).
+// Disponível para Gestor e Coordenador editarem o cabeçalho/rodapé/logo da escola.
+function TabPrintHeader() {
+  const { tenantId } = useTenantConfig();
+  const printSchoolId = getDbSchoolId(tenantId);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-800 dark:text-slate-100 text-sm">Cabeçalho de Impressão</h4>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 max-w-lg">
+              Personalize logo, cabeçalho e rodapé das ATAs e documentos impressos. Os dados ficam salvos no banco e valem para esta escola.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowPrintModal(true)}
+          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md whitespace-nowrap self-start md:self-auto"
+        >
+          Editar cabeçalho
+        </button>
+      </div>
+
+      {showPrintModal && (
+        <PrintHeaderModal open={showPrintModal} onClose={() => setShowPrintModal(false)} schoolId={printSchoolId} />
+      )}
     </div>
   );
 }
@@ -1324,6 +1361,9 @@ function ConfiguracoesInner() {
     : [
         { id: 'users',   label: 'Usuários da Escola', icon: Users },
         { id: 'profile', label: 'Meu Perfil',       icon: User },
+        ...((currentUserRole === 'GESTOR' || currentUserRole === 'COORD')
+          ? [{ id: 'print', label: 'Impressão', icon: FileText }]
+          : []),
         { id: 'permissions', label: 'Permissões',   icon: KeyRound },
       ]
   ) as { id: Tab; label: string; icon: React.ElementType }[];
@@ -1558,6 +1598,8 @@ function ConfiguracoesInner() {
 
             {/* ── TAB: Permissões ── */}
             {renderedTab === 'permissions' && <TabPermissions />}
+
+            {renderedTab === 'print' && <TabPrintHeader />}
           </div>
         </div>
       </div>
