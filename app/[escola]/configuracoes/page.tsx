@@ -11,7 +11,7 @@ import {
   Eye, EyeOff, Users, ChevronRight, Lock, Brain,
   Zap, Activity, Server, Database, Wifi, WifiOff,
   BarChart2, Cpu, MessageSquare, User, KeyRound,
-  FileText, CheckSquare, Loader2, Link2, CheckCircle2, AlertCircle, HardDrive,
+  FileText, CheckSquare, Loader2, Link2, CheckCircle2, AlertCircle, HardDrive, FolderOpen,
 } from 'lucide-react';
 import { useTenantConfig, getDbSchoolId } from '@/lib/useTenantConfig';
 import PrintHeaderModal from '@/components/PrintHeaderModal';
