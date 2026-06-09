@@ -16,14 +16,14 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('school_settings')
-    .select('google_oauth_email, google_oauth_connected_at, drive_folder_id')
+    .select('google_oauth_email, google_oauth_connected_at, drive_folder_id, google_oauth_refresh_token')
     .eq('school_id', schoolId)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({
-    connected: !!data?.google_oauth_email,
+    connected: !!data?.google_oauth_refresh_token,
     email: data?.google_oauth_email || null,
     connectedAt: data?.google_oauth_connected_at || null,
     driveFolderId: data?.drive_folder_id || null,

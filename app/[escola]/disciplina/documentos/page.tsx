@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell';
 import { DrivePanel } from '@/components/drive/DrivePanel';
 import { FolderOpen, ArrowLeft } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import { getDbSchoolId } from '@/lib/useTenantConfig';
 
 const DRIVE_FOLDER_ID = '1_aj5b9ukcApeUzSs2dFgIdgHclW4uYbk';
 
@@ -11,6 +12,7 @@ export default function DocumentosPage() {
   const params = useParams();
   const router = useRouter();
   const schoolSlug = params.escola as string;
+  const resolvedSchoolId = getDbSchoolId(schoolSlug);
 
   return (
     <AppShell>
@@ -44,6 +46,7 @@ export default function DocumentosPage() {
           <DrivePanel 
             initialFolderId={DRIVE_FOLDER_ID}
             title="Pasta Disciplinar"
+            schoolId={resolvedSchoolId}
           />
         </div>
       </div>

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)https://a.claude.ai/isolated-segment.html?v=8ff9529eb1 -->
+<html lang="en" data-darkreader-mode="dynamic" data-darkreader-scheme="dark" data-darkreader-proxy-injected="true"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style class="darkreader darkreader--fallback" media="screen"></style><style class="darkreader darkreader--user-agent" media="screen">@layer {
+html {
+    color-scheme: dark !important;
+}
+iframe {
+    color-scheme: dark !important;
+}
+input, textarea, select, button, dialog {
+    background-color: var(--darkreader-background-ffffff, #181a1b);
+}
+html, body, input, textarea, select, button {
+    border-color: var(--darkreader-border-4c4c4c, #736b5e);
+    color: var(--darkreader-text-000000, #e8e6e3);
+}
+a {
+    color: var(--darkreader-text-0040ff, #3391ff);
+}
+table {
+    border-color: var(--darkreader-border-808080, #545b5e);
+}
+mark {
+    color: var(--darkreader-text-000000, #e8e6e3);
+}
+::placeholder {
+    color: var(--darkreader-text-a9a9a9, #b2aba1);
+}
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+    background-color: var(--darkreader-background-faffbd, #404400) !important;
+    color: var(--darkreader-text-000000, #e8e6e3) !important;
+}
+* {
+    scrollbar-color: var(--darkreader-background-b0b0b0, #454a4d) var(--darkreader-background-f1f1f1, #202324);
+}
+::selection {
+    background-color: var(--darkreader-background-0060d4, #004daa) !important;
+    color: var(--darkreader-text-ffffff, #e8e6e3) !important;
+}
+::-moz-selection {
+    background-color: var(--darkreader-background-0060d4, #004daa) !important;
+    color: var(--darkreader-text-ffffff, #e8e6e3) !important;
+}
+}</style><style class="darkreader darkreader--text" media="screen">*:not(pre, pre *, code, [aria-hidden="true"], [class*="fa-"], .fa, .fab, .fad, .fal, .far, .fas, .fass, .fasr, .fat, .icofont, [style*="font-"], [class*="icon"], [class*="Icon"], [class*="symbol"], [class*="Symbol"], .glyphicon, [class*="material-symbol"], [class*="material-icon"], mu, [class*="mu-"], .typcn, [class*="vjs-"]) {
+  -webkit-text-stroke: 0.3px !important;
+  text-stroke: 0.3px !important;
+}</style><style class="darkreader darkreader--invert" media="screen">.jfk-bubble.gtx-bubble, .captcheck_answer_label > input + img, span#closed_text > img[src^="https://www.gstatic.com/images/branding/googlelogo"], span[data-href^="https://www.hcaptcha.com/"] > #icon, img.Wirisformula, a[data-testid="headerMediumLogo"]>svg, .d2l-navigation-link-image-container, .d2l-iframe-loading-container, div.mc-ip-hide[style*="background: rgb(255, 255, 255) !important"], [style*="color: rgb(0, 0, 1) !important;"] {
+    filter: invert(100%) hue-rotate(180deg) contrast(90%) !important;
+}</style><style class="darkreader darkreader--inline" media="screen">[data-darkreader-inline-bgcolor] {
+  background-color: var(--darkreader-inline-bgcolor) !important;
+}
+[data-darkreader-inline-bgimage] {
+  background-image: var(--darkreader-inline-bgimage) !important;
+}
+[data-darkreader-inline-border] {
+  border-color: var(--darkreader-inline-border) !important;
+}
+[data-darkreader-inline-border-bottom] {
+  border-bottom-color: var(--darkreader-inline-border-bottom) !important;
+}
+[data-darkreader-inline-border-left] {
+  border-left-color: var(--darkreader-inline-border-left) !important;
+}
+[data-darkreader-inline-border-right] {
+  border-right-color: var(--darkreader-inline-border-right) !important;
+}
+[data-darkreader-inline-border-top] {
+  border-top-color: var(--darkreader-inline-border-top) !important;
+}
+[data-darkreader-inline-boxshadow] {
+  box-shadow: var(--darkreader-inline-boxshadow) !important;
+}
+[data-darkreader-inline-color] {
+  color: var(--darkreader-inline-color) !important;
+}
+[data-darkreader-inline-fill] {
+  fill: var(--darkreader-inline-fill) !important;
+}
+[data-darkreader-inline-stroke] {
+  stroke: var(--darkreader-inline-stroke) !important;
+}
+[data-darkreader-inline-outline] {
+  outline-color: var(--darkreader-inline-outline) !important;
+}
+[data-darkreader-inline-stopcolor] {
+  stop-color: var(--darkreader-inline-stopcolor) !important;
+}
+[data-darkreader-inline-bg] {
+  background: var(--darkreader-inline-bg) !important;
+}
+[data-darkreader-inline-border-short] {
+  border: var(--darkreader-inline-border-short) !important;
+}
+[data-darkreader-inline-border-bottom-short] {
+  border-bottom: var(--darkreader-inline-border-bottom-short) !important;
+}
+[data-darkreader-inline-border-left-short] {
+  border-left: var(--darkreader-inline-border-left-short) !important;
+}
+[data-darkreader-inline-border-right-short] {
+  border-right: var(--darkreader-inline-border-right-short) !important;
+}
+[data-darkreader-inline-border-top-short] {
+  border-top: var(--darkreader-inline-border-top-short) !important;
+}
+[data-darkreader-inline-invert] {
+    filter: invert(100%) hue-rotate(180deg);
+}</style><style class="darkreader darkreader--variables" media="screen">:root {
+   --darkreader-neutral-background: var(--darkreader-background-ffffff, #181a1b);
+   --darkreader-neutral-text: var(--darkreader-text-000000, #e8e6e3);
+   --darkreader-selection-background: var(--darkreader-background-0060d4, #004daa);
+   --darkreader-selection-text: var(--darkreader-text-ffffff, #e8e6e3);
+}</style><style class="darkreader darkreader--root-vars" media="screen"></style>
+    
+    <!-- Segment snippet from https://segment.com/docs/connections/sources/catalog/libraries/website/javascript/quickstart/ -->
+    <!-- Modified to allow custom CDN hostname and removed unused methods -->
+    <script type="text/javascript" async="" src="./fbevents.js.transferir"></script><script type="text/javascript" src="./commons.59560acdd69ed701c941.js.gz" async="" status="loaded"></script><script type="text/javascript" src="./facebook-pixel.dynamic.js.gz" async="" status="loaded"></script><script type="text/javascript" async="" src="./js"></script><script async="" src="./js(1)"></script><script type="text/javascript" async="" data-global-segment-analytics-key="analytics" src="./analytics.min.js.transferir"></script><script>
+      !(function () {
+        var i = "analytics",
+          analytics = (window[i] = window[i] || []);
+        if (!analytics.initialize)
+          if (analytics.invoked)
+            window.console &&
+              console.error &&
+              console.error("Segment snippet included twice.");
+          else {
+            analytics.invoked = !0;
+            analytics.methods = ["identify", "track", "ready"];
+            analytics.factory = function (e) {
+              return function () {
+                if (window[i].initialized)
+                  return window[i][e].apply(window[i], arguments);
+                var n = Array.prototype.slice.call(arguments);
+                if (["track", "identify"].indexOf(e) > -1) {
+                  var c = document.querySelector("link[rel='canonical']");
+                  n.push({
+                    __t: "bpc",
+                    c: (c && c.getAttribute("href")) || void 0,
+                    p: location.pathname,
+                    u: location.href,
+                    s: location.search,
+                    t: document.title,
+                    r: document.referrer,
+                  });
+                }
+                n.unshift(e);
+                analytics.push(n);
+                return analytics;
+              };
+            };
+            for (var n = 0; n < analytics.methods.length; n++) {
+              var key = analytics.methods[n];
+              analytics[key] = analytics.factory(key);
+            }
+            analytics.SNIPPET_VERSION = "5.2.1";
+          }
+      })();
+    </script>
+    <script>
+      (function () {
+        // Debug logging function
+        function logDebug(message, ...args) {
+          console.debug("[IsolatedSegment]", message, ...args);
+        }
+
+        // Keep sending ready message until we get init response
+        let readyInterval = null;
+
+        /* The values of this mapping must match the values in the Facebook CAPI destinations in Segment
+           See go/segment -> Destinations -> Facebook Conversions API -> Mappings
+           We have to do this mapping because the Facebook Pixel integration from Segment does not support
+           event renaming on the client side
+        */
+        const FB_EVENT_MAPPING = {
+          "onboarding.started": "Started Onboarding",
+          "extended_onboarding.started": "Started Onboarding",
+          "extended_onboarding.completed": "CompleteRegistration",
+          "chat.conversation.first_conversation_created": "NewConversation",
+          payment_state_success: "Purchase",
+        };
+
+        // Floodlight activity tag resolver: returns the CM360 send_to string
+        // for an event, or null if the event has no Floodlight conversion.
+        // Format: DC-ADVERTISER_ID/activity_group/activity_tag+counting_method
+        function resolveFloodlightSendTo(event, properties) {
+          var props = properties || {};
+          switch (event) {
+            case "extended_onboarding.completed":
+              // CM360: Onboarding Completed [production]
+              return "DC-15684265/check0/onboa000+unique";
+            case "payment_state_success":
+              if (props.product_capability === "claude_pro") {
+                // CM360: Purchased Pro [production]
+                return "DC-15684265/check0/purch00+unique";
+              }
+              if (props.product_capability === "claude_max") {
+                if (props.rate_limit_tier === "default_claude_max_20x") {
+                  // CM360: Purchased Max 20x [production]
+                  return "DC-15684265/check0/purch001+unique";
+                }
+                // CM360: Purchased Max 5x [production]
+                return "DC-15684265/check0/purch000+unique";
+              }
+              return null;
+            default:
+              return null;
+          }
+        }
+
+        // Google Ads conversion resolver: returns the conversion params for
+        // an event, or null. Format: AW-CONVERSION_ID/CONVERSION_LABEL
+        function resolveGoogleAdsConversion(event, properties) {
+          switch (event) {
+            case "extended_onboarding.completed":
+              // Google Ads: Sign-up
+              return {
+                send_to: "AW-16632748715/vj71CLSLlPwbEKu1jvs9",
+                value: 1.0,
+                currency: "USD",
+              };
+            case "payment_state_success":
+              // Google Ads: Purchase. transaction_id is omitted when no real
+              // value exists — Google Ads dedupes on it, so passing "" would
+              // collapse all such conversions into one.
+              var purchase = {
+                send_to: "AW-16632748715/H4ugCKmKh_wbEKu1jvs9",
+                value: 1.0,
+                currency: "USD",
+              };
+              if (properties && properties.invoice_created_ts) {
+                purchase.transaction_id = String(
+                  properties.invoice_created_ts,
+                );
+              }
+              return purchase;
+            default:
+              return null;
+          }
+        }
+
+        // Initialize gtag.js directly (no GTM container)
+        function initGtag(measurementId, floodlightId) {
+          if (!measurementId && !floodlightId) {
+            logDebug("No measurement or Floodlight ID provided, skipping gtag");
+            return;
+          }
+
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () {
+            window.dataLayer.push(arguments);
+          };
+
+          // Set default consent to granted since the parent only renders
+          // this iframe when marketing consent is already granted
+          window.gtag("consent", "default", {
+            ad_personalization: "granted",
+            ad_user_data: "granted",
+            ad_storage: "granted",
+            analytics_storage: "granted",
+            functionality_storage: "granted",
+            personalization_storage: "granted",
+            security_storage: "granted",
+          });
+          window.gtag("js", new Date());
+
+          // Load the gtag.js script using whichever ID is available
+          var primaryId = measurementId || floodlightId;
+          var scriptTag = document.createElement("script");
+          scriptTag.async = true;
+          scriptTag.src =
+            "https://www.googletagmanager.com/gtag/js?id=" + primaryId;
+          var firstTag = document.getElementsByTagName("script")[0];
+          firstTag.parentNode.insertBefore(scriptTag, firstTag);
+
+          // Configure measurement ID (Google Ads / GA4)
+          if (measurementId) {
+            window.gtag("config", measurementId, { send_page_view: false });
+          }
+
+          // Configure Floodlight (CM360)
+          if (floodlightId) {
+            window.gtag("config", floodlightId, { send_page_view: false, allow_enhanced_conversions: true });
+          }
+
+          logDebug("gtag.js loaded", { measurementId, floodlightId });
+        }
+
+        // Create isolated segment object on window
+        window.isolatedSegment = {
+          initialized: false,
+          writeKey: null,
+          segmentCdnHost: null,
+
+          // Initialize the isolated segment instance
+          init: function (
+            writeKey,
+            segmentCdnHost,
+            gtagMeasurementId,
+            floodlightId,
+          ) {
+            logDebug("init called", {
+              writeKey: writeKey?.substring(0, 10) + "...",
+              segmentCdnHost,
+              gtagMeasurementId,
+              floodlightId,
+              alreadyInitialized: this.initialized,
+            });
+
+            if (this.initialized) {
+              logDebug("Already initialized, skipping");
+              return;
+            }
+
+            this.writeKey = writeKey;
+            this.segmentCdnHost = segmentCdnHost;
+
+            try {
+              logDebug("Loading analytics via analytics.js");
+
+              // Set custom CDN host if provided
+              if (segmentCdnHost) {
+                // Override the analytics.load function to use custom CDN
+                const originalLoad = window.analytics.load;
+                window.analytics.load = function (key, options) {
+                  const script = document.createElement("script");
+                  script.type = "text/javascript";
+                  script.async = true;
+                  script.setAttribute(
+                    "data-global-segment-analytics-key",
+                    "analytics",
+                  );
+                  script.src =
+                    "https://" +
+                    segmentCdnHost +
+                    "/analytics.js/v1/" +
+                    key +
+                    "/analytics.min.js";
+                  const firstScript =
+                    document.getElementsByTagName("script")[0];
+                  firstScript.parentNode.insertBefore(script, firstScript);
+                  window.analytics._loadOptions = options;
+                };
+              }
+
+              // Configure analytics options
+              const loadOptions = {
+                disableClientPersistence: true, // Prevent Segment from setting ajs_anonymous_id cookie
+                integrations: {
+                  All: false,
+                  "Segment.io": false,
+                  "Facebook Pixel": true,
+                },
+              };
+
+              // Load analytics
+              window.analytics.load(writeKey, loadOptions);
+
+              // Initialize gtag.js if measurement ID or Floodlight ID provided
+              if (gtagMeasurementId || floodlightId) {
+                initGtag(gtagMeasurementId, floodlightId);
+              }
+
+              this.initialized = true;
+              logDebug("Analytics loaded successfully", {
+                hasAnalytics: !!window.analytics,
+                hasGtag: typeof window.gtag === "function",
+              });
+
+              // Clear the ready interval
+              if (readyInterval) {
+                clearInterval(readyInterval);
+                readyInterval = null;
+              }
+
+              // Send confirmation back to parent
+              this.sendMessage({
+                type: "segment_initialized",
+                success: true,
+              });
+            } catch (error) {
+              logDebug("Failed to initialize analytics", {
+                error: error.message,
+              });
+              this.sendMessage({
+                type: "segment_initialized",
+                success: false,
+                error: error.message,
+              });
+            }
+          },
+
+          track: async function (event, properties, options) {
+            logDebug("track called", {
+              event,
+              properties,
+              initialized: this.initialized,
+              hasAnalytics: !!window.analytics,
+              hasGtag: typeof window.gtag === "function",
+            });
+
+            if (!this.initialized) {
+              logDebug("Track skipped - not initialized");
+              return;
+            }
+
+            // Fire gtag conversions first — gtag() is synchronous (just
+            // pushes to dataLayer) and has no dependency on Segment. Doing it
+            // before the FB await means a hung Segment promise can't block it.
+            if (typeof window.gtag === "function") {
+              var floodlightSendTo = resolveFloodlightSendTo(
+                event,
+                properties,
+              );
+              if (floodlightSendTo) {
+                window.gtag("event", "conversion", {
+                  send_to: floodlightSendTo,
+                });
+                logDebug("Track completed for Floodlight", {
+                  event,
+                  send_to: floodlightSendTo,
+                });
+              }
+
+              var googleAdsConversion = resolveGoogleAdsConversion(
+                event,
+                properties,
+              );
+              if (googleAdsConversion) {
+                window.gtag("event", "conversion", googleAdsConversion);
+                logDebug("Track completed for Google Ads", {
+                  event,
+                  send_to: googleAdsConversion.send_to,
+                });
+              }
+            }
+
+            // Get the remapped Facebook event name
+            const fbEventName = FB_EVENT_MAPPING[event] || event;
+
+            if (window.analytics) {
+              try {
+                // Track with Facebook event name for Facebook Pixel only
+                await window.analytics.track(fbEventName, properties || {}, {
+                  ...(options || {}),
+                  integrations: {
+                    All: false,
+                    "Facebook Pixel": true,
+                  },
+                });
+                logDebug("Track completed for Facebook Pixel", {
+                  originalEvent: event,
+                  fbEventName,
+                });
+              } catch (e) {
+                logDebug("Track failed for Facebook Pixel", {
+                  originalEvent: event,
+                  error: String(e),
+                });
+              }
+            }
+          },
+
+          identify: async function (userId, traits, options) {
+            logDebug("identify called", {
+              userId,
+              traits,
+              initialized: this.initialized,
+              hasAnalytics: !!window.analytics,
+            });
+
+            if (!this.initialized) {
+              logDebug("Identify skipped - not initialized");
+              return;
+            }
+
+            // Set user_data for Enhanced Conversions (CM360/SA360).
+            // gtag normalizes and SHA-256 hashes the email client-side
+            // before sending — raw email never leaves the browser unhashed.
+            if (typeof window.gtag === "function" && traits && traits.email) {
+              window.gtag("set", "user_data", { email: traits.email });
+              logDebug("gtag user_data set for Enhanced Conversions");
+            }
+
+            if (!window.analytics) {
+              logDebug("Identify skipped for Segment - no analytics");
+              return;
+            }
+
+            try {
+              await window.analytics.identify(
+                userId,
+                traits || {},
+                options || {},
+              );
+              logDebug("Identify completed", { userId });
+            } catch (e) {
+              logDebug("Identify failed for Segment", {
+                userId,
+                error: String(e),
+              });
+            }
+          },
+
+          // Send messages to parent window
+          sendMessage: function (data) {
+            // Only log sendMessage for non-ready messages after initialization
+            if (data.type !== "iframe_ready") {
+              logDebug("sendMessage called", { data });
+            }
+            if (window.parent && window.parent !== window) {
+              try {
+                window.parent.postMessage(
+                  {
+                    source: "isolated-segment",
+                    ...data,
+                  },
+                  "*",
+                );
+                if (data.type !== "iframe_ready") {
+                  logDebug("Message sent to parent", { type: data.type });
+                }
+              } catch (error) {
+                logDebug("Failed to send message to parent", { error });
+              }
+            }
+          },
+        };
+
+        // Listen for messages from parent
+        function handleMessage(event) {
+          // Security check: validate the origin is from the same base domain
+          // Allow both same-origin (for localhost) and parent domain (for a.subdomain setup)
+          const currentOrigin = window.location.origin;
+          const currentHostname = window.location.hostname;
+          const eventHostname = new URL(event.origin).hostname;
+
+          // Extract base domain (remove 'a.' prefix if present)
+          const baseDomain = currentHostname.startsWith("a.")
+            ? currentHostname.substring(2)
+            : currentHostname;
+          const eventBaseDomain = eventHostname.startsWith("a.")
+            ? eventHostname.substring(2)
+            : eventHostname;
+
+          // Allow messages from same origin or from parent domain
+          const isValidOrigin =
+            event.origin === currentOrigin || eventBaseDomain === baseDomain;
+
+          if (!isValidOrigin) {
+            logDebug("Message rejected - invalid origin", {
+              expected: currentOrigin,
+              expectedBaseDomain: baseDomain,
+              received: event.origin,
+              receivedBaseDomain: eventBaseDomain,
+            });
+            return;
+          }
+
+          logDebug("Message received from parent", {
+            origin: event.origin,
+            data: event.data,
+          });
+
+          const data = event.data;
+
+          if (data.target !== "isolated-segment") {
+            logDebug("Message not for isolated-segment, ignoring", {
+              target: data.target,
+            });
+            return;
+          }
+
+          logDebug("Processing message", { type: data.type });
+
+          switch (data.type) {
+            case "init":
+              // Don't log before init is called
+              window.isolatedSegment.init(
+                data.writeKey,
+                data.cdnHost,
+                data.gtagMeasurementId,
+                data.floodlightId,
+              );
+              break;
+
+            case "track":
+              logDebug("Handling track message", { event: data.event });
+              window.isolatedSegment.track(
+                data.event,
+                data.properties,
+                data.options,
+              );
+              break;
+
+            case "identify":
+              logDebug("Handling identify message", { userId: data.userId });
+              window.isolatedSegment.identify(data.userId, data.traits);
+              break;
+
+            default:
+              logDebug("Unknown message type", { type: data.type });
+              break;
+          }
+        }
+
+        window.addEventListener("message", handleMessage);
+
+        function sendReadyMessage() {
+          logDebug("Sending iframe_ready message");
+          if (!window.isolatedSegment.initialized) {
+            window.isolatedSegment.sendMessage({
+              type: "iframe_ready",
+              timestamp: new Date().toISOString(),
+            });
+          } else if (readyInterval) {
+            clearInterval(readyInterval);
+            readyInterval = null;
+          }
+        }
+
+        // Notify parent that iframe is ready after DOM is loaded
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", function () {
+            sendReadyMessage();
+            // Keep sending every 500ms until initialized
+            readyInterval = setInterval(sendReadyMessage, 500);
+          });
+        } else {
+          // DOM is already loaded
+          sendReadyMessage();
+          // Keep sending every 500ms until initialized
+          readyInterval = setInterval(sendReadyMessage, 500);
+        }
+      })();
+    </script>
+  <meta name="darkreader" content="443d8b78e6364744af00a49d77f8e67d"><style class="darkreader darkreader--override" media="screen">.vimvixen-hint {
+    background-color: var(--darkreader-background-ffd76e, #684b00) !important;
+    border-color: var(--darkreader-background-c59d00, #9e7e00) !important;
+    color: var(--darkreader-text-302505, #d7d4cf) !important;
+}
+#vimvixen-console-frame {
+    color-scheme: light !important;
+}
+::placeholder {
+    opacity: 0.5 !important;
+}
+#edge-translate-panel-body,
+.MuiTypography-body1,
+.nfe-quote-text {
+    color: var(--darkreader-neutral-text) !important;
+}
+gr-main-header {
+    background-color: var(--darkreader-background-add8e6, #1b4958) !important;
+}
+.tou-z65h9k,
+.tou-mignzq,
+.tou-1b6i2ox,
+.tou-lnqlqk {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+.tou-75mvi {
+    background-color: var(--darkreader-background-cfecf5, #0f3a47) !important;
+}
+.tou-ta9e87,
+.tou-1w3fhi0,
+.tou-1b8t2us,
+.tou-py7lfi,
+.tou-1lpmd9d,
+.tou-1frrtv8,
+.tou-17ezmgn {
+    background-color: var(--darkreader-background-f5f5f5, #1e2021) !important;
+}
+.tou-uknfeu {
+    background-color: var(--darkreader-background-faedda, #432c09) !important;
+}
+.tou-6i3zyv {
+    background-color: var(--darkreader-background-85c3d8, #245d70) !important;
+}
+div.mermaid-viewer-control-panel .btn {
+    background-color: var(--darkreader-neutral-background);
+    fill: var(--darkreader-neutral-text);
+}
+svg g rect.er {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.entityBox {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.attributeBoxOdd {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.attributeBoxEven {
+    fill: var(--darkreader-selection-background);
+    fill-opacity: 0.8 !important;
+}
+svg rect.er.relationshipLabelBox {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g g.nodes rect,
+svg g g.nodes polygon {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.task {
+    fill: var(--darkreader-selection-background) !important;
+}
+svg line.messageLine0,
+svg line.messageLine1 {
+    stroke: var(--darkreader-neutral-text) !important;
+}
+div.mermaid .actor {
+    fill: var(--darkreader-neutral-background) !important;
+}
+mitid-authenticators-code-app > .code-app-container {
+    background-color: white !important;
+    padding-top: 1rem;
+}
+iframe#unpaywall[src$="unpaywall.html"] {
+    color-scheme: light !important;
+}
+select {
+    --darkreader-bg--form-control-background-color: rgba(22, 22, 22, 0) !important;
+}
+body#tumblr {
+    --darkreader-bg--secondary-accent: 31, 32, 34 !important;
+    --darkreader-bg--white: 23, 23, 23 !important;
+    --darkreader-text--black: 228, 224, 218 !important;
+}
+:host {
+    --d2l-border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+    --d2l-button-icon-background-color-hover: var(--darkreader-bg--d2l-color-gypsum) !important;
+    --d2l-color-ferrite: var(--darkreader-neutral-text) !important;
+    --d2l-color-sylvite: var(--darkreader-bg--d2l-color-sylvite) !important;
+    --d2l-dropdown-background-color: var(--darkreader-neutral-background) !important;
+    --d2l-dropdown-border-color: var(--darkreader-border--d2l-color-mica) !important;
+    --d2l-input-backgroud-color: var(--darkreader-neutral-background) !important;
+    --d2l-menu-border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+    --d2l-tooltip-background-color: var(--darkreader-neutral-background) !important;
+    --d2l-tooltip-border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+:host([_floating]) .d2l-floating-buttons-container {
+    background-color: var(--darkreader-neutral-background) !important;
+    border-top-color: var(--darkreader-border--d2l-color-mica) !important;
+    opacity: 0.88 !important;
+}
+d2l-card {
+    background: var(--darkreader-neutral-background) !important;
+    border-color: var(--darkreader-border--d2l-color-gypsum) !important;
+}
+d2l-dropdown-content > div,
+d2l-menu-item {
+    background-color: var(--darkreader-neutral-background) !important;
+    border-radius: 10px !important;
+}
+d2l-empty-state-simple {
+    border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+.d2l-button-filter > ul > li > a.vui-button {
+    border-color: var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-label-text:has(.d2l-button-subtle-content):hover,
+.d2l-label-text:has(.d2l-button-subtle-content):focus,
+.d2l-label-text:has(.d2l-button-subtle-content):active {
+    background-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+.d2l-navigation-centerer {
+    color: inherit !important;
+}
+.d2l-tabs-layout {
+    border-color: var(--darkreader-border--d2l-color-gypsum) !important;
+}
+.d2l-input,
+.d2l-calendar-date,
+.d2l-htmleditor-container {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+.d2l-collapsible-panel {
+    border: 1px solid var(--darkreader-border--d2l-color-mica) !important;
+    border-radius: 0.4rem !important;
+}
+.d2l-collapsible-panel-divider {
+    border-bottom: 1px solid var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-w2d-flex {
+    border-bottom: 2px solid var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-collapsible-panel scrolled,
+.d2l-collapsible-panel-header,
+.d2l-w2d-collection-fixed {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+.d2l-loading-spinner-bg {
+    fill: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+.d2l-loading-spinner-bg-stroke {
+    stroke: var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-loading-spinner-wrapper svg path,
+.d2l-loading-spinner-wrapper svg circle {
+    fill: var(--darkreader-neutral-background) !important;
+}
+.d2l-twopanelselector-side.d2l-twopanelselector-side-sep {
+    background: var(--darkreader-bg--d2l-color-mica) !important;
+}
+.d2l-le-TreeAccordionItem-anchor::before {
+    background: var(--darkreader-bg--d2l-color-corundum) !important;
+}
+table[class|="moz-header"] {
+    background: none;
+}
+*[style*="color: rgba(0,0,0,"],
+*[style*="color: rgba(0, 0, 0,"],
+*[style*="color:#000"],
+*[style*="color:black"],
+*[style*="color:#282828"],
+*[style*="color:#444"] {
+    color: var(--darkreader-neutral-text) !important;
+}
+*[style*="background:#fff"],
+*[style*="background-color:#fff"] {
+    background: var(--darkreader-neutral-background) !important;
+}
+*[bgcolor="#F5F5F5"],
+*[style*="background-color: #F5F5F5"] {
+    background: var(--darkreader-background-f5f5f5, #1e2021) !important;
+}
+body[style*="background: rgb(255, 255, 255) !important"] *:not(a),
+.body[style*="background-color: rgb(254, 254, 254) !important"] *:not(a) {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+div[style*="www.gstatic.com/android/"] {
+    background: none !important;
+}
+*[style*="background:#f9f9f9"] {
+    background: var(--darkreader-background-f9f9f9, #1b1e1f) !important;
+}
+body.mediawiki.skin-vector #mw-page-base {
+    background-image: none !important;
+}
+embed[type="application/pdf"][src="about:blank"] { filter: invert(100%) contrast(90%); }</style></head>
+  <body>
+    <h1 hidden="">Isolated Segment</h1>
+  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a08cb714c939eb7f',t:'MTc4MDk3MjIzNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height="1" width="1" style="position: absolute; top: 0px; left: 0px; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; visibility: hidden;" src="./saved_resource(1).html"></iframe>
+
+</body></html>

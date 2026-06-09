@@ -321,6 +321,7 @@ export default function FasePage() {
               <DrivePanel 
                 initialFolderId={driveFolderId} 
                 title="Repositório Google Drive"
+                schoolId={resolvedSchoolId}
               />
             </div>
 
@@ -403,6 +404,7 @@ export default function FasePage() {
               <div className="flex-1 overflow-y-auto flex flex-col">
                 <DrivePanel 
                   initialFolderId={driveFolderId} 
+                  schoolId={resolvedSchoolId}
                 />
               </div>
             </div>

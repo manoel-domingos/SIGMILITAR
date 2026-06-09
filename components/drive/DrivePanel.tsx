@@ -31,9 +31,10 @@ interface DrivePanelProps {
   initialFolderId?: string;
   onSelect?: (file: DriveFile) => void;
   title?: string;
+  schoolId?: string;
 }
 
-export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: DrivePanelProps) {
+export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title, schoolId }: DrivePanelProps) {
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
@@ -61,7 +62,9 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
     setLoading(true);
     setErrorAlert(null);
     try {
-      const res = await fetch(`/api/drive/files?folderId=${folderId}`);
+      const params = new URLSearchParams({ folderId });
+      if (schoolId) params.set('schoolId', schoolId);
+      const res = await fetch(`/api/drive/files?${params}`);
       if (!res.ok) throw new Error('Falha ao obter lista de arquivos do servidor');
       const data = await res.json();
       setFiles(data);
@@ -75,7 +78,7 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [schoolId]);
 
   useEffect(() => {
     loadFiles(currentFolder.id);
@@ -102,7 +105,8 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
           body: JSON.stringify({
             folderId: currentFolder.id,
             fileName: file.name,
-            mimeType: file.type || 'application/octet-stream'
+            mimeType: file.type || 'application/octet-stream',
+            schoolId,
           })
         });
 
@@ -172,7 +176,7 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
       const res = await fetch('/api/drive/rename', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId: renaming.id, newName: renaming.name }),
+        body: JSON.stringify({ fileId: renaming.id, newName: renaming.name, schoolId }),
       });
       if (!res.ok) throw new Error('Não foi possível renomear o item no Google Drive');
       toast.success('Renomeado com sucesso!', { id: toastId });
@@ -196,7 +200,7 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
       const res = await fetch('/api/drive/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId: file.id }),
+        body: JSON.stringify({ fileId: file.id, schoolId }),
       });
       if (!res.ok) throw new Error('Falha ao excluir o item no Google Drive');
       toast.success('Item deletado com sucesso!', { id: toastId });
@@ -223,6 +227,7 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
           fileId: moving.id,
           newParentId: targetFolderId,
           oldParentId: currentFolder.id,
+          schoolId,
         }),
       });
       if (!res.ok) throw new Error('Falha ao mover o item no Google Drive');
@@ -248,7 +253,7 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title }: D
       const res = await fetch('/api/drive/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parentId: currentFolder.id, name }),
+        body: JSON.stringify({ parentId: currentFolder.id, name, schoolId }),
       });
       if (!res.ok) throw new Error('Falha ao criar pasta no Google Drive');
       toast.success('Pasta criada com sucesso!', { id: toastId });
