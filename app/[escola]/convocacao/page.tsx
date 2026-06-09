@@ -99,7 +99,7 @@ export default function ConvocacaoPais() {
           </style>
         </head>
         <body>
-          ${getSchoolHeaderHTML()}
+          ${getSchoolHeaderHTML(activeSchoolContext ?? undefined)}
           <div class="doc-titulo">CARTA DE CONVOCAÇÃO Nº ${s.id.slice(-4).toUpperCase()}</div>
           <div class="date">Tangará da Serra, ${new Date().toLocaleDateString('pt-BR')}</div>
           <div class="content">
@@ -113,7 +113,7 @@ export default function ConvocacaoPais() {
             <div class="sig-line">Diretora / Coord. Pedagógico</div>
             <div class="sig-line">Gestão Escolar / Militar</div>
           </div>
-          ${getSchoolFooterHTML()}
+          ${getSchoolFooterHTML(activeSchoolContext ?? undefined)}
         </body>
       </h${""}tml>
     `);

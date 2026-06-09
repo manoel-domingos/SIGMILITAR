@@ -1900,6 +1900,7 @@ export default function ConfiguracoesPage() {
 
 function ConfiguracoesInner() {
   const { currentUserRole, currentUserSchoolId, user } = useAppContext();
+  const { tenantId } = useTenantConfig();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -2104,7 +2105,7 @@ function ConfiguracoesInner() {
         {/* Header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm">
+            <button onClick={() => router.push(`/${tenantId}/`)} className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>

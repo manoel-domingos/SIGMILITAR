@@ -96,9 +96,9 @@ export async function listFiles(folderId: string, schoolId?: string) {
     q: `'${folderId}' in parents and trashed = false`,
     fields: 'files(id,name,mimeType,size,modifiedTime,parents)',
     orderBy: 'folder,name',
+    pageSize: 1000,
     supportsAllDrives: true,
     includeItemsFromAllDrives: true,
-    corpora: 'allDrives',
   });
   return data.files ?? [];
 }

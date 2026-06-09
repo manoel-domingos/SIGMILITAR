@@ -13,7 +13,7 @@ import {
   BarChart, AlertTriangle, Star, CheckSquare, FileBadge,
   UserPlus, Award, Menu, X, LogOut, ShieldAlert,
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, ArrowLeft,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
   Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle, Heart, Lightbulb,
 } from 'lucide-react';
@@ -202,6 +202,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [expandedSchool, setExpandedSchool] = useState<string | null>(null);
   // Lista de escolas para o título dinâmico no header
   const [schools, setSchools] = useState<{id: string; name: string}[]>([]);
+  const [showPrintBanner, setShowPrintBanner] = useState(false);
   useEffect(() => {
     if (!user) return;
     supabase?.from('schools').select('id, name').neq('id', 'DRE').order('name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
@@ -230,7 +231,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           seducLogoUrl: data.print_seduc_logo_url ?? null,
           headerLines: Array.isArray(data.print_header_lines) ? data.print_header_lines : null,
           footerLines: Array.isArray(data.print_footer_lines) ? data.print_footer_lines : null,
+          schoolName: schools.find(s => s.id === schoolId)?.name ?? null,
         });
+        if (!data.print_footer_lines || !Array.isArray(data.print_footer_lines) || data.print_footer_lines.length === 0) {
+          setShowPrintBanner(true);
+        }
       });
     return () => { cancelled = true; };
   }, [user, activeSchoolContext, tenantId]);
@@ -566,6 +571,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <DashboardCalendar />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Banner: rodapé de impressão não configurado */}
+      {showPrintBanner && (
+        <div className="fixed bottom-20 right-4 z-50 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 shadow-lg flex items-center gap-3 max-w-sm print:hidden">
+          <span className="text-xs text-amber-800 dark:text-amber-200 flex-1">Configure o rodapé de impressão da sua escola.</span>
+          <button onClick={() => { router.push(`/${tenantId}/configuracoes?tab=status`); setShowPrintBanner(false); }} className="text-xs font-bold text-amber-700 dark:text-amber-300 underline whitespace-nowrap">Configurar</button>
+          <button onClick={() => setShowPrintBanner(false)} className="text-amber-500 hover:text-amber-700 transition"><X className="w-3 h-3" /></button>
         </div>
       )}
 
@@ -1071,19 +1085,29 @@ function TopbarLayout({
                     { id: 'profile', label: 'Meu Perfil',       icon: User },
                   ]
               );
-              return configTabs.map((tab) => {
-                const active = activeConfigTab === tab.id;
-                return (
+              return (
+                <>
                   <Link
-                    key={tab.id}
-                    href={getLinkHref(`/configuracoes?tab=${tab.id}`, tenantId, rawPathname)}
-                    className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
+                    href={getLinkHref('/', tenantId, rawPathname)}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                   >
-                    <tab.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
-                    <span className="whitespace-nowrap">{tab.label}</span>
+                    <ArrowLeft className="w-4 h-4" />
                   </Link>
-                );
-              });
+                  {configTabs.map((tab) => {
+                    const active = activeConfigTab === tab.id;
+                    return (
+                      <Link
+                        key={tab.id}
+                        href={getLinkHref(`/configuracoes?tab=${tab.id}`, tenantId, rawPathname)}
+                        className={'shrink-0 group/item flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ' + (active ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500')}
+                      >
+                        <tab.icon className={'w-4 h-4 ' + (active ? 'text-white' : 'text-slate-400 group-hover/item:text-white')} />
+                        <span className="whitespace-nowrap">{tab.label}</span>
+                      </Link>
+                    );
+                  })}
+                </>
+              );
             })()
           ) : pathname.includes('/pedagogico') || pathname.includes('/psicossocial') ? (
             <>

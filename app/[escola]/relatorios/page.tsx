@@ -8,9 +8,10 @@ import SearchableSelect from '@/components/SearchableSelect';
 import { formatDate } from '@/lib/utils';
 import { streamAI } from '@/components/AIChat';
 import { useRouter } from 'next/navigation';
+import { getSchoolHeaderHTML } from '@/lib/print-header';
 
 export default function Relatorios() {
-  const { students, occurrences, rules, currentUserRole } = useAppContext();
+  const { students, occurrences, rules, currentUserRole, activeSchoolContext } = useAppContext();
   const router = useRouter();
 
   useEffect(() => {
@@ -106,12 +107,10 @@ export default function Relatorios() {
         }
       `}</style>
 
-      <div className="print-header hidden border-y-2 border-black py-2 mb-5 text-center leading-6">
-        <p className="text-[10pt] uppercase tracking-wide">GOVERNO DO ESTADO DE MATO GROSSO</p>
-        <p className="text-[10pt] uppercase tracking-wide">SECRETARIA DE ESTADO DE EDUCAÇÃO</p>
-        <p className="text-[13pt] font-bold uppercase tracking-widest">ESCOLA ESTADUAL CÍVICO-MILITAR</p>
-        <p className="text-[13pt] font-bold uppercase tracking-widest">PROF. JOÃO BATISTA</p>
-      </div>
+      <div
+        className="print-header hidden border-y-2 border-black py-2 mb-5"
+        dangerouslySetInnerHTML={{ __html: getSchoolHeaderHTML(activeSchoolContext ?? undefined) }}
+      />
 
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

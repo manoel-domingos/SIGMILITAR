@@ -24,6 +24,7 @@ export interface PrintConfig {
   seducLogoUrl?: string | null;  // logo SEDUC/Governo (esquerda)
   headerLines?: string[] | null; // linhas centrais do cabeçalho
   footerLines?: string[] | null; // linhas do rodapé
+  schoolName?: string | null;    // nome da escola (hidratado do BD)
 }
 
 const PRINT_CONFIGS: Record<string, PrintConfig> = {};
@@ -49,16 +50,22 @@ const escapeHtml = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export const getSchoolHeaderHTML = (schoolId?: string): string => {
+  const isJB = schoolId === 'joaobatista';
   const isHeliodoro = schoolId === 'heliodoro' || (typeof window !== 'undefined' && window.location.host.includes('heliodoro'));
 
-  // Padrões (fallback) por escola
-  const schoolNameUpper = isHeliodoro ? 'HELIODORO CAPISTRANO' : 'PROF. JOÃO BATISTA';
+  const cfg = resolvePrintConfig(schoolId);
+
+  const schoolNameUpper = isHeliodoro
+    ? 'HELIODORO CAPISTRANO'
+    : isJB
+      ? 'PROF. JOÃO BATISTA'
+      : (cfg?.schoolName?.toUpperCase() ?? 'ESCOLA CÍVICO-MILITAR');
+
   const logoEscola = isHeliodoro ? 'nova_logo.svg' : 'logo-escola.png';
   const logoFolder = isHeliodoro ? 'heliodoro' : '';
   const defaultLogoPath = logoFolder ? `/schools/${logoFolder}/${logoEscola}` : `/${logoEscola}`;
 
   // Sobrescreve com a configuração do BD quando existir
-  const cfg = resolvePrintConfig(schoolId);
   const seducSrc = cfg?.seducLogoUrl ? resolveLogo(cfg.seducLogoUrl) : `${origin()}/logo-seduc-mt.svg`;
   const escolaSrc = cfg?.logoUrl ? resolveLogo(cfg.logoUrl) : `${origin()}${defaultLogoPath}`;
 
@@ -82,7 +89,10 @@ ${centerHtml}
 };
 
 export const getSchoolFooterHTML = (schoolId?: string): string => {
+  const isJB = schoolId === 'joaobatista';
   const isHeliodoro = schoolId === 'heliodoro' || (typeof window !== 'undefined' && window.location.host.includes('heliodoro'));
+
+  const cfg = resolvePrintConfig(schoolId);
 
   const defaultLines = isHeliodoro
     ? [
@@ -92,15 +102,15 @@ export const getSchoolFooterHTML = (schoolId?: string): string => {
         'CEP 78.300-000 – TANGARÁ DA SERRA/MT',
         'escola.heliodoro@edu.mt.gov.br',
       ]
-    : [
-        'E.E Cívico-Militar Prof. João Batista',
-        '(65) 3329-1021 | (65) 99944-6304',
-        'Av. Ismael José do Nascimento nº 892-N Jardim Europa',
-        'CEP 78.300-152 – TANGARÁ DA SERRA/MT',
-        'escola.16020@edu.mt.gov.br',
-      ];
-
-  const cfg = resolvePrintConfig(schoolId);
+    : isJB
+      ? [
+          'E.E Cívico-Militar Prof. João Batista',
+          '(65) 3329-1021 | (65) 99944-6304',
+          'Av. Ismael José do Nascimento nº 892-N Jardim Europa',
+          'CEP 78.300-152 – TANGARÁ DA SERRA/MT',
+          'escola.16020@edu.mt.gov.br',
+        ]
+      : [`E.E Cívico-Militar ${cfg?.schoolName ?? 'EECM'}`];
   const lines = (cfg?.footerLines && cfg.footerLines.length > 0) ? cfg.footerLines : defaultLines;
 
   const inner = lines.map(line => `  <div>${escapeHtml(line)}</div>`).join('\n');

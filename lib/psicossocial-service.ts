@@ -323,12 +323,14 @@ export const psicossocialService = {
     ruleCodes?: number[];
     registeredBy?: string;
     userId?: string;
+    ataNumber?: number;
   }) {
     try {
+      const occurrenceRef = payload.ataNumber ? 'Nº ' + payload.ataNumber : payload.occurrenceId;
       const eventPayload = {
         school_id: getDbSchoolId(payload.schoolId),
         titulo: 'Retenção do intervalo - ' + payload.studentName,
-        descricao: 'Medida disciplinar vinculada à ocorrência ' + payload.occurrenceId + '.',
+        descricao: 'Medida disciplinar vinculada à ocorrência ' + occurrenceRef + '.',
         tematica: 'disciplina',
         eixo: 'acao_intervencao',
         data_inicio: payload.startDate,

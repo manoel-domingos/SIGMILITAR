@@ -105,6 +105,16 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title, sch
     }
   };
 
+  const [driveStatus, setDriveStatus] = useState<{ connected: boolean; email: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!schoolId) return;
+    fetch(`/api/drive/oauth/status?schoolId=${schoolId}`)
+      .then(r => r.json())
+      .then(setDriveStatus)
+      .catch(() => {});
+  }, [schoolId]);
+
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [menuFile, setMenuFile] = useState<DriveFile | null>(null);
@@ -337,7 +347,21 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title, sch
 
   return (
     <div className="w-full flex flex-col flex-1 bg-white dark:bg-slate-950 rounded-2xl overflow-hidden min-h-[500px]">
-      
+
+      {/* Banner de status do Drive */}
+      {driveStatus !== null && !driveStatus.connected && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700">
+          <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+          <span className="text-xs text-amber-700 dark:text-amber-300 flex-1">Drive não conectado. Conecte para ver todos os arquivos da pasta.</span>
+          <a
+            href={`/api/drive/oauth/connect?schoolId=${schoolId}&returnTo=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`}
+            className="text-xs font-bold text-blue-600 dark:text-blue-400 underline whitespace-nowrap"
+          >
+            Conectar Drive
+          </a>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/50 gap-4">
         
@@ -367,6 +391,12 @@ export function DrivePanel({ initialFolderId = ROOT_FOLDER, onSelect, title, sch
         
         {/* Actions buttons */}
         <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+          {driveStatus?.connected && driveStatus.email && (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-full px-2.5 py-1 font-medium hidden sm:inline-flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              {driveStatus.email}
+            </span>
+          )}
           {schoolId && (
             <button
               onClick={() => {

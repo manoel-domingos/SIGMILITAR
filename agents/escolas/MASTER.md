@@ -42,7 +42,11 @@
 
 ## Alertas Ativos
 
-- Nenhum alerta ativo
+### ⚠️ Google OAuth — Client Secret
+**Data:** 2026-06-09
+**Erro:** `oauth2: "invalid_client" "The provided client secret is invalid."` → login Google falha, redireciona para landing com `error=server_error`.
+**Fix:** Supabase Dashboard → Authentication → Providers → Google → atualizar **Client Secret** (gerar novo em Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client).
+**Status:** Pendente correção manual
 
 ---
 

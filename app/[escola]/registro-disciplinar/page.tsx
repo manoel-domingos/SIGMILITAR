@@ -201,9 +201,10 @@ function RegistroDisciplinarContent() {
         measure: viewOccurrence.measure || 'Retenção',
         ruleCodes: viewOccurrence.ruleCodes || [viewOccurrence.ruleCode].filter(Boolean),
         registeredBy: user?.name || user?.email || 'Sistema',
-        userId: user?.id
+        userId: user?.id,
+        ataNumber: viewOccurrence.ataNumber
       });
-      
+
       toast.success('Agendamento de retenção atualizado no calendário!');
       
       // Refresh the event
@@ -961,7 +962,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     return next.getFullYear() + '-' + String(next.getMonth() + 1).padStart(2, '0') + '-' + String(next.getDate()).padStart(2, '0');
   };
 
-  const syncRetentionAgenda = async (occurrenceId: string, studentId: string, measure: string, measures: string[], ruleCodes: number[], shouldCreate: boolean) => {
+  const syncRetentionAgenda = async (occurrenceId: string, studentId: string, measure: string, measures: string[], ruleCodes: number[], shouldCreate: boolean, ataNumber?: number) => {
     if (!activeSchoolContext || !occurrenceId) return;
 
     // A sincronização com a Agenda Preventiva é um efeito colateral: NUNCA deve
@@ -986,7 +987,8 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
         measure,
         ruleCodes,
         registeredBy,
-        userId: (user as any)?.id
+        userId: (user as any)?.id,
+        ataNumber
       });
     } catch (err) {
       console.warn('[agenda] Falha ao sincronizar retenção (ignorado para não bloquear o save):', err);
@@ -1300,7 +1302,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           attenuatingFactors,
           aggravatingFactors
         });
-        await syncRetentionAgenda(editingOccurrence, primaryStudentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention);
+        await syncRetentionAgenda(editingOccurrence, primaryStudentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention, originalOccurrence?.ataNumber);
 
         // Para cada aluno novo, cria uma ocorrência clonada
         if (newStudentIds.length > 0) {
@@ -1328,7 +1330,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               status: 'iniciada'
             });
             if (result && result.id) {
-              await syncRetentionAgenda(result.id, studentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention);
+              await syncRetentionAgenda(result.id, studentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention, result.ataNumber);
               await updateOccurrence(result.id, { status: 'em tratamento' });
             }
           }
@@ -1371,7 +1373,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           if (result && result.id) {
             savedIds.push(result.id);
             if (!ataNumber && result.ataNumber) ataNumber = result.ataNumber;
-            await syncRetentionAgenda(result.id, studentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention);
+            await syncRetentionAgenda(result.id, studentId, measureToSave, measuresToSave, ruleCodesInt, shouldSyncRetention, result.ataNumber);
             // Avança status automático após submit final
             await updateOccurrence(result.id, { status: 'em tratamento' });
           }

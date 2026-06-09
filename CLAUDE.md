@@ -117,6 +117,8 @@ Se uma pasta tiver `agents/<domínio>/agents/`, existem sub-sub-agentes. Verific
 6. Nunca alterar `ataNumber` — identificador legal imutável
 7. Nunca alterar `DEFAULT_PERMISSIONS` sem aprovação explícita
 8. Remover referências ao hostname `kallyteros` — domínio descontinuado
+9. **Nunca criar arquivos `.sql` em `supabase/migrations/`** — schema gerenciado via Supabase MCP (`apply_migration`). Migrations locais são inúteis: o banco remoto é a fonte da verdade.
+10. **Todo arquivo `.md` do projeto deve ter no máximo 200 linhas** — refatorar se ultrapassar.
 
 ---
 

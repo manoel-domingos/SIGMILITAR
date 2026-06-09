@@ -9,7 +9,7 @@ import { getLocalDateString, formatDate } from '@/lib/utils';
 import { getSchoolHeaderHTML, getSchoolFooterHTML, SCHOOL_HEADER_CSS } from '@/lib/print-header';
 
 export default function TermoDeConduta() {
-  const { students, conductTerms, addConductTerm, updateConductTerm, archiveConductTerm, currentUserRole } = useAppContext();
+  const { students, conductTerms, addConductTerm, updateConductTerm, archiveConductTerm, currentUserRole, activeSchoolContext } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTerm, setEditingTerm] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export default function TermoDeConduta() {
           </style>
         </head>
         <body>
-          ${getSchoolHeaderHTML()}
+          ${getSchoolHeaderHTML(activeSchoolContext ?? undefined)}
           <div class="doc-titulo">TERMO DE ADEQUAÇÃO DE CONDUTA (TAC)</div>
           <div class="content">
             <p>Pelo presente termo, o(a) aluno(a) <strong>${student?.name}</strong>, regularmente matriculado no <strong>${student?.class}</strong>, e seu responsável legal, Sr(a). <strong>${t.guardianName}</strong>, declaram estar cientes das faltas disciplinares cometidas e assumem o compromisso de adequação de conduta conforme as normas do Regimento Escolar.</p>
@@ -108,7 +108,7 @@ export default function TermoDeConduta() {
             <div class="sig-line">Assinatura do Responsável</div>
             <div class="sig-line">Gestão Escolar / Militar</div>
           </div>
-          ${getSchoolFooterHTML()}
+          ${getSchoolFooterHTML(activeSchoolContext ?? undefined)}
         </body>
       </h${""}tml>
     `);
