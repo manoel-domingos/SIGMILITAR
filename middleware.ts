@@ -122,6 +122,7 @@ export function middleware(request: NextRequest) {
   const isPublicRoute =
     pathname.startsWith('/dretga') ||
     pathname.startsWith('/api/onboarding') ||
+    pathname.startsWith('/api/drive/oauth/') ||
     pathname.startsWith('/upload-assinado') ||
     pathname.startsWith('/assinatura') ||
     pathname.startsWith('/api/signatures') ||

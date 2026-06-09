@@ -4,7 +4,8 @@ import { listFiles } from '@/lib/google-drive';
 export async function GET(req: NextRequest) {
   try {
     const folderId = req.nextUrl.searchParams.get('folderId') ?? '1fasylhHJEZcy4zCRPFyy7rPwFQhyttvA';
-    const files = await listFiles(folderId);
+    const schoolId = req.nextUrl.searchParams.get('schoolId') || req.headers.get('x-school-id') || undefined;
+    const files = await listFiles(folderId, schoolId);
     return NextResponse.json(files);
   } catch (error: any) {
     console.error('Error in GET /api/drive/files:', error);

@@ -1,22 +1,23 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { 
-  X, 
-  Upload, 
-  FolderPlus, 
-  ChevronRight, 
-  Folder, 
-  File as FileIcon, 
-  MoreVertical, 
-  Pencil, 
-  Move, 
-  Trash2, 
-  Loader2, 
+import {
+  X,
+  Upload,
+  FolderPlus,
+  ChevronRight,
+  Folder,
+  File as FileIcon,
+  MoreVertical,
+  Pencil,
+  Move,
+  Trash2,
+  Loader2,
   ArrowRight,
   FolderOpen,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -38,14 +39,40 @@ interface DriveModalProps {
   open: boolean;
   onClose: () => void;
   onSelect?: (file: DriveFile) => void;
+  /** ID da escola — usado para persistir última pasta e autenticação OAuth */
+  schoolId?: string;
+  /** Pasta raiz alternativa (sobrescreve ROOT_FOLDER) */
+  rootFolderId?: string;
+  /** Rótulo da pasta raiz */
+  rootFolderName?: string;
+  /** Se true, mostra botão "Usar esta pasta" ao invés de abrir arquivo */
+  selectFolderMode?: boolean;
+  /** Chamado com a pasta selecionada em selectFolderMode */
+  onSelectFolder?: (folder: DriveFile) => void;
 }
 
-export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
+export function DriveModal({ open, onClose, onSelect, schoolId, rootFolderId, rootFolderName, selectFolderMode, onSelectFolder }: DriveModalProps) {
+  const storageKey = `drive_last_folder_${schoolId || 'default'}`;
+  const effectiveRoot: BreadcrumbItem = {
+    id: rootFolderId || ROOT_FOLDER,
+    name: rootFolderName || 'Meu Drive',
+  };
+
+  const getInitialBreadcrumbs = (): BreadcrumbItem[] => {
+    if (typeof window === 'undefined') return [effectiveRoot];
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed: BreadcrumbItem[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* ignora */ }
+    return [effectiveRoot];
+  };
+
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([
-    { id: ROOT_FOLDER, name: 'Meu Drive' }
-  ]);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>(getInitialBreadcrumbs);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [menuFile, setMenuFile] = useState<DriveFile | null>(null);
@@ -64,11 +91,19 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
 
   const currentFolder = breadcrumbs[breadcrumbs.length - 1];
 
+  // Persiste breadcrumbs na localStorage sempre que mudam
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { localStorage.setItem(storageKey, JSON.stringify(breadcrumbs)); } catch { /* ignora */ }
+  }, [breadcrumbs, storageKey]);
+
   const loadFiles = useCallback(async (folderId: string) => {
     setLoading(true);
     setErrorAlert(null);
     try {
-      const res = await fetch(`/api/drive/files?folderId=${folderId}`);
+      const params = new URLSearchParams({ folderId });
+      if (schoolId) params.set('schoolId', schoolId);
+      const res = await fetch(`/api/drive/files?${params}`);
       if (!res.ok) throw new Error('Falha ao obter lista de arquivos do servidor');
       const data = await res.json();
       setFiles(data);
@@ -82,7 +117,7 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [schoolId]);
 
   useEffect(() => {
     if (open) {
@@ -111,7 +146,8 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
           body: JSON.stringify({
             folderId: currentFolder.id,
             fileName: file.name,
-            mimeType: file.type || 'application/octet-stream'
+            mimeType: file.type || 'application/octet-stream',
+            schoolId,
           })
         });
 
@@ -181,7 +217,7 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
       const res = await fetch('/api/drive/rename', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId: renaming.id, newName: renaming.name }),
+        body: JSON.stringify({ fileId: renaming.id, newName: renaming.name, schoolId }),
       });
       if (!res.ok) throw new Error('Não foi possível renomear o item no Google Drive');
       toast.success('Renomeado com sucesso!', { id: toastId });
@@ -205,7 +241,7 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
       const res = await fetch('/api/drive/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId: file.id }),
+        body: JSON.stringify({ fileId: file.id, schoolId }),
       });
       if (!res.ok) throw new Error('Falha ao excluir o item no Google Drive');
       toast.success('Item deletado com sucesso!', { id: toastId });
@@ -232,6 +268,7 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
           fileId: moving.id,
           newParentId: targetFolderId,
           oldParentId: currentFolder.id,
+          schoolId,
         }),
       });
       if (!res.ok) throw new Error('Falha ao mover o item no Google Drive');
@@ -257,7 +294,7 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
       const res = await fetch('/api/drive/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parentId: currentFolder.id, name }),
+        body: JSON.stringify({ parentId: currentFolder.id, name, schoolId }),
       });
       if (!res.ok) throw new Error('Falha ao criar pasta no Google Drive');
       toast.success('Pasta criada com sucesso!', { id: toastId });
@@ -295,17 +332,18 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 flex-wrap font-medium">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/50 gap-3">
+          {/* Breadcrumb com scroll horizontal */}
+          <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 font-medium overflow-x-auto whitespace-nowrap min-w-0 flex-1 scrollbar-hide">
             {breadcrumbs.map((b, i) => (
-              <span key={b.id} className="flex items-center gap-1.5">
-                {i > 0 && <ChevronRight size={14} className="text-slate-300 dark:text-slate-700" />}
+              <span key={b.id} className="flex items-center gap-1 shrink-0">
+                {i > 0 && <ChevronRight size={13} className="text-slate-300 dark:text-slate-700" />}
                 <button
                   onClick={() => navigateToBreadcrumb(i)}
-                  className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors ${
-                    i === breadcrumbs.length - 1 
-                      ? 'font-semibold text-slate-800 dark:text-slate-100' 
-                      : ''
+                  className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors rounded px-1 py-0.5 ${
+                    i === breadcrumbs.length - 1
+                      ? 'font-semibold text-slate-800 dark:text-slate-100'
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   {b.name}
@@ -313,41 +351,54 @@ export function DriveModal({ open, onClose, onSelect }: DriveModalProps) {
               </span>
             ))}
           </div>
-          
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Botão "Usar esta pasta" em modo seleção */}
+            {selectFolderMode && (
+              <button
+                onClick={() => onSelectFolder?.({ id: currentFolder.id, name: currentFolder.name, mimeType: 'application/vnd.google-apps.folder' })}
+                className="flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-xl transition-all shadow-md"
+              >
+                Usar esta pasta
+              </button>
+            )}
+
             <button
               onClick={() => loadFiles(currentFolder.id)}
               disabled={loading}
-              className="flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40 shadow-sm cursor-pointer animate-in duration-200"
+              className="flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40 shadow-sm cursor-pointer"
               title="Atualizar pasta"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             </button>
 
-            <button 
-              onClick={handleNewFolder} 
-              className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40"
+            {!selectFolderMode && (
+              <>
+                <button
+                  onClick={handleNewFolder}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200/40 dark:border-slate-800/40"
+                >
+                  <FolderPlus size={14} /> Nova pasta
+                </button>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 px-3 py-1.5 rounded-xl transition-all shadow-md cursor-pointer">
+                  {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                  <span>Upload</span>
+                  <input type="file" multiple className="hidden" onChange={e => handleUpload(e.target.files)} />
+                </label>
+              </>
+            )}
+
+            {/* Botão de configurações */}
+            <button
+              onClick={() => window.open('/dretga/configuracoes', '_blank')}
+              className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              title="Configurações do Drive"
             >
-              <FolderPlus size={14} /> Nova pasta
+              <Settings size={16} />
             </button>
-            
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 px-3 py-1.5 rounded-xl transition-all shadow-md cursor-pointer">
-              {uploading ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Upload size={14} />
-              )}
-              <span>Upload</span>
-              <input 
-                type="file" 
-                multiple 
-                className="hidden" 
-                onChange={e => handleUpload(e.target.files)} 
-              />
-            </label>
-            
-            <button 
-              onClick={onClose} 
+
+            <button
+              onClick={onClose}
               className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
             >
               <X size={18} />

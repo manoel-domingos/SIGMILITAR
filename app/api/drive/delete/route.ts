@@ -3,11 +3,11 @@ import { deleteFile } from '@/lib/google-drive';
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { fileId } = await req.json();
+    const { fileId, schoolId } = await req.json();
     if (!fileId) {
       return NextResponse.json({ error: 'fileId is required' }, { status: 400 });
     }
-    await deleteFile(fileId);
+    await deleteFile(fileId, schoolId);
     return NextResponse.json({ ok: true });
   } catch (error: any) {
     console.error('Error in DELETE /api/drive/delete:', error);
