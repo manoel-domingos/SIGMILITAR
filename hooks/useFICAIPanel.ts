@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { readSpreadsheet, processRows } from '@/lib/ficai/parser'
-import { fetchAlunosParaMatch, upsertFICAIImport, fetchSavedFICAIImports, updateFICAIImportStatus, updateStudentContacts } from '@/lib/ficai/queries'
-import type { FICAIEntry, FICAIFilterKey, FICAIStats } from '@/types/ficai'
+import { fetchAlunosParaMatch, upsertFICAIImport, fetchSavedFICAIImports, updateFICAIImportStatus, updateStudentContacts, fetchImportSessions } from '@/lib/ficai/queries'
+import type { FICAIEntry, FICAIFilterKey, FICAIStats, FICAIImportSession } from '@/types/ficai'
 import { normalizeName, jaccardScore } from '@/lib/ficai/parser'
 import { useAppContext } from '@/lib/store'
 import { toast } from 'sonner'
@@ -15,6 +15,9 @@ export function useFICAIPanel() {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
   const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [sessions, setSessions] = useState<FICAIImportSession[]>([])
+  const [selectedSession, setSelectedSession] = useState<FICAIImportSession | null>(null)
+  const [currentFileName, setCurrentFileName] = useState<string>('Planilha')
 
   const setSaved = useCallback(() => {
     setSavingStatus('saved')
@@ -27,8 +30,12 @@ export function useFICAIPanel() {
     if (!activeSchoolContext) return
     setLoading(true)
     try {
-      const data = await fetchSavedFICAIImports(activeSchoolContext)
+      const [data, sessionData] = await Promise.all([
+        fetchSavedFICAIImports(activeSchoolContext),
+        fetchImportSessions(activeSchoolContext),
+      ])
       setEntries(data)
+      setSessions(sessionData)
     } catch (err) {
       console.error('[FICAI] Erro ao carregar histórico:', err)
     } finally {
@@ -51,6 +58,7 @@ export function useFICAIPanel() {
     setLoading(true)
     setEntries([])
     setSelectedIdx(null)
+    setCurrentFileName(file.name)
 
     try {
       const [rows, alunos] = await Promise.all([
@@ -73,9 +81,11 @@ export function useFICAIPanel() {
 
       // Auto-save
       setSavingStatus('saving')
-      await upsertFICAIImport(processed, activeSchoolContext || undefined)
+      await upsertFICAIImport(processed, activeSchoolContext || undefined, file.name)
       const saved = await fetchSavedFICAIImports(activeSchoolContext || '')
       setEntries(saved)
+      const newSessions = await fetchImportSessions(activeSchoolContext || '')
+      setSessions(newSessions)
       setSaved()
     } catch (err) {
       setSavingStatus('idle')
@@ -179,6 +189,20 @@ export function useFICAIPanel() {
     }
   }, [entries, filteredEntries, activeSchoolContext, setSaved]);
 
+  const manualSave = useCallback(async () => {
+    if (!entries.length || !activeSchoolContext) return
+    setSavingStatus('saving')
+    try {
+      await upsertFICAIImport(entries, activeSchoolContext, currentFileName)
+      const newSessions = await fetchImportSessions(activeSchoolContext)
+      setSessions(newSessions)
+      setSaved()
+    } catch (err) {
+      setSavingStatus('idle')
+      toast.error('Erro ao salvar: ' + (err as Error).message)
+    }
+  }, [entries, activeSchoolContext, currentFileName, setSaved])
+
   const addContactToStudent = useCallback(async (studentId: string, contactName: string, contactPhone: string) => {
     const matchedEntry = entries.find(e => e.alunoId === studentId);
     const currentContacts = matchedEntry?.contacts || [];
@@ -227,6 +251,10 @@ export function useFICAIPanel() {
     reset,
     updateStatus,
     addContactToStudent,
+    manualSave,
+    sessions,
+    selectedSession,
+    setSelectedSession,
     hasData: entries.length > 0,
   }
 }

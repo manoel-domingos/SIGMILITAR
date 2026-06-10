@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { AlunoRecord, FICAIEntry, FICAIHistoricoPoint } from '@/types/ficai'
+import type { AlunoRecord, FICAIEntry, FICAIHistoricoPoint, FICAIImportSession } from '@/types/ficai'
 import { deriveFicaiFlags } from './constants'
 
 /**
@@ -36,7 +36,7 @@ export async function fetchAlunosParaMatch(schoolId: string): Promise<AlunoRecor
  * Salva os dados processados da planilha na tabela ficai_importacoes.
  * Merge de histórico: adiciona ponto novo só quando % mudou vs último registro.
  */
-export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string): Promise<void> {
+export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string, nomeArquivo: string = 'Planilha'): Promise<void> {
   const ano = new Date().getFullYear()
   const nowISO = new Date().toISOString()
 
@@ -124,6 +124,61 @@ export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string
 
     if (error) throw new Error(`Erro ao salvar importação (lote ${i}): ${error.message}`)
   }
+
+  // Registrar sessão de importação
+  const sessionStats = {
+    totalAlunos: entries.length,
+    totalAlertas: entries.filter(e => e.alerta).length,
+    totalGraves: entries.filter(e => e.alertaGrave).length,
+    totalFicaisAbertas: entries.filter(e => e.ficaiAberto).length,
+    totalEncaminhados: entries.filter(e => e.encaminhado).length,
+    totalMatched: entries.filter(e => e.matched).length,
+  }
+  await createImportSession(schoolId || '', nomeArquivo, sessionStats, user?.id, undefined)
+}
+
+export async function createImportSession(
+  schoolId: string,
+  nomeArquivo: string,
+  stats: { totalAlunos: number; totalAlertas: number; totalGraves: number; totalFicaisAbertas: number; totalEncaminhados: number; totalMatched: number },
+  userId?: string | null,
+  userNome?: string
+): Promise<void> {
+  const { error } = await supabase.from('ficai_import_sessions').insert({
+    school_id: schoolId,
+    nome_arquivo: nomeArquivo,
+    importado_por: userId || null,
+    importado_por_nome: userNome || null,
+    total_alunos: stats.totalAlunos,
+    total_alertas: stats.totalAlertas,
+    total_graves: stats.totalGraves,
+    total_ficais_abertas: stats.totalFicaisAbertas,
+    total_encaminhados: stats.totalEncaminhados,
+    total_matched: stats.totalMatched,
+  })
+  if (error) console.warn('[FICAI] Erro ao criar sessão de importação:', error.message)
+}
+
+export async function fetchImportSessions(schoolId: string): Promise<FICAIImportSession[]> {
+  const { data, error } = await supabase
+    .from('ficai_import_sessions')
+    .select('*')
+    .eq('school_id', schoolId)
+    .order('importado_em', { ascending: false })
+    .limit(10)
+  if (error) return []
+  return (data || []).map((d: any) => ({
+    id: d.id,
+    nomeArquivo: d.nome_arquivo,
+    importadoEm: d.importado_em,
+    importadoPorNome: d.importado_por_nome || undefined,
+    totalAlunos: d.total_alunos,
+    totalAlertas: d.total_alertas,
+    totalGraves: d.total_graves,
+    totalFicaisAbertas: d.total_ficais_abertas,
+    totalEncaminhados: d.total_encaminhados,
+    totalMatched: d.total_matched,
+  }))
 }
 
 /**

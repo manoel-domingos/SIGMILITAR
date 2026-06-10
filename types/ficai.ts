@@ -116,3 +116,16 @@ export interface FICAIStats {
   comTelefone: number
   ficaiNecessaria: number
 }
+
+export interface FICAIImportSession {
+  id: string
+  nomeArquivo: string
+  importadoEm: string
+  importadoPorNome?: string
+  totalAlunos: number
+  totalAlertas: number
+  totalGraves: number
+  totalFicaisAbertas: number
+  totalEncaminhados: number
+  totalMatched: number
+}
