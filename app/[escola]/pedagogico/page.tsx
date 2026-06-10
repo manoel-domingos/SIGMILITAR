@@ -11,7 +11,7 @@ import MegRadarChart from '@/components/meg/MegRadarChart';
 import MegBarChart from '@/components/meg/MegBarChart';
 import { supabase } from '@/lib/supabase';
 import {
-  GraduationCap, Award, ClipboardCheck, AlertTriangle,
+  GraduationCap, Award, ClipboardCheck,
   TrendingUp, BookOpen, BarChart2
 } from 'lucide-react';
 import Link from 'next/link';
@@ -235,10 +235,12 @@ export default function PedagogicoDashboard() {
             </div>
           </div>
           <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl border border-slate-100 dark:border-slate-700/40 shadow-sm flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500"><AlertTriangle className="w-6 h-6" /></div>
+            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-500"><TrendingUp className="w-6 h-6" /></div>
             <div>
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Nota Máxima (Meta)</p>
-              <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 font-mono">{MEG_TOTAIS.maxTotal} pts</p>
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">2025 (Oficial)</p>
+              <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 font-mono">
+                {globalMetrics.total2025 !== undefined ? `${globalMetrics.total2025.toFixed(2)} pts` : '—'}
+              </p>
             </div>
           </div>
         </div>

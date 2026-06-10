@@ -72,13 +72,13 @@ export const MEG_EIXOS: MegEixo[] = [
     color: 'text-rose-500 dark:text-rose-400',
     bgGradient: 'from-rose-500/10 to-red-500/10',
     borderColor: 'border-rose-500/20 dark:border-rose-500/30',
-    maxProcessos: 110,
+    maxProcessos: 100,
     maxResultado: 160,
   },
 ];
 
 export const MEG_TOTAIS = {
-  maxProcessos: 410,
+  maxProcessos: 400,
   maxResultado: 600,
-  maxTotal: 1010,
+  maxTotal: 1000,
 } as const;

@@ -72,11 +72,11 @@ const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
   {
     label: 'Eixos MEG', icon: BookOpen,
     children: [
-      { href: '/pedagogico/patrimonio', label: '1. Patrimônio Mobiliário e Imobiliário', icon: Building2 },
-      { href: '/pedagogico/lideranca', label: '2. Alimentação Escolar', icon: Users },
-      { href: '/pedagogico/pedagogico', label: '3. Limpeza e Organização', icon: GraduationCap },
-      { href: '/pedagogico/gestao-escolar', label: '4. Manutenção e Conservação', icon: FileText },
-      { href: '/pedagogico/clima-escolar', label: '5. Gestão Escolar e Pedagógica', icon: Activity },
+      { href: '/pedagogico/patrimonio',  label: '1. Patrimônio Mobiliário e Imobiliário', icon: Building2 },
+      { href: '/pedagogico/alimentacao', label: '2. Alimentação Escolar', icon: ChefHat },
+      { href: '/pedagogico/limpeza',     label: '3. Limpeza e Organização', icon: CheckSquare },
+      { href: '/pedagogico/manutencao',  label: '4. Manutenção e Conservação', icon: Cog },
+      { href: '/pedagogico/gestao',      label: '5. Gestão Escolar e Pedagógica', icon: GraduationCap },
     ],
   },
   {
@@ -975,11 +975,11 @@ function TopbarLayout({
   }, []);
 
   const MEG_SUBMENU = [
-    { href: '/pedagogico/gestao-escolar', label: '1. Gestão Escolar',  icon: FileText },
-    { href: '/pedagogico/lideranca',      label: '2. Liderança',        icon: Users },
-    { href: '/pedagogico/pedagogico',     label: '3. Pedagógico',       icon: GraduationCap },
-    { href: '/pedagogico/patrimonio',     label: '4. Patrimônio',        icon: Building2 },
-    { href: '/pedagogico/clima-escolar',  label: '5. Clima Escolar',    icon: Activity },
+    { href: '/pedagogico/patrimonio',  label: '1. Patrimônio',  icon: Building2 },
+    { href: '/pedagogico/alimentacao', label: '2. Alimentação', icon: ChefHat },
+    { href: '/pedagogico/limpeza',     label: '3. Limpeza',     icon: CheckSquare },
+    { href: '/pedagogico/manutencao',  label: '4. Manutenção',  icon: Cog },
+    { href: '/pedagogico/gestao',      label: '5. Gestão',      icon: GraduationCap },
   ];
 
   const navPillClass = (active: boolean) =>
