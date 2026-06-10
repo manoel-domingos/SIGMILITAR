@@ -10,6 +10,7 @@ interface FICAITableProps {
   selectedIdx: number | null
   onSelect: (idx: number) => void
   onUpdateStatus: (idx: number, status: 'nao_aberta' | 'ficai_necessaria' | 'ficai_aberta' | 'encaminhado', date?: string) => void
+  onReminder?: () => void
 }
 
 function PctCell({ value }: { value: number | null }) {
@@ -27,7 +28,7 @@ function AlertIcon({ entry }: { entry: FICAIEntry }) {
   return <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
 }
 
-export function FICAITable({ entries, total, selectedIdx, onSelect, onUpdateStatus }: FICAITableProps) {
+export function FICAITable({ entries, total, selectedIdx, onSelect, onUpdateStatus, onReminder }: FICAITableProps) {
   if (entries.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center text-sm text-slate-450 dark:text-slate-650 bg-white/50 dark:bg-slate-900/10 border border-dashed rounded-2xl">
@@ -88,7 +89,7 @@ export function FICAITable({ entries, total, selectedIdx, onSelect, onUpdateStat
                               href={waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              onClick={e => e.stopPropagation()}
+                              onClick={e => { e.stopPropagation(); onReminder?.() }}
                               className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:underline dark:text-emerald-450 bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10 active:scale-95 transition-transform shrink-0"
                               title={`Enviar mensagem para ${entry.nomeResponsavel || entry.nomeAluno}`}
                             >
@@ -120,6 +121,7 @@ export function FICAITable({ entries, total, selectedIdx, onSelect, onUpdateStat
                         if (val === 'ficai_aberta' || val === 'encaminhado') {
                           const today = new Date().toLocaleDateString('pt-BR');
                           dateVal = prompt(`Digite a data (DD/MM/AAAA) ou clique em OK para usar hoje:`, today) || today;
+                          onReminder?.();
                         }
                         onUpdateStatus(idx, val, dateVal);
                       }}

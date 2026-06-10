@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react'
 import { useFICAIPanel } from '@/hooks/useFICAIPanel'
 import { FICAIUpload }    from './FICAIUpload'
 import { FICAIStatsCards }from './FICAIStats'
 import { FICAITable }     from './FICAITable'
 import { FICAIDetail }    from './FICAIDetail'
 import { cn }             from '@/lib/utils'
-import { RefreshCw, Loader2, Heart, ArrowLeft, CheckCircle } from 'lucide-react'
+import { RefreshCw, Loader2, Heart, ArrowLeft, CheckCircle, ExternalLink, X, AlertTriangle } from 'lucide-react'
 import type { FICAIFilterKey } from '@/types/ficai'
 import { useParams } from 'next/navigation'
 import { useAppContext } from '@/lib/store'
@@ -21,12 +22,74 @@ const FILTERS: Array<{ key: FICAIFilterKey; label: string }> = [
   { key: 'sem_tel',         label: 'Sem telefone' },
 ]
 
+const EXTERNAL_SYSTEMS = [
+  {
+    label: 'Sistema FICAI SEDUC',
+    url: 'http://ficai.seduc.mt.gov.br/wplogin.aspx',
+    color: 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-300 hover:bg-blue-500/20',
+  },
+  {
+    label: 'Abandono Escolar SEDUC',
+    url: 'https://abandonoescolar.seduc.mt.gov.br/entrar',
+    color: 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20',
+  },
+]
+
+function ReminderModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-xl bg-amber-500/10 p-2 border border-amber-500/20 shrink-0">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-800 dark:text-slate-100">Lançar nos sistemas externos</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Registre também nos portais da SEDUC-MT</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0">
+            <X className="h-4 w-4 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {EXTERNAL_SYSTEMS.map(sys => (
+            <a
+              key={sys.url}
+              href={sys.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                'flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-xs font-extrabold transition-all active:scale-95',
+                sys.color
+              )}
+            >
+              {sys.label}
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
+            </a>
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-2.5 text-xs font-extrabold hover:opacity-90 transition active:scale-95"
+        >
+          Entendi
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function FICAIPanel() {
   const { activeSchoolContext, contextSchools } = useAppContext()
   const params = useParams()
   const schoolSlug = params.escola as string
   const currentSchool = contextSchools.find(s => s.id === activeSchoolContext)
   const schoolName = currentSchool?.name || 'EECM'
+  const [showReminder, setShowReminder] = useState(false)
 
   const {
     entries,
@@ -92,6 +155,31 @@ export function FICAIPanel() {
               Nova planilha
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Banner fixo — sistemas externos */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/8 px-4 py-3 text-xs">
+        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-extrabold shrink-0">
+          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+          Lançar também nos portais SEDUC-MT:
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {EXTERNAL_SYSTEMS.map(sys => (
+            <a
+              key={sys.url}
+              href={sys.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-bold text-[11px] transition-all active:scale-95',
+                sys.color
+              )}
+            >
+              {sys.label}
+              <ExternalLink className="h-3 w-3 shrink-0 opacity-70" />
+            </a>
+          ))}
         </div>
       </div>
 
@@ -161,6 +249,7 @@ export function FICAIPanel() {
             selectedIdx={selectedIdx}
             onSelect={toggleSelected}
             onUpdateStatus={updateStatus}
+            onReminder={() => setShowReminder(true)}
           />
 
           {/* Drawer Detalhes do Aluno */}
@@ -201,6 +290,9 @@ export function FICAIPanel() {
           )}
         </div>
       )}
+
+      {/* Modal lembrete sistemas externos */}
+      {showReminder && <ReminderModal onClose={() => setShowReminder(false)} />}
     </div>
   )
 }
