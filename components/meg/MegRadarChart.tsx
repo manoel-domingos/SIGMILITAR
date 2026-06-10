@@ -81,7 +81,7 @@ export default function MegRadarChart({ data, titulo, altura = 320 }: MegRadarCh
             />
           )}
           <Tooltip
-            formatter={(value: number) => [`${value}%`]}
+            formatter={(value: any) => [`${value}%`]}
             contentStyle={{
               fontSize: 11,
               borderRadius: 8,

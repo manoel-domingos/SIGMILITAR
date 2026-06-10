@@ -280,9 +280,12 @@ export default function ProcessosChecklist({
       {/* Digital form modal */}
       {activeFormId && (
         <MegFormulario
+          tipo={EVIDENCIA_FORM_MAP[activeFormId]?.tipo ?? activeFormId}
           evidenciaId={activeFormId}
           schoolId={schoolId}
+          readonly={readonly ?? false}
           onClose={() => setActiveFormId(null)}
+          onSaveSuccess={() => setActiveFormId(null)}
         />
       )}
     </div>

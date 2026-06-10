@@ -51,6 +51,7 @@ export default function EixoPage() {
     if (!isAuthRestored || !eixo) return;
 
     async function fetchBaseline() {
+      if (!eixo) return;
       setLoadingBaseline(true);
       try {
         const { data, error } = await supabase
