@@ -71,9 +71,11 @@ export default function EixoCard({
           <span className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/40 px-2 py-0.5 rounded-md font-mono block">
             Eixo {eixo.numero}
           </span>
-          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 block">
-            meta {meta} pts
-          </span>
+          {nota2025 !== undefined ? (
+            <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block">
+              2025: {nota2025} pts
+            </span>
+          ) : null}
         </div>
       </div>
 

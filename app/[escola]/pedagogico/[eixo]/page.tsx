@@ -169,17 +169,13 @@ export default function EixoPage() {
           {/* Score summary */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <div className="text-right space-y-1">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Meta</p>
-              <p className="text-base font-extrabold font-mono text-blue-600 dark:text-blue-400">{meta} pts</p>
+              <p className="text-[10px] uppercase font-bold tracking-wider text-indigo-500">2025</p>
+              <p className="text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
+                {baseline2025.processos || baseline2025.resultado
+                  ? `${((baseline2025.processos?.pontuacao_obtida ?? 0) + (baseline2025.resultado?.pontuacao_obtida ?? 0)).toFixed(2)} pts`
+                  : '—'}
+              </p>
             </div>
-            {baseline2025.processos && (
-              <div className="text-right space-y-1">
-                <p className="text-[10px] uppercase font-bold tracking-wider text-indigo-500">2025</p>
-                <p className="text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
-                  {((baseline2025.processos?.pontuacao_obtida ?? 0) + (baseline2025.resultado?.pontuacao_obtida ?? 0)).toFixed(2)} pts
-                </p>
-              </div>
-            )}
             <div className="text-right space-y-1">
               <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">{anoAtual}</p>
               <p className="text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400">{totalAtual} pts</p>
@@ -195,7 +191,7 @@ export default function EixoPage() {
         <div className="space-y-1.5">
           <div className="flex justify-between text-[10px] font-bold text-slate-400">
             <span>Conformidade Geral do Eixo {anoAtual}</span>
-            <span>{pctAtual}% de {meta} pts</span>
+            <span>{pctAtual}%</span>
           </div>
           <ProgressBar value={pctAtual} size="sm" showText={false} />
         </div>

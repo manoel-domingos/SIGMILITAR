@@ -209,7 +209,7 @@ export default function ProcessosChecklist({
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           {/* Peso badge */}
                           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
-                            meta: {row.criterio.pesoMax} pts
+                            {row.criterio.pesoMax} pts
                           </span>
                           {/* Baseline 2025 badge */}
                           {row.baseline2025 && (
