@@ -43,6 +43,8 @@ Avaliação realizada pela SEDUC-MT na EECM Prof. João Batista em Junho/2025, c
 #### [MODIFY] [queries.ts](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/lib/ficai/queries.ts)
 - Atualizar a função `fetchSavedFICAIImports` para buscar perfis de `user_profiles` em bloco com `try/catch` robusto.
 - Mapear os campos `importado_em` e `importado_por` e `importado_por_nome` nos objetos retornados em `FICAIEntry`.
+- **[NOVO] Isolamento Multi-tenant no Match:** Atualizar `fetchAlunosParaMatch(schoolId: string)` para aceitar o ID da escola ativa e filtrar as consultas com `.eq('school_id', schoolId)`.
+- **[NOVO] Isolamento no Update:** Atualizar `updateFICAIImportStatus` para aceitar `schoolId: string` e filtrar a cláusula `.match` com `{ cod_aluno: codAluno, ano, school_id: schoolId }`.
 
 #### [MODIFY] [ficai.ts](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/types/ficai.ts)
 - Adicionar os campos opcionais `importadoEm`, `importadoPor` e `importadoPorNome` na interface `FICAIEntry`.
@@ -55,11 +57,23 @@ Avaliação realizada pela SEDUC-MT na EECM Prof. João Batista em Junho/2025, c
 - Substituir leitura e gravação no `localStorage` por chamadas do Supabase na tabela `meg_canny_ideas`.
 - Sincronização em tempo real das sugestões e votos de todos os usuários.
 
+#### [MODIFY] [StudentSheet.tsx](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/components/StudentSheet.tsx)
+- Destruir e ler `activeSchoolContext` do `useAppContext()`.
+- **[NOVO] Isolamento no Update:** Atualizar a função interna `handleUpdateFicaiStatus` para filtrar a cláusula `.match` de atualização da tabela `ficai_importacoes` com `school_id: activeSchoolContext`.
+
 #### [MODIFY] [AppShell.tsx](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/components/AppShell.tsx)
 - Substituir o sino de notificações (`NotificationBell`) para ler e salvar notificações, contadores de edições e atualizações na tabela `system_notifications` e `sigmilitar_edit_trackers`.
 - Modificar o "Apagar" notificação para adicionar o e-mail do usuário no array `deleted_by`, ocultando-a sem afetar outros usuários.
 
 ### Páginas e Fluxos
+
+#### [MODIFY] [useFICAIPanel.ts](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/hooks/useFICAIPanel.ts)
+- **[NOVO] Isolamento do Processamento:** Passar `activeSchoolContext` para `fetchAlunosParaMatch` no Promise.all do processamento de arquivos.
+- **[NOVO] Isolamento no Update de Linha:** Passar `activeSchoolContext` ao invocar `updateFICAIImportStatus` ao alterar o status do FICAI.
+
+#### [MODIFY] [page.tsx](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/app/%5Bescola%5D/alunos/page.tsx)
+- Destruir e ler `activeSchoolContext` do `useAppContext()`.
+- **[NOVO] Isolamento no Update de Linha:** Atualizar a função interna `handleUpdateFicaiStatus` para filtrar a cláusula `.match` de atualização da tabela `ficai_importacoes` com `school_id: activeSchoolContext`.
 
 #### [MODIFY] [page.tsx](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/app/%5Bescola%5D/configuracoes/page.tsx)
 - Modificar a aba "Status das Integrações" para ler e atualizar as pastas de Google Drive na tabela `school_settings` no Supabase.

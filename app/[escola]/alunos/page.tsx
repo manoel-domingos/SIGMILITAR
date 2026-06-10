@@ -104,7 +104,7 @@ const classifyImports = (rows: any[], existing: any[]): any[] => {
 };
 
 export default function Alunos() {
-  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile, getStudentOccurrences, occurrences } = useAppContext();
+  const { students, addStudent, importStudents, updateStudent, archiveStudent, getStudentPoints, getStudentBehavior, deleteAllStudents, currentUserRole, uploadFile, getStudentOccurrences, occurrences, activeSchoolContext } = useAppContext();
   const { grades, classLetters, allClassNames, tenantId } = useTenantConfig();
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('');
@@ -255,7 +255,7 @@ export default function Alunos() {
           encaminhado,
           data_encaminhamento
         })
-        .match({ cod_aluno: codAluno, ano });
+        .match({ cod_aluno: codAluno, ano, school_id: activeSchoolContext });
 
       if (error) throw error;
       

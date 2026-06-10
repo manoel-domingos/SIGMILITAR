@@ -47,7 +47,7 @@ export function useFICAIPanel() {
     try {
       const [rawText, alunos] = await Promise.all([
         readFileAsText(file),
-        fetchAlunosParaMatch(),
+        fetchAlunosParaMatch(activeSchoolContext || ''),
       ])
 
       const processed = processCSV(rawText, alunos)
@@ -162,7 +162,7 @@ export function useFICAIPanel() {
     if (entryToUpdate.codAluno) {
       try {
         const ano = new Date().getFullYear();
-        await updateFICAIImportStatus(entryToUpdate.codAluno, ano, {
+        await updateFICAIImportStatus(entryToUpdate.codAluno, ano, activeSchoolContext || '', {
           ficai_aberto: ficaiAberto,
           data_ficai: dataFicai,
           encaminhado,
@@ -174,7 +174,7 @@ export function useFICAIPanel() {
         toast.error('Erro ao salvar alteração de status no banco de dados.');
       }
     }
-  }, [entries, filteredEntries]);
+  }, [entries, filteredEntries, activeSchoolContext]);
 
   const addContactToStudent = useCallback(async (studentId: string, contactName: string, contactPhone: string) => {
     try {

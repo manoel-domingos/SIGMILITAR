@@ -31,6 +31,7 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
   const {
     students, updateStudent, archiveStudent,
     getStudentPoints, getStudentBehavior, getStudentOccurrences, uploadFile,
+    activeSchoolContext
   } = useAppContext();
 
   const { grades, classLetters } = useTenantConfig();
@@ -103,7 +104,7 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
           encaminhado,
           data_encaminhamento
         })
-        .match({ cod_aluno: codAluno, ano });
+        .match({ cod_aluno: codAluno, ano, school_id: activeSchoolContext });
 
       if (error) throw error;
       

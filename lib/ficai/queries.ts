@@ -2,12 +2,13 @@ import { supabase } from '@/lib/supabase'
 import type { AlunoRecord, FICAIEntry } from '@/types/ficai'
 
 /**
- * Busca todos os alunos do Supabase para o match com a planilha.
+ * Busca todos os alunos do Supabase para o match com a planilha da escola específica.
  */
-export async function fetchAlunosParaMatch(): Promise<AlunoRecord[]> {
+export async function fetchAlunosParaMatch(schoolId: string): Promise<AlunoRecord[]> {
   const { data, error } = await supabase
     .from('students')
     .select('id, name, registration_number, contacts')
+    .eq('school_id', schoolId)
     .eq('archived', false)
     .order('name')
 
@@ -142,11 +143,12 @@ export async function fetchSavedFICAIImports(schoolId: string): Promise<FICAIEnt
 }
 
 /**
- * Atualiza o status do FICAI de um aluno específico no banco de dados.
+ * Atualiza o status do FICAI de um aluno específico no banco de dados, isolado por escola.
  */
 export async function updateFICAIImportStatus(
   codAluno: number,
   ano: number,
+  schoolId: string,
   updates: {
     ficai_aberto: boolean;
     data_ficai: string;
@@ -157,7 +159,7 @@ export async function updateFICAIImportStatus(
   const { error } = await supabase
     .from('ficai_importacoes')
     .update(updates)
-    .match({ cod_aluno: codAluno, ano });
+    .match({ cod_aluno: codAluno, ano, school_id: schoolId });
 
   if (error) throw new Error(`Erro ao atualizar status do FICAI: ${error.message}`);
 }
