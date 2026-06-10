@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Plus, Tag, Clock, Send, Award, Sparkles, Building2, User } from 'lucide-react';
+import { X, Plus, Tag, Clock, Send, Award, Sparkles, Building2, User, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/lib/store';
-import { supabase } from '@/lib/supabase';
 
 interface Idea {
   id: string;
@@ -114,52 +113,36 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
     return currentSchool?.name || 'EECM João Batista';
   }, [contextSchools, activeSchoolContext]);
 
-  const canManageStatus = currentUserRole === 'admin_global' || currentUserRole === 'GESTOR';
+  const canManageStatus = currentUserRole === 'admin_global';
 
-  // Carrega do Supabase com sincronização em tempo real
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Carrega do Canny.io
   const fetchIdeas = async () => {
-    if (!supabase) return;
-    const { data, error } = await supabase
-      .from('meg_canny_ideas')
-      .select('*')
-      .order('votes', { ascending: false });
-    if (error) {
-      console.error(error);
-      return;
-    }
-    if (data) {
-      const mapped: Idea[] = data.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description || '',
-        category: item.category as any,
-        status: item.status as any,
-        votes: item.votes || 0,
-        votedBy: item.voted_by || [],
-        createdBy: item.created_by,
-        createdByName: item.created_by_name || '',
-        createdSchool: item.created_school || '',
-        createdAt: item.created_at,
-      }));
-      setIdeas(mapped);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/canny', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list' }),
+      });
+      if (!res.ok) {
+        throw new Error(`Erro na API Canny: ${res.status}`);
+      }
+      const data = await res.json();
+      setIdeas(data);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao carregar sugestões do Canny.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
       fetchIdeas();
-      
-      // Realtime subscription
-      const channel = supabase
-        .channel('meg_canny_ideas_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'meg_canny_ideas' }, () => {
-          fetchIdeas();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
   }, [isOpen]);
 
@@ -184,19 +167,32 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
     // Optimistic update
     setIdeas(prev => prev.map(i => i.id === ideaId ? { ...i, votes, votedBy } : i));
 
-    if (!supabase) return;
-    const { error } = await supabase
-      .from('meg_canny_ideas')
-      .update({ votes, voted_by: votedBy })
-      .eq('id', ideaId);
+    try {
+      const res = await fetch('/api/canny', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'vote',
+          postId: ideaId,
+          userEmail,
+          authorName,
+          vote: !hasVoted,
+        }),
+      });
 
-    if (error) {
-      toast.error('Erro ao registrar voto.');
-      fetchIdeas(); // revert
-    } else {
+      if (!res.ok) {
+        throw new Error('Falha no voto');
+      }
+
       if (!hasVoted) {
         toast.success('Sugestão apoiada com sucesso!');
+      } else {
+        toast.info('Apoio removido.');
       }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao registrar voto no Canny.');
+      fetchIdeas(); // revert
     }
   };
 
@@ -207,62 +203,36 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
       return;
     }
 
-    const ideaId = `idea-${Date.now()}`;
-    const newIdea: Idea = {
-      id: ideaId,
-      title: newTitle,
-      description: newDescription,
-      category: newCategory,
-      status: 'Aberto',
-      votes: 1,
-      votedBy: [userEmail],
-      createdBy: userEmail,
-      createdByName: authorName,
-      createdSchool: authorSchool,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Optimistic update
-    setIdeas(prev => [newIdea, ...prev]);
-    setNewTitle('');
-    setNewDescription('');
-    setNewCategory('Geral');
-
-    if (!supabase) return;
-    const { error } = await supabase
-      .from('meg_canny_ideas')
-      .insert({
-        id: ideaId,
-        school_id: activeSchoolContext || 'joaobatista',
-        title: newIdea.title,
-        description: newIdea.description,
-        category: newIdea.category,
-        status: newIdea.status,
-        votes: newIdea.votes,
-        voted_by: newIdea.votedBy,
-        created_by: newIdea.createdBy,
-        created_by_name: newIdea.createdByName,
-        created_school: newIdea.createdSchool,
-        created_at: newIdea.createdAt,
-      });
-
-    if (error) {
-      toast.error('Erro ao publicar sugestão.');
-      fetchIdeas(); // revert
-    } else {
-      toast.success('Sua sugestão foi publicada com sucesso!');
-      // Espelha no painel Canny (fire-and-forget — falha silenciosa)
-      fetch('/api/canny', {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/canny', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create',
-          title: newIdea.title,
-          description: newIdea.description,
-          userEmail: newIdea.createdBy,
-          authorName: newIdea.createdByName,
+          title: newTitle,
+          description: newDescription,
+          userEmail,
+          authorName,
         }),
-      }).catch(() => {/* silencioso */});
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha ao criar sugestão no Canny');
+      }
+
+      toast.success('Sua sugestão foi publicada com sucesso!');
+      setNewTitle('');
+      setNewDescription('');
+      setNewCategory('Geral');
+
+      // Pull updated list
+      await fetchIdeas();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao publicar sugestão no Canny.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -289,37 +259,26 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
     // Optimistic update
     setIdeas(prev => prev.map(i => i.id === id ? { ...i, status: targetStatus } : i));
 
-    if (!supabase) return;
-    const { error } = await supabase
-      .from('meg_canny_ideas')
-      .update({ status: targetStatus })
-      .eq('id', id);
+    try {
+      const res = await fetch('/api/canny', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'status',
+          postId: id,
+          status: targetStatus,
+        }),
+      });
 
-    if (error) {
-      toast.error('Erro ao atualizar status.');
-      fetchIdeas(); // revert
-    } else {
-      toast.info(`Status atualizado para: ${targetStatus}`);
-    }
-  };
-
-  const handleDeleteIdea = async (ideaId: string) => {
-    if (confirm('Tem certeza que deseja remover esta sugestão?')) {
-      // Optimistic update
-      setIdeas(prev => prev.filter(i => i.id !== ideaId));
-
-      if (!supabase) return;
-      const { error } = await supabase
-        .from('meg_canny_ideas')
-        .delete()
-        .eq('id', ideaId);
-
-      if (error) {
-        toast.error('Erro ao remover sugestão.');
-        fetchIdeas(); // revert
-      } else {
-        toast.success('Sugestão removida.');
+      if (!res.ok) {
+        throw new Error('Falha ao atualizar status');
       }
+
+      toast.info(`Status atualizado para: ${targetStatus}`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao atualizar status no Canny.');
+      fetchIdeas(); // revert
     }
   };
 
@@ -357,12 +316,23 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 transition rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchIdeas}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition disabled:opacity-50"
+              title="Sincronizar com o Canny.io"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Sincronizando...' : 'Resync'}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 transition rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Abas de Navegação (Canny Style) */}
@@ -443,14 +413,6 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
                               <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
                                 {idea.title}
                               </h4>
-                              {canManageStatus && (
-                                <button
-                                  onClick={() => handleDeleteIdea(idea.id)}
-                                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs transition p-1 rounded shrink-0"
-                                >
-                                  × Remover
-                                </button>
-                              )}
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed break-words">
                               {idea.description}
