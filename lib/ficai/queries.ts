@@ -89,6 +89,17 @@ export async function fetchSavedFICAIImports(schoolId: string): Promise<FICAIEnt
 
   if (error) throw new Error(`Erro ao buscar histórico: ${error.message}`);
 
+  let profiles: any[] = [];
+  try {
+    const { data: pData } = await supabase
+      .from('user_profiles')
+      .select('id, name');
+    profiles = pData || [];
+  } catch (err) {
+    console.warn('[FICAI] Falha ao carregar nomes de perfis para importação:', err);
+  }
+  const profileMap = new Map<string, string>(profiles.map((p: any) => [p.id, p.name]));
+
   return (data || []).map((d: any) => {
     // Busca do contacts da relação students se existir
     const contactsArray = d.students?.contacts && Array.isArray(d.students.contacts) ? d.students.contacts : [];
@@ -122,7 +133,10 @@ export async function fetchSavedFICAIImports(schoolId: string): Promise<FICAIEnt
       matched: !!d.aluno_id,
       alerta: d.perc_faltas_geral !== null && d.perc_faltas_geral >= 10,
       alertaGrave,
-      ficaiNecessaria
+      ficaiNecessaria,
+      importadoEm: d.importado_em || undefined,
+      importadoPor: d.importado_por || undefined,
+      importadoPorNome: d.importado_por ? profileMap.get(d.importado_por) || 'Desconhecido' : undefined,
     };
   });
 }

@@ -14,6 +14,9 @@ import {
   FileEdit, ClipboardList, Info
 } from 'lucide-react';
 
+import { fetchSavedFICAIImports } from '@/lib/ficai/queries';
+import type { FICAIEntry } from '@/types/ficai';
+
 export default function PsicossocialDashboard() {
   const router = useRouter();
   const params = useParams();
@@ -32,6 +35,7 @@ export default function PsicossocialDashboard() {
     fichasNotificacao: [],
     agendaPreventiva: [],
   });
+  const [ficaiEntries, setFicaiEntries] = useState<FICAIEntry[]>([]);
 
   const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
   const schoolName = currentSchool?.name || 'EECM';
@@ -43,8 +47,12 @@ export default function PsicossocialDashboard() {
       try {
         setLoading(true);
         setError('');
-        const res = await psicossocialService.fetchAll(activeSchoolContext);
+        const [res, ficaiData] = await Promise.all([
+          psicossocialService.fetchAll(activeSchoolContext),
+          fetchSavedFICAIImports(activeSchoolContext)
+        ]);
         setData(res);
+        setFicaiEntries(ficaiData);
       } catch (err: any) {
         setError(err.message || 'Erro ao carregar dados do painel.');
       } finally {
@@ -227,6 +235,43 @@ export default function PsicossocialDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Widget de Resumo FICAI */}
+        {ficaiEntries.length > 0 && (
+          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                  Resumo de Infrequência Escolar (Planilha FICAI)
+                </p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  Planilha ativa com <span className="font-bold text-slate-600 dark:text-slate-350">{ficaiEntries.length}</span> alunos carregados.
+                  {ficaiEntries.filter(e => e.alertaGrave).length > 0 && (
+                    <span className="ml-1 text-rose-500 font-semibold">
+                      ({ficaiEntries.filter(e => e.alertaGrave).length} alunos com faltas graves &gt;= 25%)
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 self-end sm:self-center">
+              {ficaiEntries[0]?.importadoEm && (
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                  Importado: {new Date(ficaiEntries[0].importadoEm).toLocaleDateString('pt-BR')}
+                </span>
+              )}
+              <Link
+                href={`/${schoolSlug}/psicossocial/ficai`}
+                className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-550 rounded-xl text-xs font-bold text-white shadow-sm transition active:scale-95 whitespace-nowrap"
+              >
+                Ver Painel
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Main Grid Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -128,6 +128,23 @@ export function FICAIPanel() {
 
       {hasData ? (
         <>
+          {/* Informações da última planilha */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs text-slate-500 dark:text-slate-400 animate-in fade-in duration-300">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-slate-700 dark:text-slate-300">📊 Planilha Atual:</span>
+              <span>{stats.total} alunos carregados no sistema.</span>
+            </div>
+            {entries[0]?.importadoEm && (
+              <div className="flex items-center gap-1">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Importado em:</span>
+                <span>
+                  {new Date(entries[0].importadoEm).toLocaleString('pt-BR')}
+                  {entries[0]?.importadoPorNome && ` por ${entries[0].importadoPorNome}`}
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* Stats Cards */}
           <FICAIStatsCards stats={stats} />
 

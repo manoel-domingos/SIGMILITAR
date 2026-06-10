@@ -56,7 +56,7 @@ function fmtDate(iso: string) {
 // ---------- componente ----------
 export default function XerifePage() {
   const { students, user, activeSchoolContext } = useAppContext();
-  const { tenantId } = useTenantConfig();
+  const { tenantId, allClassNames, hasCompoundClasses } = useTenantConfig();
   const dbSchoolId = getDbSchoolId(activeSchoolContext || tenantId);
   const week = getCurrentWeek();
 
@@ -80,8 +80,11 @@ export default function XerifePage() {
   const [detailEntry, setDetailEntry] = useState<XerifeEntry | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<XerifeEntry | null>(null);
 
-  // classes disponíveis
-  const classes = Array.from(new Set(students.filter(s => !s.archived).map(s => s.class))).sort();
+  // classes disponíveis (mescla ativas dos estudantes com as turmas do tenant)
+  const classes = Array.from(new Set([
+    ...students.filter(s => !s.archived).map(s => s.class),
+    ...(hasCompoundClasses ? allClassNames : [])
+  ])).filter(Boolean).sort();
 
   // filtragem de alunos no form
   const studentsInClass = students.filter(s => !s.archived && (!selectedClass || s.class === selectedClass));
@@ -449,45 +452,53 @@ export default function XerifePage() {
             </div>
 
             {/* Busca de aluno */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aluno</label>
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Buscar aluno..."
-                  value={studentSearch}
-                  onChange={e => { setStudentSearch(e.target.value); setAddStudentId(''); }}
-                  className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-                />
-              </div>
-
-              {/* lista de resultados */}
-              {studentSearch.length > 0 && (
-                <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700">
-                  {filteredForSearch.length === 0 ? (
-                    <p className="text-xs text-slate-400 px-3 py-3">Nenhum aluno encontrado.</p>
-                  ) : (
-                    filteredForSearch.slice(0, 12).map(s => (
-                      <button
-                        key={s.id}
-                        onClick={() => { setAddStudentId(s.id); setStudentSearch(s.name); }}
-                        className={`w-full text-left px-3 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-between ${addStudentId === s.id ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200'}`}
-                      >
-                        <span>{s.name}</span>
-                        <span className="text-xs text-slate-400">{s.class}</span>
-                      </button>
-                    ))
-                  )}
+            {(!selectedClass || studentsInClass.length > 0) ? (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aluno</label>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Buscar aluno..."
+                    value={studentSearch}
+                    onChange={e => { setStudentSearch(e.target.value); setAddStudentId(''); }}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                  />
                 </div>
-              )}
 
-              {addStudentId && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" /> {students.find(s => s.id === addStudentId)?.name} selecionado
-                </p>
-              )}
-            </div>
+                {/* lista de resultados */}
+                {studentSearch.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700">
+                    {filteredForSearch.length === 0 ? (
+                      <p className="text-xs text-slate-400 px-3 py-3">Nenhum aluno encontrado.</p>
+                    ) : (
+                      filteredForSearch.slice(0, 12).map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => { setAddStudentId(s.id); setStudentSearch(s.name); }}
+                          className={`w-full text-left px-3 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-between ${addStudentId === s.id ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200'}`}
+                        >
+                          <span>{s.name}</span>
+                          <span className="text-xs text-slate-400">{s.class}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {addStudentId && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> {students.find(s => s.id === addStudentId)?.name} selecionado
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-xs text-rose-700 dark:text-rose-450 font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
+                <ShieldCheck className="w-4 h-4 text-rose-500 shrink-0" />
+                <span>Nenhum estudante ativo cadastrado nesta turma.</span>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-1">
               <button

@@ -22,25 +22,34 @@ Avaliação realizada pela SEDUC-MT na EECM Prof. João Batista em Junho/2025, c
 ## User Review Required
 
 > [!IMPORTANT]
-> A migração moverá configurações globais (como IDs de pastas do Drive e o quadro de sugestões Canny) do navegador de cada usuário para o banco de dados. Isso permitirá sincronização instantânea entre múltiplos usuários de uma mesma escola e entre dispositivos.
+> - O botão flutuante unificado da **ARIA** (`📅 [Data] | ✨ ARIA`) será mantido em primeiro plano e **visível em 100% das páginas** do ambiente, removendo a lógica que ocultava o botão de calendário em determinadas rotas.
+> - O componente `<DashboardCalendar />` receberá uma propriedade `compact` para desabilitar bordas, margens e títulos desnecessários quando renderizado dentro da aba flutuante da ARIA.
+> - **[NOVO] Botões Rápidos no Canny (Abertos):** Adicionaremos botões de atalho ("Planejar", "Progresso", "Concluir") nos cards de ideias na aba "Aberto". Apenas usuários com role `admin_global` visualizarão estes botões (conforme aprovado no quiz).
+
+---
+
+## Open Questions & Correções Identificadas
 
 > [!WARNING]
-> Será criada uma migration no Supabase para as tabelas `school_settings`, `meg_canny_ideas`, `system_notifications` e `sigmilitar_edit_trackers`. As regras de Row Level Security (RLS) serão configuradas para proteger dados por escola e role.
+> 1. **Turmas Vazias na Página do Xerife:** Se uma turma for recém-criada ou importada nas configurações mas não possuir estudantes cadastrados, ela aparecerá na lista de botões. Ao abrir o modal de adição de xerife para esta turma, o sistema exibirá uma mensagem clara de alerta: `⚠️ Nenhum estudante cadastrado nesta turma.` e desabilitará o botão de confirmação.
+> 2. **Robustez no Acesso a Perfis:** A query para buscar nomes dos usuários que realizaram a importação FICAI será encapsulada em um bloco `try/catch` seguro, garantindo que mesmo se o usuário ativo tiver restrições de RLS sobre a tabela de perfis, os dados principais de infrequência continuem carregando normalmente com o fallback "Desconhecido".
 
 ---
 
 ## Proposed Changes
 
-### Banco de Dados (Supabase)
+### Banco de Dados & Queries (Supabase)
 
-#### [NEW] [0009_meg_enhancements.sql](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/supabase/migrations/0009_meg_enhancements.sql)
-Criação das tabelas e políticas de segurança:
-1. `school_settings` (ID da pasta do Drive por escola).
-2. `meg_canny_ideas` (sugestões compartilhadas de melhorias).
-3. `system_notifications` (notificações e atualizações do sino).
-4. `sigmilitar_edit_trackers` (contador de edições do usuário para gerar changelog).
+#### [MODIFY] [queries.ts](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/lib/ficai/queries.ts)
+- Atualizar a função `fetchSavedFICAIImports` para buscar perfis de `user_profiles` em bloco com `try/catch` robusto.
+- Mapear os campos `importado_em` e `importado_por` e `importado_por_nome` nos objetos retornados em `FICAIEntry`.
 
-### Componentes
+#### [MODIFY] [ficai.ts](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/types/ficai.ts)
+- Adicionar os campos opcionais `importadoEm`, `importadoPor` e `importadoPorNome` na interface `FICAIEntry`.
+
+---
+
+### Componentes e Telas
 
 #### [MODIFY] [CannyKanbanModal.tsx](file:///c:/Users/USER-PC/Documents/eecmprofjoaobatista/components/meg/CannyKanbanModal.tsx)
 - Substituir leitura e gravação no `localStorage` por chamadas do Supabase na tabela `meg_canny_ideas`.

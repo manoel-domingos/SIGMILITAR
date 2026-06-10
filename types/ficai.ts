@@ -81,6 +81,11 @@ export interface FICAIEntry {
   alerta: boolean       // >= 10%
   alertaGrave: boolean  // >= 25%
   ficaiNecessaria: boolean  // >= 25% e sem FICAI aberta
+
+  // Auditoria de importação
+  importadoEm?: string
+  importadoPor?: string
+  importadoPorNome?: string
 }
 
 export type FICAIFilterKey =
