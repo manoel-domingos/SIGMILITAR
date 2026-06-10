@@ -39,8 +39,8 @@ export default function EixoCard({
   const IconComponent = (Icons as any)[eixo.icone] || Icons.HelpCircle;
   const meta = eixo.maxProcessos + eixo.maxResultado;
 
-  const nota2025 = notaProcessos2025 !== undefined && notaResultado2025 !== undefined
-    ? parseFloat((notaProcessos2025 + notaResultado2025).toFixed(2))
+  const nota2025 = notaProcessos2025 !== undefined || notaResultado2025 !== undefined
+    ? parseFloat(((notaProcessos2025 ?? 0) + (notaResultado2025 ?? 0)).toFixed(2))
     : undefined;
 
   const notaAtual = notaProcessosAtual !== undefined && notaResultadoAtual !== undefined

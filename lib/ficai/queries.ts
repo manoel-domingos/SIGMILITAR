@@ -120,7 +120,7 @@ export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string
     const batch = rows.slice(i, i + BATCH)
     const { error } = await supabase
       .from('ficai_importacoes')
-      .upsert(batch, { onConflict: 'cod_aluno,ano' })
+      .upsert(batch, { onConflict: 'school_id,cod_aluno,ano' })
 
     if (error) throw new Error(`Erro ao salvar importação (lote ${i}): ${error.message}`)
   }
@@ -134,7 +134,12 @@ export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string
     totalEncaminhados: entries.filter(e => e.encaminhado).length,
     totalMatched: entries.filter(e => e.matched).length,
   }
-  await createImportSession(schoolId || '', nomeArquivo, sessionStats, user?.id, undefined)
+  let userName: string | undefined = undefined
+  if (user?.id) {
+    const { data: profile } = await supabase.from('user_profiles').select('name').eq('id', user.id).maybeSingle()
+    userName = profile?.name || undefined
+  }
+  await createImportSession(schoolId || '', nomeArquivo, sessionStats, user?.id, userName)
 }
 
 export async function createImportSession(
@@ -156,7 +161,7 @@ export async function createImportSession(
     total_encaminhados: stats.totalEncaminhados,
     total_matched: stats.totalMatched,
   })
-  if (error) console.warn('[FICAI] Erro ao criar sessão de importação:', error.message)
+  if (error) console.error('[FICAI] Erro ao criar sessão de importação:', error.message)
 }
 
 export async function fetchImportSessions(schoolId: string): Promise<FICAIImportSession[]> {
@@ -166,7 +171,7 @@ export async function fetchImportSessions(schoolId: string): Promise<FICAIImport
     .eq('school_id', schoolId)
     .order('importado_em', { ascending: false })
     .limit(10)
-  if (error) return []
+  if (error) { console.error('[FICAI] Erro ao buscar sessões de importação:', error.message); return [] }
   return (data || []).map((d: any) => ({
     id: d.id,
     nomeArquivo: d.nome_arquivo,

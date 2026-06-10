@@ -171,8 +171,8 @@ export default function EixoPage() {
             <div className="text-right space-y-1">
               <p className="text-[10px] uppercase font-bold tracking-wider text-indigo-500">2025</p>
               <p className="text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
-                {baseline2025.processos || baseline2025.resultado
-                  ? `${((baseline2025.processos?.pontuacao_obtida ?? 0) + (baseline2025.resultado?.pontuacao_obtida ?? 0)).toFixed(2)} pts`
+                {baseline2025.processos && baseline2025.resultado
+                  ? `${((baseline2025.processos.pontuacao_obtida) + (baseline2025.resultado.pontuacao_obtida)).toFixed(2)} pts`
                   : '—'}
               </p>
             </div>

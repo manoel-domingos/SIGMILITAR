@@ -36,6 +36,7 @@ export function useFICAIPanel() {
       ])
       setEntries(data)
       setSessions(sessionData)
+      if (sessionData.length > 0) setCurrentFileName(sessionData[0].nomeArquivo)
     } catch (err) {
       console.error('[FICAI] Erro ao carregar histórico:', err)
     } finally {
