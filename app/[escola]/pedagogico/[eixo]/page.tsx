@@ -1,19 +1,23 @@
 // app/[escola]/pedagogico/[eixo]/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAppContext } from '@/lib/store';
-import { MEG_EIXOS, MEG_FASES, MEG_EVIDENCIAS, MEG_AXIS_CONFIGS } from '@/lib/meg-data';
+import {
+  getEixoBySlug, processosByEixo, resultadosByEixo,
+  MEG_EIXOS, MEG_TOTAIS,
+} from '@/lib/meg';
+import ProcessosChecklist from '@/components/meg/ProcessosChecklist';
+import ResultadoEstruturalChecklist from '@/components/meg/ResultadoEstruturalChecklist';
 import ProgressBar from '@/components/meg/ProgressBar';
 import { supabase } from '@/lib/supabase';
-import { 
-  ChevronRight, Calendar, ArrowLeft, RefreshCw, 
-  HelpCircle, AlertTriangle, CheckCircle, BookOpen 
-} from 'lucide-react';
+import { ChevronRight, ArrowLeft, FileText, ClipboardList, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getDbSchoolId } from '@/lib/useTenantConfig';
 import AppShell from '@/components/AppShell';
+
+type Aba = 'processos' | 'resultado';
 
 export default function EixoPage() {
   const router = useRouter();
@@ -21,156 +25,126 @@ export default function EixoPage() {
   const schoolSlug = params.escola as string;
   const eixoSlug = params.eixo as string;
 
-  const { 
-    activeSchoolContext, 
-    isAuthRestored,
-    contextSchools
-  } = useAppContext();
-
-  const [loading, setLoading] = useState<boolean>(true);
-  const [checklistData, setChecklistData] = useState<any[]>([]);
-  const [faseMetrics, setFaseMetrics] = useState<Record<string, { percent: number; status: string; completed: number; total: number }>>({});
+  const { isAuthRestored, currentUserRole, contextSchools } = useAppContext();
+  const [aba, setAba] = useState<Aba>('processos');
+  const [baseline2025, setBaseline2025] = useState<{
+    processos?: { pontuacao_obtida: number; respostas: Record<string, any> };
+    resultado?: { pontuacao_obtida: number };
+  }>({});
+  const [loadingBaseline, setLoadingBaseline] = useState(true);
+  const [procScore, setProcScore] = useState({ obtida: 0, maxima: 0 });
+  const [resScore, setResScore] = useState({ obtida: 0, maxima: 0 });
 
   const resolvedSchoolId = getDbSchoolId(schoolSlug);
+  const anoAtual = new Date().getFullYear();
+  const eixo = getEixoBySlug(eixoSlug);
 
-  // Resolve active Eixo
-  const rawEixo = MEG_EIXOS.find(e => e.slug === eixoSlug);
-  const eixo = rawEixo ? {
-    ...rawEixo,
-    nome: MEG_AXIS_CONFIGS[rawEixo.id]?.nome || rawEixo.nome,
-    numero: MEG_AXIS_CONFIGS[rawEixo.id]?.numero || rawEixo.numero
-  } : null;
-
-  // Mapped school name
   const currentSchool = contextSchools.find(s => s.id === resolvedSchoolId);
   const schoolName = currentSchool?.name || 'EECM';
 
-  // Fetch checklist records
+  const isReadonly =
+    currentUserRole !== 'admin_global' &&
+    currentUserRole !== 'GESTOR' &&
+    currentUserRole !== 'COORD';
+
   useEffect(() => {
     if (!isAuthRestored || !eixo) return;
 
-    async function fetchChecklist() {
+    async function fetchBaseline() {
+      setLoadingBaseline(true);
       try {
-        setLoading(true);
         const { data, error } = await supabase
-          .from('meg_checklist')
-          .select('*')
-          .eq('school_id', resolvedSchoolId);
+          .from('meg_avaliacoes_anuais')
+          .select('dimensao, pontuacao_obtida, respostas')
+          .eq('school_id', resolvedSchoolId)
+          .eq('ano', 2025)
+          .eq('eixo_id', eixo.id);
 
         if (error) throw error;
-        setChecklistData(data || []);
-      } catch (err) {
-        console.error('Error fetching checklist for axis:', err);
+
+        const map: typeof baseline2025 = {};
+        (data || []).forEach((row: any) => {
+          if (row.dimensao === 'processos') {
+            map.processos = { pontuacao_obtida: parseFloat(row.pontuacao_obtida), respostas: row.respostas || {} };
+          } else if (row.dimensao === 'resultado') {
+            map.resultado = { pontuacao_obtida: parseFloat(row.pontuacao_obtida) };
+          }
+        });
+        setBaseline2025(map);
       } finally {
-        setLoading(false);
+        setLoadingBaseline(false);
       }
     }
 
-    fetchChecklist();
+    fetchBaseline();
   }, [resolvedSchoolId, isAuthRestored, eixo?.id]);
 
-  // Calculate metrics for each of the 5 phases
-  useEffect(() => {
-    if (!eixo) return;
+  const handleProcScore = useCallback((obtida: number, maxima: number) => {
+    setProcScore({ obtida, maxima });
+  }, []);
 
-    const metrics: Record<string, { percent: number; status: string; completed: number; total: number }> = {};
+  const handleResScore = useCallback((obtida: number, maxima: number) => {
+    setResScore({ obtida, maxima });
+  }, []);
 
-    MEG_FASES.forEach(f => {
-      // Find all static evidences for this Eixo and this Fase
-      const axisFaseEvidences = MEG_EVIDENCIAS.filter(ev => ev.eixoId === eixo.id && ev.faseId === f.id);
-      const totalCount = axisFaseEvidences.length;
-
-      if (totalCount === 0) {
-        metrics[f.id] = { percent: 0, status: 'Sem evidências', completed: 0, total: 0 };
-        return;
-      }
-
-      // Count completed evidences from Supabase
-      let completedCount = 0;
-      let hasProgress = false;
-
-      axisFaseEvidences.forEach(ev => {
-        const checkRecord = checklistData.find(c => c.evidencia_id === ev.id);
-        if (checkRecord) {
-          if (checkRecord.status === 'concluido') {
-            completedCount += 1;
-            hasProgress = true;
-          } else if (checkRecord.status === 'em_andamento') {
-            hasProgress = true;
-          }
-        }
-      });
-
-      const percent = (completedCount / totalCount) * 100;
-      
-      let statusText = 'Não Iniciado';
-      if (percent === 100) {
-        statusText = 'Concluído';
-      } else if (hasProgress || percent > 0) {
-        statusText = 'Em Andamento';
-      }
-
-      metrics[f.id] = {
-        percent,
-        status: statusText,
-        completed: completedCount,
-        total: totalCount
-      };
+  // Baseline respostas de processos — mapeado por criterioId
+  const baseline2025Processos = useMemo(() => {
+    if (!baseline2025.processos) return undefined;
+    const map: Record<string, { status: string; nota: number }> = {};
+    const respostas = baseline2025.processos.respostas || {};
+    Object.entries(respostas).forEach(([id, val]: [string, any]) => {
+      if (val) map[id] = { status: val.status, nota: val.nota ?? 0 };
     });
+    return map;
+  }, [baseline2025.processos]);
 
-    setFaseMetrics(metrics);
-  }, [checklistData, eixo?.id]);
+  const meta = eixo ? eixo.maxProcessos + eixo.maxResultado : 0;
+  const totalAtual = parseFloat((procScore.obtida + resScore.obtida).toFixed(2));
+  const pctAtual = meta > 0 ? parseFloat(((totalAtual / meta) * 100).toFixed(1)) : 0;
 
-  // Invalid Axis Guard
   if (isAuthRestored && !eixo) {
     return (
       <div className="p-8 text-center space-y-4">
+        <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
         <h2 className="text-xl font-bold text-rose-500">Eixo não encontrado</h2>
-        <p className="text-slate-500">O eixo solicitado não existe nas diretrizes do MEG Educação.</p>
+        <p className="text-slate-500">O eixo "{eixoSlug}" não existe no MEG SEDUC-MT.</p>
         <button
           onClick={() => router.push(`/${schoolSlug}/pedagogico`)}
           className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm"
         >
-          Voltar para o Dashboard
+          Voltar ao Painel
         </button>
       </div>
     );
   }
 
-  if (!isAuthRestored || loading) {
+  if (!isAuthRestored) {
     return (
       <div className="p-4 sm:p-8 space-y-6 min-h-screen pb-24 animate-pulse">
-        {/* Breadcrumb Skeleton */}
         <div className="h-5 w-48 bg-slate-200 dark:bg-slate-800/50 rounded" />
-        {/* Title Skeleton */}
-        <div className="h-10 w-96 bg-slate-200 dark:bg-slate-800/50 rounded-lg" />
-        {/* Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800/50 rounded-2xl" />
-          ))}
-        </div>
+        <div className="h-32 bg-slate-200 dark:bg-slate-800/50 rounded-2xl" />
+        <div className="h-96 bg-slate-200 dark:bg-slate-800/50 rounded-2xl" />
       </div>
     );
   }
 
   return (
     <AppShell>
-      <div className="p-4 sm:p-8 space-y-8 min-h-screen pb-24 animate-in fade-in duration-300">
-        
-        {/* Navigation Breadcrumb */}
+      <div className="p-4 sm:p-8 space-y-6 min-h-screen pb-24 animate-in fade-in duration-300">
+
+        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 dark:text-slate-500">
           <Link href={`/${schoolSlug}/pedagogico`} className="hover:text-blue-500 transition-colors">
             Gestão Pedagógica
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="font-semibold text-slate-600 dark:text-slate-300">
-            Eixo {eixo!.numero}
+            {eixo!.nome}
           </span>
         </div>
 
-        {/* Axis Information Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-6">
           <div className="space-y-2">
             <button
               onClick={() => router.push(`/${schoolSlug}/pedagogico`)}
@@ -182,69 +156,131 @@ export default function EixoPage() {
               Eixo {eixo!.numero}: {eixo!.nome}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500">
-              Acompanhamento das 5 fases estratégicas na escola <span className="font-semibold text-slate-500 dark:text-slate-400">{schoolName}</span>
+              <span className="font-semibold">{schoolName}</span>
+              {isReadonly && (
+                <span className="ml-2 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded text-[10px] font-bold">
+                  Visualização
+                </span>
+              )}
             </p>
+          </div>
+
+          {/* Score summary */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="text-right space-y-1">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Meta</p>
+              <p className="text-base font-extrabold font-mono text-blue-600 dark:text-blue-400">{meta} pts</p>
+            </div>
+            {baseline2025.processos && (
+              <div className="text-right space-y-1">
+                <p className="text-[10px] uppercase font-bold tracking-wider text-indigo-500">2025</p>
+                <p className="text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400">
+                  {((baseline2025.processos?.pontuacao_obtida ?? 0) + (baseline2025.resultado?.pontuacao_obtida ?? 0)).toFixed(2)} pts
+                </p>
+              </div>
+            )}
+            <div className="text-right space-y-1">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">{anoAtual}</p>
+              <p className="text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400">{totalAtual} pts</p>
+            </div>
+            <div className="text-right space-y-1">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Conformidade</p>
+              <p className="text-base font-extrabold font-mono text-slate-800 dark:text-slate-100">{pctAtual}%</p>
+            </div>
           </div>
         </div>
 
-        {/* Grid containing the 5 Phases */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {MEG_FASES.map(f => {
-            const metrics = faseMetrics[f.id] || { percent: 0, status: 'Não Iniciado', completed: 0, total: 0 };
-            
-            let statusBadgeColor = 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800/30 dark:text-slate-500 dark:border-slate-700/50';
-            let StatusIcon = HelpCircle;
-            
-            if (metrics.status === 'Concluído') {
-              statusBadgeColor = 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400';
-              StatusIcon = CheckCircle;
-            } else if (metrics.status === 'Em Andamento') {
-              statusBadgeColor = 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400';
-              StatusIcon = AlertTriangle;
-            }
-
-            return (
-              <button
-                key={f.id}
-                onClick={() => router.push(`/${schoolSlug}/pedagogico/${eixoSlug}/${f.slug}`)}
-                className="w-full text-left p-5 rounded-2xl border border-slate-100 dark:border-slate-800/40 bg-white/70 dark:bg-slate-800/40 backdrop-blur-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.99] transition-all duration-300 flex flex-col justify-between gap-5 shadow-sm hover:shadow-md group relative overflow-hidden"
-                title={`Acessar fase ${f.numero}: ${f.nome}`}
-              >
-                {/* Header with Title and Status Badge */}
-                <div className="flex items-start justify-between gap-3 w-full">
-                  <div className="space-y-1">
-                    <span className="text-[10px] uppercase font-extrabold text-slate-400 dark:text-slate-500 tracking-wider font-mono">
-                      Fase {f.numero} {f.sigla ? `— ${f.sigla}` : ''}
-                    </span>
-                    <h4 className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 leading-snug group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
-                      {f.nome}
-                    </h4>
-                    {f.sinonimo && (
-                      <span className="text-xs text-slate-400 dark:text-slate-500 italic block mt-0.5">
-                        Ciclo: {f.sinonimo}
-                      </span>
-                    )}
-                  </div>
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded border text-[10px] font-bold shrink-0 ${statusBadgeColor}`}>
-                    <StatusIcon className="w-3 h-3" />
-                    {metrics.status}
-                  </span>
-                </div>
-
-                {/* Progress Summary and Bar */}
-                <div className="space-y-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800/30">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400 dark:text-slate-500">
-                    <span>Evidências validadas</span>
-                    <span className="font-bold font-mono text-slate-600 dark:text-slate-300">
-                      {metrics.completed} de {metrics.total}
-                    </span>
-                  </div>
-                  <ProgressBar value={metrics.percent} size="sm" showText={false} />
-                </div>
-              </button>
-            );
-          })}
+        {/* Progress bar */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[10px] font-bold text-slate-400">
+            <span>Conformidade Geral do Eixo {anoAtual}</span>
+            <span>{pctAtual}% de {meta} pts</span>
+          </div>
+          <ProgressBar value={pctAtual} size="sm" showText={false} />
         </div>
+
+        {/* Info 2025 vs atual */}
+        {baseline2025.processos && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Processos 2025', val: baseline2025.processos?.pontuacao_obtida?.toFixed(2), max: eixo!.maxProcessos, color: 'indigo' },
+              { label: 'Resultado 2025', val: baseline2025.resultado?.pontuacao_obtida?.toFixed(2), max: eixo!.maxResultado, color: 'indigo' },
+              { label: `Processos ${anoAtual}`, val: procScore.obtida.toFixed(2), max: eixo!.maxProcessos, color: 'emerald' },
+              { label: `Resultado ${anoAtual}`, val: resScore.obtida.toFixed(2), max: eixo!.maxResultado, color: 'emerald' },
+            ].map(item => (
+              <div key={item.label} className={`p-3 rounded-xl border ${
+                item.color === 'indigo'
+                  ? 'bg-indigo-500/8 border-indigo-500/20 dark:bg-indigo-500/10'
+                  : 'bg-emerald-500/8 border-emerald-500/20 dark:bg-emerald-500/10'
+              }`}>
+                <p className={`text-[9px] uppercase font-bold tracking-wider ${
+                  item.color === 'indigo' ? 'text-indigo-500' : 'text-emerald-600 dark:text-emerald-400'
+                }`}>{item.label}</p>
+                <p className="text-sm font-extrabold font-mono text-slate-800 dark:text-slate-100">
+                  {item.val ?? '—'}
+                  <span className="text-[10px] text-slate-400 font-normal ml-1">/{item.max}</span>
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Abas */}
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl w-fit">
+          <button
+            onClick={() => setAba('processos')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all ${
+              aba === 'processos'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Processos / Documentos
+            <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black ${
+              aba === 'processos' ? 'bg-blue-500/15 text-blue-600' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+            }`}>
+              {processosByEixo(eixo!.id).length}
+            </span>
+          </button>
+          <button
+            onClick={() => setAba('resultado')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all ${
+              aba === 'resultado'
+                ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            Resultado Estrutural
+            <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black ${
+              aba === 'resultado' ? 'bg-amber-500/15 text-amber-600' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+            }`}>
+              {resultadosByEixo(eixo!.id).length}
+            </span>
+          </button>
+        </div>
+
+        {/* Conteúdo da aba */}
+        {aba === 'processos' ? (
+          <ProcessosChecklist
+            eixoId={eixo!.id}
+            schoolId={resolvedSchoolId}
+            readonly={isReadonly}
+            ano={anoAtual}
+            baseline2025={baseline2025Processos}
+            onScoreChange={handleProcScore}
+          />
+        ) : (
+          <ResultadoEstruturalChecklist
+            eixoId={eixo!.id}
+            schoolId={resolvedSchoolId}
+            readonly={isReadonly}
+            ano={anoAtual}
+            baseline2025Resultado={baseline2025.resultado?.pontuacao_obtida}
+            onScoreChange={handleResScore}
+          />
+        )}
       </div>
     </AppShell>
   );
