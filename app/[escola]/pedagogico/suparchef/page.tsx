@@ -112,22 +112,37 @@ export default function SuparchefPage() {
 
   async function handleRun(job: SuparchefJob) {
     setRunningId(job.id);
-    toast.info('Iniciando automação…');
+    toast.info('Disparando no GitHub Actions…');
     try {
-      const res = await fetch('/api/pedagogico/suparchef', {
+      // Tenta via GitHub Actions (requer GITHUB_PAT no Vercel)
+      const res = await fetch('/api/pedagogico/suparchef/dispatch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobId: job.id }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
-      toast.success('Automação concluída!');
+      if (res.status === 501) {
+        // GITHUB_PAT não configurado — fallback para rota local (apenas dev)
+        toast.info('GitHub PAT não configurado. Tentando execução local…');
+        const res2 = await fetch('/api/pedagogico/suparchef', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId: job.id }),
+        });
+        const data2 = await res2.json();
+        if (!res2.ok) throw new Error(data2.error || 'Erro desconhecido');
+        toast.success('Automação local concluída!');
+      } else if (!res.ok) {
+        throw new Error(data.error || 'Erro desconhecido');
+      } else {
+        toast.success('Agendado no GitHub Actions! Resultado aparece em ~2 min.');
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro';
       toast.error(msg);
     }
     setRunningId(null);
-    fetchJobs();
+    setTimeout(fetchJobs, 3000); // aguarda um pouco antes de atualizar
   }
 
   async function handleDelete(id: string) {

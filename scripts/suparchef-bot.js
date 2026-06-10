@@ -41,7 +41,7 @@ async function sleep(ms) {
 
 async function automateAccount(job, account) {
   const browser = await chromium.launch({
-    headless: false, // false = vê o browser abrindo (útil para debug)
+    headless: process.env.CI === 'true', // true em GitHub Actions, false local (debug)
     args: ['--disable-blink-features=AutomationControlled'],
   });
 
