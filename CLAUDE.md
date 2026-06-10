@@ -176,6 +176,7 @@ Após push: **consultar Vercel via MCP** (`list_deployments` + `get_deployment`)
 3. get_deployment → verificar state === 'READY'
 4. Se state === 'ERROR' → get_deployment_build_logs → corrigir → novo push
 5. Só reportar "concluído" quando state === 'READY'
+6. Após READY → invocar /code-review para revisão pelo Codex antes de fechar a tarefa
 ```
 
 Nunca assumir que o build passou sem verificar. Erros de tipo (TypeScript), imports ausentes e outros erros de compilação só aparecem no build da Vercel.
