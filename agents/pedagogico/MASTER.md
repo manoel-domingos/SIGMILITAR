@@ -8,12 +8,28 @@
 ## Resumo do Domínio
 
 **Sub-agente:** Pedagogico
-**Última atualização:** 2026-06-08 (Ralph Loop)
+**Última atualização:** 2026-06-10 (MEG rebuild)
 **Status geral:** ✓ Normal
 
 ---
 
 ## Changelog
+
+### 2026-06-10 — Reconstrução completa do portal MEG (fidelidade PDF SEDUC-MT)
+**Trigger:** Usuário solicitou rebuild completo do módulo pedagógico
+**Resumo:**
+- Modelo 5-fases PDCA substituído pelo modelo real 2-dimensões: Processos + Resultado Estrutural
+- Slugs corretos: `patrimonio, alimentacao, limpeza, manutencao, gestao`
+- `lib/meg/` criado (framework estático) — eixos, processos, resultados, forms, index com helpers
+- Totais corrigidos: 410 processos + 600 resultado = 1010 pts (era 1000)
+- Baseline 2025 por `school_id` em `meg_avaliacoes_anuais` (somente João Batista semeado — sem vazamento multi-tenant)
+- `meg_checklist` com coluna `ano` + unique `(school_id, evidencia_id, ano)`
+- Componentes novos/reescritos: ProcessosChecklist, ResultadoEstruturalChecklist, MegRadarChart, MegBarChart, EixoCard atualizado
+- Oscar corrigido: usa `/1010`, compara 2025 vs atual por eixo
+- `[eixo]/page.tsx`: 2 abas (Processos | Resultado Estrutural), baseline por escola, score ao vivo
+- 3 erros TypeScript corrigidos: `eixo` null guard, recharts formatter `any`, MegFormulario props faltando
+**Build Vercel:** `dpl_5C5m6qUTeXjjivtoSh9ZJ81L2idE` — state=READY (commit `132040d`)
+**Status:** Concluído
 
 ### 2026-06-09 — OnboardingChecklist criado
 **Trigger:** Solicitação do usuário
