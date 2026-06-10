@@ -349,69 +349,7 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
         </div>
       </div>
 
-      <div>
-        {!compact && (
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-              {monthNames[cursor.getMonth()]} {cursor.getFullYear()}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                const now = new Date();
-                setCursor(now);
-                setSelectedDate(toDateKey(now));
-              }}
-              className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline"
-            >
-              Hoje
-            </button>
-          </div>
-        )}
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
-          {weekDays.map((day, index) => (
-            <span key={day + index}>{day}</span>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {calendarDays.map((day) => {
-            const key = toDateKey(day);
-            const inMonth = day.getMonth() === cursor.getMonth();
-            const active = key === selectedDate;
-            const hasEvent = eventDates.has(key);
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSelectedDate(key)}
-                className={
-                  "relative h-9 rounded-xl text-xs font-semibold transition-all " +
-                  (active
-                    ? "bg-indigo-600 text-white shadow-md"
-                    : inMonth
-                      ? "text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
-                      : "text-slate-300 dark:text-slate-600") +
-                  (key === todayKey && !active
-                    ? " ring-1 ring-indigo-300 dark:ring-indigo-500/60"
-                    : "")
-                }
-              >
-                {day.getDate()}
-                {hasEvent && (
-                  <span
-                    className={
-                      "absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full " +
-                      (active ? "bg-white" : "bg-indigo-500")
-                    }
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+      <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 capitalize">
             {selectedLabel}
@@ -506,6 +444,68 @@ export default function DashboardCalendar({ compact = false }: { compact?: boole
               );
             })
           )}
+        </div>
+      </div>
+
+      <div>
+        {!compact && (
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {monthNames[cursor.getMonth()]} {cursor.getFullYear()}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                setCursor(now);
+                setSelectedDate(toDateKey(now));
+              }}
+              className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              Hoje
+            </button>
+          </div>
+        )}
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
+          {weekDays.map((day, index) => (
+            <span key={day + index}>{day}</span>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {calendarDays.map((day) => {
+            const key = toDateKey(day);
+            const inMonth = day.getMonth() === cursor.getMonth();
+            const active = key === selectedDate;
+            const hasEvent = eventDates.has(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelectedDate(key)}
+                className={
+                  "relative h-9 rounded-xl text-xs font-semibold transition-all " +
+                  (active
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : inMonth
+                      ? "text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
+                      : "text-slate-300 dark:text-slate-600") +
+                  (key === todayKey && !active
+                    ? " ring-1 ring-indigo-300 dark:ring-indigo-500/60"
+                    : "")
+                }
+              >
+                {day.getDate()}
+                {hasEvent && (
+                  <span
+                    className={
+                      "absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full " +
+                      (active ? "bg-white" : "bg-indigo-500")
+                    }
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
