@@ -901,7 +901,9 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
     const anyNameMatch = relatedStudents.some(s => normalizeText(s.name).includes(searchNormalized));
     const obsMatch = o.observations ? normalizeText(o.observations).includes(searchNormalized) : false;
     
-    return anyNameMatch || obsMatch || false;
+    const numStr = searchTerm.trim();
+    const numMatch = /^\d+$/.test(numStr) && o.ataNumber?.toString() === numStr;
+    return anyNameMatch || obsMatch || numMatch;
   }).sort((a, b) => {
     // ORDEM-TOTAL e ESTAVEL — a sequencia NUNCA embaralha (antes o comparador
     // empatava em 0 por NaN/createdAt ausente e dependia da ordem do array,
@@ -2034,7 +2036,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
             <div className="relative w-full md:w-72">
               <input
                 type="text"
-                placeholder="Buscar por aluno..."
+                placeholder="Buscar por aluno ou Nº..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="glass-input w-full pl-10 pr-4 py-2 text-sm text-slate-800"
@@ -2093,6 +2095,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               <thead className="bg-white border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold">
                 <tr>
                   <th className="px-4 py-3 font-medium w-12 text-center">N\u00ba</th>
+                  <th className="px-3 py-3 font-medium w-24 text-center">Status</th>
                   <th className="px-6 py-3 font-medium">Data</th>
                   <th className="px-6 py-3 font-medium">Horário</th>
                   <th className="px-6 py-3 font-medium">Aluno</th>
@@ -2108,7 +2111,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
               <tbody className="divide-y divide-slate-100 text-slate-600">
                 {filteredOccurrences.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-slate-500">
+                    <td colSpan={10} className="px-6 py-8 text-center text-slate-500">
                       Nenhuma ocorrência encontrada.
                     </td>
                   </tr>
@@ -2135,6 +2138,16 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                                 {(() => { const i = occurrencesChronological.findIndex((x: any) => x.id === o.id); return o.ataNumber ?? (i >= 0 ? i + 1 : '—'); })()}
                               </span>
+                            </td>
+                            <td className="px-3 py-4 text-center">
+                              {(() => {
+                                const s = o.status;
+                                if (s === 'resolvida')
+                                  return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />Concluído</span>;
+                                if (s === 'em tratamento')
+                                  return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />Andamento</span>;
+                                return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />Iniciada</span>;
+                              })()}
                             </td>
                             <td className="px-6 py-4">
                               <span>{formatDate(o.date)}</span>
