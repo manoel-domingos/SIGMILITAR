@@ -80,12 +80,6 @@ const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    label: 'Suparchef', icon: ChefHat,
-    children: [
-      { href: '/pedagogico/suparchef', label: 'Painel de Automação', icon: ChefHat },
-    ],
-  },
-  {
     label: 'Psicossocial', icon: Heart,
     children: [
       { href: '/psicossocial', label: 'Dashboard Psicossocial', icon: LayoutDashboard },
@@ -96,6 +90,7 @@ const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
       { href: '/psicossocial/relatorios', label: 'Relatórios', icon: BarChart },
     ],
   },
+  { label: 'Suparchef', icon: ChefHat, href: '/pedagogico/suparchef' },
 ];
 
 function isRouteAllowed(href: string, role: string, permissions?: Record<string, Record<string, boolean>>): boolean {
