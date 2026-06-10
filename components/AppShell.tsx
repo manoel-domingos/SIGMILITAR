@@ -15,7 +15,7 @@ import {
   Sun, Moon, RefreshCw, CloudCheck, CloudOff, MessageCircle, Settings,
   ChevronDown, ChevronRight, ArrowLeft,
   GraduationCap, Gavel, Smile, Cog, Clock, KeyRound, Eye, EyeOff, Loader2, FolderOpen, Rocket, ShieldCheck, Building2,
-  Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle, Heart, Lightbulb,
+  Bell, Info, User, Brain, BookOpen, Trash2, CheckCircle, Heart, Lightbulb, ChefHat,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import versionData from '@/lib/version.json';
@@ -77,6 +77,12 @@ const PEDAGOGICO_MENU_GROUPS: MenuGroup[] = [
       { href: '/pedagogico/pedagogico', label: '3. Limpeza e Organização', icon: GraduationCap },
       { href: '/pedagogico/gestao-escolar', label: '4. Manutenção e Conservação', icon: FileText },
       { href: '/pedagogico/clima-escolar', label: '5. Gestão Escolar e Pedagógica', icon: Activity },
+    ],
+  },
+  {
+    label: 'Suparchef', icon: ChefHat,
+    children: [
+      { href: '/pedagogico/suparchef', label: 'Painel de Automação', icon: ChefHat },
     ],
   },
   {
