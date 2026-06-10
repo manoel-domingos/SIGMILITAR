@@ -62,6 +62,8 @@ interface AppState {
   logout: () => Promise<void>;
   uploadFile: (file: File, bucket: string) => Promise<string | null>;
   permissions: Record<AppUserRole, Record<string, boolean>>;
+  customLocations: string[];
+  customClassLetters: string[];
 }
 
 interface AppContextType extends AppState {
@@ -119,6 +121,8 @@ interface AppContextType extends AppState {
   getStudentOccurrences: (studentId: string) => Occurrence[];
   checkRecidivism: (studentId: string, ruleCode: number, excludeId?: string) => boolean;
   getEscalationStatus: (studentId: string, ruleCode: number, excludeId?: string) => { isEscalated: boolean, reason: string, measure: string, severity: string };
+  addCustomLocation: (loc: string) => Promise<void>;
+  addCustomClassLetter: (letter: string) => Promise<void>;
 }
 
 const INITIAL_STAFF: StaffMember[] = [
@@ -261,6 +265,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isAuthRestored, setIsAuthRestored] = useState(false);
+  const [customLocations, setCustomLocations] = useState<string[]>([]);
+  const [customClassLetters, setCustomClassLetters] = useState<string[]>([]);
 
   const [activePanelModule, setActivePanelModuleState] = useState<'civico-militar' | 'pedagogico'>(() => {
     if (typeof window !== 'undefined') {
@@ -535,8 +541,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
               points: 8,
               photoUrl: s.photo_url,
               sobLaudoPaedCid: s.sob_laudo_paed_cid,
+              registrationNumber: s.registration_number,
+              birthDate: s.birth_date,
               displayName: s.name + (s.sob_laudo_paed_cid ? ' - ATP' : '')
             })));
+          }
+
+          // Busca school_settings para custom locations e class letters
+          if (dbSchoolId && dbSchoolId !== 'DRE') {
+            try {
+              const { data: settingsData } = await supabase!.from('school_settings')
+                .select('custom_locations, custom_class_letters')
+                .eq('school_id', dbSchoolId)
+                .maybeSingle();
+              if (settingsData) {
+                if (Array.isArray(settingsData.custom_locations)) setCustomLocations(settingsData.custom_locations);
+                if (Array.isArray(settingsData.custom_class_letters)) setCustomClassLetters(settingsData.custom_class_letters);
+              }
+            } catch (_) {}
           }
           
           if (rulesData) {
@@ -1023,8 +1045,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         contacts: s.contacts,
         archived: s.archived || false,
         school_id: dbSchoolId,
-        sob_laudo_paed_cid: s.sobLaudoPaedCid || null
-        // registration_number e birth_date comentados ate as colunas serem criadas no banco
+        sob_laudo_paed_cid: s.sobLaudoPaedCid || null,
+        registration_number: s.registrationNumber || null,
+        birth_date: s.birthDate || null
       };
       try {
         const { data, error } = await supabase!.from('students').insert([dbPayload]).select().single();
@@ -1133,10 +1156,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (s.cpf !== undefined) dbPayload.cpf = s.cpf;
       if (s.contacts) dbPayload.contacts = s.contacts;
       if (s.sobLaudoPaedCid !== undefined) dbPayload.sob_laudo_paed_cid = s.sobLaudoPaedCid;
-      // registration_number comentado ate a coluna ser criada no banco
-      // if (s.registrationNumber !== undefined) dbPayload.registration_number = s.registrationNumber;
-      // birth_date comentado ate a coluna ser criada no banco
-      // if (s.birthDate !== undefined) dbPayload.birth_date = s.birthDate;
+      if (s.registrationNumber !== undefined) dbPayload.registration_number = s.registrationNumber || null;
+      if (s.birthDate !== undefined) dbPayload.birth_date = s.birthDate || null;
       if (s.archived !== undefined) dbPayload.archived = s.archived;
       if (s.photoUrl !== undefined) dbPayload.photo_url = s.photoUrl;
 
@@ -1245,8 +1266,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...s,
         points: 8,
         sobLaudoPaedCid: s.sob_laudo_paed_cid,
+        registrationNumber: s.registration_number,
+        birthDate: s.birth_date,
         displayName: s.name + (s.sob_laudo_paed_cid ? ' - ATP' : '')
       })));
+
+      // Refresh school_settings custom arrays
+      if (dbSchoolId && dbSchoolId !== 'DRE') {
+        try {
+          const { data: settingsData } = await supabase!.from('school_settings')
+            .select('custom_locations, custom_class_letters')
+            .eq('school_id', dbSchoolId)
+            .maybeSingle();
+          if (settingsData) {
+            if (Array.isArray(settingsData.custom_locations)) setCustomLocations(settingsData.custom_locations);
+            if (Array.isArray(settingsData.custom_class_letters)) setCustomClassLetters(settingsData.custom_class_letters);
+          }
+        } catch (_) {}
+      }
       if (rulesData) {
         const normalized = rulesData.map((r: any) => ({
           ...r,
@@ -1310,6 +1347,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error("Refresh failed", err);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const addCustomLocation = async (loc: string) => {
+    const trimmed = loc.trim();
+    if (!trimmed) return;
+    const updated = Array.from(new Set([...customLocations, trimmed])).slice(-30);
+    setCustomLocations(updated);
+    const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
+    if (supabase && isSupabaseConnected && dbSchoolId && dbSchoolId !== 'DRE') {
+      try {
+        await supabase.from('school_settings').upsert(
+          { school_id: dbSchoolId, custom_locations: updated },
+          { onConflict: 'school_id' }
+        );
+      } catch (err) { console.error('addCustomLocation upsert error', err); }
+    }
+  };
+
+  const addCustomClassLetter = async (letter: string) => {
+    const trimmed = letter.trim().toUpperCase().slice(0, 8);
+    if (!trimmed) return;
+    const updated = Array.from(new Set([...customClassLetters, trimmed])).slice(-20);
+    setCustomClassLetters(updated);
+    const dbSchoolId = getDbSchoolId(activeSchoolContextRef.current);
+    if (supabase && isSupabaseConnected && dbSchoolId && dbSchoolId !== 'DRE') {
+      try {
+        await supabase.from('school_settings').upsert(
+          { school_id: dbSchoolId, custom_class_letters: updated },
+          { onConflict: 'school_id' }
+        );
+      } catch (err) { console.error('addCustomClassLetter upsert error', err); }
     }
   };
 
@@ -2066,7 +2135,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addConductTerm, updateConductTerm, archiveConductTerm, restoreConductTerm, deleteConductTerm,
       updateRule, addStaffMember,
       getStudentPoints, getStudentBehavior, getStudentOccurrences, checkRecidivism, getEscalationStatus,
-      permissions, updatePermissions
+      permissions, updatePermissions,
+      customLocations, customClassLetters, addCustomLocation, addCustomClassLetter
     }}>
       <TenantContext.Provider value={activeTenantId}>
         {children}

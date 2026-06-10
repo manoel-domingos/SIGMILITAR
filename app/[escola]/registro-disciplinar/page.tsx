@@ -33,7 +33,7 @@ function RegistroDisciplinarContent() {
     students, occurrences, rules, staffMembers, appUsers, user, isGuest, currentUserRole,
     addOccurrence, updateOccurrence, archiveOccurrence, checkRecidivism, getEscalationStatus,
     addStudent, updateStudent, addStaffMember, uploadFile, activeSchoolContext,
-    contextSchools
+    contextSchools, customLocations, addCustomLocation
   } = useAppContext();
   const currentSchool = contextSchools.find(s => s.id === activeSchoolContext);
   const schoolName = currentSchool?.name || 'EECM';
@@ -750,7 +750,14 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffRole, setNewStaffRole] = useState<'Monitor' | 'Professor' | 'Coord.' | 'Diretora' | 'G1' | 'G2'>('Monitor');
 
-  const locations = ['Pátio', 'Quadra', 'Refeitório', 'Sala'].sort();
+  const BASE_LOCATIONS = ['Corredor', 'Entrada', 'Pátio', 'Quadra', 'Refeitório', 'Sala'];
+  const locations = Array.from(new Set([...BASE_LOCATIONS, ...customLocations])).sort();
+
+  const saveCustomLocation = (loc: string) => {
+    const trimmed = loc.trim();
+    if (!trimmed || BASE_LOCATIONS.includes(trimmed) || customLocations.includes(trimmed)) return;
+    addCustomLocation(trimmed);
+  };
 
   // Humaniza papéis de sistema; cargo (título do BD) sempre tem prioridade.
   const ROLE_TITLES: Record<string, string> = {
@@ -2283,6 +2290,7 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                       list="locations-list"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
+                      onBlur={(e) => saveCustomLocation(e.target.value.trim())}
                       placeholder="Ex: Pátio, Sala, Quadra..."
                       className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 sm:py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
                     />

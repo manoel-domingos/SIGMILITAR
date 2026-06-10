@@ -1415,6 +1415,20 @@ export default function Alunos() {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pts >= 7 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : pts >= 5 ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300'}`}>
                           {pts.toFixed(1)} pts · {beh}
                         </span>
+                        {(() => {
+                          if (!birthDate) return null;
+                          const today = new Date();
+                          const bd = new Date(birthDate + 'T00:00:00');
+                          let age = today.getFullYear() - bd.getFullYear();
+                          const m = today.getMonth() - bd.getMonth();
+                          if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+                          if (age < 18) return null;
+                          return (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse">
+                              {age} ANOS
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1857,7 +1871,23 @@ export default function Alunos() {
           <div className="fixed inset-0 glass-overlay z-[9990] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="glass-modal w-full sm:max-w-md flex flex-col max-h-[95vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 rounded-t-3xl sm:rounded-2xl">
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 safe-area-top">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-800">Cadastrar Aluno</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-800">Cadastrar Aluno</h2>
+                  {(() => {
+                    if (!birthDate) return null;
+                    const today = new Date();
+                    const bd = new Date(birthDate + 'T00:00:00');
+                    let age = today.getFullYear() - bd.getFullYear();
+                    const m = today.getMonth() - bd.getMonth();
+                    if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+                    if (age < 18) return null;
+                    return (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white animate-pulse">
+                        {age} ANOS
+                      </span>
+                    );
+                  })()}
+                </div>
                 <button onClick={() => setIsModalOpen(false)} className="text-slate-500 hover:text-slate-800 transition rounded-lg hover:bg-white p-1">
                   <X className="w-5 h-5" />
                 </button>

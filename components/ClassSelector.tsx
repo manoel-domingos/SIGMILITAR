@@ -4,14 +4,16 @@
  * ClassSelector — seletor de turma adaptável por tenant.
  *
  * - Tenant com turmas simples (joaobatista, tangara):
- *   [select ano] [select letra] → className = "1º Ano A"
+ *   [select ano] [input/datalist letra] → className = "1º Ano A"
+ *   Novos valores digitados persistem em school_settings.custom_class_letters (Supabase).
  *
  * - Tenant com turmas compostas (heliodoro):
- *   Um <select> único com todas as combinações: "1º Ano A-LING", "2º Ano B-CHS", "EPT-AUTOMAC", etc.
+ *   Um <select> único com todas as combinações.
  */
 
 import React from 'react';
 import { useTenantConfig } from '@/lib/useTenantConfig';
+import { useAppContext } from '@/lib/store';
 
 interface ClassSelectorProps {
   value: string;
@@ -30,15 +32,13 @@ export function ClassSelector({
   selectClassName = '',
 }: ClassSelectorProps) {
   const { grades, classLetters, allClassNames, hasCompoundClasses } = useTenantConfig();
+  const { customClassLetters, addCustomClassLetter } = useAppContext();
 
   const baseSelect = `bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60 ${selectClassName}`;
 
   if (hasCompoundClasses) {
-    // ── Modo composto: um único select com todas as turmas ──────────────────
-    // Agrupa por ano para facilitar a leitura
     const byGrade: Record<string, string[]> = {};
     const standalone: string[] = [];
-
     for (const name of allClassNames) {
       const gradeMatch = grades.find(g => name.startsWith(g + ' '));
       if (gradeMatch) {
@@ -48,7 +48,6 @@ export function ClassSelector({
         standalone.push(name);
       }
     }
-
     return (
       <select
         required={required}
@@ -80,17 +79,30 @@ export function ClassSelector({
     );
   }
 
-  // ── Modo simples: dois selects (ano + letra) ──────────────────────────────
-  const currentGrade = value.replace(/ [A-Z]$/, '').trim() || grades[0];
-  const currentLetter = value.match(/ ([A-Z])$/i)?.[1] || classLetters[0];
+  // ── Modo simples: select ano + input livre letra ──────────────────────────
+  const currentGrade = value.replace(/ [^ ]+$/, '').trim() || grades[0] || '';
+  const currentLetter = value.slice(currentGrade.length).trim() || classLetters[0] || '';
 
   const handleGradeChange = (newGrade: string) => {
     onChange(`${newGrade} ${currentLetter}`);
   };
 
   const handleLetterChange = (newLetter: string) => {
-    onChange(`${currentGrade} ${newLetter}`);
+    onChange(`${currentGrade} ${newLetter.slice(0, 8)}`);
   };
+
+  const handleLetterBlur = (val: string) => {
+    const trimmed = val.trim().toUpperCase().slice(0, 8);
+    if (!trimmed) return;
+    const allKnown = [...classLetters, ...customClassLetters];
+    if (!allKnown.includes(trimmed)) {
+      addCustomClassLetter(trimmed);
+    }
+    onChange(`${currentGrade} ${trimmed}`);
+  };
+
+  const allLetterOptions = Array.from(new Set([...classLetters, ...customClassLetters]));
+  const datalistId = 'class-letters-datalist';
 
   return (
     <div className="flex gap-2">
@@ -103,15 +115,24 @@ export function ClassSelector({
       >
         {grades.map(v => <option key={v} value={v}>{v}</option>)}
       </select>
-      <select
+      <input
+        type="text"
+        list={datalistId}
         required={required}
         disabled={disabled}
         value={currentLetter}
+        maxLength={8}
+        placeholder="Turma"
         onChange={e => handleLetterChange(e.target.value)}
-        className={`w-1/3 ${baseSelect}`}
-      >
-        {classLetters.map(v => <option key={v} value={v}>{v}</option>)}
-      </select>
+        onBlur={e => handleLetterBlur(e.target.value)}
+        className={`w-1/3 ${baseSelect} cursor-text`}
+        style={{ minWidth: 0 }}
+      />
+      <datalist id={datalistId}>
+        {allLetterOptions.map(v => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
     </div>
   );
 }
