@@ -15,7 +15,7 @@ interface FICAITableProps {
 function PctCell({ value }: { value: number | null }) {
   if (value === null) return <span className="text-slate-400 dark:text-slate-600 font-semibold">—</span>
   const cls =
-    value >= 25 ? 'text-rose-600 font-bold dark:text-rose-500'
+    value >= 15 ? 'text-rose-600 font-bold dark:text-rose-500'
     : value >= 10 ? 'text-amber-600 font-semibold dark:text-amber-500'
     : 'text-emerald-600 font-medium dark:text-emerald-555'
   return <span className={cls}>{value}%</span>

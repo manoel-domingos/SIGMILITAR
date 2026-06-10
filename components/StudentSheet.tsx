@@ -556,7 +556,7 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
                     </p>
                     <div className="space-y-3">
                       {ficaiHistory.map((item, idx) => {
-                        const alertGrave = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 25;
+                        const alertGrave = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 15;
                         const alertMedio = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 10;
                         const statusClass = item.encaminhado 
                           ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5'
@@ -606,8 +606,43 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
                                   </p>
                                 </div>
                               </div>
+
+                              {/* Timeline de infrequência */}
+                              {Array.isArray(item.historico_faltas) && item.historico_faltas.length > 1 && (
+                                <div className="mt-2">
+                                  <p className="text-[9px] font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider mb-1.5">Evolução de faltas</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {item.historico_faltas.map((pt: any, pi: number) => {
+                                      const prev = item.historico_faltas[pi - 1];
+                                      const delta = prev && pt.perc !== null && prev.perc !== null ? pt.perc - prev.perc : null;
+                                      return (
+                                        <span
+                                          key={pi}
+                                          title={new Date(pt.data).toLocaleString('pt-BR')}
+                                          className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold border ${
+                                            pt.perc !== null && pt.perc >= 15
+                                              ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                                              : pt.perc !== null && pt.perc >= 10
+                                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                                              : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                                          }`}
+                                        >
+                                          {new Date(pt.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                          {' '}
+                                          {pt.perc !== null ? `${pt.perc}%` : '—'}
+                                          {delta !== null && (
+                                            <span className={delta > 0 ? 'text-rose-500' : 'text-emerald-500'}>
+                                              {delta > 0 ? ` ▲${delta}` : ` ▼${Math.abs(delta)}`}
+                                            </span>
+                                          )}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            
+
                             <div className="flex flex-col gap-2 shrink-0">
                               <label className="text-[10px] font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider">Acompanhamento FICAI</label>
                               <select

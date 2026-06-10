@@ -6,7 +6,7 @@ import { FICAIStatsCards }from './FICAIStats'
 import { FICAITable }     from './FICAITable'
 import { FICAIDetail }    from './FICAIDetail'
 import { cn }             from '@/lib/utils'
-import { RefreshCw, Save, Loader2, Heart, ArrowLeft } from 'lucide-react'
+import { RefreshCw, Loader2, Heart, ArrowLeft, CheckCircle } from 'lucide-react'
 import type { FICAIFilterKey } from '@/types/ficai'
 import { useParams } from 'next/navigation'
 import { useAppContext } from '@/lib/store'
@@ -14,9 +14,8 @@ import Link from 'next/link'
 
 const FILTERS: Array<{ key: FICAIFilterKey; label: string }> = [
   { key: 'todos',           label: 'Todos' },
-  { key: 'alerta',          label: '⚠ Alerta +10%' },
-  { key: 'grave',           label: '🔴 Grave +25%' },
-  { key: 'ficai_necessaria',label: '❗ FICAI necessária' },
+  { key: 'ficai_necessaria',label: '❗ FICAI necessária +10%' },
+  { key: 'grave',           label: '🔴 Grave +15%' },
   { key: 'ficai_aberta',    label: 'FICAI aberta' },
   { key: 'encaminhado',     label: 'Encaminhado' },
   { key: 'sem_tel',         label: 'Sem telefone' },
@@ -34,7 +33,7 @@ export function FICAIPanel() {
     filteredEntries,
     stats,
     loading,
-    saving,
+    savingStatus,
     filter,
     setFilter,
     search,
@@ -43,7 +42,6 @@ export function FICAIPanel() {
     selectedEntry,
     toggleSelected,
     processFile,
-    saveToDatabase,
     reset,
     updateStatus,
     addContactToStudent,
@@ -53,12 +51,12 @@ export function FICAIPanel() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      
-      {/* Premium Hero Header (Cabeçalho Padrão Verde Reduzido) */}
+
+      {/* Premium Hero Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600/90 via-teal-600/95 to-emerald-700 p-4 sm:py-5 sm:px-6 text-white shadow-xl border border-emerald-500/20 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
-        
+
         <div className="relative z-10 space-y-3 max-w-2xl">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase">
             <Heart className="w-3.5 h-3.5 text-rose-300 fill-rose-300/10" />
@@ -85,38 +83,19 @@ export function FICAIPanel() {
           </Link>
 
           {hasData && (
-            <>
-              <button
-                onClick={reset}
-                disabled={loading || saving}
-                className="bg-white text-emerald-700 hover:bg-emerald-50 px-3.5 py-2 rounded-xl text-xs font-extrabold shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
-                <RefreshCw className="h-4 w-4 text-emerald-600" />
-                Nova planilha
-              </button>
-              <button
-                onClick={saveToDatabase}
-                disabled={saving || loading}
-                className="bg-emerald-500 hover:bg-emerald-400 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer border border-emerald-400/20"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Salvar no banco
-                  </>
-                )}
-              </button>
-            </>
+            <button
+              onClick={reset}
+              disabled={loading}
+              className="bg-white text-emerald-700 hover:bg-emerald-50 px-3.5 py-2 rounded-xl text-xs font-extrabold shadow transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className="h-4 w-4 text-emerald-600" />
+              Nova planilha
+            </button>
           )}
         </div>
       </div>
 
-      {/* Caixa de Importação - Sempre visível (Variante compacta se já houver dados) */}
+      {/* Caixa de Importação */}
       <FICAIUpload onFile={processFile} loading={loading} compact={hasData} />
 
       {loading && (
@@ -200,10 +179,27 @@ export function FICAIPanel() {
               Nenhum dado do FICAI importado anteriormente para esta unidade de ensino.
             </p>
             <p className="text-[10px] text-slate-400 mt-1">
-              Suba a planilha CSV de frequência no painel acima para registrar e acompanhar os alunos infrequentes.
+              Suba a planilha CSV ou XLSX de frequência no painel acima para registrar e acompanhar os alunos infrequentes.
             </p>
           </div>
         )
+      )}
+
+      {/* Barrinha de salvamento */}
+      {savingStatus !== 'idle' && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 shadow-lg text-xs font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          {savingStatus === 'saving' ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+              <span className="text-slate-600 dark:text-slate-300">Salvando…</span>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400">Salvo</span>
+            </>
+          )}
+        </div>
       )}
     </div>
   )

@@ -47,6 +47,14 @@ export interface AlunoRecord {
   contacts?: { name: string; phone: string }[]
 }
 
+// Ponto de histórico de infrequência (timeline somada)
+export interface FICAIHistoricoPoint {
+  data: string          // ISO timestamp da leitura
+  perc: number | null
+  perc1Bim: number | null
+  perc2Bim: number | null
+}
+
 // Entrada processada: dados do CSV + dados puxados do Supabase
 export interface FICAIEntry {
   // Identificação
@@ -77,10 +85,13 @@ export interface FICAIEntry {
   matchScore: number
   matched: boolean
 
-  // Alertas (derivados)
-  alerta: boolean       // >= 10%
-  alertaGrave: boolean  // >= 25%
-  ficaiNecessaria: boolean  // >= 25% e sem FICAI aberta
+  // Alertas derivados (>=10% necessária, >=15% grave)
+  alerta: boolean
+  alertaGrave: boolean
+  ficaiNecessaria: boolean
+
+  // Timeline de infrequência (somada, nunca substituída)
+  historicoFaltas?: FICAIHistoricoPoint[]
 
   // Auditoria de importação
   importadoEm?: string
@@ -90,7 +101,6 @@ export interface FICAIEntry {
 
 export type FICAIFilterKey =
   | 'todos'
-  | 'alerta'
   | 'grave'
   | 'ficai_necessaria'
   | 'ficai_aberta'

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
-import type { AlunoRecord, FICAIEntry } from '@/types/ficai'
+import type { AlunoRecord, FICAIEntry, FICAIHistoricoPoint } from '@/types/ficai'
+import { deriveFicaiFlags } from './constants'
 
 /**
  * Busca todos os alunos do Supabase para o match com a planilha da escola específica.
@@ -15,10 +16,8 @@ export async function fetchAlunosParaMatch(schoolId: string): Promise<AlunoRecor
   if (error) throw new Error(`Erro ao buscar alunos: ${error.message}`)
 
   return (data ?? []).map((d: any) => {
-    // Extract first contact's phone and name
     const contactsArray = d.contacts && Array.isArray(d.contacts) ? d.contacts : [];
     const firstContact = contactsArray.length > 0 ? contactsArray[0] : null;
-    
     const codAlunoNum = d.registration_number ? parseInt(d.registration_number, 10) : null;
 
     return {
@@ -35,36 +34,85 @@ export async function fetchAlunosParaMatch(schoolId: string): Promise<AlunoRecor
 
 /**
  * Salva os dados processados da planilha na tabela ficai_importacoes.
- * Upsert por (cod_aluno, ano) para rodar re-imports com segurança.
+ * Merge de histórico: adiciona ponto novo só quando % mudou vs último registro.
  */
 export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string): Promise<void> {
   const ano = new Date().getFullYear()
+  const nowISO = new Date().toISOString()
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const rows = entries.map(e => ({
-    ano,
-    cod_aluno:          e.codAluno,
-    cod_matricula:      e.codMatricula,
-    nome_aluno:         e.nomeAluno,
-    turma:              e.turma,
-    turno:              e.turno,
-    modalidade:         e.modalidade,
-    perc_faltas_geral:  e.faltasGeral,
-    perc_faltas_1bim:   e.faltas1Bim,
-    perc_faltas_2bim:   e.faltas2Bim,
-    ficai_aberto:       e.ficaiAberto,
-    data_ficai:         e.dataFicai,
-    encaminhado:        e.encaminhado,
-    data_encaminhamento: e.dataEncaminhamento,
-    aluno_id:           e.alunoId,
-    match_score:        e.matchScore,
-    school_id:          schoolId || null,
-    importado_por:      user?.id ?? null,
-    importado_em:       new Date().toISOString(),
-  }))
+  // Buscar registros existentes para merge de histórico
+  const codsAluno = entries.map(e => e.codAluno).filter(Boolean)
+  let existingMap = new Map<number, { perc_faltas_geral: number | null; historico_faltas: FICAIHistoricoPoint[]; importado_em: string | null }>()
+
+  if (codsAluno.length > 0) {
+    const { data: existingRows } = await supabase
+      .from('ficai_importacoes')
+      .select('cod_aluno, perc_faltas_geral, historico_faltas, importado_em')
+      .eq('school_id', schoolId || '')
+      .eq('ano', ano)
+      .in('cod_aluno', codsAluno)
+
+    for (const row of existingRows ?? []) {
+      existingMap.set(row.cod_aluno, {
+        perc_faltas_geral: row.perc_faltas_geral,
+        historico_faltas: Array.isArray(row.historico_faltas) ? row.historico_faltas : [],
+        importado_em: row.importado_em,
+      })
+    }
+  }
+
+  const rows = entries.map(e => {
+    const existing = e.codAluno ? existingMap.get(e.codAluno) : undefined
+    let hist: FICAIHistoricoPoint[] = existing?.historico_faltas ?? []
+
+    // Semear histórico a partir de dado legado se vazio
+    if (hist.length === 0 && existing && existing.perc_faltas_geral !== null) {
+      hist = [{
+        data: existing.importado_em ?? nowISO,
+        perc: existing.perc_faltas_geral,
+        perc1Bim: null,
+        perc2Bim: null,
+      }]
+    }
+
+    // Append só se % mudou vs último ponto
+    const ultimoPerc = hist.length > 0 ? hist[hist.length - 1].perc : null
+    if (e.faltasGeral !== null && e.faltasGeral !== ultimoPerc) {
+      hist = [...hist, {
+        data: nowISO,
+        perc: e.faltasGeral,
+        perc1Bim: e.faltas1Bim ?? null,
+        perc2Bim: e.faltas2Bim ?? null,
+      }]
+    }
+
+    return {
+      ano,
+      cod_aluno:           e.codAluno,
+      cod_matricula:       e.codMatricula,
+      nome_aluno:          e.nomeAluno,
+      turma:               e.turma,
+      turno:               e.turno,
+      modalidade:          e.modalidade,
+      perc_faltas_geral:   e.faltasGeral,
+      perc_faltas_1bim:    e.faltas1Bim,
+      perc_faltas_2bim:    e.faltas2Bim,
+      ficai_aberto:        e.ficaiAberto,
+      data_ficai:          e.dataFicai,
+      encaminhado:         e.encaminhado,
+      data_encaminhamento: e.dataEncaminhamento,
+      aluno_id:            e.alunoId,
+      match_score:         e.matchScore,
+      school_id:           schoolId || null,
+      importado_por:       user?.id ?? null,
+      importado_em:        nowISO,
+      historico_faltas:    hist,
+    }
+  })
 
   // Upsert em lotes de 200 para não estourar o request
   const BATCH = 200
@@ -102,14 +150,12 @@ export async function fetchSavedFICAIImports(schoolId: string): Promise<FICAIEnt
   const profileMap = new Map<string, string>(profiles.map((p: any) => [p.id, p.name]));
 
   return (data || []).map((d: any) => {
-    // Busca do contacts da relação students se existir
     const contactsArray = d.students?.contacts && Array.isArray(d.students.contacts) ? d.students.contacts : [];
     const firstContact = contactsArray.length > 0 ? contactsArray[0] : null;
 
     const faltasGeral = d.perc_faltas_geral;
     const ficaiAberto = d.ficai_aberto;
-    const alertaGrave = faltasGeral !== null && faltasGeral >= 25;
-    const ficaiNecessaria = alertaGrave && !ficaiAberto;
+    const { alerta, alertaGrave, ficaiNecessaria } = deriveFicaiFlags(faltasGeral, ficaiAberto)
 
     return {
       nomeAluno: d.nome_aluno || '',
@@ -132,9 +178,10 @@ export async function fetchSavedFICAIImports(schoolId: string): Promise<FICAIEnt
       contacts: contactsArray,
       matchScore: d.match_score || 1.0,
       matched: !!d.aluno_id,
-      alerta: d.perc_faltas_geral !== null && d.perc_faltas_geral >= 10,
+      alerta,
       alertaGrave,
       ficaiNecessaria,
+      historicoFaltas: Array.isArray(d.historico_faltas) ? d.historico_faltas : [],
       importadoEm: d.importado_em || undefined,
       importadoPor: d.importado_por || undefined,
       importadoPorNome: d.importado_por ? profileMap.get(d.importado_por) || 'Desconhecido' : undefined,
@@ -178,4 +225,3 @@ export async function updateStudentContacts(
 
   if (error) throw new Error(`Erro ao atualizar contatos do estudante: ${error.message}`);
 }
-

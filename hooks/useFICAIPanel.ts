@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
-import { processCSV, readFileAsText } from '@/lib/ficai/parser'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { readSpreadsheet, processRows } from '@/lib/ficai/parser'
 import { fetchAlunosParaMatch, upsertFICAIImport, fetchSavedFICAIImports, updateFICAIImportStatus, updateStudentContacts } from '@/lib/ficai/queries'
 import type { FICAIEntry, FICAIFilterKey, FICAIStats } from '@/types/ficai'
 import { normalizeName, jaccardScore } from '@/lib/ficai/parser'
@@ -10,10 +10,17 @@ export function useFICAIPanel() {
   const { activeSchoolContext } = useAppContext()
   const [entries, setEntries]       = useState<FICAIEntry[]>([])
   const [loading, setLoading]       = useState(false)
-  const [saving, setSaving]         = useState(false)
   const [filter, setFilter]         = useState<FICAIFilterKey>('todos')
   const [search, setSearch]         = useState('')
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
+  const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const setSaved = useCallback(() => {
+    setSavingStatus('saved')
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    savedTimerRef.current = setTimeout(() => setSavingStatus('idle'), 1500)
+  }, [])
 
   // ── Carregar histórico do banco na inicialização ────────────────────────
   const loadSavedData = useCallback(async () => {
@@ -33,10 +40,11 @@ export function useFICAIPanel() {
     loadSavedData()
   }, [loadSavedData])
 
-  // ── Upload + processamento ──────────────────────────────────────────────
+  // ── Upload + processamento + auto-save ─────────────────────────────────
   const processFile = useCallback(async (file: File) => {
-    if (!file.name.endsWith('.csv')) {
-      toast.error('Selecione um arquivo CSV')
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (!ext || !['csv', 'xlsx', 'xls'].includes(ext)) {
+      toast.error('Selecione um arquivo CSV ou XLSX')
       return
     }
 
@@ -45,12 +53,12 @@ export function useFICAIPanel() {
     setSelectedIdx(null)
 
     try {
-      const [rawText, alunos] = await Promise.all([
-        readFileAsText(file),
+      const [rows, alunos] = await Promise.all([
+        readSpreadsheet(file),
         fetchAlunosParaMatch(activeSchoolContext || ''),
       ])
 
-      const processed = processCSV(rawText, alunos)
+      const processed = processRows(rows, alunos)
 
       if (processed.length === 0) {
         toast.error('Nenhum aluno encontrado no arquivo')
@@ -62,26 +70,20 @@ export function useFICAIPanel() {
       toast.success(
         `${processed.length} alunos carregados · ${comMatch} cruzados com o sistema`
       )
+
+      // Auto-save
+      setSavingStatus('saving')
+      await upsertFICAIImport(processed, activeSchoolContext || undefined)
+      const saved = await fetchSavedFICAIImports(activeSchoolContext || '')
+      setEntries(saved)
+      setSaved()
     } catch (err) {
+      setSavingStatus('idle')
       toast.error('Erro ao processar planilha: ' + (err as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [])
-
-  // ── Salvar no Supabase ──────────────────────────────────────────────────
-  const saveToDatabase = useCallback(async () => {
-    if (entries.length === 0) return
-    setSaving(true)
-    try {
-      await upsertFICAIImport(entries, activeSchoolContext || undefined)
-      toast.success('Importação salva no banco com sucesso')
-    } catch (err) {
-      toast.error('Erro ao salvar: ' + (err as Error).message)
-    } finally {
-      setSaving(false)
-    }
-  }, [entries, activeSchoolContext])
+  }, [activeSchoolContext, setSaved])
 
   // ── Reset ───────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
@@ -104,24 +106,23 @@ export function useFICAIPanel() {
     }
 
     switch (filter) {
-      case 'alerta':         return rows.filter(r => r.alerta)
-      case 'grave':          return rows.filter(r => r.alertaGrave)
+      case 'grave':            return rows.filter(r => r.alertaGrave)
       case 'ficai_necessaria': return rows.filter(r => r.ficaiNecessaria)
-      case 'ficai_aberta':   return rows.filter(r => r.ficaiAberto)
-      case 'encaminhado':    return rows.filter(r => r.encaminhado)
-      case 'sem_tel':        return rows.filter(r => !r.matched)
-      default:               return rows
+      case 'ficai_aberta':     return rows.filter(r => r.ficaiAberto)
+      case 'encaminhado':      return rows.filter(r => r.encaminhado)
+      case 'sem_tel':          return rows.filter(r => !r.matched)
+      default:                 return rows
     }
   }, [entries, filter, search])
 
   // ── Stats ───────────────────────────────────────────────────────────────
   const stats = useMemo<FICAIStats>(() => ({
-    total:          entries.length,
-    comAlerta:      entries.filter(r => r.alerta).length,
-    alertaGrave:    entries.filter(r => r.alertaGrave).length,
-    ficaiAberta:    entries.filter(r => r.ficaiAberto).length,
-    encaminhados:   entries.filter(r => r.encaminhado).length,
-    comTelefone:    entries.filter(r => r.matched).length,
+    total:           entries.length,
+    comAlerta:       entries.filter(r => r.alerta).length,
+    alertaGrave:     entries.filter(r => r.alertaGrave).length,
+    ficaiAberta:     entries.filter(r => r.ficaiAberto).length,
+    encaminhados:    entries.filter(r => r.encaminhado).length,
+    comTelefone:     entries.filter(r => r.matched).length,
     ficaiNecessaria: entries.filter(r => r.ficaiNecessaria).length,
   }), [entries])
 
@@ -160,6 +161,7 @@ export function useFICAIPanel() {
     });
 
     if (entryToUpdate.codAluno) {
+      setSavingStatus('saving')
       try {
         const ano = new Date().getFullYear();
         await updateFICAIImportStatus(entryToUpdate.codAluno, ano, activeSchoolContext || '', {
@@ -168,23 +170,24 @@ export function useFICAIPanel() {
           encaminhado,
           data_encaminhamento: dataEncaminhamento
         });
-        toast.success(`Status de ${entryToUpdate.nomeAluno} atualizado com sucesso!`);
+        setSaved()
       } catch (err) {
+        setSavingStatus('idle')
         console.error('[FICAI] Erro ao atualizar status no Supabase:', err);
         toast.error('Erro ao salvar alteração de status no banco de dados.');
       }
     }
-  }, [entries, filteredEntries, activeSchoolContext]);
+  }, [entries, filteredEntries, activeSchoolContext, setSaved]);
 
   const addContactToStudent = useCallback(async (studentId: string, contactName: string, contactPhone: string) => {
+    const matchedEntry = entries.find(e => e.alunoId === studentId);
+    const currentContacts = matchedEntry?.contacts || [];
+    const updatedContacts = [...currentContacts, { name: contactName, phone: contactPhone }];
+
+    setSavingStatus('saving')
     try {
-      const matchedEntry = entries.find(e => e.alunoId === studentId);
-      const currentContacts = matchedEntry?.contacts || [];
-      
-      const updatedContacts = [...currentContacts, { name: contactName, phone: contactPhone }];
-      
       await updateStudentContacts(studentId, updatedContacts);
-      
+
       setEntries(prev => prev.map(e => {
         if (e.alunoId === studentId) {
           return {
@@ -197,20 +200,22 @@ export function useFICAIPanel() {
         }
         return e;
       }));
-      
+
+      setSaved()
       toast.success('Contato registrado com sucesso!');
     } catch (err) {
+      setSavingStatus('idle')
       console.error('[FICAI] Erro ao adicionar contato:', err);
       toast.error('Erro ao salvar contato no banco de dados.');
     }
-  }, [entries]);
+  }, [entries, setSaved]);
 
   return {
     entries,
     filteredEntries,
     stats,
     loading,
-    saving,
+    savingStatus,
     filter,
     setFilter,
     search,
@@ -219,7 +224,6 @@ export function useFICAIPanel() {
     selectedEntry,
     toggleSelected,
     processFile,
-    saveToDatabase,
     reset,
     updateStatus,
     addContactToStudent,

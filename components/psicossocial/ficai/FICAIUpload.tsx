@@ -47,7 +47,7 @@ export function FICAIUpload({ onFile, loading, compact = false }: FICAIUploadPro
             <TableIcon className="h-5 w-5 text-blue-500" />
           </div>
           <div>
-            <p className="text-xs font-black text-slate-800 dark:text-slate-200">Importar Planilha de Frequência DRE (CSV)</p>
+            <p className="text-xs font-black text-slate-800 dark:text-slate-200">Importar Planilha de Frequência DRE (CSV ou XLSX)</p>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
               Suba o novo arquivo para atualizar o status e as faltas dos alunos no painel
             </p>
@@ -63,7 +63,7 @@ export function FICAIUpload({ onFile, loading, compact = false }: FICAIUploadPro
           {loading ? 'Processando...' : 'Carregar nova planilha'}
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             className="sr-only"
             disabled={loading}
             onChange={e => handleFile(e.target.files?.[0])}
@@ -92,7 +92,7 @@ export function FICAIUpload({ onFile, loading, compact = false }: FICAIUploadPro
       <div className="space-y-1">
         <p className="text-base font-bold text-slate-800 dark:text-slate-200">Planilha de Frequência FICAI</p>
         <p className="text-sm text-slate-400 dark:text-slate-500">
-          Arraste o arquivo CSV ou clique para selecionar
+          Arraste o arquivo CSV ou XLSX, ou clique para selecionar
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export function FICAIUpload({ onFile, loading, compact = false }: FICAIUploadPro
         {loading ? 'Processando...' : 'Selecionar arquivo'}
         <input
           type="file"
-          accept=".csv"
+          accept=".csv,.xlsx,.xls"
           className="sr-only"
           disabled={loading}
           onChange={e => handleFile(e.target.files?.[0])}

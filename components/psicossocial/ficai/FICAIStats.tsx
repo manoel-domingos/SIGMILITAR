@@ -1,5 +1,5 @@
 import {
-  Users, AlertTriangle, Flame, FileWarning, Send, Phone, FileX
+  Users, AlertTriangle, Flame, FileWarning, Send, Phone
 } from 'lucide-react'
 import type { FICAIStats } from '@/types/ficai'
 
@@ -10,9 +10,8 @@ interface FICAIStatsProps {
 export function FICAIStatsCards({ stats }: FICAIStatsProps) {
   const cards = [
     { label: 'Total alunos',    value: stats.total,           icon: Users,         variant: 'default' },
-    { label: 'Em alerta',       value: stats.comAlerta,       icon: AlertTriangle, variant: 'warning' },
-    { label: 'Alerta grave',    value: stats.alertaGrave,     icon: Flame,         variant: 'danger'  },
-    { label: 'FICAI necessária',value: stats.ficaiNecessaria, icon: FileX,         variant: 'danger'  },
+    { label: 'FICAI necessária +10%', value: stats.ficaiNecessaria, icon: AlertTriangle, variant: 'warning' },
+    { label: 'Grave +15%',           value: stats.alertaGrave,     icon: Flame,         variant: 'danger'  },
     { label: 'FICAI aberta',    value: stats.ficaiAberta,     icon: FileWarning,   variant: 'info'    },
     { label: 'Encaminhados',    value: stats.encaminhados,    icon: Send,          variant: 'success' },
     { label: 'Com telefone',    value: stats.comTelefone,     icon: Phone,         variant: 'default' },

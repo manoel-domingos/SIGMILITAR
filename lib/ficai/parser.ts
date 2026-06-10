@@ -1,5 +1,7 @@
 import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 import type { FICAICSVRow, AlunoRecord, FICAIEntry } from '@/types/ficai'
+import { deriveFicaiFlags } from './constants'
 
 // ─── Normalização de nome ────────────────────────────────────────────────────
 
@@ -9,7 +11,7 @@ export function normalizeName(name: string): string[] {
   return (name ?? '')
     .toUpperCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')  // remove acentos
+    .replace(/[̀-ͯ]/g, '')  // remove acentos
     .replace(/[^A-Z\s]/g, '')
     .trim()
     .split(/\s+/)
@@ -67,19 +69,10 @@ export function parsePct(s: string | undefined): number | null {
   return isNaN(n) ? null : n
 }
 
-// ─── Processar CSV completo + cruzar com alunos do Supabase ─────────────────
+// ─── Processar linhas já parseadas (CSV ou XLSX) ─────────────────────────────
 
-export function processCSV(rawText: string, alunos: AlunoRecord[]): FICAIEntry[] {
-  const { data, errors } = Papa.parse<FICAICSVRow>(rawText, {
-    header: true,
-    skipEmptyLines: true,
-  })
-
-  if (errors.length > 0) {
-    console.warn('[FICAI] Avisos no parse do CSV:', errors.slice(0, 5))
-  }
-
-  return data.map(row => {
+export function processRows(rows: FICAICSVRow[], alunos: AlunoRecord[]): FICAIEntry[] {
+  return rows.map(row => {
     const { aluno, score } = matchAluno(row, alunos)
 
     const faltasGeral = parsePct(row['Perc Faltas Geral Final'] ?? row['Perc Faltas Geral'])
@@ -92,9 +85,7 @@ export function processCSV(rawText: string, alunos: AlunoRecord[]): FICAIEntry[]
     const dataEncaminhamento = (row['Data Encaminhamento Conselho'] ?? '').trim()
     const encaminhado = dataEncaminhamento !== '' && dataEncaminhamento !== 'Não encaminhado'
 
-    const alerta      = faltasGeral !== null && faltasGeral >= 10
-    const alertaGrave = faltasGeral !== null && faltasGeral >= 25
-    const ficaiNecessaria = alertaGrave && !ficaiAberto
+    const { alerta, alertaGrave, ficaiNecessaria } = deriveFicaiFlags(faltasGeral, ficaiAberto)
 
     return {
       nomeAluno: row['Nome Aluno'] ?? '',
@@ -128,6 +119,47 @@ export function processCSV(rawText: string, alunos: AlunoRecord[]): FICAIEntry[]
   })
 }
 
+// ─── Ler planilha (CSV ou XLSX) → FICAICSVRow[] ──────────────────────────────
+
+export async function readSpreadsheet(file: File): Promise<FICAICSVRow[]> {
+  const ext = file.name.split('.').pop()?.toLowerCase()
+
+  if (ext === 'csv') {
+    const text = await readFileAsText(file)
+    const { data, errors } = Papa.parse<FICAICSVRow>(text, {
+      header: true,
+      skipEmptyLines: true,
+    })
+    if (errors.length > 0) {
+      console.warn('[FICAI] Avisos no parse do CSV:', errors.slice(0, 5))
+    }
+    return data
+  }
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    const buf = await readFileAsArrayBuffer(file)
+    const workbook = XLSX.read(buf, { type: 'array' })
+    const ws = workbook.Sheets[workbook.SheetNames[0]]
+    const rows = XLSX.utils.sheet_to_json<FICAICSVRow>(ws, { defval: '' })
+    return rows
+  }
+
+  throw new Error(`Formato não suportado: .${ext}. Use CSV ou XLSX.`)
+}
+
+// ─── Processar CSV completo (mantido p/ compatibilidade) ─────────────────────
+
+export function processCSV(rawText: string, alunos: AlunoRecord[]): FICAIEntry[] {
+  const { data, errors } = Papa.parse<FICAICSVRow>(rawText, {
+    header: true,
+    skipEmptyLines: true,
+  })
+  if (errors.length > 0) {
+    console.warn('[FICAI] Avisos no parse do CSV:', errors.slice(0, 5))
+  }
+  return processRows(data, alunos)
+}
+
 function codAlunoNum(s: string | undefined): number | null {
   if (!s) return null
   const n = parseInt(s.trim(), 10)
@@ -142,5 +174,16 @@ export function readFileAsText(file: File): Promise<string> {
     reader.onload = e => resolve(e.target?.result as string)
     reader.onerror = () => reject(new Error('Falha ao ler arquivo'))
     reader.readAsText(file, 'UTF-8')
+  })
+}
+
+// ─── Ler File como ArrayBuffer (para XLSX) ───────────────────────────────────
+
+export function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = e => resolve(e.target?.result as ArrayBuffer)
+    reader.onerror = () => reject(new Error('Falha ao ler arquivo'))
+    reader.readAsArrayBuffer(file)
   })
 }

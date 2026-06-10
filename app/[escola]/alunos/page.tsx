@@ -1752,7 +1752,7 @@ export default function Alunos() {
                           </p>
                           <div className="space-y-3">
                             {ficaiHistory.map((item, idx) => {
-                              const alertGrave = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 25;
+                              const alertGrave = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 15;
                               const alertMedio = item.perc_faltas_geral !== null && item.perc_faltas_geral >= 10;
                               const statusClass = item.encaminhado 
                                 ? 'text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-emerald-500/5'

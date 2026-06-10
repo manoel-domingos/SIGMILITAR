@@ -251,7 +251,7 @@ export default function PsicossocialDashboard() {
                   Planilha ativa com <span className="font-bold text-slate-600 dark:text-slate-350">{ficaiEntries.length}</span> alunos carregados.
                   {ficaiEntries.filter(e => e.alertaGrave).length > 0 && (
                     <span className="ml-1 text-rose-500 font-semibold">
-                      ({ficaiEntries.filter(e => e.alertaGrave).length} alunos com faltas graves &gt;= 25%)
+                      ({ficaiEntries.filter(e => e.alertaGrave).length} alunos com faltas graves &gt;= 15%)
                     </span>
                   )}
                 </p>
