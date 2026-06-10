@@ -237,20 +237,7 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
   };
 
   // Funções de HTML5 Drag and Drop para Admin
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    e.dataTransfer.setData('text/plain', id);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetStatus: Idea['status']) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain');
-    if (!id) return;
-
+  const updateIdeaStatus = async (id: string, targetStatus: Idea['status']) => {
     const idea = ideas.find(i => i.id === id);
     if (!idea) return;
 
@@ -281,6 +268,24 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
       fetchIdeas(); // revert
     }
   };
+
+  // Funções de HTML5 Drag and Drop para Admin
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetStatus: Idea['status']) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    if (!id) return;
+    updateIdeaStatus(id, targetStatus);
+  };
+
 
   if (!isOpen) return null;
 
@@ -418,19 +423,47 @@ export default function CannyKanbanModal({ isOpen, onClose, currentUser, current
                               {idea.description}
                             </p>
 
-                            <div className="flex items-center gap-3 mt-3 text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider">
-                              <span>SUGESTÕES</span>
-                              <span>•</span>
-                              <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] rounded font-semibold text-slate-600 dark:text-slate-400">
-                                {idea.category}
-                              </span>
-                              {idea.createdByName && (
-                                <>
-                                  <span>•</span>
-                                  <span className="normal-case font-normal text-slate-500 dark:text-slate-400">
-                                    por <strong className="font-semibold text-slate-600 dark:text-slate-300">{idea.createdByName}</strong> ({idea.createdSchool})
-                                  </span>
-                                </>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
+                              <div className="flex items-center gap-2 flex-wrap text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider">
+                                <span>SUGESTÕES</span>
+                                <span>•</span>
+                                <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-[9px] rounded font-semibold text-slate-600 dark:text-slate-400">
+                                  {idea.category}
+                                </span>
+                                {idea.createdByName && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="normal-case font-normal text-slate-500 dark:text-slate-400">
+                                      por <strong className="font-semibold text-slate-600 dark:text-slate-300">{idea.createdByName}</strong> ({idea.createdSchool})
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+
+                              {canManageStatus && (
+                                <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                                  <button
+                                    onClick={() => updateIdeaStatus(idea.id, 'Planejado')}
+                                    className="px-2 py-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-lg transition active:scale-95"
+                                    title="Mover para Planejado"
+                                  >
+                                    Planejar
+                                  </button>
+                                  <button
+                                    onClick={() => updateIdeaStatus(idea.id, 'Em progresso')}
+                                    className="px-2 py-1 text-[10px] font-bold text-purple-600 hover:text-purple-700 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 rounded-lg transition active:scale-95"
+                                    title="Mover para Em progresso"
+                                  >
+                                    Progresso
+                                  </button>
+                                  <button
+                                    onClick={() => updateIdeaStatus(idea.id, 'Concluido')}
+                                    className="px-2 py-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 rounded-lg transition active:scale-95"
+                                    title="Mover para Concluido"
+                                  >
+                                    Concluir
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>

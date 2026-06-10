@@ -83,7 +83,7 @@ export default function XerifePage() {
   // classes disponíveis (mescla ativas dos estudantes com as turmas do tenant)
   const classes = Array.from(new Set([
     ...students.filter(s => !s.archived).map(s => s.class),
-    ...(hasCompoundClasses ? allClassNames : [])
+    ...allClassNames
   ])).filter(Boolean).sort();
 
   // filtragem de alunos no form
@@ -494,9 +494,8 @@ export default function XerifePage() {
                 )}
               </div>
             ) : (
-              <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-xs text-rose-700 dark:text-rose-450 font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
-                <ShieldCheck className="w-4 h-4 text-rose-500 shrink-0" />
-                <span>Nenhum estudante ativo cadastrado nesta turma.</span>
+              <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-xs text-rose-700 dark:text-rose-405 font-semibold flex items-center gap-1.5 animate-in fade-in duration-200">
+                <span>⚠️ Nenhum estudante cadastrado nesta turma.</span>
               </div>
             )}
 
@@ -544,6 +543,87 @@ export default function XerifePage() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+function WeekHistoryItem({ weekStart, items }: { weekStart: string; items: XerifeEntry[] }) {
+  const [selectedClass, setSelectedClass] = useState('');
+  
+  // Extract classes present in this week's history entries
+  const weekClasses = Array.from(new Set(items.map(e => e.class))).filter(Boolean).sort();
+  const weekEnd = items[0]?.week_end ?? weekStart;
+
+  const filteredItems = items.filter(e => !selectedClass || e.class === selectedClass);
+
+  return (
+    <div className="border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 animate-in fade-in duration-200">
+      <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-slate-400" />
+          <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{fmtDate(weekStart)} a {fmtDate(weekEnd)}</span>
+        </div>
+
+        {/* Botões de filtro por sala da semana */}
+        {weekClasses.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            <button
+              onClick={() => setSelectedClass('')}
+              className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                selectedClass === ''
+                  ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600'
+              }`}
+            >
+              Todas
+            </button>
+            {weekClasses.map(c => {
+              // Check if all roles are filled for this class in this week
+              const allRolesFilled = (Object.keys(ROLE_CONFIG) as XerifeRole[]).every(r =>
+                items.some(e => e.class === c && e.role === r)
+              );
+              const isActive = selectedClass === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setSelectedClass(isActive ? '' : c)}
+                  title={allRolesFilled ? `${c} — completo` : `${c} — pendente`}
+                  className={`px-2 py-0.5 rounded text-[10px] font-semibold border transition-all ${
+                    isActive
+                      ? allRolesFilled
+                        ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                        : 'bg-rose-500 border-rose-500 text-white shadow-sm'
+                      : allRolesFilled
+                        ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400 hover:text-amber-600'
+                        : 'bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20'
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="divide-y divide-slate-100 dark:divide-slate-700">
+        {filteredItems.length === 0 ? (
+          <p className="text-xs text-slate-400 italic px-4 py-3 text-center">Nenhum registro para esta sala nesta semana.</p>
+        ) : (
+          filteredItems.map(e => (
+            <div key={e.id} className="px-4 py-3 flex items-center gap-3">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ROLE_CONFIG[e.role].bg} ${ROLE_CONFIG[e.role].color}`}>{ROLE_CONFIG[e.role].label}</span>
+              <span className="text-sm text-slate-700 dark:text-slate-200 font-medium flex-1">{e.student_name}</span>
+              <span className="text-xs text-slate-400">{e.class}</span>
+              {e.feedback && (
+                <span title={e.feedback}>
+                  <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                </span>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -595,28 +675,8 @@ function PreviousWeeks({ dbSchoolId }: { dbSchoolId: string }) {
             <div className="space-y-4">
               {weeks.map(ws => {
                 const items = history.filter(e => e.week_start === ws);
-                const we = items[0]?.week_end ?? ws;
                 return (
-                  <div key={ws} className="border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden">
-                    <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2.5 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{fmtDate(ws)} a {fmtDate(we)}</span>
-                    </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                      {items.map(e => (
-                        <div key={e.id} className="px-4 py-3 flex items-center gap-3">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ROLE_CONFIG[e.role].bg} ${ROLE_CONFIG[e.role].color}`}>{ROLE_CONFIG[e.role].label}</span>
-                          <span className="text-sm text-slate-700 dark:text-slate-200 font-medium flex-1">{e.student_name}</span>
-                          <span className="text-xs text-slate-400">{e.class}</span>
-                          {e.feedback && (
-                            <span title={e.feedback}>
-                              <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <WeekHistoryItem key={ws} weekStart={ws} items={items} />
                 );
               })}
             </div>

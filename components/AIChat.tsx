@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Brain, X, Send, Loader2, Sparkles, ChevronDown, Activity, Clock, ArrowRight, Trash2, AlertTriangle, CheckCircle2, RefreshCw, ClipboardList } from 'lucide-react';
+import { Brain, X, Send, Loader2, Sparkles, ChevronDown, Activity, Clock, ArrowRight, Trash2, AlertTriangle, CheckCircle2, RefreshCw, ClipboardList, Calendar } from 'lucide-react';
 import { loadChecklists, OccurrenceTask, toggleChecklistItem, removeOccurrenceTask } from '@/components/OccurrenceChecklist';
+import DashboardCalendar from '@/components/DashboardCalendar';
 import { useAppContext } from '@/lib/store';
 import { getTenantIdFromHost } from '@/lib/useTenantConfig';
 
@@ -208,7 +209,7 @@ interface Message {
   streaming?: boolean;
 }
 
-type Panel = 'pendencias' | 'chat' | 'logs';
+type Panel = 'pendencias' | 'chat' | 'logs' | 'calendario';
 
 // ---------------------------------------------------------------------------
 // Componente principal
@@ -333,19 +334,35 @@ export default function AIChat() {
     'O que é reincidência?',
   ];
 
+  const getFormattedDate = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}`;
+  };
+
   return (
     <>
-      {/* Botão FAB */}
+      {/* Botão FAB Unificado */}
       <button
         onClick={() => setIsOpen(v => !v)}
-        aria-label={isOpen ? 'Fechar ARIA' : 'Abrir assistente ARIA'}
-        className="fixed bottom-6 right-6 z-[9800] flex items-center gap-2 px-4 py-3 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-200 print:hidden"
+        aria-label={isOpen ? 'Fechar ARIA' : 'Abrir assistente ARIA e Calendário'}
+        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-4 py-3 rounded-full bg-indigo-600 text-white shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-200 active:scale-95 print:hidden border border-indigo-500/20"
       >
-        {isOpen
-          ? <ChevronDown className="w-5 h-5" />
-          : isLoading ? <Loader2 className="w-5 h-5 animate-spin" />
-          : <Sparkles className="w-5 h-5" />}
-        <span className="text-sm font-semibold tracking-wide">ARIA</span>
+        <span className="flex items-center gap-1.5 border-r border-indigo-400/40 pr-2">
+          <Calendar className="w-4 h-4" />
+          <span className="text-xs font-extrabold uppercase tracking-wide leading-none">
+            {getFormattedDate()}
+          </span>
+        </span>
+        <span className="flex items-center gap-1">
+          {isOpen
+            ? <ChevronDown className="w-4 h-4" />
+            : isLoading ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <Sparkles className="w-4 h-4" />}
+          <span className="text-sm font-semibold tracking-wide">ARIA</span>
+        </span>
+
         {/* Badge de streaming */}
         {streamingCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-amber-400 rounded-full text-[9px] font-bold text-white flex items-center justify-center px-1 animate-pulse">
@@ -371,7 +388,7 @@ export default function AIChat() {
         role="dialog"
         aria-modal="true"
         aria-label="Assistente ARIA"
-        className={'fixed bottom-20 right-6 z-[9800] w-80 sm:w-[28rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden print:hidden transition-all duration-300 origin-bottom-right ' + (isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none')}
+        className={'fixed bottom-20 right-6 z-[9999] w-80 sm:w-[28rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden print:hidden transition-all duration-300 origin-bottom-right ' + (isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none')}
         style={{ maxHeight: '580px' }}
       >
         {/* Header */}
@@ -414,6 +431,13 @@ export default function AIChat() {
               )}
             </button>
             <button
+              onClick={() => setActivePanel('calendario')}
+              className={'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ' + (activePanel === 'calendario' ? 'border-white text-white' : 'border-transparent text-blue-300 hover:text-blue-100')}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              Calendário
+            </button>
+            <button
               onClick={() => setActivePanel('chat')}
               className={'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border-b-2 transition-colors ' + (activePanel === 'chat' ? 'border-white text-white' : 'border-transparent text-blue-300 hover:text-blue-100')}
             >
@@ -438,6 +462,13 @@ export default function AIChat() {
           )}
           </div>
         </div>
+
+        {/* ---- PAINEL CALENDARIO ---- */}
+        {activePanel === 'calendario' && (
+          <div className="flex-1 overflow-y-auto p-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800" style={{ maxHeight: '480px' }}>
+            <DashboardCalendar compact={true} />
+          </div>
+        )}
 
         {/* ---- PAINEL PENDENCIAS ---- */}
         {activePanel === 'pendencias' && (

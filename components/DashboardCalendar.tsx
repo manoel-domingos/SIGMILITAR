@@ -80,7 +80,7 @@ const addDaysToDate = (dateKey: string, days: number) => {
   return next.getFullYear() + '-' + String(next.getMonth() + 1).padStart(2, '0') + '-' + String(next.getDate()).padStart(2, '0');
 };
 
-export default function DashboardCalendar() {
+export default function DashboardCalendar({ compact = false }: { compact?: boolean } = {}) {
   const { activeSchoolContext, students, rules, user, addOccurrence } = useAppContext();
   const todayKey = toDateKey(new Date());
   const [cursor, setCursor] = React.useState(() => new Date());
@@ -293,17 +293,36 @@ export default function DashboardCalendar() {
     }) || selectedDate;
 
   return (
-    <section className="glass-card p-4 flex flex-col gap-4">
+    <section className={compact ? "p-0 flex flex-col gap-3" : "glass-card p-4 flex flex-col gap-4"}>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-slate-800 dark:text-white font-bold flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-indigo-500" />
-            Calendário
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Agenda preventiva e retenções
-          </p>
-        </div>
+        {!compact ? (
+          <div>
+            <h2 className="text-slate-800 dark:text-white font-bold flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-indigo-500" />
+              Calendário
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Agenda preventiva e retenções
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {monthNames[cursor.getMonth()]} {cursor.getFullYear()}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                setCursor(now);
+                setSelectedDate(toDateKey(now));
+              }}
+              className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              Hoje
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -331,22 +350,24 @@ export default function DashboardCalendar() {
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-            {monthNames[cursor.getMonth()]} {cursor.getFullYear()}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              const now = new Date();
-              setCursor(now);
-              setSelectedDate(toDateKey(now));
-            }}
-            className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline"
-          >
-            Hoje
-          </button>
-        </div>
+        {!compact && (
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {monthNames[cursor.getMonth()]} {cursor.getFullYear()}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                setCursor(now);
+                setSelectedDate(toDateKey(now));
+              }}
+              className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              Hoje
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
           {weekDays.map((day, index) => (
             <span key={day + index}>{day}</span>
