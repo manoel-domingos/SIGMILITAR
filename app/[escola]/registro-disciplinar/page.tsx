@@ -421,6 +421,29 @@ function RegistroDisciplinarContent() {
     }
   };
 
+  // Salva a solução do campo inline e conclui a ocorrência (status: resolvida).
+  const handleSalvarConcluir = async () => {
+    if (!_vo) return;
+    const texto = (_vo.solucao_acao || '').trim();
+    if (!texto) { toast.error('Descreva a solução antes de concluir.'); return; }
+    setResolucaoSaving(true);
+    try {
+      await updateOccurrence(_vo.id, {
+        status: 'resolvida',
+        solucao_acao: texto,
+        resolved: true,
+        resolvedAt: new Date().toISOString(),
+      });
+      setViewOccurrence({ ..._vo, status: 'resolvida', solucao_acao: texto, resolved: true });
+      toast.success('Ocorrência concluída.');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao concluir ocorrência.');
+    } finally {
+      setResolucaoSaving(false);
+    }
+  };
+
   // Refresh interno: enquanto o QR está pendente e o modal aberto, consulta o
   // status do link. Quando o responsável conclui o upload, reflete na hora o
   // documento recebido sem precisar recarregar a página.
@@ -3333,7 +3356,18 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
                           className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 min-h-[150px] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                           placeholder="Descreva a ação tomada ou a solução para esta ocorrência..."
                         />
-                        <p className="text-xs text-slate-400 flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Salvo automaticamente ao sair do campo.</p>
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <p className="text-xs text-slate-400 flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Salvo automaticamente ao sair do campo.</p>
+                          <button
+                            type="button"
+                            onClick={handleSalvarConcluir}
+                            disabled={resolucaoSaving || _vo.status === 'resolvida' || !(_vo.solucao_acao || '').trim()}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition shrink-0"
+                          >
+                            <Check className="w-4 h-4" />
+                            {_vo.status === 'resolvida' ? 'Concluída' : resolucaoSaving ? 'Salvando...' : 'Salvar e concluir'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
