@@ -797,7 +797,11 @@ function SidebarLayout({
         <div className="p-6 flex flex-col items-center border-b border-slate-800">
           <div className="w-28 h-28 flex items-center justify-center">
             <img src={logoSidebar} alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (!img.src.endsWith('/logo-escola-padrao.svg')) img.src = '/logo-escola-padrao.svg';
+              else img.style.display = 'none';
+            }} />
           </div>
         </div>
 
@@ -1002,7 +1006,11 @@ function TopbarLayout({
               src={logoDash}
               alt="EECM"
               className="w-auto h-10 sm:h-12 md:h-16 object-contain shrink-0 drop-shadow-sm"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (!img.src.endsWith('/logo-escola-padrao.svg')) img.src = '/logo-escola-padrao.svg';
+                else img.style.display = 'none';
+              }}
             />
             <div className="hidden sm:block min-w-0">
               <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">
@@ -1343,7 +1351,11 @@ function MobileDrawer({
       <div className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-800">
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
           <img src={logoSidebar} alt="Logo EECM" className="w-full h-full object-contain drop-shadow-md"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (!img.src.endsWith('/logo-escola-padrao.svg')) img.src = '/logo-escola-padrao.svg';
+              else img.style.display = 'none';
+            }} />
         </div>
         <button 
           className="w-11 h-11 flex items-center justify-center text-slate-400 rounded-xl active:bg-slate-700 transition-colors" 

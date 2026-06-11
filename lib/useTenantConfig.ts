@@ -148,6 +148,12 @@ const LOGO_EXT: Record<string, string> = {
   tangara: 'svg',
 };
 
+// Escolas que possuem o brasão próprio em /public/schools/<id>/nova_logo.*.
+// Qualquer outro tenant (central, previews, domínios genéricos) cai na logo
+// padrão neutra em vez de apontar para um nova_logo inexistente (404 → ícone vazio).
+const SCHOOLS_WITH_OWN_LOGO = new Set(['joaobatista', 'heliodoro', 'tangara']);
+const DEFAULT_LOGO = '/logo-escola-padrao.svg';
+
 const SCHOOL_NAMES: Record<string, string> = {
   joaobatista: 'EECM Prof. João Batista',
   eecmprofjoaobatista: 'EECM Prof. João Batista',
@@ -173,9 +179,9 @@ export function useTenantConfig() {
   return {
     tenantId,
     schoolName: SCHOOL_NAMES[tenantId] ?? SCHOOL_NAMES['eecmprofjoaobatista'],
-    logoSidebar: `/schools/${dbSchoolId}/nova_logo.${ext}`,
-    logoDash: `/schools/${dbSchoolId}/logo_dash.svg`,
-    logoLogin: `/schools/${dbSchoolId}/logo_login.svg`,
+    logoSidebar: SCHOOLS_WITH_OWN_LOGO.has(dbSchoolId) ? `/schools/${dbSchoolId}/nova_logo.${ext}` : DEFAULT_LOGO,
+    logoDash: SCHOOLS_WITH_OWN_LOGO.has(dbSchoolId) ? `/schools/${dbSchoolId}/logo_dash.svg` : DEFAULT_LOGO,
+    logoLogin: SCHOOLS_WITH_OWN_LOGO.has(dbSchoolId) ? `/schools/${dbSchoolId}/logo_login.svg` : DEFAULT_LOGO,
     /** Anos disponíveis no tenant (inclui fundamental + médio + especiais) */
     grades: allGrades,
     /** Apenas anos do ensino médio + especiais (sem fundamental) */
