@@ -6,8 +6,11 @@ let _clientInstance: SupabaseClient | null = null;
 let _serverInstance: SupabaseClient | null = null;
 
 function buildClient(): SupabaseClient | null {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  // .trim() defensivo — env vars do Vercel já vieram com espaço/CRLF no fim
+  // (NEXT_PUBLIC_SUPABASE_URL = "...supabase.co "), o que quebra a base URL e
+  // faz o gateway responder "No API key found in request".
+  const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+  const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
   if (!supabaseUrl || !supabaseAnonKey) return null;
 
