@@ -1773,15 +1773,6 @@ Com base no Manual de Conduta e Regimento Interno das Escolas Cívico-Militares 
           });
         }
       }
-      setIsModalOpen(false);
-      setEditingOccurrence(null);
-      setSelectedStudents([]);
-      setSelectedRules([]);
-      setRuleSearch('');
-      setObservations('');
-      setVideoUrls([]);
-      setSignedDocUrls([]);
-      setIsGuardianListOpen(false);
     }
 
     window.open(url, '_blank', 'noopener,noreferrer');
