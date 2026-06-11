@@ -16,10 +16,18 @@ import {
 import type { FICAIEntry, FICAIFilterKey, FICAIStats, FICAIImportSession } from '@/types/ficai'
 import { normalizeName, jaccardScore } from '@/lib/ficai/parser'
 import { useAppContext } from '@/lib/store'
+import { getDbSchoolId } from '@/lib/useTenantConfig'
 import { toast } from 'sonner'
 
 export function useFICAIPanel() {
   const { activeSchoolContext } = useAppContext()
+  // Normaliza para o school_id real do banco (ex.: 'eecmprofjoaobatista' → 'joaobatista').
+  // Todo o resto do app usa getDbSchoolId(); o FICAI precisa do mesmo para não
+  // consultar um school_id inexistente → painel vazio / "subir planilha não faz nada".
+  const schoolId = useMemo(
+    () => (activeSchoolContext ? getDbSchoolId(activeSchoolContext) : ''),
+    [activeSchoolContext]
+  )
   const [entries, setEntries]       = useState<FICAIEntry[]>([])
   const [loading, setLoading]       = useState(false)
   const [filter, setFilter]         = useState<FICAIFilterKey>('todos')
@@ -39,12 +47,12 @@ export function useFICAIPanel() {
 
   // ── Carregar histórico do banco na inicialização ────────────────────────
   const loadSavedData = useCallback(async () => {
-    if (!activeSchoolContext) return
+    if (!schoolId) return
     setLoading(true)
     try {
       const [data, sessionData] = await Promise.all([
-        fetchSavedFICAIImports(activeSchoolContext),
-        fetchImportSessions(activeSchoolContext),
+        fetchSavedFICAIImports(schoolId),
+        fetchImportSessions(schoolId),
       ])
       setEntries(data)
       setSessions(sessionData)
@@ -54,7 +62,7 @@ export function useFICAIPanel() {
     } finally {
       setLoading(false)
     }
-  }, [activeSchoolContext])
+  }, [schoolId])
 
   useEffect(() => {
     loadSavedData()
@@ -68,16 +76,29 @@ export function useFICAIPanel() {
       return
     }
 
+    if (!schoolId) {
+      toast.error('Nenhuma escola ativa selecionada — recarregue a página e tente de novo')
+      return
+    }
+
     setLoading(true)
     setEntries([])
     setSelectedIdx(null)
     setCurrentFileName(file.name)
 
     try {
-      const [rows, alunos] = await Promise.all([
-        readSpreadsheet(file),
-        fetchAlunosParaMatch(activeSchoolContext || ''),
-      ])
+      // 1. Parse primeiro — falha aqui é o único motivo legítimo de não exibir nada
+      const rows = await readSpreadsheet(file)
+
+      // 2. Cruzamento com cadastro é OPCIONAL (só preenche telefones). Falha não
+      //    pode abortar a importação — antes derrubava tudo silenciosamente.
+      let alunos: Awaited<ReturnType<typeof fetchAlunosParaMatch>> = []
+      try {
+        alunos = await fetchAlunosParaMatch(schoolId)
+      } catch (matchErr) {
+        console.warn('[FICAI] Falha ao cruzar alunos (seguindo sem telefones):', matchErr)
+        toast.warning('Não foi possível cruzar telefones do cadastro — importando mesmo assim')
+      }
 
       const processed = processRows(rows, alunos)
 
@@ -86,32 +107,38 @@ export function useFICAIPanel() {
         return
       }
 
+      // 3. Exibe imediatamente — a partir daqui o painel NUNCA fica vazio
       setEntries(processed)
       const comMatch = processed.filter(e => e.matched).length
       toast.success(
         `${processed.length} alunos carregados · ${comMatch} cruzados com o sistema`
       )
 
-      // Auto-save — upload de novo arquivo sempre cria sessão nova
+      // 4. Persistência — falha aqui mantém os dados na tela + erro explícito
       setSavingStatus('saving')
-      await upsertFICAIImport(processed, activeSchoolContext || undefined)
+      try {
+        await upsertFICAIImport(processed, schoolId)
 
-      const { id: userId, name: userName } = await getCurrentUserInfo()
-      const stats = buildSessionStats(processed)
-      await createImportSession(activeSchoolContext || '', file.name, stats, userId, userName)
+        const { id: userId, name: userName } = await getCurrentUserInfo()
+        const stats = buildSessionStats(processed)
+        await createImportSession(schoolId, file.name, stats, userId, userName)
 
-      const saved = await fetchSavedFICAIImports(activeSchoolContext || '')
-      setEntries(saved)
-      const newSessions = await fetchImportSessions(activeSchoolContext || '')
-      setSessions(newSessions)
-      setSaved()
+        const saved = await fetchSavedFICAIImports(schoolId)
+        if (saved.length > 0) setEntries(saved) // guarda: nunca substituir por vazio
+        const newSessions = await fetchImportSessions(schoolId)
+        setSessions(newSessions)
+        setSaved()
+      } catch (persistErr) {
+        setSavingStatus('idle')
+        toast.error('Dados exibidos, mas falha ao salvar no banco: ' + (persistErr as Error).message)
+      }
     } catch (err) {
       setSavingStatus('idle')
       toast.error('Erro ao processar planilha: ' + (err as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [activeSchoolContext, setSaved])
+  }, [schoolId, setSaved])
 
   // ── Reset ───────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
@@ -213,7 +240,7 @@ export function useFICAIPanel() {
       setSavingStatus('saving')
       try {
         const ano = new Date().getFullYear();
-        await updateFICAIImportStatus(entryToUpdate.codAluno, ano, activeSchoolContext || '', {
+        await updateFICAIImportStatus(entryToUpdate.codAluno, ano, schoolId, {
           ficai_aberto: ficaiAberto,
           data_ficai: dataFicai,
           encaminhado,
@@ -237,7 +264,7 @@ export function useFICAIPanel() {
           usuario: userName,
         }
         try {
-          await appendFICAIAcao(entryToUpdate.codAluno, ano, activeSchoolContext || '', acao)
+          await appendFICAIAcao(entryToUpdate.codAluno, ano, schoolId, acao)
           setEntries(prev => {
             const next = [...prev];
             const ri = next.findIndex(e => e.codAluno === entryToUpdate.codAluno);
@@ -260,14 +287,14 @@ export function useFICAIPanel() {
         toast.error('Erro ao salvar alteração de status no banco de dados.');
       }
     }
-  }, [entries, filteredEntries, activeSchoolContext, setSaved]);
+  }, [entries, filteredEntries, schoolId, setSaved]);
 
   // ── Salvar manualmente (atualiza sessão existente, não cria nova) ────────
   const manualSave = useCallback(async () => {
-    if (!entries.length || !activeSchoolContext) return
+    if (!entries.length || !schoolId) return
     setSavingStatus('saving')
     try {
-      await upsertFICAIImport(entries, activeSchoolContext)
+      await upsertFICAIImport(entries, schoolId)
       const sessionStats = buildSessionStats(entries)
 
       if (sessions.length > 0) {
@@ -275,17 +302,17 @@ export function useFICAIPanel() {
         await updateImportSession(sessions[0].id, sessionStats)
       } else {
         const { id: userId, name: userName } = await getCurrentUserInfo()
-        await createImportSession(activeSchoolContext, currentFileName, sessionStats, userId, userName)
+        await createImportSession(schoolId, currentFileName, sessionStats, userId, userName)
       }
 
-      const newSessions = await fetchImportSessions(activeSchoolContext)
+      const newSessions = await fetchImportSessions(schoolId)
       setSessions(newSessions)
       setSaved()
     } catch (err) {
       setSavingStatus('idle')
       toast.error('Erro ao salvar: ' + (err as Error).message)
     }
-  }, [entries, activeSchoolContext, currentFileName, sessions, setSaved])
+  }, [entries, schoolId, currentFileName, sessions, setSaved])
 
   // ── Adicionar contato permanente ao aluno ───────────────────────────────
   const addContactToStudent = useCallback(async (studentId: string, contactName: string, contactPhone: string) => {
@@ -326,7 +353,7 @@ export function useFICAIPanel() {
         }
         try {
           const ano = new Date().getFullYear()
-          await appendFICAIAcao(matchedEntry.codAluno, ano, activeSchoolContext || '', acao)
+          await appendFICAIAcao(matchedEntry.codAluno, ano, schoolId, acao)
           setEntries(prev => prev.map(e => {
             if (e.alunoId === studentId) {
               return { ...e, historicoAcoes: [...(e.historicoAcoes || []), acao] }
@@ -342,7 +369,7 @@ export function useFICAIPanel() {
       console.error('[FICAI] Erro ao adicionar contato:', err);
       toast.error('Erro ao salvar contato no banco de dados.');
     }
-  }, [entries, activeSchoolContext, setSaved]);
+  }, [entries, schoolId, setSaved]);
 
   return {
     entries,
