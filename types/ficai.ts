@@ -55,6 +55,14 @@ export interface FICAIHistoricoPoint {
   perc2Bim: number | null
 }
 
+// Registro de ação realizada sobre o aluno no painel FICAI
+export interface FICAIAcao {
+  data: string          // ISO timestamp
+  tipo: 'status' | 'contato'
+  descricao: string
+  usuario?: string
+}
+
 // Entrada processada: dados do CSV + dados puxados do Supabase
 export interface FICAIEntry {
   // Identificação
@@ -92,6 +100,12 @@ export interface FICAIEntry {
 
   // Timeline de infrequência (somada, nunca substituída)
   historicoFaltas?: FICAIHistoricoPoint[]
+
+  // Status explícito salvo pelo usuário (sobrepõe derivação por %)
+  statusManual?: 'ficai_necessaria' | 'nao_aberta' | null
+
+  // Histórico de ações realizadas sobre o aluno no painel
+  historicoAcoes?: FICAIAcao[]
 
   // Auditoria de importação
   importadoEm?: string

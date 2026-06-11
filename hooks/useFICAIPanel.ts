@@ -1,6 +1,18 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { readSpreadsheet, processRows } from '@/lib/ficai/parser'
-import { fetchAlunosParaMatch, upsertFICAIImport, fetchSavedFICAIImports, updateFICAIImportStatus, updateStudentContacts, fetchImportSessions } from '@/lib/ficai/queries'
+import {
+  fetchAlunosParaMatch,
+  upsertFICAIImport,
+  fetchSavedFICAIImports,
+  updateFICAIImportStatus,
+  updateStudentContacts,
+  fetchImportSessions,
+  createImportSession,
+  updateImportSession,
+  appendFICAIAcao,
+  buildSessionStats,
+  getCurrentUserInfo,
+} from '@/lib/ficai/queries'
 import type { FICAIEntry, FICAIFilterKey, FICAIStats, FICAIImportSession } from '@/types/ficai'
 import { normalizeName, jaccardScore } from '@/lib/ficai/parser'
 import { useAppContext } from '@/lib/store'
@@ -80,9 +92,14 @@ export function useFICAIPanel() {
         `${processed.length} alunos carregados · ${comMatch} cruzados com o sistema`
       )
 
-      // Auto-save
+      // Auto-save — upload de novo arquivo sempre cria sessão nova
       setSavingStatus('saving')
-      await upsertFICAIImport(processed, activeSchoolContext || undefined, file.name)
+      await upsertFICAIImport(processed, activeSchoolContext || undefined)
+
+      const { id: userId, name: userName } = await getCurrentUserInfo()
+      const stats = buildSessionStats(processed)
+      await createImportSession(activeSchoolContext || '', file.name, stats, userId, userName)
+
       const saved = await fetchSavedFICAIImports(activeSchoolContext || '')
       setEntries(saved)
       const newSessions = await fetchImportSessions(activeSchoolContext || '')
@@ -144,6 +161,17 @@ export function useFICAIPanel() {
 
   const selectedEntry = selectedIdx !== null ? filteredEntries[selectedIdx] ?? null : null
 
+  // ── Labels legíveis de status para log ─────────────────────────────────
+  function statusLabel(s: string): string {
+    switch (s) {
+      case 'nao_aberta':      return 'Não aberta'
+      case 'ficai_necessaria': return '⚠️ Necessária'
+      case 'ficai_aberta':    return '📝 Aberta'
+      case 'encaminhado':     return '🚀 Encaminhado'
+      default:                return s
+    }
+  }
+
   // ── Atualizar status de um registro ─────────────────────────────────────
   const updateStatus = useCallback(async (idx: number, status: 'nao_aberta' | 'ficai_necessaria' | 'ficai_aberta' | 'encaminhado', date?: string) => {
     const entryToUpdate = filteredEntries[idx];
@@ -158,6 +186,15 @@ export function useFICAIPanel() {
     const dataEncaminhamento = status === 'encaminhado' ? (date || '') : '';
     const ficaiNecessaria = status === 'ficai_necessaria';
 
+    // status_manual: gravar escolha explícita só para necessaria/nao_aberta;
+    // aberta/encaminhado têm campos próprios, manual fica null
+    const statusManual: 'ficai_necessaria' | 'nao_aberta' | null =
+      status === 'ficai_necessaria' ? 'ficai_necessaria'
+      : status === 'nao_aberta' ? 'nao_aberta'
+      : null
+
+    const nowISO = new Date().toISOString()
+
     setEntries(prev => {
       const next = [...prev];
       next[realIdx] = {
@@ -166,7 +203,8 @@ export function useFICAIPanel() {
         dataFicai,
         encaminhado,
         dataEncaminhamento,
-        ficaiNecessaria
+        ficaiNecessaria,
+        statusManual,
       };
       return next;
     });
@@ -179,8 +217,42 @@ export function useFICAIPanel() {
           ficai_aberto: ficaiAberto,
           data_ficai: dataFicai,
           encaminhado,
-          data_encaminhamento: dataEncaminhamento
+          data_encaminhamento: dataEncaminhamento,
+          status_manual: statusManual,
         });
+
+        // Registrar ação no histórico
+        const { name: userName } = await getCurrentUserInfo()
+        const oldLabel = statusLabel(
+          entryToUpdate.encaminhado ? 'encaminhado'
+          : entryToUpdate.ficaiAberto ? 'ficai_aberta'
+          : entryToUpdate.ficaiNecessaria ? 'ficai_necessaria'
+          : 'nao_aberta'
+        )
+        const newLabel = statusLabel(status)
+        const acao = {
+          data: nowISO,
+          tipo: 'status' as const,
+          descricao: `Status FICAI: ${oldLabel} → ${newLabel}`,
+          usuario: userName,
+        }
+        try {
+          await appendFICAIAcao(entryToUpdate.codAluno, ano, activeSchoolContext || '', acao)
+          setEntries(prev => {
+            const next = [...prev];
+            const ri = next.findIndex(e => e.codAluno === entryToUpdate.codAluno);
+            if (ri !== -1) {
+              next[ri] = {
+                ...next[ri],
+                historicoAcoes: [...(next[ri].historicoAcoes || []), acao],
+              }
+            }
+            return next;
+          })
+        } catch (logErr) {
+          console.warn('[FICAI] Falha ao registrar ação de status:', logErr)
+        }
+
         setSaved()
       } catch (err) {
         setSavingStatus('idle')
@@ -190,11 +262,22 @@ export function useFICAIPanel() {
     }
   }, [entries, filteredEntries, activeSchoolContext, setSaved]);
 
+  // ── Salvar manualmente (atualiza sessão existente, não cria nova) ────────
   const manualSave = useCallback(async () => {
     if (!entries.length || !activeSchoolContext) return
     setSavingStatus('saving')
     try {
-      await upsertFICAIImport(entries, activeSchoolContext, currentFileName)
+      await upsertFICAIImport(entries, activeSchoolContext)
+      const sessionStats = buildSessionStats(entries)
+
+      if (sessions.length > 0) {
+        // Atualizar sessão existente — não duplicar em "Importações Anteriores"
+        await updateImportSession(sessions[0].id, sessionStats)
+      } else {
+        const { id: userId, name: userName } = await getCurrentUserInfo()
+        await createImportSession(activeSchoolContext, currentFileName, sessionStats, userId, userName)
+      }
+
       const newSessions = await fetchImportSessions(activeSchoolContext)
       setSessions(newSessions)
       setSaved()
@@ -202,8 +285,9 @@ export function useFICAIPanel() {
       setSavingStatus('idle')
       toast.error('Erro ao salvar: ' + (err as Error).message)
     }
-  }, [entries, activeSchoolContext, currentFileName, setSaved])
+  }, [entries, activeSchoolContext, currentFileName, sessions, setSaved])
 
+  // ── Adicionar contato permanente ao aluno ───────────────────────────────
   const addContactToStudent = useCallback(async (studentId: string, contactName: string, contactPhone: string) => {
     const matchedEntry = entries.find(e => e.alunoId === studentId);
     const currentContacts = matchedEntry?.contacts || [];
@@ -212,6 +296,8 @@ export function useFICAIPanel() {
     setSavingStatus('saving')
     try {
       await updateStudentContacts(studentId, updatedContacts);
+
+      const nowISO = new Date().toISOString()
 
       setEntries(prev => prev.map(e => {
         if (e.alunoId === studentId) {
@@ -228,12 +314,35 @@ export function useFICAIPanel() {
 
       setSaved()
       toast.success('Contato registrado com sucesso!');
+
+      // Registrar ação no histórico (não bloqueia o save)
+      if (matchedEntry?.codAluno) {
+        const { name: userName } = await getCurrentUserInfo()
+        const acao = {
+          data: nowISO,
+          tipo: 'contato' as const,
+          descricao: `Contato adicionado: ${contactName} — ${contactPhone}`,
+          usuario: userName,
+        }
+        try {
+          const ano = new Date().getFullYear()
+          await appendFICAIAcao(matchedEntry.codAluno, ano, activeSchoolContext || '', acao)
+          setEntries(prev => prev.map(e => {
+            if (e.alunoId === studentId) {
+              return { ...e, historicoAcoes: [...(e.historicoAcoes || []), acao] }
+            }
+            return e
+          }))
+        } catch (logErr) {
+          console.warn('[FICAI] Falha ao registrar ação de contato:', logErr)
+        }
+      }
     } catch (err) {
       setSavingStatus('idle')
       console.error('[FICAI] Erro ao adicionar contato:', err);
       toast.error('Erro ao salvar contato no banco de dados.');
     }
-  }, [entries, setSaved]);
+  }, [entries, activeSchoolContext, setSaved]);
 
   return {
     entries,
