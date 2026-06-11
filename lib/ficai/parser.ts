@@ -166,6 +166,22 @@ function codAlunoNum(s: string | undefined): number | null {
   return isNaN(n) ? null : n
 }
 
+// ─── Data de referência da planilha (prefixo DD.MM.YYYY no nome do arquivo) ──
+// Ex.: "09.06.2026 - EE PROF. JOÃO BATISTA.xlsx" → ISO de 09/06/2026.
+// Usa meio-dia local para evitar virar o dia por fuso. Retorna null se o nome
+// não começar com uma data válida (ex.: "26.25.2026" tem mês inválido).
+export function parsePlanilhaDateFromFilename(name: string): string | null {
+  const m = (name ?? '').match(/^\s*(\d{2})\.(\d{2})\.(\d{4})/)
+  if (!m) return null
+  const dia = parseInt(m[1], 10)
+  const mes = parseInt(m[2], 10)
+  const ano = parseInt(m[3], 10)
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null
+  const d = new Date(ano, mes - 1, dia, 12, 0, 0)
+  if (d.getMonth() !== mes - 1 || d.getDate() !== dia) return null // ex.: 31/02
+  return d.toISOString()
+}
+
 // ─── Ler File como texto UTF-8 ───────────────────────────────────────────────
 
 export function readFileAsText(file: File): Promise<string> {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { readSpreadsheet, processRows } from '@/lib/ficai/parser'
+import { readSpreadsheet, processRows, parsePlanilhaDateFromFilename } from '@/lib/ficai/parser'
 import {
   fetchAlunosParaMatch,
   upsertFICAIImport,
@@ -7,8 +7,7 @@ import {
   updateFICAIImportStatus,
   updateStudentContacts,
   fetchImportSessions,
-  createImportSession,
-  updateImportSession,
+  upsertImportSessionByName,
   appendFICAIAcao,
   buildSessionStats,
   getCurrentUserInfo,
@@ -117,11 +116,13 @@ export function useFICAIPanel() {
       // 4. Persistência — falha aqui mantém os dados na tela + erro explícito
       setSavingStatus('saving')
       try {
-        await upsertFICAIImport(processed, schoolId)
+        const refDate = parsePlanilhaDateFromFilename(file.name)
+        await upsertFICAIImport(processed, schoolId, refDate)
 
         const { id: userId, name: userName } = await getCurrentUserInfo()
         const stats = buildSessionStats(processed)
-        await createImportSession(schoolId, file.name, stats, userId, userName)
+        // 1 sessão por nome de arquivo — re-upload atualiza, não duplica
+        await upsertImportSessionByName(schoolId, file.name, stats, userId, userName)
 
         const saved = await fetchSavedFICAIImports(schoolId)
         if (saved.length > 0) setEntries(saved) // guarda: nunca substituir por vazio
@@ -294,16 +295,13 @@ export function useFICAIPanel() {
     if (!entries.length || !schoolId) return
     setSavingStatus('saving')
     try {
-      await upsertFICAIImport(entries, schoolId)
+      const refDate = parsePlanilhaDateFromFilename(currentFileName)
+      await upsertFICAIImport(entries, schoolId, refDate)
       const sessionStats = buildSessionStats(entries)
 
-      if (sessions.length > 0) {
-        // Atualizar sessão existente — não duplicar em "Importações Anteriores"
-        await updateImportSession(sessions[0].id, sessionStats)
-      } else {
-        const { id: userId, name: userName } = await getCurrentUserInfo()
-        await createImportSession(schoolId, currentFileName, sessionStats, userId, userName)
-      }
+      // 1 sessão por nome de arquivo — atualiza a do arquivo atual, sem duplicar
+      const { id: userId, name: userName } = await getCurrentUserInfo()
+      await upsertImportSessionByName(schoolId, currentFileName, sessionStats, userId, userName)
 
       const newSessions = await fetchImportSessions(schoolId)
       setSessions(newSessions)
@@ -312,7 +310,7 @@ export function useFICAIPanel() {
       setSavingStatus('idle')
       toast.error('Erro ao salvar: ' + (err as Error).message)
     }
-  }, [entries, schoolId, currentFileName, sessions, setSaved])
+  }, [entries, schoolId, currentFileName, setSaved])
 
   // ── Adicionar contato permanente ao aluno ───────────────────────────────
   const addContactToStudent = useCallback(async (studentId: string, contactName: string, contactPhone: string) => {
@@ -392,6 +390,7 @@ export function useFICAIPanel() {
     sessions,
     selectedSession,
     setSelectedSession,
+    loadSavedData,
     hasData: entries.length > 0,
   }
 }

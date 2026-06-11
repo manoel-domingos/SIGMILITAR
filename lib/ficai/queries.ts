@@ -51,9 +51,12 @@ export async function getCurrentUserInfo(): Promise<{ id: string | null; name: s
  * Merge de histórico: adiciona ponto novo só quando % mudou vs último registro.
  * NÃO cria sessão de importação — responsabilidade do caller.
  */
-export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string): Promise<void> {
+export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string, refDateISO?: string | null): Promise<void> {
   const ano = new Date().getFullYear()
   const nowISO = new Date().toISOString()
+  // Data do ponto de histórico = data da planilha (nome do arquivo) quando
+  // disponível; senão, o instante da importação.
+  const pointDateISO = refDateISO || nowISO
 
   const { id: userId } = await getCurrentUserInfo()
 
@@ -93,7 +96,7 @@ export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string
     // Semear histórico a partir de dado legado se vazio
     if (hist.length === 0 && existing && existing.perc_faltas_geral !== null) {
       hist = [{
-        data: existing.importado_em ?? nowISO,
+        data: existing.importado_em ?? pointDateISO,
         perc: existing.perc_faltas_geral,
         perc1Bim: null,
         perc2Bim: null,
@@ -104,7 +107,7 @@ export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string
     const ultimoPerc = hist.length > 0 ? hist[hist.length - 1].perc : null
     if (e.faltasGeral !== null && e.faltasGeral !== ultimoPerc) {
       hist = [...hist, {
-        data: nowISO,
+        data: pointDateISO,
         perc: e.faltasGeral,
         perc1Bim: e.faltas1Bim ?? null,
         perc2Bim: e.faltas2Bim ?? null,
@@ -205,6 +208,34 @@ export async function updateImportSession(
   if (error) console.error('[FICAI] Erro ao atualizar sessão de importação:', error.message)
 }
 
+/**
+ * Cria OU atualiza a sessão de importação pelo nome do arquivo — garante 1
+ * entrada por planilha em "Importações anteriores" (re-upload do mesmo arquivo
+ * atualiza em vez de duplicar). Retorna o id da sessão.
+ */
+export async function upsertImportSessionByName(
+  schoolId: string,
+  nomeArquivo: string,
+  stats: { totalAlunos: number; totalAlertas: number; totalGraves: number; totalFicaisAbertas: number; totalEncaminhados: number; totalMatched: number },
+  userId?: string | null,
+  userNome?: string
+): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from('ficai_import_sessions')
+    .select('id')
+    .eq('school_id', schoolId)
+    .eq('nome_arquivo', nomeArquivo)
+    .order('importado_em', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (existing?.id) {
+    await updateImportSession(existing.id, stats)
+    return existing.id
+  }
+  return createImportSession(schoolId, nomeArquivo, stats, userId, userNome)
+}
+
 export async function fetchImportSessions(schoolId: string): Promise<FICAIImportSession[]> {
   const { data, error } = await supabase
     .from('ficai_import_sessions')
@@ -213,18 +244,26 @@ export async function fetchImportSessions(schoolId: string): Promise<FICAIImport
     .order('importado_em', { ascending: false })
     .limit(10)
   if (error) { console.error('[FICAI] Erro ao buscar sessões de importação:', error.message); return [] }
-  return (data || []).map((d: any) => ({
-    id: d.id,
-    nomeArquivo: d.nome_arquivo,
-    importadoEm: d.importado_em,
-    importadoPorNome: d.importado_por_nome || undefined,
-    totalAlunos: d.total_alunos,
-    totalAlertas: d.total_alertas,
-    totalGraves: d.total_graves,
-    totalFicaisAbertas: d.total_ficais_abertas,
-    totalEncaminhados: d.total_encaminhados,
-    totalMatched: d.total_matched,
-  }))
+  // Dedupe por nome de arquivo — mantém a mais recente (já vem ordenado desc).
+  // Protege a UI contra duplicatas legadas de antes do upsert por nome.
+  const seen = new Set<string>()
+  return (data || []).reduce((acc: FICAIImportSession[], d: any) => {
+    if (seen.has(d.nome_arquivo)) return acc
+    seen.add(d.nome_arquivo)
+    acc.push({
+      id: d.id,
+      nomeArquivo: d.nome_arquivo,
+      importadoEm: d.importado_em,
+      importadoPorNome: d.importado_por_nome || undefined,
+      totalAlunos: d.total_alunos,
+      totalAlertas: d.total_alertas,
+      totalGraves: d.total_graves,
+      totalFicaisAbertas: d.total_ficais_abertas,
+      totalEncaminhados: d.total_encaminhados,
+      totalMatched: d.total_matched,
+    })
+    return acc
+  }, [])
 }
 
 /**
