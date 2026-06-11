@@ -114,10 +114,12 @@ export async function upsertFICAIImport(entries: FICAIEntry[], schoolId?: string
     }
   })
 
-  // Upsert em lotes de 200 para não estourar o request
+  // Só persistir alunos matched — índice único é parcial (WHERE cod_aluno IS NOT NULL)
+  const persistibleRows = rows.filter(r => r.cod_aluno !== null)
+
   const BATCH = 200
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const batch = rows.slice(i, i + BATCH)
+  for (let i = 0; i < persistibleRows.length; i += BATCH) {
+    const batch = persistibleRows.slice(i, i + BATCH)
     const { error } = await supabase
       .from('ficai_importacoes')
       .upsert(batch, { onConflict: 'school_id,cod_aluno,ano' })

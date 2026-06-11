@@ -46,7 +46,9 @@ export function isSupabaseReady(): boolean {
 export const supabase = new Proxy({} as SupabaseClient, {
   get: (_target, prop) => {
     const client = getSupabase();
-    return client ? (client as any)[prop as string] : undefined;
+    if (!client) return undefined;
+    const value = (client as any)[prop as string];
+    return typeof value === 'function' ? value.bind(client) : value;
   },
 }) as SupabaseClient;
 

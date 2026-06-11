@@ -1168,6 +1168,15 @@ function TopbarLayout({
                 <Heart className="w-4 h-4" />
                 <span>Psicossocial</span>
               </Link>
+
+              {/* Suparchef */}
+              <Link
+                href={getLinkHref('/pedagogico/suparchef', tenantId, rawPathname)}
+                className={navPillClass(pathname.includes('/suparchef'))}
+              >
+                <ChefHat className="w-4 h-4" />
+                <span>Suparchef</span>
+              </Link>
             </>
           ) : (
             menuGroups.map((group) => (

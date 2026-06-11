@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, User, MessageCircle, Loader2 } from 'lucide-react'
+import { X, User, MessageCircle, Loader2, ChevronDown } from 'lucide-react'
 import type { FICAIEntry } from '@/types/ficai'
 import { formatPhoneForWhatsApp } from '@/lib/utils'
 
@@ -15,6 +15,7 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
   const [addingContact, setAddingContact] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [historicoOpen, setHistoricoOpen] = useState(false);
 
   if (!entry) return null;
 
@@ -94,6 +95,51 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
               ))}
             </div>
           </div>
+
+          {/* Histórico de Faltas */}
+          {entry.historicoFaltas && entry.historicoFaltas.length > 0 && (
+            <div className="pt-5 border-t border-slate-100 dark:border-slate-800/80">
+              <button
+                onClick={() => setHistoricoOpen(prev => !prev)}
+                className="flex items-center justify-between w-full text-left group"
+              >
+                <p className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  📈 Histórico de Faltas ({entry.historicoFaltas.length} registro{entry.historicoFaltas.length !== 1 ? 's' : ''})
+                </p>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${historicoOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {historicoOpen && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {entry.historicoFaltas.map((pt, pi) => {
+                    const prev = entry.historicoFaltas![pi - 1]
+                    const delta = prev && pt.perc !== null && prev.perc !== null ? pt.perc - prev.perc : null
+                    return (
+                      <span
+                        key={pi}
+                        title={new Date(pt.data).toLocaleString('pt-BR')}
+                        className={`inline-flex items-center gap-0.5 rounded-lg px-2 py-1 text-[11px] font-bold border ${
+                          pt.perc !== null && pt.perc >= 15
+                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                            : pt.perc !== null && pt.perc >= 10
+                            ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        {new Date(pt.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        {' '}{pt.perc !== null ? `${pt.perc}%` : '—'}
+                        {delta !== null && (
+                          <span className={delta > 0 ? 'text-rose-500' : 'text-emerald-500'}>
+                            {delta > 0 ? ` ▲${delta}` : ` ▼${Math.abs(delta)}`}
+                          </span>
+                        )}
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Seção de Contatos dos Responsáveis */}
           <div className="pt-5 border-t border-slate-100 dark:border-slate-800/80">
