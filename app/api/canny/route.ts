@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 const CANNY_API_KEY = 'dbaba358-a925-2c7b-1f48-0abb577688dd';
 const CANNY_BOARD_ID = '6a1b2105dad3883c255b666c';
@@ -44,6 +45,39 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action } = body;
+
+    // ── Canny Webhook ──
+    if (body.event === 'post.status_changed' || body.event === 'post.updated') {
+      const post = body.object;
+      if (post && post.status === 'complete') {
+        const notifId = `notif-canny-webhook-${post.id}`;
+        
+        // Evita duplicações
+        const { data: existing } = await supabase
+          .from('system_notifications')
+          .select('id')
+          .eq('id', notifId)
+          .maybeSingle();
+
+        if (!existing) {
+          const title = `Canny: ${post.title}`;
+          const desc_content = `Sugestão implementada e concluída no Canny: ${post.details || ''}`.slice(0, 255);
+          
+          await supabase
+            .from('system_notifications')
+            .insert({
+              id: notifId,
+              title,
+              desc_content,
+              type: 'success',
+              is_update: false,
+              created_at: new Date().toISOString()
+            });
+        }
+        return NextResponse.json({ success: true, message: 'Notification created' });
+      }
+      return NextResponse.json({ success: true, message: 'Event ignored' });
+    }
 
     if (!action) {
       return NextResponse.json({ error: 'Action is required' }, { status: 400 });
@@ -116,6 +150,24 @@ export async function POST(req: NextRequest) {
         changerID: CANNY_AUTHOR_ID,
         shouldNotifyVoters: false,
       });
+
+      // Se status foi para Concluido (complete), cria notificação local instantaneamente
+      if (cannyStatusValue === 'complete') {
+        const notifId = `notif-canny-status-${postId}-${Date.now()}`;
+        const title = `Canny: ${updated.title || 'Sugestão Concluída'}`;
+        const desc_content = `Sugestão implementada e concluída: ${updated.details || ''}`.slice(0, 255);
+        
+        await supabase
+          .from('system_notifications')
+          .insert({
+            id: notifId,
+            title,
+            desc_content,
+            type: 'success',
+            is_update: false,
+            created_at: new Date().toISOString()
+          });
+      }
 
       return NextResponse.json({ success: true, post: updated });
     }

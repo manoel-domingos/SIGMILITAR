@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Camera, BookOpen, Phone, Paperclip, FileText, AlertCircle, CheckCircle2, Clock, MapPin, Archive, Plus, Trash2, ShieldAlert } from 'lucide-react';
+import { X, User, Camera, BookOpen, Phone, Paperclip, FileText, AlertCircle, CheckCircle2, Clock, MapPin, Archive, Plus, Trash2, ShieldAlert, EyeOff } from 'lucide-react';
 import { useAppContext } from '@/lib/store';
 import { useTenantConfig } from '@/lib/useTenantConfig';
 import { ClassSelector } from '@/components/ClassSelector';
@@ -27,16 +27,14 @@ function formatPhoneForWhatsApp(phone: string, studentName: string): string | nu
   return `https://wa.me/${num}?text=${msg}`;
 }
 
-export default function StudentSheet({ studentId, onClose, readOnly = false, mode = 'modal' }: Props) {
+function StudentSheetContent({ studentId, onClose, readOnly = false, mode = 'modal', student }: Props & { student: any }) {
   const {
     students, updateStudent, archiveStudent,
     getStudentPoints, getStudentBehavior, getStudentOccurrences, uploadFile,
-    activeSchoolContext
+    activeSchoolContext, currentUserRole
   } = useAppContext();
 
   const { grades, classLetters } = useTenantConfig();
-  const student = students.find(s => s.id === studentId);
-  if (!student) return null;
 
   const [activeTab, setActiveTab] = useState<Tab>('atividades');
 
@@ -367,8 +365,24 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">CPF</label>
-                  <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} readOnly={readOnly} placeholder="000.000.000-00"
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60" />
+                  {(() => {
+                    const canViewCPF = currentUserRole === 'GESTOR' || currentUserRole === 'COORD' || currentUserRole === 'admin_global';
+                    if (canViewCPF) {
+                      return (
+                        <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} readOnly={readOnly} placeholder="000.000.000-00"
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:opacity-60" />
+                      );
+                    }
+                    return (
+                      <div
+                        title="Somente a Gestão pode visualizar esta informação"
+                        className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-400 dark:text-slate-500 text-sm flex items-center justify-between cursor-not-allowed select-none"
+                      >
+                        <span>***.***.***-**</span>
+                        <EyeOff className="w-4 h-4 text-slate-400 dark:text-slate-600" />
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Observacoes</label>
@@ -755,5 +769,21 @@ export default function StudentSheet({ studentId, onClose, readOnly = false, mod
         {inner}
       </div>
     </div>
+  );
+}
+
+export default function StudentSheet({ studentId, onClose, readOnly = false, mode = 'modal' }: Props) {
+  const { students } = useAppContext();
+  const student = students.find(s => s.id === studentId);
+  if (!student) return null;
+
+  return (
+    <StudentSheetContent
+      studentId={studentId}
+      onClose={onClose}
+      readOnly={readOnly}
+      mode={mode}
+      student={student}
+    />
   );
 }

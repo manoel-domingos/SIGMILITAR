@@ -78,3 +78,6 @@ Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert. Level p
 ## Canny Integration
 
 Auto-count git pushes. Filter last 15 commits for top 3 IMPORTANT changes (ignore typos/formatting/chores, focus on features/fixes/migrations). Send to Canny in Portuguese automatically upon 3 pushes.
+
+## Custom Triggers
+- "Top, agora, revise o código e o planejamento em busca de lacunas, erros e falhas e corrija" -> Trigger to analyze plan, find gaps, and execute.
