@@ -10,3 +10,7 @@ coverage/
 
 # Google service account keys
 eecm-494223-*.json
+
+# Playwright session cookies
+sessions/
+

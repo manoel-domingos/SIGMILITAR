@@ -26,6 +26,38 @@ interface AccountResult {
   message: string;
 }
 
+interface LogEntry {
+  ts: string;
+  email: string;
+  step: string;
+  ok: boolean;
+}
+
+async function appendLog(jobId: string, entry: LogEntry) {
+  try {
+    // Use raw SQL via rpc or just read-then-write (safe for low concurrency)
+    const { data: row } = await supabaseAdmin
+      .from('suparchef_jobs')
+      .select('logs')
+      .eq('id', jobId)
+      .maybeSingle();
+
+    const existing: LogEntry[] = Array.isArray(row?.logs) ? row.logs : [];
+    existing.push(entry);
+
+    await supabaseAdmin
+      .from('suparchef_jobs')
+      .update({ logs: existing, updated_at: new Date().toISOString() })
+      .eq('id', jobId);
+  } catch {
+    // Non-critical — ignore log write failures
+  }
+}
+
+function log(jobId: string, email: string, step: string, ok = true): Promise<void> {
+  return appendLog(jobId, { ts: new Date().toISOString(), email, step, ok });
+}
+
 async function runAutomation(job: JobRow): Promise<AccountResult[]> {
   // Dynamic import so the build doesn't fail on Vercel where Playwright isn't available
   let chromium: typeof import('playwright').chromium;
@@ -47,6 +79,7 @@ async function runAutomation(job: JobRow): Promise<AccountResult[]> {
 
     try {
       // 1. Navegar para o site alvo
+      await log(job.id, account.email, `Navegando para ${job.target_url}…`);
       await page.goto(job.target_url, { waitUntil: 'networkidle', timeout: 30000 });
 
       // 2. Procurar botão "Login com Google" / "Entrar com Google"
@@ -61,6 +94,7 @@ async function runAutomation(job: JobRow): Promise<AccountResult[]> {
         'button:has-text("Login com Google")',
       ];
 
+      await log(job.id, account.email, 'Procurando botão de login Google…');
       let clickedLogin = false;
       for (const sel of googleLoginSelectors) {
         try {
@@ -74,28 +108,34 @@ async function runAutomation(job: JobRow): Promise<AccountResult[]> {
       }
 
       if (!clickedLogin) {
+        await log(job.id, account.email, 'Botão de login Google não encontrado', false);
         results.push({ email: account.email, success: false, message: 'Botão de login Google não encontrado na página' });
         await browser.close();
         continue;
       }
 
       // 3. Aguardar redirect para accounts.google.com
+      await log(job.id, account.email, 'Aguardando redirect para Google…');
       await page.waitForURL(/accounts\.google\.com/, { timeout: 15000 });
 
       // 4. Preencher e-mail
+      await log(job.id, account.email, 'Preenchendo e-mail…');
       await page.locator('input[type="email"]').fill(account.email);
       await page.locator('button:has-text("Próxima"), button:has-text("Next")').click();
 
       // 5. Aguardar campo de senha
+      await log(job.id, account.email, 'Preenchendo senha…');
       await page.waitForSelector('input[type="password"]', { timeout: 10000 });
       await page.locator('input[type="password"]').fill(account.password);
       await page.locator('button:has-text("Próxima"), button:has-text("Next")').click();
 
       // 6. Aguardar redirect de volta ao site (timeout generoso para verificações 2FA)
+      await log(job.id, account.email, 'Aguardando retorno ao site (pode levar até 30s)…');
       await page.waitForURL(url => !url.includes('accounts.google.com'), { timeout: 30000 });
 
       // 7. Aguardar carregar a página pós-login
       await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await log(job.id, account.email, 'Login concluído. Procurando elemento de voto…');
 
       // 8. Clicar no elemento de voto
       const voteEl = page.locator(job.vote_selector).first();
@@ -105,9 +145,11 @@ async function runAutomation(job: JobRow): Promise<AccountResult[]> {
       // 9. Breve espera para confirmar ação
       await page.waitForTimeout(2000);
 
+      await log(job.id, account.email, 'Voto registrado com sucesso ✓', true);
       results.push({ email: account.email, success: true, message: 'Voto registrado com sucesso' });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      await log(job.id, account.email, `Erro: ${msg.slice(0, 200)}`, false);
       results.push({ email: account.email, success: false, message: msg.slice(0, 200) });
     } finally {
       await browser.close();
@@ -132,10 +174,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Job não encontrado' }, { status: 404 });
     }
 
-    // Marcar como running
+    // Marcar como running e limpar logs anteriores
     await supabaseAdmin
       .from('suparchef_jobs')
-      .update({ status: 'running', started_at: new Date().toISOString(), error: null, results: null, updated_at: new Date().toISOString() })
+      .update({
+        status: 'running',
+        started_at: new Date().toISOString(),
+        error: null,
+        results: null,
+        logs: [],
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', jobId);
 
     let results: AccountResult[];
