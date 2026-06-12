@@ -170,7 +170,7 @@ export function FICAIDetail({ entry, onClose, onAddContact }: FICAIDetailProps) 
                 {entry.contacts && entry.contacts.length > 0 ? (
                   <div className="space-y-3">
                     {entry.contacts.map((contact, idx) => {
-                      const waUrl = formatPhoneForWhatsApp(contact.phone || '', entry.nomeAluno);
+                      const waUrl = formatPhoneForWhatsApp(contact.phone || '', entry.nomeAluno, entry.turma, entry.faltasGeral);
                       return (
                         <div
                           key={idx}

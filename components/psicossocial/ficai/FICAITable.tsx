@@ -82,7 +82,7 @@ export function FICAITable({ entries, total, selectedIdx, onSelect, onUpdateStat
                     {entry.telefone ? (
                       <div className="flex flex-wrap items-center gap-2">
                         {(() => {
-                          const waUrl = formatPhoneForWhatsApp(entry.telefone || '', entry.nomeAluno);
+                          const waUrl = formatPhoneForWhatsApp(entry.telefone || '', entry.nomeAluno, entry.turma, entry.faltasGeral);
                           if (!waUrl) return <span className="text-xs text-slate-450">{entry.telefone}</span>;
                           return (
                             <a

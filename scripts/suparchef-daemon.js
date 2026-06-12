@@ -92,65 +92,42 @@ async function runJob(job) {
     const page = await context.newPage();
 
     try {
-      // 1. Navegar para o site alvo
+      // 1. Navegar para a página de login do Superchef
       await log(job.id, account.email, `Navegando para ${job.target_url}…`);
-      await page.goto(job.target_url, { waitUntil: 'networkidle', timeout: 30_000 });
+      await page.goto(job.target_url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
 
-      // 2. Procurar botão Login com Google
-      const googleSelectors = [
-        'button:has-text("Google")',
-        'a:has-text("Google")',
-        '[data-provider="google"]',
-        '.google-login',
-        '#google-login',
-        'button:has-text("Entrar com Google")',
-        'a:has-text("Entrar com Google")',
-        'button:has-text("Login com Google")',
-        'button:has-text("Continuar com Google")',
-        'a:has-text("Continuar com Google")',
-      ];
+      // 2. Aguardar botão "Continuar com Google" e clicar
+      await log(job.id, account.email, 'Aguardando botão "Continuar com Google"…');
+      await page.waitForSelector('button:has-text("Continuar com Google")', { timeout: 10_000 });
+      await page.locator('button:has-text("Continuar com Google")').click();
+      await log(job.id, account.email, 'Botão Google clicado ✓');
 
-      await log(job.id, account.email, 'Procurando botão de login Google…');
-      let clickedLogin = false;
-      for (const sel of googleSelectors) {
-        try {
-          const el = page.locator(sel).first();
-          if (await el.isVisible({ timeout: 2000 })) {
-            await el.click();
-            clickedLogin = true;
-            break;
-          }
-        } catch { /* próximo */ }
-      }
-
-      if (!clickedLogin) {
-        await log(job.id, account.email, 'Botão de login Google não encontrado', false);
-        results.push({ email: account.email, success: false, message: 'Botão de login Google não encontrado' });
-        await browser.close();
-        continue;
-      }
-
-      // 3. Aguardar redirect para Google
-      await log(job.id, account.email, 'Aguardando redirect para Google…');
+      // 3. Aguardar redirect para Google OAuth e campo de e-mail
+      await log(job.id, account.email, 'Aguardando formulário Google…');
       await page.waitForURL(/accounts\.google\.com/, { timeout: 15_000 });
+      await page.waitForSelector('input[type="email"]', { timeout: 10_000 });
 
       // 4. Preencher e-mail
       await log(job.id, account.email, 'Preenchendo e-mail…');
       await page.locator('input[type="email"]').fill(account.email);
-      await page.locator('button:has-text("Próxima"), button:has-text("Next")').click();
+      await page.locator('button:has-text("Avançar"), button:has-text("Próxima"), button:has-text("Next"), #identifierNext').first().click();
 
       // 5. Aguardar e preencher senha
+      await log(job.id, account.email, 'Aguardando campo de senha…');
+      await page.waitForSelector('input[type="password"]', { timeout: 15_000 });
+      await page.waitForTimeout(1000);
       await log(job.id, account.email, 'Preenchendo senha…');
-      await page.waitForSelector('input[type="password"]', { timeout: 10_000 });
       await page.locator('input[type="password"]').fill(account.password);
-      await page.locator('button:has-text("Próxima"), button:has-text("Next")').click();
+      await page.locator('button:has-text("Avançar"), button:has-text("Próxima"), button:has-text("Next"), #passwordNext').first().click();
 
-      // 6. Aguardar retorno ao site
-      await log(job.id, account.email, 'Aguardando retorno ao site…');
-      await page.waitForURL(url => !url.includes('accounts.google.com'), { timeout: 30_000 });
-      await page.waitForLoadState('networkidle', { timeout: 15_000 });
+      // 6. Aguardar retorno ao site Superchef
+      await log(job.id, account.email, 'Aguardando retorno ao Superchef…');
+      await page.waitForURL(url => !url.includes('accounts.google.com'), { timeout: 40_000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 15_000 });
+      await page.waitForTimeout(2000);
 
-      await log(job.id, account.email, 'Login concluído. Procurando botão de voto…');
+      await log(job.id, account.email, `Login OK! URL: ${page.url()}`);
+      await log(job.id, account.email, 'Procurando botão de voto…');
 
       // 7. Clicar no elemento de voto
       // O seletor pode ser múltiplo separado por vírgula

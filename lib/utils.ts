@@ -35,24 +35,27 @@ export function formatDateTime(dateStr: string) {
   return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function formatPhoneForWhatsApp(phone: string, studentName: string) {
-  // Remove tudo que não for número
+export function formatPhoneForWhatsApp(phone: string, studentName: string, turma?: string | null, faltasGeral?: number | null) {
   const numbers = phone.replace(/\D/g, '');
-  // Se o número tiver menos de 10 dígitos, provavelmente não tem DDD, então não formata o link
   if (numbers.length < 10) return '';
-  // Adiciona o código do DDI do Brasil (55) se não o usuário não colocou
   const hasCountryCode = numbers.startsWith('55') && numbers.length >= 12;
   const baseUrl = 'https://wa.me/' + (hasCountryCode ? '' : '55') + numbers;
-  
-  // Greeting depending on time
-  const hour = new Date().getHours();
-  let greeting = 'Bom dia';
-  if (hour >= 12 && hour < 18) {
-    greeting = 'Boa tarde';
-  } else if (hour >= 18) {
-    greeting = 'Boa noite';
-  }
 
-  const message = encodeURIComponent('Ol\u00e1, ' + greeting + '! Estou entrando em contato para falar sobre o aluno(a) ' + studentName + '.');
-  return baseUrl + '?text=' + message;
+  const turmaStr = turma || 'N/A';
+  const pctStr = faltasGeral != null ? String(faltasGeral) : '—';
+
+  const message =
+    `Olá, Srs. Pais ou Responsáveis pelo(a) estudante ${studentName}, da turma ${turmaStr}.\n` +
+    `.\n` +
+    `Identificamos que o(a) aluno(a) apresenta, atualmente, um índice de ${pctStr}% de faltas.\n` +
+    `.\n` +
+    `Preocupados com o desenvolvimento pedagógico e em cumprimento à Lei Estadual nº 11.236/2020 (que institui a Política de Busca Ativa Escolar em Mato Grosso pela SEDUC-MT), precisamos regularizar essa situação com urgência para evitar a perda do ano letivo.\n` +
+    `.\n` +
+    `Pedimos que compareça à secretaria/ coordenação da escola para conversarmos e justificarmos essas ausências.\n` +
+    `.\n` +
+    `A presença frequente na escola é um direito do estudante e um dever previsto por lei. Contamos com sua colaboração!\n` +
+    `.\n` +
+    `Atenciosamente, ponto focal BAE.`;
+
+  return baseUrl + '?text=' + encodeURIComponent(message);
 }
