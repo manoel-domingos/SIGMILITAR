@@ -955,10 +955,21 @@ function TopbarLayout({
   menuGroups: MenuGroup[];
 }) {
   const currentInfo = findGroupForPath(pathname);
-  const { currentUserRole, activeSchoolContext, activePanelModule } = useAppContext();
+  const { currentUserRole, activeSchoolContext, activePanelModule, setActivePanelModule, currentUserSchoolId } = useAppContext();
   const { logoDash, schoolName, tenantId } = useTenantConfig();
   const rawPathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const handleModuleSwitch = (module: 'civico-militar' | 'pedagogico') => {
+    setActivePanelModule(module);
+    const schoolId = activeSchoolContext === 'DRE' ? currentUserSchoolId : activeSchoolContext;
+    const resolvedSchoolId = schoolId || currentUserSchoolId;
+    const slug = getTenantSlugFromSchoolId(resolvedSchoolId);
+    if (slug) {
+      router.push('/' + slug + (module === 'pedagogico' ? '/pedagogico' : ''));
+    }
+  };
 
   const [megOpen, setMegOpen] = useState(false);
   const megRef = useRef<HTMLDivElement>(null);
@@ -1033,30 +1044,46 @@ function TopbarLayout({
               </p>
             </div>
             {onOpenContextModal && (
-              <button
-                onClick={onOpenContextModal}
-                className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ml-2 ${
-                  activeSchoolContext === 'DRE'
-                    ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
-                    : activePanelModule === 'pedagogico'
-                    ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20'
-                    : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20'
-                }`}
-                title="Trocar módulo de gestão"
-              >
+              <div className="hidden sm:flex items-center gap-1.5 ml-2">
                 {activeSchoolContext === 'DRE' ? (
-                  <Building2 className="w-3.5 h-3.5" />
-                ) : activePanelModule === 'pedagogico' ? (
-                  <BookOpen className="w-3.5 h-3.5" />
+                  <button
+                    onClick={onOpenContextModal}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition bg-slate-800 border-slate-700 text-white hover:bg-slate-700"
+                    title="Trocar módulo de gestão"
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Painel DRE</span>
+                  </button>
                 ) : (
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <>
+                    <button
+                      onClick={activePanelModule === 'civico-militar' ? onOpenContextModal : () => handleModuleSwitch('civico-militar')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+                        activePanelModule === 'civico-militar'
+                          ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20 font-bold'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-amber-50/50 dark:hover:bg-amber-500/10 hover:text-amber-600'
+                      }`}
+                      title="Gestão Cívico-Militar"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Gestão Cívico-Militar</span>
+                    </button>
+
+                    <button
+                      onClick={activePanelModule === 'pedagogico' ? onOpenContextModal : () => handleModuleSwitch('pedagogico')}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${
+                        activePanelModule === 'pedagogico'
+                          ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 font-bold'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-blue-50/50 dark:hover:bg-blue-500/10 hover:text-blue-600'
+                      }`}
+                      title="Gestão Pedagógica"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>Gestão Pedagógica</span>
+                    </button>
+                  </>
                 )}
-                {activeSchoolContext === 'DRE'
-                  ? 'Painel DRE'
-                  : activePanelModule === 'pedagogico'
-                  ? 'Gestão Pedagógica'
-                  : 'Gestão Cívico-Militar'}
-              </button>
+              </div>
             )}
           </div>
           {rightControls}
